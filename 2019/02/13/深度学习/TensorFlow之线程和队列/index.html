@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;在使用TensorFlow进行异步计算时，队列是一种强大的机制。正如TensorFlow中的其他组件一样，队列就是TensorFlow图中的节点。这是一种有状态的节点，就像变量一样：其他节点可以修改它的内容。具体来说，其他节点可以把新元素插入到队列后端(rear)，也可以把队列前端(front)的元素删除。&amp;emsp;&amp;emsp;为了感受一下队列，来看一个简单的例子。我们先">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TensorFlow之线程和队列">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/13/深度学习/TensorFlow之线程和队列/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;在使用TensorFlow进行异步计算时，队列是一种强大的机制。正如TensorFlow中的其他组件一样，队列就是TensorFlow图中的节点。这是一种有状态的节点，就像变量一样：其他节点可以修改它的内容。具体来说，其他节点可以把新元素插入到队列后端(rear)，也可以把队列前端(front)的元素删除。&amp;emsp;&amp;emsp;为了感受一下队列，来看一个简单的例子。我们先">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/13/深度学习/TensorFlow之线程和队列/1.png">
+<meta property="og:updated_time" content="2019-03-13T07:33:53.263Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="TensorFlow之线程和队列">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;在使用TensorFlow进行异步计算时，队列是一种强大的机制。正如TensorFlow中的其他组件一样，队列就是TensorFlow图中的节点。这是一种有状态的节点，就像变量一样：其他节点可以修改它的内容。具体来说，其他节点可以把新元素插入到队列后端(rear)，也可以把队列前端(front)的元素删除。&amp;emsp;&amp;emsp;为了感受一下队列，来看一个简单的例子。我们先">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/02/13/深度学习/TensorFlow之线程和队列/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/13/深度学习/TensorFlow之线程和队列/">
+
+
+
+
+
+  <title>TensorFlow之线程和队列 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/13/深度学习/TensorFlow之线程和队列/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">TensorFlow之线程和队列</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-13T15:33:07+08:00">
+                2019-02-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;在使用<code>TensorFlow</code>进行异步计算时，队列是一种强大的机制。正如<code>TensorFlow</code>中的其他组件一样，队列就是<code>TensorFlow</code>图中的节点。这是一种有状态的节点，就像变量一样：其他节点可以修改它的内容。具体来说，其他节点可以把新元素插入到队列后端(<code>rear</code>)，也可以把队列前端(<code>front</code>)的元素删除。<br>&emsp;&emsp;为了感受一下队列，来看一个简单的例子。我们先创建一个<code>先入先出</code>的队列(<code>FIFOQueue</code>)，并将其内部所有元素初始化为零。然后构建一个<code>TensorFlow</code>图，它从队列前端取走一个元素，加上<code>1</code>之后，放回队列的后端。慢慢地，队列的元素的值就会增加。</p>
+<p><img src="/2019/02/13/深度学习/TensorFlow之线程和队列/1.png" height="247" width="606"></p>
+<p>&emsp;&emsp;<code>Enqueue</code>、<code>EnqueueMany</code>和<code>Dequeue</code>都是特殊的节点。它们需要获取队列指针，而非普通的值，这样才能修改队列内容。我们建议您将它们看作队列的方法，事实上在<code>Python</code>的<code>API</code>中，它们就是队列对象的方法(例如<code>q.enqueue(...)</code>)。</p>
+<h3 id="队列使用概述"><a href="#队列使用概述" class="headerlink" title="队列使用概述"></a>队列使用概述</h3><p>&emsp;&emsp;队列(如<code>FIFOQueue</code>和<code>RandomShuffleQueue</code>)在<code>TensorFlow</code>的张量异步计算时都非常重要。例如，一个典型的输入结构使用一个<code>RandomShuffleQueue</code>来作为模型训练的输入：</p>
+<ul>
+<li>多个线程准备训练样本，并且把这些样本推入队列。</li>
+<li>一个训练线程执行一个训练操作，此操作会从队列中移除最小批次的样本(<code>mini-batches</code>)。</li>
+</ul>
+<p>&emsp;&emsp;<code>TensorFlow</code>的<code>Session</code>对象是可以支持多线程的，因此多个线程可以很方便地使用同一个会话(<code>Session</code>)，并且并行地执行操作。然而，在<code>Python</code>程序实现这样的并行运算却并不容易。所有线程都必须能被同步终止，异常必须能被正确捕获并报告，会话终止的时候，队列必须能被正确地关闭。<br>&emsp;&emsp;所幸<code>TensorFlow</code>提供了两个类来帮助多线程的实现：<code>tf.Coordinator</code>和<code>tf.QueueRunner</code>，从设计上这两个类必须被一起使用。<code>Coordinator</code>类可以用来同时停止多个工作线程，并且向那个在等待所有工作线程终止的程序报告异常。<code>QueueRunner</code>类用来协调多个工作线程同时将多个张量推入同一个队列中。</p>
+<h3 id="Coordinator"><a href="#Coordinator" class="headerlink" title="Coordinator"></a>Coordinator</h3><p>&emsp;&emsp;<code>Coordinator</code>类用来帮助多个线程协同工作，多个线程同步终止。其主要方法有：</p>
+<ul>
+<li><code>should_stop()</code>：如果线程应该停止，则返回<code>True</code>。</li>
+<li><code>request_stop(&lt;exception&gt;)</code>：请求该线程停止。</li>
+<li><code>join(&lt;list of threads&gt;)</code>：等待被指定的线程终止。</li>
+</ul>
+<p>首先创建一个<code>Coordinator</code>对象，然后建立一些使用<code>Coordinator</code>对象的线程。这些线程通常一直循环运行，一直到<code>should_stop</code>返回<code>True</code>时停止。任何线程都可以决定计算什么时候应该停止。它只需要调用<code>request_stop</code>，同时其他线程的<code>should_stop</code>将会返回<code>True</code>，然后都停下来。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">MyLoop</span><span class="params">(coord)</span>:</span>  <span class="comment"># 循环执行，直到Coordinator收到了停止请求</span></span><br><span class="line">    <span class="keyword">while</span> <span class="keyword">not</span> coord.should_stop():</span><br><span class="line">        do something</span><br><span class="line">        <span class="keyword">if</span> some condition: <span class="comment"># 如果某些条件为真，请求Coordinator去停止其他线程</span></span><br><span class="line">            coord.request_stop()</span><br><span class="line">​</span><br><span class="line">coord = Coordinator()  <span class="comment"># Main code: create a coordinator</span></span><br><span class="line"><span class="comment"># Create 10 threads that run 'MyLoop()'</span></span><br><span class="line">threads = [threading.Thread(target=MyLoop, args=(coord)) <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">10</span>)]</span><br><span class="line"><span class="keyword">for</span> t <span class="keyword">in</span> threads:  <span class="comment"># Start the threads and wait for all of them to stop</span></span><br><span class="line">    t.start()</span><br><span class="line">​</span><br><span class="line">coord.join(threads)</span><br></pre></td></tr></table></figure>
+<p>显然，<code>Coordinator</code>可以管理线程去做不同的事情。上面的代码只是一个简单的例子，在设计实现的时候不必完全照搬。<code>Coordinator</code>还支持捕捉和报告异常，具体可以参考<code>Coordinator class</code>的文档。</p>
+<h3 id="QueueRunner"><a href="#QueueRunner" class="headerlink" title="QueueRunner"></a>QueueRunner</h3><p>&emsp;&emsp;<code>QueueRunner</code>类会创建一组线程，这些线程可以重复的执行<code>Enquene</code>操作，它们使用同一个<code>Coordinator</code>来处理线程同步终止。此外，一个<code>QueueRunner</code>会运行一个<code>closer thread</code>，当<code>Coordinator</code>收到异常报告时，这个<code>closer thread</code>会自动关闭队列。您可以使用一个<code>queue runner</code>来实现上述结构。首先建立一个<code>TensorFlow</code>图表，这个图表使用队列来输入样本。增加处理样本并将样本推入队列中的操作，增加<code>training</code>操作来移除队列中的样本。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">example = ...ops to create one example...</span><br><span class="line"><span class="comment"># Create a queue, and an op that enqueues examples one at a time in the queue</span></span><br><span class="line">queue = tf.RandomShuffleQueue(...)</span><br><span class="line">enqueue_op = queue.enqueue(example)</span><br><span class="line"><span class="comment"># Create a training graph that starts by dequeuing a batch of examples</span></span><br><span class="line">inputs = queue.dequeue_many(batch_size)</span><br><span class="line">train_op = ...use <span class="string">'inputs'</span> to build the training part of the graph...</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;在<code>Python</code>的训练程序中，创建一个<code>QueueRunner</code>来运行几个线程，这几个线程处理样本，并且将样本推入队列。创建一个<code>Coordinator</code>，让<code>queue runner</code>使用<code>Coordinator</code>来启动这些线程，创建一个训练的循环，并且使用<code>Coordinator</code>来控制<code>QueueRunner</code>的线程们的终止。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Create a queue runner that will run 4 threads in parallel to enqueue examples</span></span><br><span class="line">qr = tf.train.QueueRunner(queue, [enqueue_op] * <span class="number">4</span>)</span><br><span class="line">​</span><br><span class="line">sess = tf.Session()  <span class="comment"># Launch the graph</span></span><br><span class="line">coord = tf.train.Coordinator()  <span class="comment"># Create a coordinator, launch the queue runner threads</span></span><br><span class="line">enqueue_threads = qr.create_threads(sess, coord=coord, start=<span class="keyword">True</span>)</span><br><span class="line"><span class="keyword">for</span> step <span class="keyword">in</span> xrange(<span class="number">1000000</span>):  <span class="comment"># Run the training loop, controlling termination with the coordinator</span></span><br><span class="line">    <span class="keyword">if</span> coord.should_stop():</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">    sess.run(train_op)</span><br><span class="line">​</span><br><span class="line">coord.request_stop()  <span class="comment"># When done, ask the threads to stop</span></span><br><span class="line">coord.join(threads)  <span class="comment"># And wait for them to actually do it</span></span><br></pre></td></tr></table></figure>
+<h3 id="异常处理"><a href="#异常处理" class="headerlink" title="异常处理"></a>异常处理</h3><p>&emsp;&emsp;通过<code>queue runners</code>启动的线程不仅仅只处理推送样本到队列，它们还捕捉和处理由队列产生的异常，包括<code>OutOfRangeError</code>异常，这个异常用于报告队列被关闭。使用<code>Coordinator</code>的训练程序在主循环中必须同时捕捉和报告异常。下面是对上面训练循环的改进版本：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    <span class="keyword">for</span> step <span class="keyword">in</span> xrange(<span class="number">1000000</span>):</span><br><span class="line">        <span class="keyword">if</span> coord.should_stop():</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        sess.run(train_op)</span><br><span class="line"><span class="keyword">except</span> Exception, e:</span><br><span class="line">   coord.request_stop(e)  <span class="comment"># Report exceptions to the coordinator</span></span><br><span class="line">​</span><br><span class="line"><span class="comment"># Terminate as usual. It is innocuous to request stop twice</span></span><br><span class="line">coord.request_stop()</span><br><span class="line">coord.join(threads)</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="理解TensorFlow的Queue"><a href="#理解TensorFlow的Queue" class="headerlink" title="理解TensorFlow的Queue"></a>理解TensorFlow的Queue</h3><p>&emsp;&emsp;这篇文章来说明<code>TensorFlow</code>里与<code>Queue</code>有关的概念和用法，其实概念只有三个：</p>
+<ul>
+<li><code>Queue</code>是<code>TF</code>队列和缓存机制的实现。</li>
+<li><code>QueueRunner</code>是<code>TF</code>中对操作<code>Queue</code>的线程的封装。</li>
+<li><code>Coordinator</code>是<code>TF</code>中用来协调线程运行的工具。</li>
+</ul>
+<p>虽然它们经常同时出现，但这三样东西在<code>TensorFlow</code>中是可以单独使用的。</p>
+<h4 id="Queue"><a href="#Queue" class="headerlink" title="Queue"></a>Queue</h4><p>&emsp;&emsp;根据实现的方式不同，分成具体的几种类型：</p>
+<ul>
+<li><code>tf.FIFOQueue</code>：按入列顺序出列的队列(如果希望读入的训练样本是有序的)。</li>
+<li><code>tf.RandomShuffleQueue</code>：随机顺序出列的队列。</li>
+<li><code>tf.PaddingFIFOQueue</code>：以固定长度批量出列的队列。</li>
+<li><code>tf.PriorityQueue</code>：带优先级出列的队列。</li>
+</ul>
+<p>这些类型的<code>Queue</code>除了自身的性质不太一样外，创建、使用的方法基本是相同的。<br>&emsp;&emsp;创建函数的参数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tf.FIFOQueue(capacity, dtypes, shapes=<span class="keyword">None</span>, names=<span class="keyword">None</span> ...)</span><br></pre></td></tr></table></figure>
+<p><code>Queue</code>主要包含入列(<code>enqueue</code>)和出列(<code>dequeue</code>)两个操作。<code>enqueue</code>操作返回计算图中的一个<code>Operation</code>节点，<code>dequeue</code>操作返回一个<code>Tensor</code>值。<code>Tensor</code>在创建时同样只是一个定义(或称为<code>声明</code>)，需要放在<code>Session</code>中运行才能获得真正的数值。下面是一个单独使用<code>Queue</code>的例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line">tf.InteractiveSession()</span><br><span class="line"><span class="comment"># 创建一个FIFO队列，初始化队列插入0.1、0.2、0.3这三个数字</span></span><br><span class="line">q = tf.FIFOQueue(<span class="number">3</span>, <span class="string">"float"</span>)</span><br><span class="line">init = q.enqueue_many(([<span class="number">0.1</span>, <span class="number">0.2</span>, <span class="number">0.3</span>],))</span><br><span class="line"><span class="comment"># 定义出队、“+2”、入队操作</span></span><br><span class="line">x = q.dequeue()</span><br><span class="line">y = x + <span class="number">2</span></span><br><span class="line">q_inc = q.enqueue([y])</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    sess.run(init)</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">2</span>):</span><br><span class="line">        sess.run(q_inc)  <span class="comment"># 执行2次操作，队列的值变为0.3,、2.1、2.2</span></span><br><span class="line">​</span><br><span class="line">    quelen = sess.run(q.size())</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(quelen):</span><br><span class="line">        print(sess.run(q.dequeue()))</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0.3</span></span><br><span class="line"><span class="number">2.1</span></span><br><span class="line"><span class="number">2.2</span></span><br></pre></td></tr></table></figure>
+<p>注意，如果一次性入列超过<code>Queue Size</code>的数据，<code>enqueue</code>操作会卡住，直到有数据(被其他线程)从队列取出；对一个已经取空的队列使用<code>dequeue</code>操作也会卡住，直到有新的数据(从其他线程)写入。</p>
+<h4 id="RandomShuffleQueue"><a href="#RandomShuffleQueue" class="headerlink" title="RandomShuffleQueue"></a>RandomShuffleQueue</h4><p>&emsp;&emsp;<code>RandomShuffleQueue</code>在<code>TensorFlow</code>使用异步计算时非常重要，因为<code>TensorFlow</code>的会话是支持多线程的，可以在主线程里执行训练操作，使用<code>RandomShuffleQueue</code>作为训练输入，开多个线程来准备训练样本，将样本压入队列后，主线程会从队列中每次取出<code>mini-batch</code>的样本进行训练。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line">tf.InteractiveSession()</span><br><span class="line"><span class="comment"># 最大长度为10，最小长度为2，类型为float的随机队列</span></span><br><span class="line">q = tf.RandomShuffleQueue(capacity=<span class="number">10</span>, min_after_dequeue=<span class="number">2</span>, dtypes=<span class="string">'float'</span>)</span><br><span class="line">​</span><br><span class="line">sess = tf.Session()</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">0</span>, <span class="number">10</span>):</span><br><span class="line">    sess.run(q.enqueue(i))</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">0</span>, <span class="number">8</span>):</span><br><span class="line">    print(sess.run(q.dequeue()))</span><br></pre></td></tr></table></figure>
+<p>执行结果是乱序的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">4.0</span></span><br><span class="line"><span class="number">0.0</span></span><br><span class="line"><span class="number">2.0</span></span><br><span class="line"><span class="number">3.0</span></span><br><span class="line"><span class="number">8.0</span></span><br><span class="line"><span class="number">5.0</span></span><br><span class="line"><span class="number">1.0</span></span><br><span class="line"><span class="number">7.0</span></span><br></pre></td></tr></table></figure>
+<h4 id="QueueRunner-1"><a href="#QueueRunner-1" class="headerlink" title="QueueRunner"></a>QueueRunner</h4><p>&emsp;&emsp;<code>Tensorflow</code>的计算主要在使用<code>CPU/GPU</code>和内存，而数据读取涉及磁盘操作，速度远低于前者操作。因此通常会使用多个线程读取数据，然后使用一个线程消费数据。<code>QueueRunner</code>就是来管理这些读写队列的线程的。<br>&emsp;&emsp;<code>QueueRunner</code>需要与<code>Queue</code>一起使用，但并不一定必须使用<code>Coordinator</code>。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line">q = tf.FIFOQueue(<span class="number">10</span>, <span class="string">"float"</span>)</span><br><span class="line">counter = tf.Variable(<span class="number">0.0</span>)  <span class="comment"># 计数器</span></span><br><span class="line">increment_op = tf.assign_add(counter, <span class="number">1.0</span>)  <span class="comment"># 给计数器加一</span></span><br><span class="line">enqueue_op = q.enqueue(counter)  <span class="comment"># 将计数器加入队列</span></span><br><span class="line"><span class="comment"># 创建QueueRunner，用多个线程向队列添加数据。这里实际创建了4个线程，两个增加计数，两个执行入队</span></span><br><span class="line">qr = tf.train.QueueRunner(q, enqueue_ops=[increment_op, enqueue_op] * <span class="number">2</span>)</span><br><span class="line">sess = tf.InteractiveSession()  <span class="comment"># 主线程</span></span><br><span class="line">tf.global_variables_initializer().run()</span><br><span class="line">qr.create_threads(sess, start=<span class="keyword">True</span>)  <span class="comment"># 启动入队线程</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">20</span>):</span><br><span class="line">    print(sess.run(q.dequeue()))</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">3.0</span></span><br><span class="line"><span class="number">6.0</span></span><br><span class="line"><span class="number">11.0</span></span><br><span class="line"><span class="number">13.0</span></span><br><span class="line"><span class="number">18.0</span></span><br><span class="line"><span class="number">21.0</span></span><br><span class="line"><span class="number">25.0</span></span><br><span class="line"><span class="number">26.0</span></span><br><span class="line"><span class="number">28.0</span></span><br><span class="line"><span class="number">31.0</span></span><br></pre></td></tr></table></figure>
+<p>增加计数的进程会不停的后台运行，执行入队的进程会先执行<code>10</code>次(因为队列长度只有<code>10</code>)，然后主线程开始消费数据。当一部分数据消费被后，入队的进程又会开始执行。最终主线程消费完<code>20</code>个数据后停止，但其他线程继续运行，程序不会结束。</p>
+<h4 id="Coordinator-1"><a href="#Coordinator-1" class="headerlink" title="Coordinator"></a>Coordinator</h4><p>&emsp;&emsp;<code>Coordinator</code>是个用来保存线程组运行状态的协调器对象，它和<code>TensorFlow</code>的<code>Queue</code>没有必然关系，可以单独和<code>Python</code>线程使用。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line">q = tf.FIFOQueue(<span class="number">1000</span>, <span class="string">'float'</span>)</span><br><span class="line">counter = tf.Variable(<span class="number">0.0</span>)  <span class="comment"># 计数器</span></span><br><span class="line">increment_op = tf.assign_add(counter, tf.constant(<span class="number">1.0</span>))  <span class="comment"># 计数器加一</span></span><br><span class="line">enqueue_op = q.enqueue(counter)  <span class="comment"># 入队</span></span><br><span class="line"><span class="comment"># 线程面向队列q，启动2个线程，每个线程中是[in,en]两个操作</span></span><br><span class="line">qr = tf.train.QueueRunner(q, enqueue_ops=[increment_op, enqueue_op] * <span class="number">2</span>)</span><br><span class="line">​</span><br><span class="line">sess = tf.Session()</span><br><span class="line">sess.run(tf.global_variables_initializer())</span><br><span class="line">​</span><br><span class="line">coord = tf.train.Coordinator()</span><br><span class="line"><span class="comment"># 线程管理器启动线程，接收协调器管理</span></span><br><span class="line">enqueue_thread = qr.create_threads(sess, coord=coord, start=<span class="keyword">True</span>)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">0</span>, <span class="number">10</span>):</span><br><span class="line">    print(sess.run(q.dequeue()))</span><br><span class="line">​</span><br><span class="line">coord.request_stop()  <span class="comment"># 向各个线程发终止信号</span></span><br><span class="line">coord.join(enqueue_thread)  <span class="comment"># 等待各个线程成功结束</span></span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">5.0</span></span><br><span class="line"><span class="number">8.0</span></span><br><span class="line"><span class="number">11.0</span></span><br><span class="line"><span class="number">17.0</span></span><br><span class="line"><span class="number">21.0</span></span><br><span class="line"><span class="number">38.0</span></span><br><span class="line"><span class="number">42.0</span></span><br><span class="line"><span class="number">45.0</span></span><br><span class="line"><span class="number">48.0</span></span><br><span class="line"><span class="number">54.0</span></span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/13/深度学习/Tf.reduce类函数/" rel="next" title="Tf.reduce类函数">
+                <i class="fa fa-chevron-left"></i> Tf.reduce类函数
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/13/深度学习/The Ultimate Guide To Speech Recognition With Python/" rel="prev" title="The Ultimate Guide To Speech Recognition With Python">
+                The Ultimate Guide To Speech Recognition With Python <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#队列使用概述"><span class="nav-number">1.</span> <span class="nav-text">队列使用概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Coordinator"><span class="nav-number">2.</span> <span class="nav-text">Coordinator</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#QueueRunner"><span class="nav-number">3.</span> <span class="nav-text">QueueRunner</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#异常处理"><span class="nav-number">4.</span> <span class="nav-text">异常处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#理解TensorFlow的Queue"><span class="nav-number">5.</span> <span class="nav-text">理解TensorFlow的Queue</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Queue"><span class="nav-number">5.1.</span> <span class="nav-text">Queue</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#RandomShuffleQueue"><span class="nav-number">5.2.</span> <span class="nav-text">RandomShuffleQueue</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#QueueRunner-1"><span class="nav-number">5.3.</span> <span class="nav-text">QueueRunner</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Coordinator-1"><span class="nav-number">5.4.</span> <span class="nav-text">Coordinator</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

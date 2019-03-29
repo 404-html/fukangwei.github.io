@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;有时我们在处理完图像后，需要保存数据到文件上，以供下一步的处理。一个比较广泛的需求场景是：我们对一幅图像进行特征提取之后，需要把特征点信息保存到文件上，以供后面的机器学习分类操作。那么如果遇到这样的场景，我们有什么好方法？我想到的是把这些数据全写到文件上，如果下次需要这些数据时，就把它们从文件里读出来就好了。&amp;emsp;&amp;emsp;其实更好的办法是使用xml和yml，因为它">
+<meta property="og:type" content="article">
+<meta property="og:title" content="读写xml和yml文件">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/读写xml和yml文件/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;有时我们在处理完图像后，需要保存数据到文件上，以供下一步的处理。一个比较广泛的需求场景是：我们对一幅图像进行特征提取之后，需要把特征点信息保存到文件上，以供后面的机器学习分类操作。那么如果遇到这样的场景，我们有什么好方法？我想到的是把这些数据全写到文件上，如果下次需要这些数据时，就把它们从文件里读出来就好了。&amp;emsp;&amp;emsp;其实更好的办法是使用xml和yml，因为它">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-02-23T10:56:35.299Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="读写xml和yml文件">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;有时我们在处理完图像后，需要保存数据到文件上，以供下一步的处理。一个比较广泛的需求场景是：我们对一幅图像进行特征提取之后，需要把特征点信息保存到文件上，以供后面的机器学习分类操作。那么如果遇到这样的场景，我们有什么好方法？我想到的是把这些数据全写到文件上，如果下次需要这些数据时，就把它们从文件里读出来就好了。&amp;emsp;&amp;emsp;其实更好的办法是使用xml和yml，因为它">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/读写xml和yml文件/">
+
+
+
+
+
+  <title>读写xml和yml文件 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/读写xml和yml文件/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">读写xml和yml文件</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-23T17:27:09+08:00">
+                2019-02-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;有时我们在处理完图像后，需要保存数据到文件上，以供下一步的处理。一个比较广泛的需求场景是：我们对一幅图像进行特征提取之后，需要把特征点信息保存到文件上，以供后面的机器学习分类操作。那么如果遇到这样的场景，我们有什么好方法？我想到的是把这些数据全写到文件上，如果下次需要这些数据时，就把它们从文件里读出来就好了。<br>&emsp;&emsp;其实更好的办法是使用<code>xml</code>和<code>yml</code>，因为它们更具有可读性，简直就是为保存数据结构而生。<code>OpenCV</code>提供了很好用的读写<code>xml</code>和<code>yml</code>的类，只要掌握其读写要领，很容易就可以实现这个小型数据库。<br>&emsp;&emsp;简单的数据写入示例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> x;</span><br><span class="line">    <span class="keyword">int</span> y;</span><br><span class="line">    <span class="built_in">string</span> s;</span><br><span class="line">&#125; <span class="keyword">test_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="function">FileStorage <span class="title">fs</span> <span class="params">( <span class="string">"test.xml"</span>, FileStorage::WRITE )</span></span>;</span><br><span class="line">    <span class="keyword">int</span> a1 = <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">char</span> a2 = <span class="number">-1</span>;</span><br><span class="line">    <span class="built_in">string</span> str = <span class="string">"hello sysu!"</span>;</span><br><span class="line">    <span class="keyword">int</span> arr[<span class="number">10</span>] = &#123; <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>, <span class="number">10</span> &#125;;</span><br><span class="line">    <span class="keyword">test_t</span> t = &#123; <span class="number">3</span>, <span class="number">4</span>, <span class="string">"hi sysu"</span> &#125;;</span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="built_in">string</span>, <span class="keyword">int</span>&gt; m;</span><br><span class="line">    m[<span class="string">"kobe"</span>] = <span class="number">100</span>;</span><br><span class="line">    m[<span class="string">"james"</span>] = <span class="number">99</span>;</span><br><span class="line">    m[<span class="string">"curry"</span>] = <span class="number">98</span>;</span><br><span class="line">    <span class="comment">/* 写入文件操作，先写标注，再写数据 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"int_data"</span> &lt;&lt; a1;</span><br><span class="line">    fs &lt;&lt; <span class="string">"char_data"</span> &lt;&lt; a2;</span><br><span class="line">    fs &lt;&lt; <span class="string">"string_data"</span> &lt;&lt; str;</span><br><span class="line">    <span class="comment">/* 写入数组 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"array_data"</span> &lt;&lt; <span class="string">"["</span>; <span class="comment">/* 数组开始 */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        fs &lt;&lt; arr[i];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs &lt;&lt; <span class="string">"]"</span>; <span class="comment">/* 数组结束 */</span></span><br><span class="line">    <span class="comment">/* 写入结构体 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"struct_data"</span> &lt;&lt; <span class="string">"&#123;"</span>; <span class="comment">/* 结构体开始 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"x"</span> &lt;&lt; t.x;</span><br><span class="line">    fs &lt;&lt; <span class="string">"y"</span> &lt;&lt; t.y;</span><br><span class="line">    fs &lt;&lt; <span class="string">"s"</span> &lt;&lt; t.s;</span><br><span class="line">    fs &lt;&lt; <span class="string">"&#125;"</span>; <span class="comment">/* 结构结束 */</span></span><br><span class="line">    <span class="comment">/* map的写入 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"map_data"</span> &lt;&lt; <span class="string">"&#123;"</span>; <span class="comment">/* map的开始写入 */</span></span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="built_in">string</span>, <span class="keyword">int</span>&gt;::iterator it = m.begin();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( ; it != m.end(); it++ ) &#123;</span><br><span class="line">        fs &lt;&lt; it-&gt;first &lt;&lt; it-&gt;second;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs &lt;&lt; <span class="string">"&#125;"</span>; <span class="comment">/* map写入结束 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>打开<code>test.xml</code>文件，内容如下：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version="1.0"?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">opencv_storage</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">int_data</span>&gt;</span>2<span class="tag">&lt;/<span class="name">int_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">char_data</span>&gt;</span>-1<span class="tag">&lt;/<span class="name">char_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">string_data</span>&gt;</span>"hello sysu!"<span class="tag">&lt;/<span class="name">string_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">array_data</span>&gt;</span></span><br><span class="line">  1 2 3 4 5 6 7 8 9 10<span class="tag">&lt;/<span class="name">array_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">struct_data</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">x</span>&gt;</span>3<span class="tag">&lt;/<span class="name">x</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">y</span>&gt;</span>4<span class="tag">&lt;/<span class="name">y</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">s</span>&gt;</span>"hi sysu"<span class="tag">&lt;/<span class="name">s</span>&gt;</span><span class="tag">&lt;/<span class="name">struct_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">map_data</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">curry</span>&gt;</span>98<span class="tag">&lt;/<span class="name">curry</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">james</span>&gt;</span>99<span class="tag">&lt;/<span class="name">james</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">kobe</span>&gt;</span>100<span class="tag">&lt;/<span class="name">kobe</span>&gt;</span><span class="tag">&lt;/<span class="name">map_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">opencv_storage</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;如果将文件存为<code>test.yml</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FileStorage <span class="title">fs</span> <span class="params">( <span class="string">"test.yml"</span>, FileStorage::WRITE )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>其内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">%YAML:1.0</span></span><br><span class="line"><span class="attr">int_data:</span> <span class="number">2</span></span><br><span class="line"><span class="attr">char_data:</span> <span class="bullet">-1</span></span><br><span class="line"><span class="attr">string_data:</span> <span class="string">"hello sysu!"</span></span><br><span class="line"><span class="attr">array_data:</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">1</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">2</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">3</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">4</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">5</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">6</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">7</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">8</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">9</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">10</span></span><br><span class="line"><span class="attr">struct_data:</span></span><br><span class="line"><span class="attr">   x:</span> <span class="number">3</span></span><br><span class="line"><span class="attr">   y:</span> <span class="number">4</span></span><br><span class="line"><span class="attr">   s:</span> <span class="string">hi</span> <span class="string">sysu</span></span><br><span class="line"><span class="attr">map_data:</span></span><br><span class="line"><span class="attr">   curry:</span> <span class="number">98</span></span><br><span class="line"><span class="attr">   james:</span> <span class="number">99</span></span><br><span class="line"><span class="attr">   kobe:</span> <span class="number">100</span></span><br></pre></td></tr></table></figure>
+<p>其实还可以保存为<code>txt</code>或<code>doc</code>格式。显然<code>yml</code>文件的排版更加简洁明了，<code>xml</code>文件却有点冗余和杂乱了。</p>
+<hr>
+<h3 id="XML-YAML-file-storages"><a href="#XML-YAML-file-storages" class="headerlink" title="XML/YAML file storages"></a>XML/YAML file storages</h3><p>&emsp;&emsp;You can store and then restore various <code>OpenCV</code> data structures to/from <code>XML</code> or <code>YAML</code> formats. Also, it is possible store and load arbitrarily complex data structures, which include <code>OpenCV</code> data structures, as well as primitive data types (integer and <code>floating-point</code> numbers and text strings) as their elements.<br>&emsp;&emsp;Use the following procedure to write something to <code>XML</code> or <code>YAML</code>:</p>
+<ol>
+<li>Create new <code>FileStorage</code> and open it for writing. It can be done with a single call to <code>FileStorage::FileStorage()</code> constructor that takes a filename, or you can use the default constructor and then call <code>FileStorage::open()</code>. Format of the file (<code>XML</code> or <code>YAML</code>) is determined from the filename extension (<code>.xml</code> and <code>.yml</code>/<code>.yaml</code>, respectively)</li>
+<li>Write all the data you want using the streaming operator <code>&lt;&lt;</code>, just like in the case of <code>STL</code> streams.</li>
+<li>Close the file using <code>FileStorage::release()</code>. <code>FileStorage</code> destructor also closes the file.</li>
+</ol>
+<p>&emsp;&emsp;Here is an example:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span>, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="function">FileStorage <span class="title">fs</span> <span class="params">( <span class="string">"test.yml"</span>, FileStorage::WRITE )</span></span>;</span><br><span class="line">    fs &lt;&lt; <span class="string">"frameCount"</span> &lt;&lt; <span class="number">5</span>;</span><br><span class="line">    <span class="keyword">time_t</span> rawtime;</span><br><span class="line">    time ( &amp;rawtime );</span><br><span class="line">    fs &lt;&lt; <span class="string">"calibrationDate"</span> &lt;&lt; asctime ( localtime ( &amp;rawtime ) );</span><br><span class="line">    Mat cameraMatrix = ( Mat_&lt;<span class="keyword">double</span>&gt; ( <span class="number">3</span>, <span class="number">3</span> ) &lt;&lt; <span class="number">1000</span>, <span class="number">0</span>, <span class="number">320</span>, <span class="number">0</span>, <span class="number">1000</span>, <span class="number">240</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span> );</span><br><span class="line">    Mat distCoeffs = ( Mat_&lt;<span class="keyword">double</span>&gt; ( <span class="number">5</span>, <span class="number">1</span> ) &lt;&lt; <span class="number">0.1</span>, <span class="number">0.01</span>, <span class="number">-0.001</span>, <span class="number">0</span>, <span class="number">0</span> );</span><br><span class="line">    fs &lt;&lt; <span class="string">"cameraMatrix"</span> &lt;&lt; cameraMatrix &lt;&lt; <span class="string">"distCoeffs"</span> &lt;&lt; distCoeffs;</span><br><span class="line">    fs &lt;&lt; <span class="string">"features"</span> &lt;&lt; <span class="string">"["</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++ ) &#123;</span><br><span class="line">        <span class="keyword">int</span> x = rand() % <span class="number">640</span>;</span><br><span class="line">        <span class="keyword">int</span> y = rand() % <span class="number">480</span>;</span><br><span class="line">        uchar lbp = rand() % <span class="number">256</span>;</span><br><span class="line">        fs &lt;&lt; <span class="string">"&#123;:"</span> &lt;&lt; <span class="string">"x"</span> &lt;&lt; x &lt;&lt; <span class="string">"y"</span> &lt;&lt; y &lt;&lt; <span class="string">"lbp"</span> &lt;&lt; <span class="string">"[:"</span>;</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">8</span>; j++ ) &#123;</span><br><span class="line">            fs &lt;&lt; ( ( lbp &gt;&gt; j ) &amp; <span class="number">1</span> );</span><br><span class="line">        &#125;</span><br><span class="line">        fs &lt;&lt; <span class="string">"]"</span> &lt;&lt; <span class="string">"&#125;"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs &lt;&lt; <span class="string">"]"</span>;</span><br><span class="line">    fs.release();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The sample above stores to <code>XML</code> and integer, text string (calibration date), <code>2</code> matrices, and a custom structure <code>feature</code>, which includes feature coordinates and <code>LBP</code> (<code>local binary pattern</code>) value. Here is output of the sample:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">%YAML:1.0</span></span><br><span class="line"><span class="attr">frameCount:</span> <span class="number">5</span></span><br><span class="line"><span class="attr">calibrationDate:</span> <span class="string">"Sun Dec  3 14:59:13 2017\n"</span></span><br><span class="line"><span class="attr">cameraMatrix:</span> <span class="type">!!opencv</span><span class="bullet">-matrix</span></span><br><span class="line"><span class="attr">   rows:</span> <span class="number">3</span></span><br><span class="line"><span class="attr">   cols:</span> <span class="number">3</span></span><br><span class="line"><span class="attr">   dt:</span> <span class="string">d</span></span><br><span class="line"><span class="attr">   data:</span> <span class="string">[</span> <span class="number">1000.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">320.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">1000.</span><span class="string">,</span> <span class="number">240.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">1.</span> <span class="string">]</span></span><br><span class="line"><span class="attr">distCoeffs:</span> <span class="type">!!opencv</span><span class="bullet">-matrix</span></span><br><span class="line"><span class="attr">   rows:</span> <span class="number">5</span></span><br><span class="line"><span class="attr">   cols:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">   dt:</span> <span class="string">d</span></span><br><span class="line"><span class="attr">   data:</span> <span class="string">[</span> <span class="number">1.0000000000000001e-01</span><span class="string">,</span> <span class="number">1.0000000000000000e-02</span><span class="string">,</span></span><br><span class="line"><span class="bullet">       -</span><span class="number">1.0000000000000000e-03</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">0.</span> <span class="string">]</span></span><br><span class="line"><span class="attr">features:</span></span><br><span class="line"><span class="bullet">   -</span> <span class="string">&#123;</span> <span class="attr">x:103,</span> <span class="attr">y:166,</span> <span class="attr">lbp:[</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span> <span class="string">]</span> <span class="string">&#125;</span></span><br><span class="line"><span class="bullet">   -</span> <span class="string">&#123;</span> <span class="attr">x:115,</span> <span class="attr">y:113,</span> <span class="attr">lbp:[</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span> <span class="string">]</span> <span class="string">&#125;</span></span><br><span class="line"><span class="bullet">   -</span> <span class="string">&#123;</span> <span class="attr">x:586,</span> <span class="attr">y:12,</span> <span class="attr">lbp:[</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">0</span> <span class="string">]</span> <span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;To read the previously written <code>XML</code> or <code>YAML</code> file, do the following:</p>
+<ol>
+<li>Open the file storage using <code>FileStorage::FileStorage()</code> constructor or <code>FileStorage::open()</code> method. In the current implementation the whole file is parsed and the whole representation of file storage is built in memory as a hierarchy of file nodes.</li>
+<li>Read the data you are interested in. Use <code>FileStorage::operator []()</code>, <code>FileNode::operator []()</code> and/or <code>FileNodeIterator</code>.</li>
+<li>Close the storage using <code>FileStorage::release()</code>.</li>
+</ol>
+<p>&emsp;&emsp;Here is how to read the file created by the code sample above:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"iostream"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span>, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="function">FileStorage <span class="title">fs2</span> <span class="params">( <span class="string">"test.yml"</span>, FileStorage::READ )</span></span>;</span><br><span class="line">    <span class="comment">/* first method: use (type) operator on FileNode. */</span></span><br><span class="line">    <span class="keyword">int</span> frameCount = ( <span class="keyword">int</span> ) fs2[<span class="string">"frameCount"</span>];</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">string</span> date;</span><br><span class="line">    <span class="comment">/* second method: use FileNode::operator &gt;&gt; */</span></span><br><span class="line">    fs2[<span class="string">"calibrationDate"</span>] &gt;&gt; date;</span><br><span class="line">    Mat cameraMatrix2, distCoeffs2;</span><br><span class="line">    fs2[<span class="string">"cameraMatrix"</span>] &gt;&gt; cameraMatrix2;</span><br><span class="line">    fs2[<span class="string">"distCoeffs"</span>] &gt;&gt; distCoeffs2;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"frameCount: "</span> &lt;&lt; frameCount &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">         &lt;&lt; <span class="string">"calibration date: "</span> &lt;&lt; date &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">         &lt;&lt; <span class="string">"camera matrix: "</span> &lt;&lt; cameraMatrix2 &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">         &lt;&lt; <span class="string">"distortion coeffs: "</span> &lt;&lt; distCoeffs2 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    FileNode features = fs2[<span class="string">"features"</span>];</span><br><span class="line">    FileNodeIterator it = features.begin(), it_end = features.end();</span><br><span class="line">    <span class="keyword">int</span> idx = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;uchar&gt; lbpval;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* iterate through a sequence using FileNodeIterator */</span></span><br><span class="line">    <span class="keyword">for</span> ( ; it != it_end; ++it, idx++ ) &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"feature #"</span> &lt;&lt; idx &lt;&lt; <span class="string">": "</span>;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"x="</span> &lt;&lt; ( <span class="keyword">int</span> ) ( *it ) [<span class="string">"x"</span>] &lt;&lt; <span class="string">", y="</span> &lt;&lt; ( <span class="keyword">int</span> ) ( *it ) [<span class="string">"y"</span>] &lt;&lt; <span class="string">", lbp: ("</span>;</span><br><span class="line">        <span class="comment">/* you can also easily read numerical arrays using FileNode &gt;&gt; std::vector operator. */</span></span><br><span class="line">        ( *it ) [<span class="string">"lbp"</span>] &gt;&gt; lbpval;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ( <span class="keyword">int</span> ) lbpval.size(); i++ ) &#123;</span><br><span class="line">            <span class="built_in">cout</span> &lt;&lt; <span class="string">" "</span> &lt;&lt; ( <span class="keyword">int</span> ) lbpval[i];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">")"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs2.release();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The result is:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">frameCount:</span> <span class="number">5</span></span><br><span class="line"><span class="string">calibration</span> <span class="attr">date:</span> <span class="string">Sun</span> <span class="string">Dec</span>  <span class="number">3</span> <span class="number">14</span><span class="string">:59:13</span> <span class="number">2017</span></span><br><span class="line"><span class="string">camera</span> <span class="attr">matrix:</span> <span class="string">[1000,</span> <span class="number">0</span><span class="string">,</span> <span class="number">320</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">,</span> <span class="number">1000</span><span class="string">,</span> <span class="number">240</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">]</span></span><br><span class="line"><span class="string">distortion</span> <span class="attr">coeffs:</span> <span class="string">[0.1;</span></span><br><span class="line">  <span class="number">0.01</span><span class="string">;</span></span><br><span class="line"><span class="bullet">  -</span><span class="number">0.001</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">]</span></span><br><span class="line"><span class="string">feature</span> <span class="comment">#0: x=103, y=166, lbp: ( 1 0 0 1 0 1 1 0)</span></span><br><span class="line"><span class="string">feature</span> <span class="comment">#1: x=115, y=113, lbp: ( 1 1 1 1 1 1 1 1)</span></span><br><span class="line"><span class="string">feature</span> <span class="comment">#2: x=586, y=12, lbp: ( 1 0 0 1 0 1 0 0)</span></span><br></pre></td></tr></table></figure>
+<h3 id="class-FileStorage"><a href="#class-FileStorage" class="headerlink" title="class FileStorage"></a>class FileStorage</h3><p>&emsp;&emsp;<code>XML/YAML</code> file storage class that encapsulates all the information necessary for writing or reading data to/from a file.</p>
+<h4 id="FileStorage-FileStorage"><a href="#FileStorage-FileStorage" class="headerlink" title="FileStorage::FileStorage"></a>FileStorage::FileStorage</h4><p>&emsp;&emsp;The constructors.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileStorage::FileStorage();</span><br><span class="line">FileStorage::FileStorage ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;source, <span class="keyword">int</span> flags, <span class="keyword">const</span> <span class="built_in">string</span> &amp;encoding = <span class="built_in">string</span>() );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>source</code>: Name of the file to open or the text string to read the data from. Extension of the file (<code>.xml</code> or <code>.yml</code>/<code>.yaml</code>) determines its format (<code>XML</code> or <code>YAML</code> respectively). Also you can append <code>.gz</code> to work with compressed files, for example <code>myHugeMatrix.xml.gz</code>. If both <code>FileStorage::WRITE</code> and <code>FileStorage::MEMORY</code> flags are specified, source is used just to specify the output file format (e.g. <code>mydata.xml</code>, <code>.yml</code> etc.).</li>
+<li><code>flags</code>: Mode of operation. Possible values are:</li>
+</ul>
+<ol>
+<li><code>FileStorage::READ</code> Open the file for reading.</li>
+<li><code>FileStorage::WRITE</code> Open the file for writing.</li>
+<li><code>FileStorage::APPEND</code> Open the file for appending.</li>
+<li><code>FileStorage::MEMORY</code> Read data from source or write data to the internal buffer (which is returned by <code>FileStorage::release</code>).</li>
+</ol>
+<ul>
+<li><code>encoding</code>: Encoding of the file. Note that <code>UTF-16</code> <code>XML</code> encoding is not supported currently and you should use <code>8-bit</code> encoding instead of it.</li>
+</ul>
+<p>&emsp;&emsp;The full constructor opens the file. Alternatively you can use the default constructor and then call <code>FileStorage::open()</code>.</p>
+<h4 id="FileStorage-open"><a href="#FileStorage-open" class="headerlink" title="FileStorage::open"></a>FileStorage::open</h4><p>&emsp;&emsp;Opens a file.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileStorage::open ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;filename, <span class="keyword">int</span> flags, <span class="keyword">const</span> <span class="built_in">string</span> &amp;encoding = <span class="built_in">string</span>() );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>filename</code>: Name of the file to open or the text string to read the data from. Extension of the file (<code>.xml</code> or <code>.yml</code>/<code>.yaml</code>) determines its format (<code>XML</code> or <code>YAML</code> respectively). Also you can append <code>.gz</code> to work with compressed files, for example <code>myHugeMatrix.xml.gz</code>. If both <code>FileStorage::WRITE</code> and <code>FileStorage::MEMORY</code> flags are specified, source is used just to specify the output file format (e.g. <code>mydata.xml</code>, <code>.yml</code> etc.).</li>
+<li><code>flags</code>: Mode of operation.</li>
+<li><code>encoding</code>: Encoding of the file. Note that <code>UTF-16</code> <code>XML</code> encoding is not supported currently and you should use <code>8-bit</code> encoding instead of it.</li>
+</ul>
+<h4 id="FileStorage-isOpened"><a href="#FileStorage-isOpened" class="headerlink" title="FileStorage::isOpened"></a>FileStorage::isOpened</h4><p>&emsp;&emsp;Checks whether the file is opened.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileStorage::isOpened() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the object is associated with the current file and <code>false</code> otherwise.<br>&emsp;&emsp;It is a good practice to call this method after you tried to open a file.</p>
+<h4 id="FileStorage-release"><a href="#FileStorage-release" class="headerlink" title="FileStorage::release"></a>FileStorage::release</h4><p>&emsp;&emsp;Closes the file and releases all the memory buffers.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileStorage::release();</span><br></pre></td></tr></table></figure>
+<p>Call this method after all <code>I/O</code> operations with the storage are finished.</p>
+<h4 id="FileStorage-releaseAndGetString"><a href="#FileStorage-releaseAndGetString" class="headerlink" title="FileStorage::releaseAndGetString"></a>FileStorage::releaseAndGetString</h4><p>&emsp;&emsp;Closes the file and releases all the memory buffers.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">string</span> FileStorage::releaseAndGetString();</span><br></pre></td></tr></table></figure>
+<p>Call this method after all <code>I/O</code> operations with the storage are finished. If the storage was opened for writing data and <code>FileStorage::WRITE</code> was specified</p>
+<h4 id="FileStorage-getFirstTopLevelNode"><a href="#FileStorage-getFirstTopLevelNode" class="headerlink" title="FileStorage::getFirstTopLevelNode"></a>FileStorage::getFirstTopLevelNode</h4><p>&emsp;&emsp;Returns the first element of the <code>top-level</code> mapping.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileStorage::getFirstTopLevelNode() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return The first element of the <code>top-level</code> mapping.</p>
+<h4 id="FileStorage-root"><a href="#FileStorage-root" class="headerlink" title="FileStorage::root"></a>FileStorage::root</h4><p>&emsp;&emsp;Return the <code>top-level</code> mapping.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileStorage::root ( <span class="keyword">int</span> streamidx = <span class="number">0</span> ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>streamidx</code>: Zero-based index of the stream. In most cases there is only one stream in the file. However, YAML supports multiple streams and so there can be several.</li>
+</ul>
+<h4 id="FileStorage-operator"><a href="#FileStorage-operator" class="headerlink" title="FileStorage::operator[]"></a>FileStorage::operator[]</h4><p>&emsp;&emsp;Returns the specified element of the <code>top-level</code> mapping.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileStorage::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;nodename ) <span class="keyword">const</span>;</span><br><span class="line">FileNode FileStorage::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="keyword">char</span> *nodename ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>nodename</code>: Name of the file node.</li>
+</ul>
+<h4 id="FileStorage-operator-1"><a href="#FileStorage-operator-1" class="headerlink" title="FileStorage::operator*"></a>FileStorage::operator*</h4><p>&emsp;&emsp;Returns the obsolete <code>C</code> <code>FileStorage</code> structure.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CvFileStorage *FileStorage::<span class="keyword">operator</span>*();</span><br><span class="line"><span class="keyword">const</span> CvFileStorage *FileStorage::<span class="keyword">operator</span>*() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileStorage-writeRaw"><a href="#FileStorage-writeRaw" class="headerlink" title="FileStorage::writeRaw"></a>FileStorage::writeRaw</h4><p>&emsp;&emsp;Writes multiple numbers.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileStorage::writeRaw ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;fmt, <span class="keyword">const</span> uchar *vec, <span class="keyword">size_t</span> len );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fmt</code>: Specification of each array element that has the following format (<code>[count]{&#39;u&#39;|&#39;c&#39;|&#39;w&#39;|&#39;s&#39;|&#39;i&#39;|&#39;f&#39;|&#39;d&#39;}</code>) where the characters correspond to fundamental <code>C++</code> types:</li>
+</ul>
+<ol>
+<li><code>u</code>: <code>8-bit</code> unsigned number.</li>
+<li><code>c</code>: <code>8-bit</code> signed number.</li>
+<li><code>w</code>: <code>16-bit</code> unsigned number.</li>
+<li><code>s</code>: <code>16-bit</code> signed number.</li>
+<li><code>i</code>: <code>32-bit</code> signed number.</li>
+<li><code>f</code>: single precision <code>floating-point</code> number.</li>
+<li><code>d</code>: double precision <code>floating-point</code> number.</li>
+</ol>
+<p>&emsp;&emsp;<code>count</code> is the optional counter of values of a given type. For example, <code>2if</code> means that each array element is a structure of <code>2</code> integers, followed by a <code>single-precision</code> <code>floating-point</code> number. The equivalent notations of the above specification are <code>(space)iif(space)</code>, <code>(space)2i1f(space)</code> and so forth. Other examples: <code>u</code> means that the array consists of bytes, and <code>2d</code> means the array consists of pairs of doubles.</p>
+<ul>
+<li><code>vec</code>: Pointer to the written array.</li>
+<li><code>len</code>: Number of the uchar elements to write.</li>
+</ul>
+<p>&emsp;&emsp;Writes one or more numbers of the specified format to the currently written structure. Usually it is more convenient to use <code>operator &lt;&lt;()</code> instead of this method.</p>
+<h4 id="FileStorage-writeObj"><a href="#FileStorage-writeObj" class="headerlink" title="FileStorage::writeObj"></a>FileStorage::writeObj</h4><p>&emsp;&emsp;Writes the registered <code>C</code> structure (<code>CvMat</code>, <code>CvMatND</code>, <code>CvSeq</code>).</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileStorage::writeObj ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;name, <span class="keyword">const</span> <span class="keyword">void</span> *obj );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>name</code>: Name of the written object.</li>
+<li><code>obj</code>: Pointer to the object.</li>
+</ul>
+<h4 id="FileStorage-getDefaultObjectName"><a href="#FileStorage-getDefaultObjectName" class="headerlink" title="FileStorage::getDefaultObjectName"></a>FileStorage::getDefaultObjectName</h4><p>&emsp;&emsp;Returns the normalized object name for the specified name of a file.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="built_in">string</span> FileStorage::getDefaultObjectName ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;filename );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>filename</code>: Name of a file.</li>
+</ul>
+<h4 id="operator-lt-lt"><a href="#operator-lt-lt" class="headerlink" title="operator &lt;&lt;"></a>operator &lt;&lt;</h4><p>&emsp;&emsp;Writes data to a file storage.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileStorage &amp;<span class="keyword">operator</span>&lt;&lt; ( FileStorage &amp;fs, <span class="keyword">const</span> _Tp &amp;value );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileStorage &amp;<span class="keyword">operator</span>&lt;&lt; ( FileStorage &amp;fs, <span class="keyword">const</span> <span class="built_in">vector</span>&lt;_Tp&gt; &amp;vec );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fs</code>: Opened file storage to write data.</li>
+<li><code>value</code>: Value to be written to the file storage.</li>
+<li><code>vec</code>: Vector of values to be written to the file storage.</li>
+</ul>
+<p>&emsp;&emsp;It is the main function to write data to a file storage.</p>
+<h4 id="operator-gt-gt"><a href="#operator-gt-gt" class="headerlink" title="operator &gt;&gt;"></a>operator &gt;&gt;</h4><p>&emsp;&emsp;Reads data from a file storage.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; <span class="keyword">void</span> <span class="keyword">operator</span>&gt;&gt; ( <span class="keyword">const</span> FileNode &amp;n, _Tp &amp;value );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; <span class="keyword">void</span> <span class="keyword">operator</span>&gt;&gt; ( <span class="keyword">const</span> FileNode &amp;n, <span class="built_in">vector</span>&lt;_Tp&gt; &amp;vec );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileNodeIterator &amp;<span class="keyword">operator</span>&gt;&gt; ( FileNodeIterator &amp;it, _Tp &amp;value );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileNodeIterator &amp;<span class="keyword">operator</span>&gt;&gt; ( FileNodeIterator &amp;it, <span class="built_in">vector</span>&lt;_Tp&gt; &amp;vec );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>n</code>: Node from which data will be read.</li>
+<li><code>it</code>: Iterator from which data will be read.</li>
+<li><code>value</code>: Value to be read from the file storage.</li>
+<li><code>vec</code>: Vector of values to be read from the file storage.</li>
+</ul>
+<p>&emsp;&emsp;It is the main function to read data from a file storage.</p>
+<h3 id="class-FileNode"><a href="#class-FileNode" class="headerlink" title="class FileNode"></a>class FileNode</h3><p>&emsp;&emsp;<code>File Storage Node</code> class. The node is used to store each and every element of the file storage opened for reading. When <code>XML/YAML</code> file is read, it is first parsed and stored in the memory as a hierarchical collection of nodes. Each node can be a <code>leaf</code> that is contain a single number or a string, or be a collection of other nodes. There can be named collections (<code>mappings</code>) where each element has a name and it is accessed by a name, and ordered collections (<code>sequences</code>) where elements do not have names but rather accessed by index. Type of the file node can be determined using <code>FileNode::type()</code> method.<br>&emsp;&emsp;Note that file nodes are only used for navigating file storages opened for reading. When a file storage is opened for writing, no data is stored in memory after it is written.</p>
+<h4 id="FileNode-FileNode"><a href="#FileNode-FileNode" class="headerlink" title="FileNode::FileNode"></a>FileNode::FileNode</h4><p>&emsp;&emsp;The constructors.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNode::FileNode();</span><br><span class="line">FileNode::FileNode ( <span class="keyword">const</span> CvFileStorage *fs, <span class="keyword">const</span> CvFileNode *node );</span><br><span class="line">FileNode::FileNode ( <span class="keyword">const</span> FileNode &amp;node );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fs</code>: Pointer to the obsolete file storage structure.</li>
+<li><code>node</code>: File node to be used as initialization for the created file node.</li>
+</ul>
+<p>&emsp;&emsp;These constructors are used to create a default file node, construct it from obsolete structures or from the another file node.</p>
+<h4 id="FileNode-operator"><a href="#FileNode-operator" class="headerlink" title="FileNode::operator[]"></a>FileNode::operator[]</h4><p>&emsp;&emsp;Returns element of a mapping node or a sequence node.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileNode::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;nodename ) <span class="keyword">const</span>;</span><br><span class="line">FileNode FileNode::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="keyword">char</span> *nodename ) <span class="keyword">const</span>;</span><br><span class="line">FileNode FileNode::<span class="keyword">operator</span>[] ( <span class="keyword">int</span> i ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>nodename</code>: Name of an element in the mapping node.</li>
+<li><code>i</code>: Index of an element in the sequence node.</li>
+</ul>
+<h4 id="FileNode-type"><a href="#FileNode-type" class="headerlink" title="FileNode::type"></a>FileNode::type</h4><p>&emsp;&emsp;Returns type of the node.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> FileNode::type() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Possible values are:</p>
+<ul>
+<li><code>FileNode::NONE</code>: Empty node.</li>
+<li><code>FileNode::INT</code>: Integer.</li>
+<li><code>FileNode::REAL</code>: <code>Floating-point</code> number.</li>
+<li><code>FileNode::FLOAT</code>: <code>Synonym</code> or <code>REAL</code>.</li>
+<li><code>FileNode::STR</code>: Text string in <code>UTF-8</code> encoding.</li>
+<li><code>FileNode::STRING</code>: Synonym for <code>STR</code>.</li>
+<li><code>FileNode::REF</code>: Integer of type <code>size_t</code>. Typically used for storing complex dynamic structures where some elements reference the others.</li>
+<li><code>FileNode::SEQ</code>: Sequence.</li>
+<li><code>FileNode::MAP</code>: Mapping.</li>
+<li><code>FileNode::FLOW</code>: Compact representation of a sequence or mapping. Used only by the <code>YAML</code> writer.</li>
+<li><code>FileNode::USER</code>: Registered object (e.g. a matrix).</li>
+<li><code>FileNode::EMPTY</code>: Empty structure (sequence or mapping).</li>
+<li><code>FileNode::NAMED</code>: The node has a name (i.e. it is an element of a mapping).</li>
+</ul>
+<h4 id="FileNode-empty"><a href="#FileNode-empty" class="headerlink" title="FileNode::empty"></a>FileNode::empty</h4><p>&emsp;&emsp;Checks whether the node is empty.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::empty() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is empty.</p>
+<h4 id="FileNode-isNone"><a href="#FileNode-isNone" class="headerlink" title="FileNode::isNone"></a>FileNode::isNone</h4><p>&emsp;&emsp;Checks whether the node is a <code>none</code> object.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isNone() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is a <code>none</code> object.</p>
+<h4 id="FileNode-isSeq"><a href="#FileNode-isSeq" class="headerlink" title="FileNode::isSeq"></a>FileNode::isSeq</h4><p>&emsp;&emsp;Checks whether the node is a sequence.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isSeq() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is a sequence.</p>
+<h4 id="FileNode-isMap"><a href="#FileNode-isMap" class="headerlink" title="FileNode::isMap"></a>FileNode::isMap</h4><p>&emsp;&emsp;Checks whether the node is a mapping.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isMap() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is a mapping.</p>
+<h4 id="FileNode-isInt"><a href="#FileNode-isInt" class="headerlink" title="FileNode::isInt"></a>FileNode::isInt</h4><p>&emsp;&emsp;Checks whether the node is an integer.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isInt() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is an integer.</p>
+<h4 id="FileNode-isReal"><a href="#FileNode-isReal" class="headerlink" title="FileNode::isReal"></a>FileNode::isReal</h4><p>&emsp;&emsp;Checks whether the node is a <code>floating-point</code> number.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isReal() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is a <code>floating-point</code> number.</p>
+<h4 id="FileNode-isString"><a href="#FileNode-isString" class="headerlink" title="FileNode::isString"></a>FileNode::isString</h4><p>&emsp;&emsp;Checks whether the node is a text string.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isString() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is a text string.</p>
+<h4 id="FileNode-isNamed"><a href="#FileNode-isNamed" class="headerlink" title="FileNode::isNamed"></a>FileNode::isNamed</h4><p>&emsp;&emsp;Checks whether the node has a name.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isNamed() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node has a name.</p>
+<h4 id="FileNode-name"><a href="#FileNode-name" class="headerlink" title="FileNode::name"></a>FileNode::name</h4><p>&emsp;&emsp;Returns the node name.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">string</span> FileNode::name() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return the node name or an empty string if the node is nameless.</p>
+<h4 id="FileNode-size"><a href="#FileNode-size" class="headerlink" title="FileNode::size"></a>FileNode::size</h4><p>&emsp;&emsp;Returns the number of elements in the node.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">size_t</span> FileNode::size() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return the number of elements in the node, if it is a sequence or mapping, or <code>1</code> otherwise.</p>
+<h4 id="FileNode-operator-int"><a href="#FileNode-operator-int" class="headerlink" title="FileNode::operator int"></a>FileNode::operator int</h4><p>&emsp;&emsp;Returns the node content as an integer.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">int</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
+<p>Return the node content as an integer. If the node stores a <code>floating-point</code> number, it is rounded.</p>
+<h4 id="FileNode-operator-float"><a href="#FileNode-operator-float" class="headerlink" title="FileNode::operator float"></a>FileNode::operator float</h4><p>&emsp;&emsp;Returns the node content as float.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">float</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-operator-double"><a href="#FileNode-operator-double" class="headerlink" title="FileNode::operator double"></a>FileNode::operator double</h4><p>&emsp;&emsp;Returns the node content as double.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">double</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-operator-string"><a href="#FileNode-operator-string" class="headerlink" title="FileNode::operator string"></a>FileNode::operator string</h4><p>&emsp;&emsp;Returns the node content as text string.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">string</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-operator-1"><a href="#FileNode-operator-1" class="headerlink" title="FileNode::operator*"></a>FileNode::operator*</h4><p>&emsp;&emsp;Returns pointer to the underlying obsolete file node structure.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CvFileNode *FileNode::<span class="keyword">operator</span>*();</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-begin"><a href="#FileNode-begin" class="headerlink" title="FileNode::begin"></a>FileNode::begin</h4><p>&emsp;&emsp;Returns the iterator pointing to the first node element.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator FileNode::begin() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-end"><a href="#FileNode-end" class="headerlink" title="FileNode::end"></a>FileNode::end</h4><p>&emsp;&emsp;Returns the iterator pointing to the element following the last node element.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator FileNode::end() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-readRaw"><a href="#FileNode-readRaw" class="headerlink" title="FileNode::readRaw"></a>FileNode::readRaw</h4><p>&emsp;&emsp;Reads node elements to the buffer with the specified format.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileNode::readRaw ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;fmt, uchar *vec, <span class="keyword">size_t</span> len ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fmt</code>: Specification of each array element. It has the same format as in <code>FileStorage::writeRaw()</code>.</li>
+<li><code>vec</code>: Pointer to the destination array.</li>
+<li><code>len</code>: Number of elements to read. If it is greater than number of remaining elements then all of them will be read.</li>
+</ul>
+<p>Usually it is more convenient to use <code>operator &gt;&gt;()</code> instead of this method.</p>
+<h4 id="FileNode-readObj"><a href="#FileNode-readObj" class="headerlink" title="FileNode::readObj"></a>FileNode::readObj</h4><p>&emsp;&emsp;Reads the registered object.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> *FileNode::readObj() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="class-FileNodeIterator"><a href="#class-FileNodeIterator" class="headerlink" title="class FileNodeIterator"></a>class FileNodeIterator</h3><p>&emsp;&emsp;The class <code>FileNodeIterator</code> is used to iterate through sequences and mappings. A standard <code>STL</code> notation, with <code>node.begin()</code>, <code>node.end()</code> denoting the beginning and the end of a sequence, stored in node.</p>
+<h4 id="FileNodeIterator-FileNodeIterator"><a href="#FileNodeIterator-FileNodeIterator" class="headerlink" title="FileNodeIterator::FileNodeIterator"></a>FileNodeIterator::FileNodeIterator</h4><p>&emsp;&emsp;The constructors.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator::FileNodeIterator();</span><br><span class="line">FileNodeIterator::FileNodeIterator ( <span class="keyword">const</span> CvFileStorage *fs, <span class="keyword">const</span> CvFileNode *node, <span class="keyword">size_t</span> ofs = <span class="number">0</span> );</span><br><span class="line">FileNodeIterator::FileNodeIterator ( <span class="keyword">const</span> FileNodeIterator &amp;it );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fs</code>: File storage for the iterator.</li>
+<li><code>node</code>: File node for the iterator.</li>
+<li><code>ofs</code>: Index of the element in the node. The created iterator will point to this element.</li>
+<li><code>it</code>: Iterator to be used as initialization for the created iterator.</li>
+</ul>
+<p>These constructors are used to create a default iterator, set it to specific element in a file node or construct it from another iterator.</p>
+<h4 id="FileNodeIterator-operator"><a href="#FileNodeIterator-operator" class="headerlink" title="FileNodeIterator::operator*"></a>FileNodeIterator::operator*</h4><p>&emsp;&emsp;Returns the currently observed element.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileNodeIterator::<span class="keyword">operator</span>*() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNodeIterator-operator-gt"><a href="#FileNodeIterator-operator-gt" class="headerlink" title="FileNodeIterator::operator-&gt;"></a>FileNodeIterator::operator-&gt;</h4><p>&emsp;&emsp;Accesses methods of the currently observed element.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileNodeIterator::<span class="keyword">operator</span>-&gt;() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNodeIterator-operator-1"><a href="#FileNodeIterator-operator-1" class="headerlink" title="FileNodeIterator::operator ++"></a>FileNodeIterator::operator ++</h4><p>&emsp;&emsp;Moves iterator to the next node.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>++();</span><br><span class="line">FileNodeIterator FileNodeIterator::<span class="keyword">operator</span>++ ( <span class="keyword">int</span> None );</span><br></pre></td></tr></table></figure>
+<h4 id="FileNodeIterator-operator-—"><a href="#FileNodeIterator-operator-—" class="headerlink" title="FileNodeIterator::operator —"></a>FileNodeIterator::operator —</h4><p>&emsp;&emsp;Moves iterator to the previous node.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>--();</span><br><span class="line">FileNodeIterator FileNodeIterator::<span class="keyword">operator</span>-- ( <span class="keyword">int</span> None );</span><br></pre></td></tr></table></figure>
+<h4 id="FileNodeIterator-operator-2"><a href="#FileNodeIterator-operator-2" class="headerlink" title="FileNodeIterator::operator +="></a>FileNodeIterator::operator +=</h4><p>&emsp;&emsp;Moves iterator forward by the specified offset.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>+= ( <span class="keyword">int</span> ofs );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>ofs</code>: Offset (possibly negative) to move the iterator.</li>
+</ul>
+<h4 id="FileNodeIterator-operator-3"><a href="#FileNodeIterator-operator-3" class="headerlink" title="FileNodeIterator::operator -="></a>FileNodeIterator::operator -=</h4><p>&emsp;&emsp;Moves iterator backward by the specified offset (possibly negative).</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>-= ( <span class="keyword">int</span> ofs );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>ofs</code>: Offset (possibly negative) to move the iterator.</li>
+</ul>
+<h4 id="FileNodeIterator-readRaw"><a href="#FileNodeIterator-readRaw" class="headerlink" title="FileNodeIterator::readRaw"></a>FileNodeIterator::readRaw</h4><p>&emsp;&emsp;Reads node elements to the buffer with the specified format.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::readRaw (</span><br><span class="line">    <span class="keyword">const</span> <span class="built_in">string</span> &amp;fmt, uchar *vec,</span><br><span class="line">    <span class="keyword">size_t</span> maxCount = ( <span class="keyword">size_t</span> ) INT_MAX );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fmt</code>: Specification of each array element. It has the same format as in <code>FileStorage::writeRaw()</code>.</li>
+<li><code>vec</code>: Pointer to the destination array.</li>
+<li><code>maxCount</code>: Number of elements to read. If it is greater than number of remaining elements then all of them will be read.</li>
+</ul>
+<p>Usually it is more convenient to use <code>operator &gt;&gt;()</code> instead of this method.</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/23/opencv和图像处理/OpenCV基本数据类型/" rel="next" title="OpenCV基本数据类型">
+                <i class="fa fa-chevron-left"></i> OpenCV基本数据类型
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/23/opencv和图像处理/imdecode和imencode/" rel="prev" title="imdecode和imencode">
+                imdecode和imencode <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#XML-YAML-file-storages"><span class="nav-number">1.</span> <span class="nav-text">XML/YAML file storages</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#class-FileStorage"><span class="nav-number">2.</span> <span class="nav-text">class FileStorage</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-FileStorage"><span class="nav-number">2.1.</span> <span class="nav-text">FileStorage::FileStorage</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-open"><span class="nav-number">2.2.</span> <span class="nav-text">FileStorage::open</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-isOpened"><span class="nav-number">2.3.</span> <span class="nav-text">FileStorage::isOpened</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-release"><span class="nav-number">2.4.</span> <span class="nav-text">FileStorage::release</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-releaseAndGetString"><span class="nav-number">2.5.</span> <span class="nav-text">FileStorage::releaseAndGetString</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-getFirstTopLevelNode"><span class="nav-number">2.6.</span> <span class="nav-text">FileStorage::getFirstTopLevelNode</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-root"><span class="nav-number">2.7.</span> <span class="nav-text">FileStorage::root</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-operator"><span class="nav-number">2.8.</span> <span class="nav-text">FileStorage::operator[]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-operator-1"><span class="nav-number">2.9.</span> <span class="nav-text">FileStorage::operator*</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-writeRaw"><span class="nav-number">2.10.</span> <span class="nav-text">FileStorage::writeRaw</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-writeObj"><span class="nav-number">2.11.</span> <span class="nav-text">FileStorage::writeObj</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileStorage-getDefaultObjectName"><span class="nav-number">2.12.</span> <span class="nav-text">FileStorage::getDefaultObjectName</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#operator-lt-lt"><span class="nav-number">2.13.</span> <span class="nav-text">operator &lt;&lt;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#operator-gt-gt"><span class="nav-number">2.14.</span> <span class="nav-text">operator &gt;&gt;</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#class-FileNode"><span class="nav-number">3.</span> <span class="nav-text">class FileNode</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-FileNode"><span class="nav-number">3.1.</span> <span class="nav-text">FileNode::FileNode</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-operator"><span class="nav-number">3.2.</span> <span class="nav-text">FileNode::operator[]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-type"><span class="nav-number">3.3.</span> <span class="nav-text">FileNode::type</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-empty"><span class="nav-number">3.4.</span> <span class="nav-text">FileNode::empty</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-isNone"><span class="nav-number">3.5.</span> <span class="nav-text">FileNode::isNone</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-isSeq"><span class="nav-number">3.6.</span> <span class="nav-text">FileNode::isSeq</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-isMap"><span class="nav-number">3.7.</span> <span class="nav-text">FileNode::isMap</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-isInt"><span class="nav-number">3.8.</span> <span class="nav-text">FileNode::isInt</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-isReal"><span class="nav-number">3.9.</span> <span class="nav-text">FileNode::isReal</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-isString"><span class="nav-number">3.10.</span> <span class="nav-text">FileNode::isString</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-isNamed"><span class="nav-number">3.11.</span> <span class="nav-text">FileNode::isNamed</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-name"><span class="nav-number">3.12.</span> <span class="nav-text">FileNode::name</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-size"><span class="nav-number">3.13.</span> <span class="nav-text">FileNode::size</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-operator-int"><span class="nav-number">3.14.</span> <span class="nav-text">FileNode::operator int</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-operator-float"><span class="nav-number">3.15.</span> <span class="nav-text">FileNode::operator float</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-operator-double"><span class="nav-number">3.16.</span> <span class="nav-text">FileNode::operator double</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-operator-string"><span class="nav-number">3.17.</span> <span class="nav-text">FileNode::operator string</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-operator-1"><span class="nav-number">3.18.</span> <span class="nav-text">FileNode::operator*</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-begin"><span class="nav-number">3.19.</span> <span class="nav-text">FileNode::begin</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-end"><span class="nav-number">3.20.</span> <span class="nav-text">FileNode::end</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-readRaw"><span class="nav-number">3.21.</span> <span class="nav-text">FileNode::readRaw</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNode-readObj"><span class="nav-number">3.22.</span> <span class="nav-text">FileNode::readObj</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#class-FileNodeIterator"><span class="nav-number">4.</span> <span class="nav-text">class FileNodeIterator</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNodeIterator-FileNodeIterator"><span class="nav-number">4.1.</span> <span class="nav-text">FileNodeIterator::FileNodeIterator</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNodeIterator-operator"><span class="nav-number">4.2.</span> <span class="nav-text">FileNodeIterator::operator*</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNodeIterator-operator-gt"><span class="nav-number">4.3.</span> <span class="nav-text">FileNodeIterator::operator-&gt;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNodeIterator-operator-1"><span class="nav-number">4.4.</span> <span class="nav-text">FileNodeIterator::operator ++</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNodeIterator-operator-—"><span class="nav-number">4.5.</span> <span class="nav-text">FileNodeIterator::operator —</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNodeIterator-operator-2"><span class="nav-number">4.6.</span> <span class="nav-text">FileNodeIterator::operator +=</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNodeIterator-operator-3"><span class="nav-number">4.7.</span> <span class="nav-text">FileNodeIterator::operator -=</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FileNodeIterator-readRaw"><span class="nav-number">4.8.</span> <span class="nav-text">FileNodeIterator::readRaw</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

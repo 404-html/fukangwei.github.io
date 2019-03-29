@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;Zigbee协议栈进行数据发送是调用AF_DataRequest这个函数，该函数会调用协议栈里面与硬件相关的函数最终将数据通过天线发送出去。 12345678910afStatus_t AF_DataRequest (    afAddrType_t *dstAddr, /* 目的地址指针 */    endPointDesc_t *srcEP, /* 发送节点的端点描述符">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AF_DataRequest函数">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/AF_DataRequest函数/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;Zigbee协议栈进行数据发送是调用AF_DataRequest这个函数，该函数会调用协议栈里面与硬件相关的函数最终将数据通过天线发送出去。 12345678910afStatus_t AF_DataRequest (    afAddrType_t *dstAddr, /* 目的地址指针 */    endPointDesc_t *srcEP, /* 发送节点的端点描述符">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-02-05T05:32:05.131Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="AF_DataRequest函数">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;Zigbee协议栈进行数据发送是调用AF_DataRequest这个函数，该函数会调用协议栈里面与硬件相关的函数最终将数据通过天线发送出去。 12345678910afStatus_t AF_DataRequest (    afAddrType_t *dstAddr, /* 目的地址指针 */    endPointDesc_t *srcEP, /* 发送节点的端点描述符">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/AF_DataRequest函数/">
+
+
+
+
+
+  <title>AF_DataRequest函数 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/AF_DataRequest函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">AF_DataRequest函数</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T14:21:35+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;<code>Zigbee</code>协议栈进行数据发送是调用<code>AF_DataRequest</code>这个函数，该函数会调用协议栈里面与硬件相关的函数最终将数据通过天线发送出去。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">afStatus_t <span class="title">AF_DataRequest</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    afAddrType_t *dstAddr, <span class="comment">/* 目的地址指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    endPointDesc_t *srcEP, <span class="comment">/* 发送节点的端点描述符指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint16 cID, <span class="comment">/* ClusID 簇ID号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint16 len, <span class="comment">/* 发送数据的长度 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 *buf, <span class="comment">/* 指向存放发送数据的缓冲区指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 *transID, <span class="comment">/* 传输序列号，该序列号随着信息的发送而增加 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 options, <span class="comment">/* 发送选项 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 radius <span class="comment">/* 最大传输半径(发送的跳数) */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>dstAddr</code>参数包含了目的节点的网络地址、端点号及数据传送的模式，如单播、广播或多播等。<code>afAddrType_t</code>是个结构体：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">union</span> &#123;</span><br><span class="line">        uint16 shortAddr; <span class="comment">/* 用于标识该节点网络地址的变量 */</span></span><br><span class="line">    &#125; addr;</span><br><span class="line">    afAddrMode_t addrMode; <span class="comment">/* 用于指定数据传送模式，单播、多播还是广播 */</span></span><br><span class="line">    byte endPoint; <span class="comment">/* 指定的端口号，端口号241至254是保留端口 */</span></span><br><span class="line">&#125; afAddrType_t; <span class="comment">/* 其定义在AF.h中 */</span></span><br></pre></td></tr></table></figure>
+<p>因为在<code>Zigbee</code>中，数据包可以单点传送(<code>unicast</code>)、多点传送(<code>multicast</code>)或者广播传送，所以必须有地址模式参数。一个单点传送数据包只发送给一个设备，多点传送数据包则要传送给一组设备，而广播数据包则要发送给整个网络的所有节点。因此上述结构体中的<code>addrMode</code>就是用于指定数据传送模式，它是个枚举类型，可以设置为以下几个值：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> &#123;</span><br><span class="line">    afAddrNotPresent = AddrNotPresent, <span class="comment">/* 表示通过绑定关系指定目的地址 */</span></span><br><span class="line">    afAddr16Bit = Addr16Bit, <span class="comment">/* 单播发送 */</span></span><br><span class="line">    afAddrGroup = AddrGroup, <span class="comment">/* 组播 */</span></span><br><span class="line">    afAddrBroadcast = AddrBroadcast <span class="comment">/* 广播 */</span></span><br><span class="line">&#125; afAddrMode_t;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">enum</span> &#123;</span><br><span class="line">    AddrNotPresent = <span class="number">0</span>,</span><br><span class="line">    AddrGroup = <span class="number">1</span>,</span><br><span class="line">    Addr16Bit = <span class="number">2</span>,</span><br><span class="line">    Addr64Bit = <span class="number">3</span>, <span class="comment">/* 指定IEEE地址进行单播传输 */</span></span><br><span class="line">    AddrBroadcast = <span class="number">15</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>注意，<code>ZigBee</code>设备有两种类型的地址：一种是<code>64</code>位<code>IEEE</code>地址(物理)，即<code>MAC</code>地址；另一种是<code>16</code>位网络地址。<code>64</code>位地址使全球唯一的地址，设备将在它的生命周期中一直拥有它。它通常由制造商或者被安装时设置，这些地址由<code>IEEE</code>来维护和分配。<code>16</code>位网络地址是当设备加入网络后由协调器或路由器分配的，它在网络中是唯一的，用来在网络中鉴别设备和发送数据。<br>&emsp;&emsp;<code>srcEP</code>是发送节点的端点描述符指针，在<code>Zigbee</code>网络中，可以通过网络地址找到某个具体的节点，但是具体到某个节点，还有不同的端口(每个节点上最多可支持<code>240</code>个端口)，不同节点的端口间可以相互通信。例如节点<code>1</code>的端口<code>1</code>可以给节点<code>2</code>的控制端口<code>1</code>发<code>led</code>控制命令，也可以给节点<code>2</code>的端口<code>2</code>发采集命令。但是同一个节点上的端口的网络地址是相同的，所以仅仅通过网络地址无法区分节点<code>1</code>的端口<code>1</code>是与节点<code>2</code>的哪个端口进行通信，因此在发送数据时不但要指定网络地址，还要指点端口号。因此得出结论：使用网络地址来区分不同的节点，使用端口号区分同一节点上的端口。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    byte endPoint; <span class="comment">/* 端点号 */</span></span><br><span class="line">    byte *task_id; <span class="comment">/* 哪一个任务的端点号(调用任务的ID) */</span></span><br><span class="line">    SimpleDescriptionFormat_t *simpleDesc; <span class="comment">/* 描述一个Zigbee设备节点，称为简单设备描述符 */</span></span><br><span class="line">    afNetworkLatencyReq_t latencyReq; <span class="comment">/* 枚举结构，这个字段必须为nolatencyreqs */</span></span><br><span class="line">&#125; endPointDesc_t; <span class="comment">/* 其定义在AF.h中 */</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    byte EndPoint; <span class="comment">/* EP */</span></span><br><span class="line">    uint16 AppProfId; <span class="comment">/* 应用规范ID */</span></span><br><span class="line">    uint16 AppDeviceId; <span class="comment">/* 特定规范ID的设备类型 */</span></span><br><span class="line">    byte AppDevVer: <span class="number">4</span>; <span class="comment">/* 特定规范ID的设备的版本 */</span></span><br><span class="line">    byte Reserved: <span class="number">4</span>; <span class="comment">/* AF_V1_SUPPORT uses for AppFlags:4 */</span></span><br><span class="line">    byte AppNumInClusters; <span class="comment">/* 输入簇ID的个数 */</span></span><br><span class="line">    cId_t *pAppInClusterList; <span class="comment">/* 输入簇ID的列表 */</span></span><br><span class="line">    byte AppNumOutClusters; <span class="comment">/* 输出簇ID的个数 */</span></span><br><span class="line">    cId_t *pAppOutClusterList; <span class="comment">/* 输出簇ID的列表 */</span></span><br><span class="line">&#125; SimpleDescriptionFormat_t; <span class="comment">/* 其定义在AF.h中 */</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> &#123;</span><br><span class="line">    noLatencyReqs,</span><br><span class="line">    fastBeacons,</span><br><span class="line">    slowBeacons</span><br><span class="line">&#125; afNetworkLatencyReq_t;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>cID</code>是簇<code>ID</code>号，一个<code>Zigbee</code>节点有很多属性，一个簇实际上是一些相关命令和属性的集合。在整个网络中，每个簇都有唯一的簇<code>ID</code>，也就是用来标识不同的控制操作。</li>
+<li><code>len</code>是送数据的长度，<code>buf</code>指向发送数据缓冲的指针。</li>
+<li><code>transID</code>该参数是指向发送序号的指针，每发送一个数据包，该发送序号会自动加1，因此在接收端可以查看接收数据包的序号来计算丢包率。</li>
+<li><code>options</code>是发送选项，有如下选项：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AF_FRAGMENTED   0x01</span></span><br><span class="line"><span class="comment">/* 要求APS应答，这是应用层的应答，只在直接发送(单播)时使用 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AF_ACK_REQUEST  0x10</span></span><br><span class="line"><span class="comment">/* 总要包含这个选项 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AF_DISCV_ROUTE  0x20</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AF_EN_SECURITY  0x40</span></span><br><span class="line"><span class="comment">/* 设置这个选项将导致设备跳过路由而直接发送消息。</span></span><br><span class="line"><span class="comment">   终点设备将不向其父亲发送消息。在直接发送(单播)和广播消息时很好用 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AF_SKIP_ROUTING 0x80</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>radius</code>是最大的跳数，取默认值<code>AF_DEFAULT_RADIUS</code>。</li>
+</ul>
+<p>&emsp;&emsp;返回值是<code>afStatus_t</code>类型，它是枚举型：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> &#123;</span><br><span class="line">    afStatus_SUCCESS,</span><br><span class="line">    afStatus_FAILED = <span class="number">0x80</span>,</span><br><span class="line">    afStatus_MEM_FAIL,</span><br><span class="line">    afStatus_INVALID_PARAMETER</span><br><span class="line">&#125; afStatus_t;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;下面是这个函数完整的源代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">afStatus_t <span class="title">AF_DataRequest</span> <span class="params">( afAddrType_t *dstAddr, endPointDesc_t *srcEP,</span></span></span><br><span class="line"><span class="function"><span class="params">                            uint16 cID, uint16 len, uint8 *buf, uint8 *transID,</span></span></span><br><span class="line"><span class="function"><span class="params">                            uint8 options, uint8 radius )</span> </span>&#123;</span><br><span class="line">    pDescCB pfnDescCB;</span><br><span class="line">    ZStatus_t stat;</span><br><span class="line">    APSDE_DataReq_t req;</span><br><span class="line">    afDataReqMTU_t mtu;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( srcEP == <span class="literal">NULL</span> ) &#123; <span class="comment">/* Verify source end point 判断源节点是否为空 */</span></span><br><span class="line">        <span class="keyword">return</span> afStatus_INVALID_PARAMETER;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> !defined( REFLECTOR )</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( dstAddr-&gt;addrMode == afAddrNotPresent ) &#123;</span><br><span class="line">        <span class="keyword">return</span> afStatus_INVALID_PARAMETER;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="comment">/* Verify destination address 判断目的地址 */</span></span><br><span class="line">    req.dstAddr.addr.shortAddr = dstAddr-&gt;addr.shortAddr;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* Validate broadcasting 判断地址的模式 */</span></span><br><span class="line">    <span class="keyword">if</span> ( ( dstAddr-&gt;addrMode == afAddr16Bit ) || ( dstAddr-&gt;addrMode == afAddrBroadcast ) ) &#123;</span><br><span class="line">        <span class="comment">/* Check for valid broadcast values 核对有效的广播值 */</span></span><br><span class="line">        <span class="keyword">if</span> ( ADDR_NOT_BCAST != NLME_IsAddressBroadcast ( dstAddr-&gt;addr.shortAddr ) ) &#123;</span><br><span class="line">            <span class="comment">/* Force mode to broadcast 强制转换成广播模式 */</span></span><br><span class="line">            dstAddr-&gt;addrMode = afAddrBroadcast;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">/* Address is not a valid broadcast type 地址不是一个有效的广播地址类型 */</span></span><br><span class="line">            <span class="keyword">if</span> ( dstAddr-&gt;addrMode == afAddrBroadcast ) &#123;</span><br><span class="line">                <span class="keyword">return</span> afStatus_INVALID_PARAMETER;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( dstAddr-&gt;addrMode != afAddrGroup &amp;&amp;</span><br><span class="line">                dstAddr-&gt;addrMode != afAddrNotPresent ) &#123;</span><br><span class="line">        <span class="keyword">return</span> afStatus_INVALID_PARAMETER;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    req.dstAddr.addrMode = dstAddr-&gt;addrMode;</span><br><span class="line">    req.profileID = ZDO_PROFILE_ID;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( pfnDescCB = afGetDescCB ( srcEP ) ) ) &#123;</span><br><span class="line">        uint16 *pID = ( uint16 * ) ( pfnDescCB ( AF_DESCRIPTOR_PROFILE_ID, srcEP-&gt;endPoint ) );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( pID ) &#123;</span><br><span class="line">            req.profileID = *pID;</span><br><span class="line">            osal_mem_free ( pID );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( srcEP-&gt;simpleDesc ) &#123;</span><br><span class="line">        req.profileID = srcEP-&gt;simpleDesc-&gt;AppProfId;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    req.txOptions = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( options &amp; AF_ACK_REQUEST ) &amp;&amp;</span><br><span class="line">         ( req.dstAddr.addrMode != AddrBroadcast ) &amp;&amp;</span><br><span class="line">         ( req.dstAddr.addrMode != AddrGroup ) ) &#123;</span><br><span class="line">        req.txOptions |= APS_TX_OPTIONS_ACK;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( options &amp; AF_SKIP_ROUTING ) &#123;</span><br><span class="line">        req.txOptions |= APS_TX_OPTIONS_SKIP_ROUTING;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( options &amp; AF_EN_SECURITY ) &#123;</span><br><span class="line">        req.txOptions |= APS_TX_OPTIONS_SECURITY_ENABLE;</span><br><span class="line">        mtu.aps.secure = TRUE;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        mtu.aps.secure = FALSE;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    mtu.kvp = FALSE;</span><br><span class="line">    req.transID = *transID;</span><br><span class="line">    req.srcEP = srcEP-&gt;endPoint;</span><br><span class="line">    req.dstEP = dstAddr-&gt;endPoint;</span><br><span class="line">    req.clusterID = cID;</span><br><span class="line">    req.asduLen = len;</span><br><span class="line">    req.asdu = buf;</span><br><span class="line">    req.discoverRoute = TRUE; <span class="comment">// (uint8)((options &amp; AF_DISCV_ROUTE) ? 1 : 0);</span></span><br><span class="line">    req.radiusCounter = radius;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( len &gt; afDataReqMTU ( &amp;mtu ) ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( apsfSendFragmented ) &#123;</span><br><span class="line">            req.txOptions |= AF_FRAGMENTED | APS_TX_OPTIONS_ACK;</span><br><span class="line">            stat = ( *apsfSendFragmented ) ( &amp;req );</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            stat = afStatus_INVALID_PARAMETER;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        stat = APSDE_DataReq ( &amp;req );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * If this is an EndPoint-to-EndPoint message on the same device, it will not</span></span><br><span class="line"><span class="comment">     * get added to the NWK databufs. So it will not Go OTA and it will not get</span></span><br><span class="line"><span class="comment">     * a MACCB_DATA_CONFIRM_CMD callback. Thus it is necessary to generate the</span></span><br><span class="line"><span class="comment">     * AF_DATA_CONFIRM_CMD here. Note that APSDE_DataConfirm() only generates one</span></span><br><span class="line"><span class="comment">     * message with the first in line TransSeqNumber, even on a multi message.</span></span><br><span class="line"><span class="comment">     * Also note that a reflected msg will not have its confirmation generated</span></span><br><span class="line"><span class="comment">     * here.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> ( ( req.dstAddr.addrMode == Addr16Bit ) &amp;&amp;</span><br><span class="line">         ( req.dstAddr.addr.shortAddr == NLME_GetShortAddr() ) ) &#123;</span><br><span class="line">        afDataConfirm ( srcEP-&gt;endPoint, *transID, stat );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( stat == afStatus_SUCCESS ) &#123;</span><br><span class="line">        ( *transID )++;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ( afStatus_t ) stat;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/05/CC2530和zigbee笔记/Profile、Cluster和Attribute的关系/" rel="next" title="Profile、Cluster和Attribute的关系">
+                <i class="fa fa-chevron-left"></i> Profile、Cluster和Attribute的关系
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/05/CC2530和zigbee笔记/OSAL层API函数/" rel="prev" title="OSAL层API函数">
+                OSAL层API函数 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

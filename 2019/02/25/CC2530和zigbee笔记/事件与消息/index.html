@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;zigbee事件有两类，即系统定义事件和用户定义事件。系统类事件是协议栈已定义好的，用户类事件是我们用户层面来定义的。&amp;emsp;&amp;emsp;事件类号采用一个16bit的常量，使用独热码编码，独热码是只有一个bit为1，其他全为0的一种码制。采用独热码的优点是操作方便，可以使用简单的位操作指令实现，例如提取系统类事件用events &amp;amp; SYS_EVENT_MSG，清">
+<meta property="og:type" content="article">
+<meta property="og:title" content="事件与消息">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/25/CC2530和zigbee笔记/事件与消息/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;zigbee事件有两类，即系统定义事件和用户定义事件。系统类事件是协议栈已定义好的，用户类事件是我们用户层面来定义的。&amp;emsp;&amp;emsp;事件类号采用一个16bit的常量，使用独热码编码，独热码是只有一个bit为1，其他全为0的一种码制。采用独热码的优点是操作方便，可以使用简单的位操作指令实现，例如提取系统类事件用events &amp;amp; SYS_EVENT_MSG，清">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/25/CC2530和zigbee笔记/事件与消息/1.png">
+<meta property="og:updated_time" content="2019-02-25T10:17:42.218Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="事件与消息">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;zigbee事件有两类，即系统定义事件和用户定义事件。系统类事件是协议栈已定义好的，用户类事件是我们用户层面来定义的。&amp;emsp;&amp;emsp;事件类号采用一个16bit的常量，使用独热码编码，独热码是只有一个bit为1，其他全为0的一种码制。采用独热码的优点是操作方便，可以使用简单的位操作指令实现，例如提取系统类事件用events &amp;amp; SYS_EVENT_MSG，清">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/02/25/CC2530和zigbee笔记/事件与消息/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/25/CC2530和zigbee笔记/事件与消息/">
+
+
+
+
+
+  <title>事件与消息 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/25/CC2530和zigbee笔记/事件与消息/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">事件与消息</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-25T18:11:31+08:00">
+                2019-02-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;<code>zigbee</code>事件有两类，即系统定义事件和用户定义事件。系统类事件是协议栈已定义好的，用户类事件是我们用户层面来定义的。<br>&emsp;&emsp;事件类号采用一个<code>16bit</code>的常量，使用独热码编码，独热码是只有一个<code>bit</code>为<code>1</code>，其他全为<code>0</code>的一种码制。采用独热码的优点是操作方便，可以使用简单的位操作指令实现，例如提取系统类事件用<code>events &amp; SYS_EVENT_MSG</code>，清除系统类事件用<code>events ^ SYS_EVENT_MSG</code>。由于事件类号是<code>16bit</code>，也就是说<code>zigbee</code>事件类只有<code>16</code>个，系统类事件<code>SYS_EVENT_MSG</code>使用<code>0x8000</code>，故自定义事件类只有<code>15</code>个，可采用<code>0x4000</code>至<code>0x0001</code>。<br>&emsp;&emsp;事件处理函数为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">app_ProcessEvent ( byte task_id, UINT16 events );</span><br></pre></td></tr></table></figure>
+<p>可见调用此函数将传递两个参数，即<code>task_id</code>任务号和<code>events</code>事件类号。事件处理函数首先根据事件类号来判断是何种类型事件，然后根据任务号得到消息指针<code>pMsg</code>，最后根据消息指针结构里的事件号<code>pMsg-&gt;event</code>来具体处理事件。<code>event</code>为<code>8bit</code>的常量，系统<code>event</code>在<code>ZComDef.h</code>里定义。<br>&emsp;&emsp;在<code>ZigBee</code>协议栈中，任何通信数据都是利用帧的格式来组织的，协议栈的每一层都有特定的帧结构。<code>AF</code>定义了两种帧类型，键值对(<code>Key Value Pair</code>，<code>KVP</code>)和报文(<code>Message</code>，<code>MSG</code>)。<code>KVP</code>消息主要用于传输一些较为简单的变量格式，但由于<code>Zigbee</code>的很多应用领域中的消息较为复杂并不适用<code>KVP</code>格式，因此<code>Zigbee</code>协议规划定义了<code>MSG</code>类型。<code>MSG</code>对数据格式不作要求，适合任何格式的数据传输，因此可以用于传送数据量大的消息。<br>&emsp;&emsp;下面对系统<code>event</code>说明(其中<code>AF_</code>代表应用框架，<code>ZDO_</code>代表设备对象)：</p>
+<ul>
+<li><code>AF_DATA_CONFIRM_CMD</code>：<code>Data confirmation</code>数据收到确认；<code>A</code>设备发送数据，<code>B</code>设备收到数据后将返回应答<code>ack</code>给<code>A</code>，<code>A</code>收到此<code>ack</code>将触发<code>AF_DATA_CONFIRM_CMD</code>事件。<code>AF_DataRequest</code>函数参数<code>options</code>如果设为<code>AF_ACK_REQUEST</code>，则要求对方设备回复<code>ACK</code>。</li>
+<li><code>AF_INCOMING_MSG_CMD</code>：<code>Incoming MSG type message</code>收到报文类型的消息；<code>A</code>设备用<code>AF_DataRequest</code>函数发出报文消息，<code>B</code>设备收到报文消息将触发<code>AF_INCOMING_MSG_CMD</code>事件。</li>
+<li><code>AF_INCOMING_KVP_CMD</code>：<code>Incoming KVP type message</code>收到键值对类型的消息。</li>
+<li><code>AF_INCOMING_GRP_KVP_CMD</code>：<code>Incoming Group KVP type message</code>收到群键值对类型的消息。</li>
+<li><code>KEY_CHANGE</code>：<code>Key Events</code>按键触发事件。</li>
+<li><code>ZDO_NEW_DSTADDR</code>：<code>ZDO</code>终端获得新地址；匹配描述符请求(<code>Match Descriptor Request</code>)响应指示(例如自动匹配)；如果<code>A</code>设备加入绑定后，<code>A</code>设备触发<code>ZDO_NEW_DSTADDR</code>事件。</li>
+<li><code>ZDO_STATE_CHANGE</code>：<code>ZDO</code>网络状态改变；当<code>A</code>设备的网络状态改变时，<code>A</code>就会触发此消息，例如<code>SampleApp_NwkState = DEV_INIT</code>也会触发。</li>
+<li><code>ZDO_MATCH_DESC_RSP_SENT</code>：<code>ZDO</code>描述符匹配响应发送；<code>A</code>设备发送<code>ZDP_MatchDescReq</code>函数请求描述符匹配绑定，<code>B</code>设备收到后发送<code>ZDP_MatchDescRsp</code>函数响应，<code>B</code>设备发送响应函数后触发<code>ZDO_MATCH_DESC_RSP_SENT</code>事件。</li>
+<li><code>ZDO_CB_MSG</code>：收到<code>ZDO</code>反馈消息；<code>A</code>设备用函数<code>ZDO_RegisterForZDOMsg</code>注册了特定消息，<code>A</code>设备才能用<code>ZDO_CB_MSG</code>消息接收解析此特定消息。应用绑定例子：<code>A</code>设备发送绑定请求，B设备收到后发送匹配响应，<code>A</code>设备收到响应触发<code>ZDO_CB_MSG</code>事件。</li>
+</ul>
+<hr>
+<h3 id="ZStack的OSAL的事件-event-与消息-message"><a href="#ZStack的OSAL的事件-event-与消息-message" class="headerlink" title="ZStack的OSAL的事件(event)与消息(message)"></a>ZStack的OSAL的事件(event)与消息(message)</h3><p>&emsp;&emsp;在<code>zstack</code>中，有两种方式在<code>OSAL</code>的任务(<code>task</code>)中添加自定义的功能：事件(<code>event</code>)和消息(<code>message</code>)。</p>
+<h3 id="事件"><a href="#事件" class="headerlink" title="事件"></a>事件</h3><p>&emsp;&emsp;事件是驱动任务去执行某些操作的条件，当系统产生了一个事件，将这个触发传递给相应的任务后，任务才能执行一个相应的操作。<code>OSAL</code>通过一个<code>16</code>位宽度的数组来管理事件，意味着<code>OSAL</code>最多可以支持<code>16</code>个事件，其中最高位(<code>0x08000</code>，<code>SYS_EVENT_MSG</code>)系统保留，用户可以使用的事件有<code>15</code>个。事件的使用很简单：</p>
+<ol>
+<li>需要找个地方定义事件的<code>ID</code>，实际上是指定该事件占用事件数组的哪个位。例如<code>#define MY_EVENT 0x02</code>，占用<code>bit1</code>。</li>
+<li>在需要触发事件的地方调用函数<code>osal_set_event(task_id, event_flag)</code>。这个函数有两个参数，一个是接收事件任务的<code>ID</code>，另一个参数指定事件<code>ID</code>。</li>
+<li>在相应任务的处理函数，检查该事件执行相应代码即可。</li>
+<li>清除事件标识。</li>
+</ol>
+<p>&emsp;&emsp;一个<code>event</code>被调用的过程：</p>
+<ol>
+<li><code>main -&gt; osal_start_system</code>(在<code>ZMain.c</code>中)</li>
+<li><code>osal_start_system -&gt; XX_event</code>(在<code>OSAL.c</code>中)</li>
+</ol>
+<p>&emsp;&emsp;第一步简单易懂，重要的是第二步的实现。在<code>osal_start_system</code>函数中有如下代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 调用该idx个任务的事件处理函数(函数指针指向的函数) */</span></span><br><span class="line">events = ( tasksArr[idx] ) ( idx, events );</span><br></pre></td></tr></table></figure>
+<p>这一步并不是直接调用的，而是根据不同的参数(<code>idx</code>，<code>events</code>)来动态调用的。这里涉及到一个很重要的结构体<code>tasksArr</code>数组：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> pTaskEventHandlerFn tasksArr[] = &#123;</span><br><span class="line">    macEventLoop,</span><br><span class="line">    nwk_event_loop,</span><br><span class="line">    Hal_ProcessEvent,</span><br><span class="line">#<span class="keyword">if</span> defined( MT_TASK )</span><br><span class="line">    MT_ProcessEvent,</span><br><span class="line">#endif</span><br><span class="line">    APS_event_loop,</span><br><span class="line">    ZDApp_event_loop,</span><br><span class="line">    ControlWifi_ProcessEvent,</span><br><span class="line">    GenericApp_ProcessEvent</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这时候回到之前的那个语句<code>events = (tasksArr[idx])(idx, events)</code>。可以看出，这个语句是调用<code>tasksArr</code>中第<code>idx</code>个函数，然后把返回值赋给<code>events</code>(<code>events</code>是若干个标志位，每个标志位代表一个事件的发生与否)。至于调用的是哪个函数，就跟参数(<code>idx</code>，<code>events</code>)有关了。<br>&emsp;&emsp;<code>events</code>里对应的标志位决定着相应的事件处理函数被调用，只要某一个事件的标志位变成了<code>1</code>，处理函数就被调用。那么什么时候这个标志位会从<code>0</code>变成<code>1</code>呢？以下代码显示了这些标志位都被初始化为<code>0</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">osalInitTasks</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    uint8 taskID = <span class="number">0</span>;</span><br><span class="line">    tasksEvents = ( uint16 * ) osal_mem_alloc ( <span class="keyword">sizeof</span> ( uint16 ) * tasksCnt );</span><br><span class="line">    osal_memset ( tasksEvents, <span class="number">0</span>, ( <span class="keyword">sizeof</span> ( uint16 ) * tasksCnt ) );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从<code>0</code>变为<code>1</code>是由<code>osal_set_event</code>完成的，你想要在哪些动作完成后触发这个事件，就调用这个函数，将相应的标志位置<code>1</code>，那么在之后协议栈运行的过程中就会根据需要调用这个事件的处理函数了。如果是消息的话，使用<code>osal_msg_send</code>可以完成类似的功能。</p>
+<h3 id="消息"><a href="#消息" class="headerlink" title="消息"></a>消息</h3><p>&emsp;&emsp;消息可以理解为带有附加信息的事件。最典型的一类便是按键消息，它同时产生了一个哪个按键被按下了附加信息。所以在<code>OnBoard_SendKeys</code>这个函数中，不仅向<code>GenericApp</code>发送了事件，还通过调用<code>osal_msg_send</code>函数向<code>GenericApp</code>发送了一个消息，这个消息记录了这个事件的附加信息。一般来说，一个消息总是和一个事件对应。当协议栈接收到消息后，在<code>ProcessEvent</code>函数中有以下语句：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( events &amp;SYS_EVENT_MSG ) &#123;</span><br><span class="line">    MSGpkt = ( afIncomingMSGPacket_t * ) osal_msg_receive ( GenericApp_TaskID );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( MSGpkt ) &#123;</span><br><span class="line">        <span class="keyword">switch</span> ( MSGpkt-&gt;hdr.event ) &#123;</span><br><span class="line">            <span class="keyword">case</span> <span class="comment">/* 消息 */</span></span><br></pre></td></tr></table></figure>
+<p>可以看出，消息是被当作系统事件接收的，接收到之后会找到消息对应的<code>event</code>，之后进行相应的处理。消息的使用与事件类似，但是使用了不同的函数触发：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_msg_send</span> <span class="params">( byte destination_task, byte *msg_ptr )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>这个函数有两个参数，分别为接收事件任务的<code>ID</code>，另一个是指向消息的指针。它的功能是向一个任务发送命令或数据消息，此外这个函数也会触发目标任务的<code>SYS_EVENT_MSG</code>(系统消息任务)。<br>&emsp;&emsp;首先我们需要明确几个概念，<code>msg</code>是用来干什么的？<code>msg</code>和<code>event</code>有什么不同？我们已经知道，<code>event</code>是一个事件，当这个事件发生以后，会触发相应的事件处理函数。即<code>event</code>是事先定义好的，但不知道会在哪个确定时间点被触发。而消息不同，顾名思义，消息是用来传递信息的，即有两个主体(如下图中的<code>task1</code>和<code>task2</code>)，在这两个主体想要通信的时候，就会用到消息：</p>
+<p><img src="/2019/02/25/CC2530和zigbee笔记/事件与消息/1.png" height="186" width="252"></p>
+<h3 id="osal-msg-allocate"><a href="#osal-msg-allocate" class="headerlink" title="osal_msg_allocate"></a>osal_msg_allocate</h3><p>&emsp;&emsp;可以看出，<code>task1</code>想要给<code>task2</code>发送消息(这两个任务可能属于一个设备，也可能属于不同的设备，这一点稍后再说)，于是<code>task1</code>就得先产生一个<code>msg</code>，这时候就要用到<code>osal_msg_allocation</code>给这个消息分配一个缓存：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">uint8 *<span class="title">osal_msg_allocate</span> <span class="params">( uint16 len )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">osal_msg_hdr_t</span> *hdr;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( len == <span class="number">0</span> ) &#123;</span><br><span class="line">        <span class="keyword">return</span> ( <span class="literal">NULL</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    hdr = ( <span class="keyword">osal_msg_hdr_t</span> * ) osal_mem_alloc ( ( <span class="keyword">short</span> ) ( len + <span class="keyword">sizeof</span> ( <span class="keyword">osal_msg_hdr_t</span> ) ) );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( hdr ) &#123;</span><br><span class="line">        hdr-&gt;next = <span class="literal">NULL</span>;</span><br><span class="line">        hdr-&gt;len = len;</span><br><span class="line">        hdr-&gt;dest_id = TASK_NO_TASK;</span><br><span class="line">        <span class="keyword">return</span> ( ( uint8 * ) ( hdr + <span class="number">1</span> ) );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> ( <span class="literal">NULL</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个函数的参数<code>len</code>是<code>msg</code>的长度，那<code>osal_msg_hdr_t *hdr</code>又是什么呢？看一下<code>osal_msg_hdr_t</code>这个数据结构的定义：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">void</span>   *next;</span><br><span class="line">    uint16 len;</span><br><span class="line">    uint8  dest_id;</span><br><span class="line">&#125; <span class="keyword">osal_msg_hdr_t</span>;</span><br></pre></td></tr></table></figure>
+<p>这个实际上是消息的头部。再看下一句：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hdr = ( <span class="keyword">osal_msg_hdr_t</span> * ) osal_mem_alloc ( ( <span class="keyword">short</span> ) ( len + <span class="keyword">sizeof</span> ( <span class="keyword">osal_msg_hdr_t</span> ) ) );</span><br></pre></td></tr></table></figure>
+<p>这句代码是给消息分配缓存区的，而缓存区的大小是<code>len + sizeof(osal_msg_hdr_t)</code>，也就是消息的大小加上消息头的大小。<br>&emsp;&emsp;到这里我们得出结论：一个消息应该是由两部分组成，即消息头和消息的实际内容，消息头是协议栈定义好的，而消息的内容则应该是我们自己添加的。再关注一下<code>osal_msg_allocate</code>的代码，可以看出除了分配缓存以外，它还赋给了消息头一个初始值，但是却没有对消息本身做什么处理。因为消息是要留给大家自己定义的，所以<code>osal_msg_allocate</code>将消息头<code>hdr</code>下一位的指针做为函数的返回值，以便添加自己的消息代码。<br>&emsp;&emsp;至于消息的具体定义，可以分为两种：系统消息和用户消息。系统消息就拜托协议栈来完成，而用户消息就需要大家根据实际要求动手来写。在接下来的内容中，完整的消息被认为是已经定义好的，直接拿来用就可以了。</p>
+<h3 id="osal-msg-send"><a href="#osal-msg-send" class="headerlink" title="osal_msg_send"></a>osal_msg_send</h3><p>&emsp;&emsp;<code>send</code>函数有两个参数，一个是目标<code>task</code>的地址，另一个是指向消息的指针。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">uint8 <span class="title">osal_msg_send</span> <span class="params">( uint8 destination_task, uint8 *msg_ptr )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( msg_ptr == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="keyword">return</span> ( INVALID_MSG_POINTER );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( destination_task &gt;= tasksCnt ) &#123;</span><br><span class="line">        osal_msg_deallocate ( msg_ptr );</span><br><span class="line">        <span class="keyword">return</span> ( INVALID_TASK );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* Check the message header */</span></span><br><span class="line">    <span class="keyword">if</span> ( OSAL_MSG_NEXT ( msg_ptr ) != <span class="literal">NULL</span> ||</span><br><span class="line">         OSAL_MSG_ID ( msg_ptr ) != TASK_NO_TASK ) &#123;</span><br><span class="line">        osal_msg_deallocate ( msg_ptr );</span><br><span class="line">        <span class="keyword">return</span> ( INVALID_MSG_POINTER );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    OSAL_MSG_ID ( msg_ptr ) = destination_task;</span><br><span class="line">    osal_msg_enqueue ( &amp;osal_qHead, msg_ptr ); <span class="comment">/* queue message */</span></span><br><span class="line">    <span class="comment">/* Signal the task that a message is waiting */</span></span><br><span class="line">    osal_set_event ( destination_task, SYS_EVENT_MSG );</span><br><span class="line">    <span class="keyword">return</span> ( SUCCESS );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>osal_msg_enqueue</code>这句看起来是入栈操作，其实就是这样的。协议栈在内部维护着一个消息队列，也就是说消息是按照队列的方式被操作的，所以就有了入栈出栈的内容。这里只要明白发送的消息被放到(应该是目标任务的)消息队列里就好了。再看一下<code>osal_set_event( destination_task, SYS_EVENT_MSG );</code>，它告诉我们，在发送了一个消息之后，会触发目标协议栈的系统事件<code>SYS_EVENT_MSG</code>。也就是说，虽然消息的处理方式与事件类似，但是有关消息的事件是系统事件。</p>
+<h3 id="osal-msg-receive"><a href="#osal-msg-receive" class="headerlink" title="osal_msg_receive"></a>osal_msg_receive</h3><p>&emsp;&emsp;<code>osal_msg_receive</code>又是一个重量级的<code>API</code>，这个<code>API</code>关系到我们怎么取出消息。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">uint16 <span class="title">SampleApp_ProcessEvent</span> <span class="params">( uint8 task_id, uint16 events )</span> </span>&#123;</span><br><span class="line">    afIncomingMSGPacket_t *MSGpkt;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( events &amp; SYS_EVENT_MSG ) &#123;</span><br><span class="line">        MSGpkt = ( afIncomingMSGPacket_t * ) osal_msg_receive ( SampleApp_TaskID );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( MSGpkt ) &#123;</span><br><span class="line">            <span class="keyword">switch</span> ( MSGpkt-&gt;hdr.event ) &#123;</span><br><span class="line">                <span class="keyword">case</span> KEY_CHANGE: <span class="comment">/* Received when a key is pressed */</span></span><br><span class="line">                    SampleApp_HandleKeys ( ( ( keyChange_t * ) MSGpkt )-&gt;state, ( ( keyChange_t * ) MSGpkt )-&gt;keys );</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">                <span class="keyword">case</span> AF_INCOMING_MSG_CMD: <span class="comment">/* Received when a messages is received (OTA) for this endpoint */</span></span><br><span class="line">                    SampleApp_MessageMSGCB ( MSGpkt );</span><br><span class="line">                    <span class="keyword">break</span>;</span><br></pre></td></tr></table></figure>
+<p>在上面的函数中，首先定义了一个数据结构<code>afIncomingMSGPacket_t *MSGpkt</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">osal_event_hdr_t</span> hdr;     <span class="comment">/* OSAL Message header */</span></span><br><span class="line">    uint16 groupId;           <span class="comment">/* Message's group ID - 0 if not set */</span></span><br><span class="line">    uint16 clusterId;         <span class="comment">/* Message's cluster ID */</span></span><br><span class="line">    <span class="comment">/* Source Address, if endpoint is STUBAPS_INTER_PAN_EP,</span></span><br><span class="line"><span class="comment">       it's an InterPAN message */</span></span><br><span class="line">    afAddrType_t srcAddr;</span><br><span class="line">    uint16 macDestAddr;       <span class="comment">/* MAC header destination short address */</span></span><br><span class="line">    uint8 endPoint;           <span class="comment">/* destination endpoint */</span></span><br><span class="line">    uint8 wasBroadcast;       <span class="comment">/* TRUE if network destination was a broadcast address */</span></span><br><span class="line">    uint8 LinkQuality;        <span class="comment">/* The link quality of the received data frame */</span></span><br><span class="line">    uint8 correlation;        <span class="comment">/* The raw correlation value of the received data frame */</span></span><br><span class="line">    int8  rssi;               <span class="comment">/* The received RF power in units dBm */</span></span><br><span class="line">    uint8 SecurityUse;        <span class="comment">/* deprecated */</span></span><br><span class="line">    uint32 timestamp;         <span class="comment">/* receipt timestamp from MAC */</span></span><br><span class="line">    afMSGCommandFormat_t cmd; <span class="comment">/* Application Data */</span></span><br><span class="line">&#125; afIncomingMSGPacket_t;</span><br></pre></td></tr></table></figure>
+<p>该结构体以<code>af_</code>开头，说明这个数据是经过无线传输后收到的，也就是由另一个设备上的<code>task</code>发送给本设备的。再来看一下<code>osal_event_hdr_t</code>结构体：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    uint8 event;</span><br><span class="line">    uint8 status;</span><br><span class="line">&#125; <span class="keyword">osal_event_hdr_t</span>;</span><br></pre></td></tr></table></figure>
+<p>只包括了一个事件发生的标志(<code>event</code>)和状态(<code>status</code>)，它是用来找到事件对应的消息的。<br>&emsp;&emsp;前面说过，在发送一个消息之后<code>osal_mem_send</code>，会触发一个系统事件。我们现在遇到的情况是，有了这个事件之后，怎么找到它对应的消息？这时就需要上面介绍的机制了，定义一个指向<code>osal_event_hdr_t</code>类型的指针，然后用<code>osal_msg_receive</code>找到这个消息并让前面的指针<code>MSGpkt</code>指向它。在代码给出的例子中，指向消息的指针类型是<code>afIncomingMSGPacket_t</code>。但是从刚才的分析可以看出，如果是在同一个设备中的两个<code>task</code>通信的话，也就是不需要无线传输的时候，用<code>osal_event_hdr_t</code>类型的指针就可以满足要求了。<br>&emsp;&emsp;现在我们既有事件又有消息，接下来就愉快地进入处理带有消息的事件部分。以<code>case AF_INCOMING_MSG_CMD</code>为例，只要以<code>MSGpkt</code>为参数，调用相应的处理函数就好了，即<code>SampleApp_MessageMSGCB(MSGpkt);</code>。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/25/CC2530和zigbee笔记/串口通信实验流程/" rel="next" title="串口通信实验流程">
+                <i class="fa fa-chevron-left"></i> 串口通信实验流程
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/27/机器学习/决策树sklearn/" rel="prev" title="决策树sklearn">
+                决策树sklearn <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#ZStack的OSAL的事件-event-与消息-message"><span class="nav-number">1.</span> <span class="nav-text">ZStack的OSAL的事件(event)与消息(message)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#事件"><span class="nav-number">2.</span> <span class="nav-text">事件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#消息"><span class="nav-number">3.</span> <span class="nav-text">消息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#osal-msg-allocate"><span class="nav-number">4.</span> <span class="nav-text">osal_msg_allocate</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#osal-msg-send"><span class="nav-number">5.</span> <span class="nav-text">osal_msg_send</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#osal-msg-receive"><span class="nav-number">6.</span> <span class="nav-text">osal_msg_receive</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

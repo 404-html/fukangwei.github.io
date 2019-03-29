@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="猫狗大战数据集&amp;emsp;&amp;emsp;Cats vs. Dogs(猫狗大战)是Kaggle大数据竞赛某一年的一道赛题，利用给定的数据集，用算法实现猫和狗的识别。数据集可以从Kaggle官网上下载，即https://www.kaggle.com/c/dogs-vs-cats。数据集由训练数据和测试数据组成，训练数据包含猫和狗各12500张图片，测试数据包含12500张猫和狗的图片。&amp;emsp;&amp;em">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TensorFlow之猫狗分类">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/16/深度学习/TensorFlow之猫狗分类/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="猫狗大战数据集&amp;emsp;&amp;emsp;Cats vs. Dogs(猫狗大战)是Kaggle大数据竞赛某一年的一道赛题，利用给定的数据集，用算法实现猫和狗的识别。数据集可以从Kaggle官网上下载，即https://www.kaggle.com/c/dogs-vs-cats。数据集由训练数据和测试数据组成，训练数据包含猫和狗各12500张图片，测试数据包含12500张猫和狗的图片。&amp;emsp;&amp;em">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/16/深度学习/TensorFlow之猫狗分类/1.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/16/深度学习/TensorFlow之猫狗分类/2.png">
+<meta property="og:updated_time" content="2019-03-13T07:36:25.238Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="TensorFlow之猫狗分类">
+<meta name="twitter:description" content="猫狗大战数据集&amp;emsp;&amp;emsp;Cats vs. Dogs(猫狗大战)是Kaggle大数据竞赛某一年的一道赛题，利用给定的数据集，用算法实现猫和狗的识别。数据集可以从Kaggle官网上下载，即https://www.kaggle.com/c/dogs-vs-cats。数据集由训练数据和测试数据组成，训练数据包含猫和狗各12500张图片，测试数据包含12500张猫和狗的图片。&amp;emsp;&amp;em">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/02/16/深度学习/TensorFlow之猫狗分类/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/16/深度学习/TensorFlow之猫狗分类/">
+
+
+
+
+
+  <title>TensorFlow之猫狗分类 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/16/深度学习/TensorFlow之猫狗分类/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">TensorFlow之猫狗分类</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-16T15:24:58+08:00">
+                2019-02-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="猫狗大战数据集"><a href="#猫狗大战数据集" class="headerlink" title="猫狗大战数据集"></a>猫狗大战数据集</h3><p>&emsp;&emsp;<code>Cats vs. Dogs</code>(猫狗大战)是<code>Kaggle</code>大数据竞赛某一年的一道赛题，利用给定的数据集，用算法实现猫和狗的识别。数据集可以从<code>Kaggle</code>官网上下载，即<code>https://www.kaggle.com/c/dogs-vs-cats</code>。数据集由训练数据和测试数据组成，训练数据包含猫和狗各<code>12500</code>张图片，测试数据包含<code>12500</code>张猫和狗的图片。<br>&emsp;&emsp;首先在<code>Pycharm</code>上新建<code>Cats_vs_Dogs</code>工程，工程目录结构为：</p>
+<ul>
+<li><code>data</code>文件夹下包含<code>test</code>和<code>train</code>两个子文件夹，分别用于存放测试数据和训练数据。</li>
+<li><code>logs</code>文件夹用于存放我们训练时的模型结构以及训练参数。</li>
+<li><code>input_data.py</code>负责实现读取数据，生成批次(<code>batch</code>)。</li>
+<li><code>model.py</code>负责实现我们的神经网络模型。</li>
+<li><code>training.py</code>负责实现模型的训练以及评估。</li>
+</ul>
+<p>接下来分成数据读取、模型构造、模型训练、测试模型四个部分来讲。</p>
+<h3 id="训练数据的读取-input-data-py"><a href="#训练数据的读取-input-data-py" class="headerlink" title="训练数据的读取(input_data.py)"></a>训练数据的读取(input_data.py)</h3><p>&emsp;&emsp;首先需要引入如下模块：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> os</span><br></pre></td></tr></table></figure>
+<p>因为我们需要获取<code>test</code>目录下的文件，所以要导入<code>os</code>模块。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 获取文件路径和标签，file_dir是文件夹路径，该函数返回乱序后的图片和标签</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_files</span><span class="params">(file_dir)</span>:</span></span><br><span class="line">    cats = []</span><br><span class="line">    label_cats = []</span><br><span class="line">    dogs = []</span><br><span class="line">    label_dogs = []</span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(file_dir):  <span class="comment"># 载入数据路径并写入标签值</span></span><br><span class="line">        name = file.split(sep=<span class="string">'.'</span>)</span><br><span class="line">        <span class="keyword">if</span> name[<span class="number">0</span>] == <span class="string">'cat'</span>:</span><br><span class="line">            cats.append(file_dir + file)</span><br><span class="line">            label_cats.append(<span class="number">0</span>)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            dogs.append(file_dir + file)</span><br><span class="line">            label_dogs.append(<span class="number">1</span>)</span><br><span class="line">    print(<span class="string">"There are %d cats\nThere are %d dogs"</span> % (len(cats), len(dogs)))</span><br><span class="line">​</span><br><span class="line">    <span class="comment"># 打乱文件顺序</span></span><br><span class="line">    image_list = np.hstack((cats, dogs))</span><br><span class="line">    label_list = np.hstack((label_cats, label_dogs))</span><br><span class="line">    temp = np.array([image_list, label_list])</span><br><span class="line">    temp = temp.transpose()  <span class="comment"># 转置</span></span><br><span class="line">    np.random.shuffle(temp)</span><br><span class="line">​</span><br><span class="line">    image_list = list(temp[:, <span class="number">0</span>])</span><br><span class="line">    label_list = list(temp[:, <span class="number">1</span>])</span><br><span class="line">    label_list = [int(i) <span class="keyword">for</span> i <span class="keyword">in</span> label_list]</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> image_list, label_list</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;函数<code>get_files</code>的功能是获取给定路径<code>file_dir</code>下的所有的训练数据(包括图片和标签)，以<code>list</code>的形式返回。由于训练数据前<code>12500</code>张是猫，后<code>12500</code>张是狗，如果直接按这个顺序训练，训练效果可能会受影响(猜测的)，所以需要将顺序打乱。因为图片和标签是一一对应的，所以要整合到一起乱序。<br>&emsp;&emsp;这里先用<code>np.hstack</code>方法将猫和狗图片和标签整合到一起，得到<code>image_list</code>和<code>label_list</code>，<code>hstack((a,b))</code>的功能是将<code>a</code>和<code>b</code>以水平的方式连接，比如原来<code>cats</code>和<code>dogs</code>是长度为<code>12500</code>的向量，执行了<code>hstack(cats, dogs)</code>后，<code>image_list</code>的长度为<code>25000</code>，同理<code>label_list</code>的长度也为<code>25000</code>。接着将一一对应的<code>image_list</code>和<code>label_list</code>再合并一次。<code>temp</code>的大小是<code>2 * 25000</code>，经过转置(变成<code>25000 * 2</code>)，然后使用<code>np.random.shuffle</code>方法进行乱序。<br>&emsp;&emsp;最后从<code>temp</code>中分别取出乱序后的<code>image_list</code>和<code>label_list</code>列向量，作为函数的返回值。这里要注意，因为<code>label_list</code>里面的数据类型是字符串类型，所以加上<code>label_list = [int(i) for i in label_list]</code>这么一行将其转为<code>int</code>类型。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 生成相同大小的批次，参数capacity队列容量，返回值是图像和标签的batch</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_batch</span><span class="params">(image, label, image_W, image_H, batch_size, capacity)</span>:</span></span><br><span class="line">    <span class="comment"># 将python.list类型转换成tf能够识别的格式</span></span><br><span class="line">    image = tf.cast(image, tf.string)</span><br><span class="line">    label = tf.cast(label, tf.int32)</span><br><span class="line"></span><br><span class="line">    input_queue = tf.train.slice_input_producer([image, label])  <span class="comment"># 生成队列</span></span><br><span class="line">    image_contents = tf.read_file(input_queue[<span class="number">0</span>])</span><br><span class="line">    label = input_queue[<span class="number">1</span>]</span><br><span class="line">    image = tf.image.decode_jpeg(image_contents, channels=<span class="number">3</span>)</span><br><span class="line">    <span class="comment"># 统一图片大小</span></span><br><span class="line">    image = tf.image.resize_images(image, [image_H, image_W], \</span><br><span class="line">                                   method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)</span><br><span class="line">    image = tf.cast(image, tf.float32)</span><br><span class="line">    image_batch, label_batch = tf.train.batch([image, label], batch_size=batch_size, \</span><br><span class="line">                                              num_threads=<span class="number">64</span>, capacity=capacity)</span><br><span class="line">​</span><br><span class="line">    <span class="comment"># label_batch = tf.reshape(label_batch, [batch_size])</span></span><br><span class="line">    <span class="keyword">return</span> image_batch, label_batch</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;函数<code>get_batch</code>用于将图片分批次，因为一次性将所有<code>25000</code>张图片载入内存不现实也不必要，所以将图片分成不同批次进行训练。对于把训练数据集设置成一个个<code>batch</code>，其解释为：如果损失函数是非凸的话，整个训练样本尽管算的动，可能会卡在局部最优解上；分批训练表示全样本的抽样实现，也就是相当于人为地引入了修正梯度上的采样噪声，使得<code>一路不同，找别路</code>的方法，更有可能搜索到全局最优解。这里传入的<code>image</code>和<code>label</code>参数就是函数<code>get_files</code>返回的<code>image_list</code>和<code>label_list</code>，是<code>python</code>中的<code>list</code>类型，所以需要将其转为<code>TensorFlow</code>可以识别的<code>tensor</code>格式。<br>&emsp;&emsp;这里使用队列来获取数据，因为队列操作牵扯到线程，这里引用了一张图解释：</p>
+<p><img src="/2019/02/16/深度学习/TensorFlow之猫狗分类/1.png" height="248" width="623"></p>
+<p>&emsp;&emsp;我认为大体上可以这么理解：每次训练时，从队列中取一个<code>batch</code>送到网络进行训练，然后又有新的图片从训练库中注入队列，这样循环往复。队列相当于起到了训练库到网络模型间数据管道的作用，训练数据通过队列送入网络。<br>&emsp;&emsp;我们使用<code>slice_input_producer</code>来建立一个队列，将<code>image</code>和<code>label</code>放入一个<code>list</code>中当做参数传给该函数，然后从队列中取得<code>image</code>和<code>label</code>。要注意，用<code>read_file</code>读取图片之后，要按照图片格式进行解码。本例程中训练数据是<code>jpg</code>格式的，所以使用<code>decode_jpeg</code>解码器，如果是其他格式，就要用其他解码器。注意<code>decode</code>出来的数据类型是<code>uint8</code>，之后模型卷积层里面<code>conv2d</code>要求输入数据为<code>float32</code>类型，所以需要进行类型转换。<br>&emsp;&emsp;因为训练库中图片大小是不一样的，所以还需要将图片裁剪成相同大小(<code>img_W</code>和<code>img_H</code>)。有些程序员使用<code>resize_image_with_crop_or_pad</code>方法来裁剪图片，这种方法是从图像中心向四周裁剪，如果图片超过规定尺寸，最后只会剩中间区域的一部分，可能一只狗只剩下躯干，头都不见了，用这样的图片训练结果肯定会受到影响。所以这里稍微改动了一下，使用<code>resize_images</code>对图像进行缩放，而不是裁剪，采用<code>NEAREST_NEIGHBOR</code>插值方法。<br>&emsp;&emsp;然后用<code>tf.train.batch</code>方法获取<code>batch</code>，还有一种方法是<code>tf.train.shuffle_batch</code>，因为之前已经乱序过了，这里用普通的<code>batch</code>函数。<br>&emsp;&emsp;最后将得到的<code>image_batch</code>和<code>label_batch</code>返回，<code>image_batch</code>是一个<code>4D</code>的<code>tensor</code>，即<code>[batch, width, height, channels]</code>，<code>label_batch</code>是一个<code>1D</code>的<code>tensor</code>，即<code>[batch]</code>。<br>&emsp;&emsp;可以用下面的代码测试获取图片是否成功，因为之前将图片转为<code>float32</code>了，因此这里<code>imshow</code>出来的图片色彩会有点奇怪，因为本来<code>imshow</code>是显示<code>uint8</code>类型的数据(灰度值在<code>uint8</code>类型下是<code>0</code>至<code>255</code>，转为<code>float32</code>后会超出这个范围，所以色彩有点奇怪)，不过这不影响后面模型的训练：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line">​</span><br><span class="line">BATCH_SIZE = <span class="number">2</span></span><br><span class="line">CAPACITY = <span class="number">256</span></span><br><span class="line">IMG_W = <span class="number">208</span></span><br><span class="line">IMG_H = <span class="number">208</span></span><br><span class="line">​</span><br><span class="line">train_dir = <span class="string">"data\\train\\"</span></span><br><span class="line">image_list, label_list = get_files(train_dir)</span><br><span class="line">image_batch, label_batch = get_batch(image_list, label_list, IMG_W, IMG_H, BATCH_SIZE, CAPACITY)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    i = <span class="number">0</span></span><br><span class="line">    coord = tf.train.Coordinator()</span><br><span class="line">    threads = tf.train.start_queue_runners(coord=coord)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">not</span> coord.should_stop() <span class="keyword">and</span> i &lt; <span class="number">1</span>:</span><br><span class="line">            img, label = sess.run([image_batch, label_batch])</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">for</span> j <span class="keyword">in</span> np.arange(BATCH_SIZE):</span><br><span class="line">                print(<span class="string">"label: %d"</span> % label[j])</span><br><span class="line">                plt.imshow(img[j, :, :, :])</span><br><span class="line">                plt.show()</span><br><span class="line">            i += <span class="number">1</span></span><br><span class="line">    <span class="keyword">except</span> tf.errors.OutOfRangeError:</span><br><span class="line">        print(<span class="string">"done!"</span>)</span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        coord.request_stop()</span><br><span class="line">    coord.join(threads)</span><br></pre></td></tr></table></figure>
+<h3 id="卷积神经网络模型的构造-model-py"><a href="#卷积神经网络模型的构造-model-py" class="headerlink" title="卷积神经网络模型的构造(model.py)"></a>卷积神经网络模型的构造(model.py)</h3><p>&emsp;&emsp;以下仿照<code>TensorFlow</code>的官方例程<code>cifar-10</code>的网络结构来编写的，就是两个卷积层(每个卷积层后加一个池化层)，两个全连接层，最后使用<code>softmax</code>输出分类结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">inference</span><span class="params">(images, batch_size, n_classes)</span>:</span></span><br><span class="line">    <span class="comment"># conv1, shape = [kernel_size, kernel_size, channels, kernel_numbers]</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"conv1"</span>) <span class="keyword">as</span> scope:</span><br><span class="line">        weights = tf.get_variable(<span class="string">"weights"</span>, shape=[<span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">16</span>], dtype=tf.float32, \</span><br><span class="line">                                  initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.1</span>, dtype=tf.float32))</span><br><span class="line">        biases = tf.get_variable(<span class="string">"biases"</span>, shape=[<span class="number">16</span>], dtype=tf.float32, initializer=tf.constant_initializer(<span class="number">0.1</span>))</span><br><span class="line">        conv = tf.nn.conv2d(images, weights, strides=[<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>], padding=<span class="string">"SAME"</span>)</span><br><span class="line">        pre_activation = tf.nn.bias_add(conv, biases)</span><br><span class="line">        conv1 = tf.nn.relu(pre_activation, name=<span class="string">"conv1"</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"pooling1_lrn"</span>) <span class="keyword">as</span> scope:  <span class="comment"># pool1 &amp;&amp; norm1</span></span><br><span class="line">        pool1 = tf.nn.max_pool(conv1, ksize=[<span class="number">1</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">1</span>], strides=[<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">1</span>], padding=<span class="string">"SAME"</span>, name=<span class="string">"pooling1"</span>)</span><br><span class="line">        norm1 = tf.nn.lrn(pool1, depth_radius=<span class="number">4</span>, bias=<span class="number">1.0</span>, alpha=<span class="number">0.001</span> / <span class="number">9.0</span>, beta=<span class="number">0.75</span>, name=<span class="string">'norm1'</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"conv2"</span>) <span class="keyword">as</span> scope:  <span class="comment"># conv2</span></span><br><span class="line">        weights = tf.get_variable(<span class="string">"weights"</span>, shape=[<span class="number">3</span>, <span class="number">3</span>, <span class="number">16</span>, <span class="number">16</span>], dtype=tf.float32, \</span><br><span class="line">                                  initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.1</span>, dtype=tf.float32))</span><br><span class="line">        biases = tf.get_variable(<span class="string">"biases"</span>, shape=[<span class="number">16</span>], dtype=tf.float32, initializer=tf.constant_initializer(<span class="number">0.1</span>))</span><br><span class="line">        conv = tf.nn.conv2d(norm1, weights, strides=[<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>], padding=<span class="string">"SAME"</span>)</span><br><span class="line">        pre_activation = tf.nn.bias_add(conv, biases)</span><br><span class="line">        conv2 = tf.nn.relu(pre_activation, name=<span class="string">"conv2"</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"pooling2_lrn"</span>) <span class="keyword">as</span> scope:  <span class="comment"># pool2 &amp;&amp; norm2</span></span><br><span class="line">        pool2 = tf.nn.max_pool(conv2, ksize=[<span class="number">1</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">1</span>], strides=[<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">1</span>], padding=<span class="string">"SAME"</span>, name=<span class="string">"pooling2"</span>)</span><br><span class="line">        norm2 = tf.nn.lrn(pool2, depth_radius=<span class="number">4</span>, bias=<span class="number">1.0</span>, alpha=<span class="number">0.001</span> / <span class="number">9.0</span>, beta=<span class="number">0.75</span>, name=<span class="string">'norm2'</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"fc1"</span>) <span class="keyword">as</span> scope:  <span class="comment"># full-connect1</span></span><br><span class="line">        reshape = tf.reshape(norm2, shape=[batch_size, <span class="number">-1</span>])</span><br><span class="line">        dim = reshape.get_shape()[<span class="number">1</span>].value</span><br><span class="line">        weights = tf.get_variable(<span class="string">"weights"</span>, shape=[dim, <span class="number">128</span>], dtype=tf.float32, \</span><br><span class="line">                                  initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.005</span>, dtype=tf.float32))</span><br><span class="line">        biases = tf.get_variable(<span class="string">"biases"</span>, shape=[<span class="number">128</span>], dtype=tf.float32, initializer=tf.constant_initializer(<span class="number">0.1</span>))</span><br><span class="line">        fc1 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=<span class="string">"fc1"</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"fc2"</span>) <span class="keyword">as</span> scope:  <span class="comment"># full_connect2</span></span><br><span class="line">        weights = tf.get_variable(<span class="string">"weights"</span>, shape=[<span class="number">128</span>, <span class="number">128</span>], dtype=tf.float32, \</span><br><span class="line">                                  initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.005</span>, dtype=tf.float32))</span><br><span class="line">        biases = tf.get_variable(<span class="string">"biases"</span>, shape=[<span class="number">128</span>], dtype=tf.float32, initializer=tf.constant_initializer(<span class="number">0.1</span>))</span><br><span class="line">        fc2 = tf.nn.relu(tf.matmul(fc1, weights) + biases, name=<span class="string">"fc2"</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"softmax_linear"</span>) <span class="keyword">as</span> scope:  <span class="comment"># softmax</span></span><br><span class="line">        weights = tf.get_variable(<span class="string">"weights"</span>, shape=[<span class="number">128</span>, n_classes], dtype=tf.float32, \</span><br><span class="line">                                  initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.005</span>, dtype=tf.float32))</span><br><span class="line">        biases = tf.get_variable(<span class="string">"biases"</span>, shape=[n_classes], dtype=tf.float32, initializer=tf.constant_initializer(<span class="number">0.1</span>))</span><br><span class="line">        softmax_linear = tf.add(tf.matmul(fc2, weights), biases, name=<span class="string">"softmax_linear"</span>)</span><br><span class="line">    <span class="keyword">return</span> softmax_linear</span><br></pre></td></tr></table></figure>
+<p>发现程序里面有很多<code>with tf.variable_scope(&quot;name&quot;)</code>的语句，这其实是<code>TensorFlow</code>中的变量作用域机制，目的是有效便捷地管理需要的变量。变量作用域机制在<code>TensorFlow</code>中主要由两部分组成：</p>
+<ul>
+<li><code>tf.get_variable(&lt;name&gt;, &lt;shape&gt;, &lt;initializer&gt;)</code>：创建一个变量。</li>
+<li><code>tf.variable_scope(&lt;scope_name&gt;)</code>：指定命名空间。</li>
+</ul>
+<p>如果需要共享变量，需要通过<code>reuse_variables</code>方法来指定。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">losses</span><span class="params">(logits, labels)</span>:</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"loss"</span>) <span class="keyword">as</span> scope:</span><br><span class="line">        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(</span><br><span class="line">                            logits=logits, labels=labels, name=<span class="string">"xentropy_per_example"</span>)</span><br><span class="line">        loss = tf.reduce_mean(cross_entropy, name=<span class="string">"loss"</span>)</span><br><span class="line">        tf.summary.scalar(scope.name + <span class="string">"loss"</span>, loss)</span><br><span class="line">    <span class="keyword">return</span> loss</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">trainning</span><span class="params">(loss, learning_rate)</span>:</span></span><br><span class="line">    <span class="keyword">with</span> tf.name_scope(<span class="string">"optimizer"</span>):</span><br><span class="line">        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)</span><br><span class="line">        global_step = tf.Variable(<span class="number">0</span>, name=<span class="string">"global_step"</span>, trainable=<span class="keyword">False</span>)</span><br><span class="line">        train_op = optimizer.minimize(loss, global_step=global_step)</span><br><span class="line">    <span class="keyword">return</span> train_op</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">evaluation</span><span class="params">(logits, labels)</span>:</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"accuracy"</span>) <span class="keyword">as</span> scope:</span><br><span class="line">        correct = tf.nn.in_top_k(logits, labels, <span class="number">1</span>)</span><br><span class="line">        correct = tf.cast(correct, tf.float16)</span><br><span class="line">        accuracy = tf.reduce_mean(correct)</span><br><span class="line">        tf.summary.scalar(scope.name + <span class="string">"accuracy"</span>, accuracy)</span><br><span class="line">    <span class="keyword">return</span> accuracy</span><br></pre></td></tr></table></figure>
+<p>函数<code>losses</code>用于计算训练过程中的<code>loss</code>，这里输入参数<code>logtis</code>是函数<code>inference</code>的输出，代表图片对猫和狗的预测概率，<code>labels</code>则是图片对应的标签。<br>&emsp;&emsp;通过在程序中设置断点，查看<code>logtis</code>的值，结果如下图所示，一个数值代表属于猫的概率，一个数值代表属于狗的概率，两者的和为<code>1</code>：</p>
+<p><img src="/2019/02/16/深度学习/TensorFlow之猫狗分类/2.png" height="198" width="246"></p>
+<p>&emsp;&emsp;函数<code>tf.nn.sparse_sotfmax_cross_entropy_with_logtis</code>是将稀疏表示的<code>label</code>与输出层计算出来结果做对比。然后因为训练的时候是<code>16</code>张图片一个<code>batch</code>，所以再用<code>tf.reduce_mean</code>求一下平均值，就得到了这个<code>batch</code>的平均<code>loss</code>。对于<code>training(loss, learning_rate)</code>，<code>loss</code>是训练的<code>loss</code>，<code>learning_rate</code>是学习率，使用<code>AdamOptimizer</code>优化器来使<code>loss</code>朝着变小的方向优化。<code>evaluation(logits, labels)</code>的功能是在训练过程中实时监测验证数据的准确率，达到反映训练效果的作用。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/16/深度学习/Facenet教程/" rel="next" title="Facenet教程">
+                <i class="fa fa-chevron-left"></i> Facenet教程
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/16/深度学习/RCNN原理/" rel="prev" title="RCNN原理">
+                RCNN原理 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#猫狗大战数据集"><span class="nav-number">1.</span> <span class="nav-text">猫狗大战数据集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#训练数据的读取-input-data-py"><span class="nav-number">2.</span> <span class="nav-text">训练数据的读取(input_data.py)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#卷积神经网络模型的构造-model-py"><span class="nav-number">3.</span> <span class="nav-text">卷积神经网络模型的构造(model.py)</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="流水灯实验&amp;emsp;&amp;emsp;CC2530的IO口配置我们需要配置三个寄存器P0SEL、P0DIR、P0INP。IO口功能如下表：     寄存器 说明     P0SEL(0XF3) 端口0功能选择寄存器(P0.7到P0.0功能选择)，0为通用I/O，1为外设功能   P0INP(0x8F) 端口0输入模式寄存器(P0.7到P0.0的I/O输入模式)，0为上拉/下拉，1为三态   P0(0X">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CC2530基础实验">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/CC2530基础实验/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="流水灯实验&amp;emsp;&amp;emsp;CC2530的IO口配置我们需要配置三个寄存器P0SEL、P0DIR、P0INP。IO口功能如下表：     寄存器 说明     P0SEL(0XF3) 端口0功能选择寄存器(P0.7到P0.0功能选择)，0为通用I/O，1为外设功能   P0INP(0x8F) 端口0输入模式寄存器(P0.7到P0.0的I/O输入模式)，0为上拉/下拉，1为三态   P0(0X">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-02-05T08:50:59.813Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CC2530基础实验">
+<meta name="twitter:description" content="流水灯实验&amp;emsp;&amp;emsp;CC2530的IO口配置我们需要配置三个寄存器P0SEL、P0DIR、P0INP。IO口功能如下表：     寄存器 说明     P0SEL(0XF3) 端口0功能选择寄存器(P0.7到P0.0功能选择)，0为通用I/O，1为外设功能   P0INP(0x8F) 端口0输入模式寄存器(P0.7到P0.0的I/O输入模式)，0为上拉/下拉，1为三态   P0(0X">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/CC2530基础实验/">
+
+
+
+
+
+  <title>CC2530基础实验 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/CC2530基础实验/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">CC2530基础实验</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T16:27:20+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="流水灯实验"><a href="#流水灯实验" class="headerlink" title="流水灯实验"></a>流水灯实验</h3><p>&emsp;&emsp;<code>CC2530</code>的<code>IO</code>口配置我们需要配置三个寄存器<code>P0SEL</code>、<code>P0DIR</code>、<code>P0INP</code>。<code>IO</code>口功能如下表：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>寄存器</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>P0SEL(0XF3)</code></td>
+<td>端口<code>0</code>功能选择寄存器(<code>P0.7</code>到<code>P0.0</code>功能选择)，<code>0</code>为通用<code>I/O</code>，<code>1</code>为外设功能</td>
+</tr>
+<tr>
+<td><code>P0INP(0x8F)</code></td>
+<td>端口<code>0</code>输入模式寄存器(<code>P0.7</code>到<code>P0.0</code>的<code>I/O</code>输入模式)，<code>0</code>为上拉/下拉，<code>1</code>为三态</td>
+</tr>
+<tr>
+<td><code>P0(0X80)</code></td>
+<td><code>P0</code>可位寻址的<code>I/O</code>寄存器</td>
+</tr>
+<tr>
+<td><code>P0DIR(0XFD)</code></td>
+<td><code>P0</code>口输入输出设置寄存器(<code>P0.7</code>到<code>P0.0</code>的<code>I/O</code>方向)，<code>0</code>为输入，<code>1</code>为输出</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED1 P1_0 <span class="comment">/* 定义P1.0口为LED1控制端 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">delay</span> <span class="params">( <span class="keyword">unsigned</span> <span class="keyword">int</span> n )</span> </span>&#123; <span class="comment">/* 延时函数 */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> i, j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; n; j++ )</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">200</span>; i++ );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">IO_Init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1SEL &amp;= ~<span class="number">0x01</span>; <span class="comment">/* P1.0作为普通IO口 */</span></span><br><span class="line">    P1DIR |= <span class="number">0x01</span>; <span class="comment">/* P1.0定义为输出 */</span></span><br><span class="line">    P1INP |= <span class="number">0X01</span>; <span class="comment">/* 打开三态 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    IO_Init();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        LED1 = !LED1; <span class="comment">/* LED1闪烁 */</span></span><br><span class="line">        delay ( <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="按键实验"><a href="#按键实验" class="headerlink" title="按键实验"></a>按键实验</h3><p>&emsp;&emsp;代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uchar unsigned char</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED1 P1_0 <span class="comment">/* LED1为P1.0口控制 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KEY1 P0_0 <span class="comment">/* KEY1为P0.0口控制 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">KeyInit</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function">uchar <span class="title">KeyScan</span><span class="params">()</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint xms )</span> </span>&#123; <span class="comment">/* 延时xms毫秒 */</span></span><br><span class="line">    uint i, j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = xms; i &gt; <span class="number">0</span>; i-- )</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">587</span>; j &gt; <span class="number">0</span>; j-- );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1DIR |= <span class="number">0x01</span>;</span><br><span class="line">    P1INP |= <span class="number">0X01</span>;</span><br><span class="line">    LED1 = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitKey</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    P0SEL &amp;= ~<span class="number">0X01</span>; <span class="comment">/* 设置P0.0为普通IO口 */</span></span><br><span class="line">    P0DIR &amp;= ~<span class="number">0X01</span>; <span class="comment">/* 按键在P0.0口，设置为输入模式 */</span></span><br><span class="line">    P0INP &amp;= ~<span class="number">0x01</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function">uchar <span class="title">KeyScan</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( KEY1 == <span class="number">0</span> ) &#123;</span><br><span class="line">        Delayms ( <span class="number">10</span> );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( KEY1 == <span class="number">0</span> ) &#123;</span><br><span class="line">            <span class="keyword">while</span> ( !KEY1 ); <span class="comment">/* 松手检测 */</span></span><br><span class="line">​</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>; <span class="comment">/* 有按键按下 */</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>; <span class="comment">/* 无按键按下 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    InitLed();</span><br><span class="line">    InitKey();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( KeyScan() ) &#123;</span><br><span class="line">            LED1 = ~LED1;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="外部中断"><a href="#外部中断" class="headerlink" title="外部中断"></a>外部中断</h3><p>&emsp;&emsp;<code>CC2530</code>的外部中断我们需要配置三个寄存器<code>P0IEN</code>、<code>PICTL</code>、<code>P0IFG</code>、<code>IEN1</code>。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>寄存器</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>P0IEN(0xAB)</code></td>
+<td>端口<code>0</code>中断屏蔽(端口<code>P0.7</code>到<code>P0.0</code>中断使能)，<code>0</code>为中断禁用，<code>1</code>为中断使能</td>
+</tr>
+<tr>
+<td><code>PICTL(0X8C)</code></td>
+<td>中断触发控制寄存器。<code>Bit0</code>为<code>P0.0</code>到<code>P0.7</code>输入模式下的中断配置。该位为所有端口<code>0</code>的输入选择中断请求条件，<code>0</code>为输入的上升沿引起中断，<code>1</code>为输入的下降沿引起中断</td>
+</tr>
+<tr>
+<td><code>P0IFG(0x89)</code></td>
+<td>端口<code>0</code>中断状态标志。<code>P0.0</code>至<code>P0.7</code>输入中断状态标志，当输入端口出现中断信号时，其相应的标志位将置<code>1</code></td>
+</tr>
+<tr>
+<td><code>IEN1(0xB8)</code></td>
+<td>中断使能<code>1</code>。<code>Bit5</code>为端口<code>0</code>中断使能，<code>0</code>为中断禁止，<code>1</code>为中断使能</td>
+</tr>
+<tr>
+<td><code>P0IF</code></td>
+<td>端口<code>0</code>中断标志，为<code>0</code>表示无中断未决，为<code>1</code>表示有中断未决</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>中断未决指的是中断请求已经产生，但是还未得到<code>CPU</code>的处理。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uchar unsigned char</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED1 P1_0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KEY1 P0_0</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">KeyInit</span><span class="params">()</span></span>;</span><br><span class="line">uchar KeyValue = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint xms )</span> </span>&#123;</span><br><span class="line">    uint i, j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = xms; i &gt; <span class="number">0</span>; i-- )</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">587</span>; j &gt; <span class="number">0</span>; j-- );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1DIR |= <span class="number">0x01</span>;</span><br><span class="line">    P1INP |= <span class="number">0X01</span>;  </span><br><span class="line">    LED1 = <span class="number">0</span>; <span class="comment">/* LED1灯熄灭 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitKey</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    P0IEN |= <span class="number">0X01</span>; <span class="comment">/* P0.0设置为中断方式 */</span></span><br><span class="line">    PICTL |= <span class="number">0x01</span>; <span class="comment">/* 下降沿触发 */</span></span><br><span class="line">    IEN1 |= <span class="number">0X20</span>; <span class="comment">/* 允许P0口中断 */</span></span><br><span class="line">    P0IFG = <span class="number">0x00</span>; <span class="comment">/* 初始化中断标志位 */</span></span><br><span class="line">    EA = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 中断处理函数 */</span></span><br><span class="line"><span class="comment">/* 格式：“#pragma vector = 中断向量”，紧接着是中断处理程序 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> vector = P0INT_VECTOR</span></span><br><span class="line">__<span class="function">interrupt <span class="keyword">void</span> <span class="title">P0_ISR</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    Delayms ( <span class="number">100</span> ); <span class="comment">/* 去除抖动 */</span></span><br><span class="line">    LED1 = ~LED1; <span class="comment">/* 改变LED1状态 */</span></span><br><span class="line">    P0IFG = <span class="number">0</span>; <span class="comment">/* 清中断标志 */</span></span><br><span class="line">    P0IF = <span class="number">0</span>; <span class="comment">/* 清中断标志 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    InitLed();</span><br><span class="line">    InitKey();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="定时器实验"><a href="#定时器实验" class="headerlink" title="定时器实验"></a>定时器实验</h3><p>&emsp;&emsp;对<code>CC2530</code>的<code>T1</code>定时器(<code>16</code>位)，我们需要配置三个寄存器<code>T1CTL</code>、<code>T1STAT</code>和<code>IRCON</code>：</p>
+<ul>
+<li><code>T1CTL(0XE4)</code>：<code>Timer1</code>控制寄存器，<code>Bit3</code>和<code>Bit2</code>是定时器时钟分频倍数选择，<code>00</code>为不分频，<code>01</code>为<code>8</code>分频，<code>10</code>为<code>32</code>分频，<code>11</code>为<code>128</code>分频。<code>Bit1</code>和<code>Bit0</code>定时器模式选择：<code>00</code>为暂停，<code>01</code>为自动重装<code>0x0000</code>至<code>0xFFFF</code>，<code>10</code>为模模式，比较计数<code>0x0000</code>至<code>T1CC0</code>，<code>11</code>为正计数/倒计数，从<code>0x0000</code>到<code>T1CC0</code>反复计数并且从<code>T1CC0</code>倒计数到<code>0x0000</code>。</li>
+<li><code>T1STAT(0XAF)</code>：<code>Timer1</code>状态寄存器，<code>Bit5</code>是<code>OVFIF</code>，即定时器溢出中断标志，在计数器达到计数终值时置位<code>1</code>；<code>Bit4</code>是定时器<code>1</code>通道<code>4</code>中断标志位；<code>Bit3</code>是定时器<code>1</code>通道<code>3</code>中断标志位；<code>Bit2</code>是定时器<code>1</code>通道<code>2</code>中断标志位；<code>Bit1</code>是定时器<code>1</code>通道<code>1</code>中断标志位；<code>Bit0</code>是定时器<code>1</code>通道<code>0</code>中断标志位。</li>
+<li><code>IRCON(0xC0)</code>：中断标志<code>4</code>，<code>Bit1</code>为<code>T1IF</code>，它是定时器<code>1</code>中断标志。当定时器<code>1</code>中断发生时设为<code>1</code>，并且当<code>CPU</code>向量指向中断服务例程时清除，<code>0</code>为无中断未决，<code>1</code>为中断未决。</li>
+</ul>
+<p>&emsp;&emsp;定时器<code>1</code>的查询工作方式如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uchar unsigned char</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED1 P1_0</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitT1</span><span class="params">()</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1DIR |= <span class="number">0x01</span>;</span><br><span class="line">    P1INP |= <span class="number">0X01</span>;</span><br><span class="line">    LED1 = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 定时器初始化 */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitT1</span><span class="params">()</span> </span>&#123; <span class="comment">/* 系统不配置工作时钟时默认是2分频，即16MHz */</span></span><br><span class="line">    T1CTL = <span class="number">0x0d</span>; <span class="comment">/* 128分频，自动重装0x0000至0xFFFF */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    uchar count;</span><br><span class="line">    InitLed();</span><br><span class="line">    InitT1();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( ( IRCON &amp; <span class="number">0x02</span> ) != <span class="number">0</span> ) &#123; <span class="comment">/* 当定时器1中断发生时 */</span></span><br><span class="line">            IRCON = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( ++count &gt;= <span class="number">1</span> ) &#123; <span class="comment">/* 约1s周期性闪烁 */</span></span><br><span class="line">                count = <span class="number">0</span>;</span><br><span class="line">                LED1 = !LED1;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>系统在不配置工作频率时默认为<code>2</code>分频，即<code>32M/2 = 16M</code>，所以定时器每次溢出时<code>T = 1 / (16M / 128) * 65536 = 0.5s</code>，所以总时间<code>Ta = T * count = 0.5 * 1 = 0.5s</code>切换<code>1</code>次状态，所以看起来是<code>1s</code>闪烁<code>1</code>次。<br>&emsp;&emsp;定时器<code>3</code>的中断方式如下(定时器<code>3</code>是<code>8</code>位的)：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uchar unsigned char</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED1 P1_0  </span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span></span>;  </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitT3</span><span class="params">()</span></span>;</span><br><span class="line">​</span><br><span class="line">uint count = <span class="number">0</span>; <span class="comment">/* 用于定时器计数 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1DIR |= <span class="number">0x01</span>;</span><br><span class="line">    P1INP |= <span class="number">0X01</span>;</span><br><span class="line">    LED1 = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitT3</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    T3CTL |= <span class="number">0x08</span>;  <span class="comment">/* 开溢出中断 */</span></span><br><span class="line">    T3IE = <span class="number">1</span>;       <span class="comment">/* 开T3中断 */</span></span><br><span class="line">    T3CTL |= <span class="number">0XE0</span>;  <span class="comment">/* 128分频，128/16000000*N = 0.5s，N = 65200 */</span></span><br><span class="line">    T3CTL &amp;= ~<span class="number">0X03</span>; <span class="comment">/* 自动重装00 -&gt; 0xff，65200/256 = 254(次) */</span></span><br><span class="line">    T3CTL |= <span class="number">0X10</span>;  <span class="comment">/* 启动 */</span></span><br><span class="line">    EA = <span class="number">1</span>;         <span class="comment">/* 开总中断 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    InitLed();</span><br><span class="line">    InitT3();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> vector = T3_VECTOR <span class="comment">/* 定时器T3 */</span></span></span><br><span class="line">__<span class="function">interrupt <span class="keyword">void</span> <span class="title">T3_ISR</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    IRCON = <span class="number">0x00</span>;  <span class="comment">/* 清中断标志, 也可由硬件自动完成 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ++count &gt; <span class="number">254</span> ) &#123; <span class="comment">/* 254次中断后LED取反，闪烁一轮(约为0.5秒时间) */</span></span><br><span class="line">        count = <span class="number">0</span>; <span class="comment">/* 计数清零 */</span></span><br><span class="line">        LED1 = ~LED1;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="串口发送和接收"><a href="#串口发送和接收" class="headerlink" title="串口发送和接收"></a>串口发送和接收</h3><p>&emsp;&emsp;查看<code>CC2530</code>的<code>datasheet</code>可知，<code>UART0</code>对应的外部设备<code>IO</code>引脚关系为：<code>P0_2</code>是<code>RX</code>，<code>P0_3</code>是<code>TX</code>；<code>UART1</code>对应的外部设备<code>IO</code>引脚关系为：<code>P0_5</code>是<code>RX</code>，<code>P0_4</code>是<code>TX</code>。在<code>CC2530</code>中，<code>USART0</code>和<code>USART1</code>是串行通信接口，它们能够分别运行于异步<code>USART</code>模式或者同步<code>SPI</code>模式。两个<code>USART</code>的功能是一样的，可以通过设置在单独的<code>IO</code>引脚上。<code>USART</code>模式的操作具有下列特点：</p>
+<ul>
+<li><code>8</code>位或者<code>9</code>位负载数据。</li>
+<li>奇校验、偶校验或者无奇偶校验。</li>
+<li>配置起始位和停止位电平。</li>
+<li>配置<code>LSB</code>或者<code>MSB</code>首先传送。</li>
+<li>独立收发中断。</li>
+<li>独立收发<code>DMA</code>触发。</li>
+</ul>
+<p>&emsp;&emsp;<code>CC2530</code>配置串口的一般步骤：</p>
+<ol>
+<li>配置<code>IO</code>，使用外部设备功能。此处配置<code>P0_2</code>和<code>P0_3</code>用作串口<code>UART0</code>。</li>
+<li>配置相应串口的控制和状态寄存器。此处配置<code>UART0</code>的工作寄存器。</li>
+<li>配置串口工作的波特率。此处配置为波特率为<code>115200</code>。</li>
+</ol>
+<p>本次实验串口相关的寄存器或者标志位有：<code>U0CSR</code>、<code>U0GCR</code>、<code>U0BAUD</code>、<code>U0DBUF</code>、<code>UTX0IF</code>。串口发送代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span>  uint  unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span>  uchar unsigned char</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED1 P1_0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED2 P1_1</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delay_ms</span> <span class="params">( uint )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">initUART</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">UartSend_String</span> <span class="params">( <span class="keyword">char</span> *Data, <span class="keyword">int</span> len )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">char</span> Txdata[<span class="number">14</span>]; <span class="comment">/* 存放“HELLO WEBEE   ”共14个字符串 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delay_ms</span> <span class="params">( uint n )</span> </span>&#123;</span><br><span class="line">    uint i, j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; <span class="number">1774</span>; j++ );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">IO_Init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    P1DIR = <span class="number">0x03</span>;</span><br><span class="line">    P1INP |= <span class="number">0X03</span>;</span><br><span class="line">    LED1 = <span class="number">0</span>;</span><br><span class="line">    LED2 = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitUART</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 串口初始化函数 */</span></span><br><span class="line">    PERCFG = <span class="number">0x00</span>; <span class="comment">/* (外设控制寄存器)USART_0的I/O位置为备用位置0 */</span></span><br><span class="line">    P0SEL = <span class="number">0x0c</span>; <span class="comment">/* P0_2和P0_3用作串口(外部设备功能) */</span></span><br><span class="line">    P2DIR &amp;= ~<span class="number">0XC0</span>; <span class="comment">/* (端口2方向和端口0外设优先级控制)P0优先作为UART0 */</span></span><br><span class="line">    U0CSR |= <span class="number">0x80</span>; <span class="comment">/* 设置为UART模式 */</span></span><br><span class="line">    U0GCR |= <span class="number">8</span>; <span class="comment">/* 波特率指数值，BAUD_E和BAUD_M决定了UART波特率 */</span></span><br><span class="line">    U0BAUD |= <span class="number">59</span>; <span class="comment">/* 波特率设为9600 */</span></span><br><span class="line">    UTX0IF = <span class="number">0</span>; <span class="comment">/* UART0的TX中断标志初始设置为0 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 串口发送字符串函数 */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">UartSend_String</span> <span class="params">( <span class="keyword">char</span> *Data, <span class="keyword">int</span> len )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; len; j++ ) &#123;</span><br><span class="line">        U0DBUF = *Data++;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( UTX0IF == <span class="number">0</span> ); <span class="comment">/* 当UTX0IF为1时表示发送完成 */</span></span><br><span class="line">​</span><br><span class="line">        UTX0IF = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    CLKCONCMD &amp;= ~<span class="number">0x40</span>; <span class="comment">/* 设置系统时钟源为32MHz晶振 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( CLKCONSTA &amp; <span class="number">0x40</span> ); <span class="comment">/* 等待晶振稳定为32M */</span></span><br><span class="line">​</span><br><span class="line">    CLKCONCMD &amp;= ~<span class="number">0x47</span>; <span class="comment">/* 设置系统主时钟频率为32MHz */</span></span><br><span class="line">    IO_Init();</span><br><span class="line">    InitUART();</span><br><span class="line">    <span class="built_in">strcpy</span> ( Txdata, <span class="string">"HELLO WEBEE   "</span> ); <span class="comment">/* 将发送内容copy到Txdata */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        UartSend_String ( Txdata, <span class="keyword">sizeof</span> ( <span class="string">"HELLO WEBEE   "</span> ) ); <span class="comment">/* 串口发送数据 */</span></span><br><span class="line">        Delay_ms ( <span class="number">500</span> );</span><br><span class="line">        LED1 = !LED1;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;串口发送与接收的代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uchar unsigned char</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED1 P1_0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED2 P1_1</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint xms )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitUart</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Uart_Send_String</span> <span class="params">( <span class="keyword">char</span> *Data, <span class="keyword">int</span> len )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">char</span> Rxdata[<span class="number">50</span>];</span><br><span class="line">uchar RXTXflag = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">char</span> temp;</span><br><span class="line">uchar  datanumber = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint xms )</span> </span>&#123;</span><br><span class="line">    uint i, j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = xms; i &gt; <span class="number">0</span>; i-- )</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">587</span>; j &gt; <span class="number">0</span>; j-- );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1DIR |= <span class="number">0x03</span>;</span><br><span class="line">    LED1 = <span class="number">0</span>;</span><br><span class="line">    LED2 = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitUart</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    CLKCONCMD &amp;= ~<span class="number">0x40</span>; <span class="comment">/* 设置系统时钟源为32MHz晶振 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( CLKCONSTA &amp; <span class="number">0x40</span> ); <span class="comment">/* 等待晶振稳定 */</span></span><br><span class="line">​</span><br><span class="line">    CLKCONCMD &amp;= ~<span class="number">0x47</span>; <span class="comment">/* 设置系统主时钟频率为32MHz */</span></span><br><span class="line"></span><br><span class="line">    PERCFG = <span class="number">0x00</span>;</span><br><span class="line">    P0SEL = <span class="number">0x0c</span>;  <span class="comment">/* P0_2、P0_3用作串口，第二功能开启 */</span></span><br><span class="line">    P2DIR &amp;= ~<span class="number">0XC0</span>;</span><br><span class="line">    U0CSR |= <span class="number">0x80</span>;</span><br><span class="line">    U0GCR |= <span class="number">11</span>;</span><br><span class="line">    U0BAUD |= <span class="number">216</span>;</span><br><span class="line">    UTX0IF = <span class="number">0</span>;</span><br><span class="line">    U0CSR |= <span class="number">0X40</span>; <span class="comment">/* 允许接收 */</span></span><br><span class="line">    IEN0 |= <span class="number">0x84</span>; <span class="comment">/* UART0接收中断开启 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Uart_Send_String</span> <span class="params">( <span class="keyword">char</span> *Data, <span class="keyword">int</span> len )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; len; j++ ) &#123;</span><br><span class="line">        U0DBUF = *Data++;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( UTX0IF == <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">        UTX0IF = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    InitLed();</span><br><span class="line">    InitUart();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( RXTXflag == <span class="number">1</span> ) &#123; <span class="comment">/* 接收状态 */</span></span><br><span class="line">            LED1 = <span class="number">1</span>; <span class="comment">/* 接收状态指示 */</span></span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( temp != <span class="number">0</span> ) &#123;</span><br><span class="line">                <span class="comment">/* “#”被定义为结束字符，最多能接收50个字符 */</span></span><br><span class="line">                <span class="keyword">if</span> ( ( temp != <span class="string">'#'</span> ) &amp;&amp; ( datanumber &lt; <span class="number">50</span> ) ) &#123;</span><br><span class="line">                    Rxdata[datanumber++] = temp;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    RXTXflag = <span class="number">3</span>; <span class="comment">/* 进入发送状态 */</span></span><br><span class="line">                    LED1 = <span class="number">0</span>; <span class="comment">/* 关指示灯 */</span></span><br><span class="line">                &#125;</span><br><span class="line">​</span><br><span class="line">                temp  = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( RXTXflag == <span class="number">3</span> ) &#123; <span class="comment">/* 发送状态 */</span></span><br><span class="line">            LED2 = <span class="number">1</span>;</span><br><span class="line">            U0CSR &amp;= ~<span class="number">0x40</span>; <span class="comment">/* 禁止接收 */</span></span><br><span class="line">            <span class="comment">/* 发送已记录的字符串 */</span></span><br><span class="line">            Uart_Send_String ( Rxdata, datanumber );</span><br><span class="line">            U0CSR |= <span class="number">0x40</span>;  <span class="comment">/* 允许接收 */</span></span><br><span class="line">            RXTXflag = <span class="number">1</span>; <span class="comment">/* 恢复到接收状态 */</span></span><br><span class="line">            datanumber = <span class="number">0</span>; <span class="comment">/* 指针归0 */</span></span><br><span class="line">            LED2 = <span class="number">0</span>; <span class="comment">/* 关发送指示 */</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 串口接收一个字符：一旦有数据从串口传至CC2530，</span></span><br><span class="line"><span class="comment">   则进入中断，将接收到的数据赋值给变量temp */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> vector = URX0_VECTOR</span></span><br><span class="line">__<span class="function">interrupt <span class="keyword">void</span> <span class="title">UART0_ISR</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    URX0IF = <span class="number">0</span>; <span class="comment">/* 清中断标志 */</span></span><br><span class="line">    temp = U0DBUF;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>打开串口助手并进行连接，计算机发送<code>hello#</code>，将收到字符串<code>hello</code>。</p>
+<h3 id="内部温度传感器"><a href="#内部温度传感器" class="headerlink" title="内部温度传感器"></a>内部温度传感器</h3><p>&emsp;&emsp;<code>InitUART_Timer.h</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uchar unsigned char</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED1 P1_0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED2 P1_1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED3 P1_4</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">char</span>  BYTE;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">char</span>  UINT8;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">char</span>  INT8U;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">short</span> UINT16;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">short</span> INT16U;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span>  UINT32;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span>  INT32U;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">char</span>    INT8;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">short</span>   INT16;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">long</span>    INT32;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DISABLE_ALL_INTERRUPTS() (IEN0 = IEN1 = IEN2 = 0x00)</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitClock</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    CLKCONCMD &amp;= ~<span class="number">0x40</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( CLKCONSTA &amp; <span class="number">0x40</span> );</span><br><span class="line">​</span><br><span class="line">    CLKCONCMD &amp;= ~<span class="number">0x47</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1DIR |= <span class="number">0x13</span>;</span><br><span class="line">    LED1 = <span class="number">0</span>;</span><br><span class="line">    LED2 = <span class="number">0</span>;</span><br><span class="line">    LED3 = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitUART0</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    PERCFG = <span class="number">0x00</span>;</span><br><span class="line">    P0SEL = <span class="number">0x3c</span>;</span><br><span class="line">    P2DIR &amp;= ~<span class="number">0XC0</span>;</span><br><span class="line">    U0CSR |= <span class="number">0x80</span>;</span><br><span class="line">    U0GCR |= <span class="number">11</span>;</span><br><span class="line">    U0BAUD |= <span class="number">216</span>;</span><br><span class="line">    UTX0IF = <span class="number">1</span>;</span><br><span class="line">    U0CSR |= <span class="number">0X40</span>;</span><br><span class="line">    IEN0 |= <span class="number">0x84</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">UartTX_Send_String</span> <span class="params">( <span class="keyword">char</span> *Data, <span class="keyword">int</span> len )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; len; j++ ) &#123;</span><br><span class="line">        U0DBUF = *Data++;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( UTX0IF == <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">        UTX0IF = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    U0DBUF = <span class="number">0x0A</span>; <span class="comment">/* 换行 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( UTX0IF == <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">    UTX0IF = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 延时xms毫秒(16M晶振时的大约数，32M需要修改，系统不修改默认使用内部16M) */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint xms )</span> </span>&#123;</span><br><span class="line">    uint i, j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = xms; i &gt; <span class="number">0</span>; i-- )</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">587</span>; j &gt; <span class="number">0</span>; j-- );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>main.c</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"InitUART_Timer.h"</span> <span class="comment">/* 注意在option里设置路径 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">initTempSensor</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 温度传感器初始化函数 */</span></span><br><span class="line">    DISABLE_ALL_INTERRUPTS(); <span class="comment">/* 关闭所有中断 */</span></span><br><span class="line">    InitClock(); <span class="comment">/* 设置系统主时钟为32M */</span></span><br><span class="line">    TR0 = <span class="number">0X01</span>; <span class="comment">/* 设置为1来连接温度传感器到SOC_ADC */</span></span><br><span class="line">    ATEST = <span class="number">0X01</span>; <span class="comment">/* 使能温度传感器 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">float</span> <span class="title">getTemperature</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 读取温度传感器AD值函数 */</span></span><br><span class="line">    uint  value;</span><br><span class="line">    ADCCON3  = ( <span class="number">0x3E</span> ); <span class="comment">/* 选择内部1.25V为参考电压；12位ENOB；对片内温度传感器进行采样 */</span></span><br><span class="line">    ADCCON1 |= <span class="number">0x30</span>; <span class="comment">/* 选择ADC的启动模式为手动(启动序列转换) */</span></span><br><span class="line">    ADCCON1 |= <span class="number">0x40</span>; <span class="comment">/* 启动AD转化(启动转换) */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( ! ( ADCCON1 &amp; <span class="number">0x80</span> ) ); <span class="comment">/* 等待AD转换完成 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* ADCL寄存器低4位无效，ADC最高只能达到12位有效位 */</span></span><br><span class="line">    value =  ADCL &gt;&gt; <span class="number">4</span>;</span><br><span class="line">    value |= ( ( ( UINT16 ) ADCH ) &lt;&lt; <span class="number">4</span> );</span><br><span class="line">    <span class="comment">/* 根据AD值，计算出实际的温度。芯片手册上有错误，温度系数应该是4.5/℃。</span></span><br><span class="line"><span class="comment">       进行温度校正，这里减去5℃(不同芯片根据具体情况校正) */</span></span><br><span class="line">    <span class="keyword">return</span> ( value - <span class="number">1367.5</span> ) / <span class="number">4.5</span> - <span class="number">5</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> i;</span><br><span class="line">    <span class="keyword">char</span> TempValue[<span class="number">6</span>];</span><br><span class="line">    <span class="keyword">float</span> AvgTemp;</span><br><span class="line">    InitUART0();</span><br><span class="line">    initTempSensor();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        AvgTemp = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span> ; i &lt; <span class="number">64</span> ; i++ ) &#123;</span><br><span class="line">            AvgTemp += getTemperature();</span><br><span class="line">            AvgTemp = AvgTemp / <span class="number">2</span>; <span class="comment">/* 每次累加后除以2 */</span></span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 将温度转换成ASCII码发送 */</span></span><br><span class="line">        TempValue[<span class="number">0</span>] = ( <span class="keyword">unsigned</span> <span class="keyword">char</span> ) ( AvgTemp ) / <span class="number">10</span> + <span class="number">48</span>; <span class="comment">/* 十位 */</span></span><br><span class="line">        TempValue[<span class="number">1</span>] = ( <span class="keyword">unsigned</span> <span class="keyword">char</span> ) ( AvgTemp ) % <span class="number">10</span> + <span class="number">48</span>; <span class="comment">/* 个位 */</span></span><br><span class="line">        TempValue[<span class="number">2</span>] = <span class="string">'.'</span>; <span class="comment">/* 小数点 */</span></span><br><span class="line">        TempValue[<span class="number">3</span>] = ( <span class="keyword">unsigned</span> <span class="keyword">char</span> ) ( AvgTemp * <span class="number">10</span> ) % <span class="number">10</span> + <span class="number">48</span>; <span class="comment">/* 十分位 */</span></span><br><span class="line">        TempValue[<span class="number">4</span>] = ( <span class="keyword">unsigned</span> <span class="keyword">char</span> ) ( AvgTemp * <span class="number">100</span> ) % <span class="number">10</span> + <span class="number">48</span>; <span class="comment">/* 百分位 */</span></span><br><span class="line">        TempValue[<span class="number">5</span>] = <span class="string">'\0'</span>; <span class="comment">/* 字符串结束符 */</span></span><br><span class="line">        UartTX_Send_String ( TempValue, <span class="number">6</span> );</span><br><span class="line">        Delayms ( <span class="number">2000</span> ); <span class="comment">/* 使用32M晶振，故这里2000约等于1s */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="睡眠唤醒"><a href="#睡眠唤醒" class="headerlink" title="睡眠唤醒"></a>睡眠唤醒</h3><p>&emsp;&emsp;睡眠定时器用于设置系统进入和退出低功耗睡眠模式之间的周期。还用于当系统进入低功耗模式后，维持<code>MAC</code>定时器(<code>T2</code>)的定时。其特性如下：长达<code>24</code>位定时计数器，运行在<code>32.768KHz</code>的工作频率。<code>24</code>位的比较器具有中断和DMA触发功能，在<code>PM2</code>低功耗模式下运行系统。电源管理工作方式如下：</p>
+<ul>
+<li><code>全功能模式</code>：高频晶振(<code>16M</code>或者<code>32M</code>)和低频晶振(<code>32.768K</code>的<code>RCOSC/XOSC</code>)全部工作，数字处理模块正常工作。</li>
+<li><code>PM1</code>：高频晶振(<code>16M</code>或者<code>32M</code>)关闭，低频晶振(<code>32.768K</code>的<code>RCOSC/XOSC</code>)工作，数字核心模块正常工作。</li>
+<li><code>PM2</code>：低频晶振(<code>32.768K</code>的<code>RCOSC/XOSC</code>)工作，数字核心模块关闭，系统通过<code>RESET</code>、外部中断或者睡眠计数器溢出唤醒。</li>
+<li><code>PM3</code>：晶振全部关闭，数字处理核心模块关闭，系统只能通过<code>RESET</code>或外部中断唤醒，此模式下功耗最低。</li>
+</ul>
+<p>&emsp;&emsp;<code>CC2530</code>需要配置的主要寄存器有<code>PCON</code>、<code>SLEEPCMD</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uchar unsigned char</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED2 P1_1  </span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> KEY1 P0_0</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint )</span></span>;  </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span></span>;  </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SysPowerMode</span> <span class="params">( uchar sel )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint xms )</span> </span>&#123;</span><br><span class="line">    uint i, j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = xms; i &gt; <span class="number">0</span>; i-- )</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">587</span>; j &gt; <span class="number">0</span>; j-- );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1DIR |= <span class="number">0x02</span>;</span><br><span class="line">    P1INP |= <span class="number">0X02</span>;</span><br><span class="line">    LED2 = <span class="number">0</span>;</span><br><span class="line">    P0INP  &amp;= ~<span class="number">0X01</span>; <span class="comment">/* 设置P0口输入电路模式为上拉/下拉 */</span></span><br><span class="line">    P0IEN |= <span class="number">0X01</span>; <span class="comment">/* P0.0设置为中断方式 */</span></span><br><span class="line">    PICTL |= <span class="number">0x01</span>; <span class="comment">/* 下降沿触发 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/*-------------------------------</span></span><br><span class="line"><span class="comment">系统工作模式选择函数</span></span><br><span class="line"><span class="comment">* para1  0   1   2   3</span></span><br><span class="line"><span class="comment">* mode  PM0 PM1 PM2 PM3</span></span><br><span class="line"><span class="comment">-------------------------------*/</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SysPowerMode</span> <span class="params">( uchar mode )</span> </span>&#123;</span><br><span class="line">    uchar i, j;</span><br><span class="line">    i = mode;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( mode &lt; <span class="number">4</span> ) &#123;</span><br><span class="line">        SLEEPCMD |= i; <span class="comment">/* 设置系统睡眠模式 */</span></span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; <span class="number">4</span>; j++ );</span><br><span class="line">​</span><br><span class="line">        PCON = <span class="number">0x01</span>; <span class="comment">/* 进入睡眠模式，通过中断打断 */</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        PCON = <span class="number">0x00</span>; <span class="comment">/* 系统唤醒，通过中断打断 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    uchar count = <span class="number">0</span>;</span><br><span class="line">    InitLed();</span><br><span class="line">    IEN1 |= <span class="number">0X20</span>;  <span class="comment">/* 开P0口总中断 */</span></span><br><span class="line">    P0IFG |= <span class="number">0x00</span>; <span class="comment">/* 清中断标志 */</span></span><br><span class="line">    EA = <span class="number">1</span>; <span class="comment">/* 开总中断 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        LED2 = ~LED2;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( ++count &gt;= <span class="number">10</span> ) &#123;</span><br><span class="line">            count = <span class="number">0</span>;</span><br><span class="line">            <span class="comment">/* 5次闪烁后进入睡眠状态PM3，等待按键S1中断唤醒 */</span></span><br><span class="line">            SysPowerMode ( <span class="number">3</span> );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        Delayms ( <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 中断处理函数(系统唤醒) */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> vector = P0INT_VECTOR</span></span><br><span class="line">__<span class="function">interrupt <span class="keyword">void</span> <span class="title">P0_ISR</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( P0IFG &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">        P0IFG = <span class="number">0</span>; <span class="comment">/* 清标志位 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    P0IF = <span class="number">0</span>;</span><br><span class="line">    SysPowerMode ( <span class="number">4</span> ); <span class="comment">/* 正常工作模式 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="定时器唤醒"><a href="#定时器唤醒" class="headerlink" title="定时器唤醒"></a>定时器唤醒</h3><p>&emsp;&emsp;<code>CC2530</code>睡眠定时器需要配置的寄存器主要有<code>ST0</code>、<code>ST1</code>、<code>ST2</code>，也就是<code>24bit</code>定时器：</p>
+<ul>
+<li><code>ST0(0x95)</code>：睡眠计数器数据<code>Bit0</code>至<code>Bit7</code>。</li>
+<li><code>ST1(0x96)</code>：睡眠计数器数据<code>Bit8</code>至<code>Bit15</code>。</li>
+<li><code>ST2(0x97)</code>：睡眠计数器数据<code>Bit16</code>至<code>Bit23</code>。</li>
+</ul>
+<p>配置唤醒时间寄存器有以下配置方法：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">UINT32 sleepTimer = <span class="number">0</span>;</span><br><span class="line">sleepTimer |= ST0;</span><br><span class="line">sleepTimer |= (UINT32)ST1 &lt;&lt; <span class="number">8</span>;</span><br><span class="line">sleepTimer |= (UINT32)ST2 &lt;&lt; <span class="number">16</span>;</span><br><span class="line">sleepTimer += ((UINT32)sec * (UINT32)<span class="number">32768</span>) <span class="comment">/* 低速晶振 */</span></span><br><span class="line">ST2 = (UINT8)(sleepTimer &gt;&gt; <span class="number">16</span>);</span><br><span class="line">ST1 = (UINT8)(sleepTimer &gt;&gt; <span class="number">8</span>);</span><br><span class="line">ST0 = (UINT8) sleepTimer;</span><br></pre></td></tr></table></figure>
+<p>配置完毕后，<code>sleepTimer</code>与<code>ST2 &lt;&lt; 16 | ST1 &lt;&lt; 8 | ST0</code>相差<code>sec</code>秒时间(低速晶振)。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*--------------------------------------</span></span><br><span class="line"><span class="comment">  通过设置定时器在特定时间内进行唤醒，重</span></span><br><span class="line"><span class="comment">  新进入工作模式，每次唤醒LED2闪烁3下</span></span><br><span class="line"><span class="comment">---------------------------------------*/</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uchar unsigned char</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT8 unsigned char</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT16 unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT32 unsigned long</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED2 P1_1</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SysPowerMode</span> <span class="params">( uchar sel )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint xms )</span> </span>&#123;</span><br><span class="line">    uint i, j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = xms; i &gt; <span class="number">0</span>; i-- )</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">587</span>; j &gt; <span class="number">0</span>; j-- );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1DIR |= <span class="number">0x02</span>;</span><br><span class="line">    P1INP |= <span class="number">0X02</span>;</span><br><span class="line">    LED2 = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SysPowerMode</span> <span class="params">( uchar mode )</span> </span>&#123;</span><br><span class="line">    uchar i, j;</span><br><span class="line">    i = mode;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( mode &lt; <span class="number">4</span> ) &#123;</span><br><span class="line">        SLEEPCMD |= i;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; <span class="number">4</span>; j++ );</span><br><span class="line">​</span><br><span class="line">        PCON = <span class="number">0x01</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        PCON = <span class="number">0x00</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 初始化“Sleep Timer”(设定后经过指定时间自行唤醒) */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Init_SLEEP_TIMER</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    ST2 = <span class="number">0X00</span>;</span><br><span class="line">    ST1 = <span class="number">0X00</span>;</span><br><span class="line">    ST0 = <span class="number">0X00</span>;</span><br><span class="line">    EA = <span class="number">1</span>;</span><br><span class="line">    STIE = <span class="number">1</span>; <span class="comment">/* SleepTimerinterrupt enable */</span></span><br><span class="line">    STIF = <span class="number">0</span>; <span class="comment">/* SleepTimerinterrupt flag 还没处理的 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Set_ST_Period</span> <span class="params">( uint sec )</span> </span>&#123; <span class="comment">/* 设置睡眠时间 */</span></span><br><span class="line">    UINT32 sleepTimer = <span class="number">0</span>;</span><br><span class="line">    sleepTimer |= ST0;</span><br><span class="line">    sleepTimer |= ( UINT32 ) ST1 &lt;&lt;  <span class="number">8</span>;</span><br><span class="line">    sleepTimer |= ( UINT32 ) ST2 &lt;&lt; <span class="number">16</span>;</span><br><span class="line">    sleepTimer += ( ( UINT32 ) sec * ( UINT32 ) <span class="number">32768</span> );</span><br><span class="line">    ST2 = ( UINT8 ) ( sleepTimer &gt;&gt; <span class="number">16</span> );</span><br><span class="line">    ST1 = ( UINT8 ) ( sleepTimer &gt;&gt; <span class="number">8</span> );</span><br><span class="line">    ST0 = ( UINT8 ) sleepTimer;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    uchar i;</span><br><span class="line">    InitLed();</span><br><span class="line">    Init_SLEEP_TIMER();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">6</span>; i++ ) &#123; <span class="comment">/* 闪烁3下 */</span></span><br><span class="line">            LED2 = ~LED2;</span><br><span class="line">            Delayms ( <span class="number">200</span> );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        Set_ST_Period ( <span class="number">3</span> ); <span class="comment">/* 重新进入睡眠模式 */</span></span><br><span class="line">        SysPowerMode ( <span class="number">2</span> ); <span class="comment">/* 进入PM2低频晶振模式 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 中断唤醒 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> vector = ST_VECTOR</span></span><br><span class="line">__<span class="function">interrupt <span class="keyword">void</span> <span class="title">ST_ISR</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    STIF = <span class="number">0</span>; <span class="comment">/* 清标志位 */</span></span><br><span class="line">    SysPowerMode ( <span class="number">4</span> ); <span class="comment">/* 进入正常工作模式 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="看门狗"><a href="#看门狗" class="headerlink" title="看门狗"></a>看门狗</h3><p>&emsp;&emsp;<code>CC2530</code>的看门狗只需要配置<code>1</code>个寄存器<code>WDCTL</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uchar unsigned char</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED1 P1_0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED2 P1_1  </span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint xms )</span></span>;  </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span></span>;  </span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delayms</span> <span class="params">( uint xms )</span> </span>&#123;</span><br><span class="line">    uint i, j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = xms; i &gt; <span class="number">0</span>; i-- )</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">587</span>; j &gt; <span class="number">0</span>; j-- );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitLed</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1DIR |= <span class="number">0x03</span>;</span><br><span class="line">    P1INP |= <span class="number">0X03</span>;</span><br><span class="line">    LED1 = <span class="number">0</span>;</span><br><span class="line">    LED2 = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Init_Watchdog</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    WDCTL = <span class="number">0x00</span>; <span class="comment">/* 这是必须的，打开IDLE才能设置看门狗 */</span></span><br><span class="line">    WDCTL |= <span class="number">0x08</span>; <span class="comment">/* 时间间隔一秒，看门狗模式 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">FeetDog</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 清除看门狗定时器，即喂狗 */</span></span><br><span class="line">    WDCTL = <span class="number">0xa0</span>;</span><br><span class="line">    WDCTL = <span class="number">0x50</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    InitLed();</span><br><span class="line">    Init_Watchdog();</span><br><span class="line">    LED1 = <span class="number">1</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        LED2 = ~LED2;</span><br><span class="line">        Delayms ( <span class="number">300</span> );</span><br><span class="line">        LED1 = <span class="number">0</span>;</span><br><span class="line">        FeetDog(); <span class="comment">/* 喂狗 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/05/CC2530和zigbee笔记/串口使用流程简要分析/" rel="next" title="串口使用流程简要分析">
+                <i class="fa fa-chevron-left"></i> 串口使用流程简要分析
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/05/C++语法详解/enum枚举/" rel="prev" title="enum枚举">
+                enum枚举 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#流水灯实验"><span class="nav-number">1.</span> <span class="nav-text">流水灯实验</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#按键实验"><span class="nav-number">2.</span> <span class="nav-text">按键实验</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#外部中断"><span class="nav-number">3.</span> <span class="nav-text">外部中断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#定时器实验"><span class="nav-number">4.</span> <span class="nav-text">定时器实验</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#串口发送和接收"><span class="nav-number">5.</span> <span class="nav-text">串口发送和接收</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内部温度传感器"><span class="nav-number">6.</span> <span class="nav-text">内部温度传感器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#睡眠唤醒"><span class="nav-number">7.</span> <span class="nav-text">睡眠唤醒</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#定时器唤醒"><span class="nav-number">8.</span> <span class="nav-text">定时器唤醒</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#看门狗"><span class="nav-number">9.</span> <span class="nav-text">看门狗</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

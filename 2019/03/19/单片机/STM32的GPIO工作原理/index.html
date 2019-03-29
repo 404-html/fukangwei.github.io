@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;STM32F103ZET6一共有7组IO口，即GPIOA至GPIOG，每组IO口有16个IO，一共有16 * 7 = 112个IO口。STM32的大部分引脚除了当GPIO使用外，还可以复用为外设功能引脚(如串口)。&amp;emsp;&amp;emsp;STM32共有8种模式：4种输入模式，分别是浮空输入模式(GPIO_Mode_IN_FLOATING)、上拉输入模式(GPIO_Mode_">
+<meta property="og:type" content="article">
+<meta property="og:title" content="STM32的GPIO工作原理">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;STM32F103ZET6一共有7组IO口，即GPIOA至GPIOG，每组IO口有16个IO，一共有16 * 7 = 112个IO口。STM32的大部分引脚除了当GPIO使用外，还可以复用为外设功能引脚(如串口)。&amp;emsp;&amp;emsp;STM32共有8种模式：4种输入模式，分别是浮空输入模式(GPIO_Mode_IN_FLOATING)、上拉输入模式(GPIO_Mode_">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/1.jpg">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/2.jpg">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/3.jpg">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/4.jpg">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/5.jpg">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/6.jpg">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/7.jpg">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/8.jpg">
+<meta property="og:updated_time" content="2019-03-18T22:39:24.646Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="STM32的GPIO工作原理">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;STM32F103ZET6一共有7组IO口，即GPIOA至GPIOG，每组IO口有16个IO，一共有16 * 7 = 112个IO口。STM32的大部分引脚除了当GPIO使用外，还可以复用为外设功能引脚(如串口)。&amp;emsp;&amp;emsp;STM32共有8种模式：4种输入模式，分别是浮空输入模式(GPIO_Mode_IN_FLOATING)、上拉输入模式(GPIO_Mode_">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/1.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/">
+
+
+
+
+
+  <title>STM32的GPIO工作原理 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的GPIO工作原理/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">STM32的GPIO工作原理</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-19T07:08:42+08:00">
+                2019-03-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;<code>STM32F103ZET6</code>一共有<code>7</code>组<code>IO</code>口，即<code>GPIOA</code>至<code>GPIOG</code>，每组<code>IO</code>口有<code>16</code>个<code>IO</code>，一共有<code>16 * 7 = 112</code>个<code>IO</code>口。<code>STM32</code>的大部分引脚除了当<code>GPIO</code>使用外，还可以复用为外设功能引脚(如串口)。<br>&emsp;&emsp;<code>STM32</code>共有<code>8</code>种模式：<code>4</code>种输入模式，分别是浮空输入模式(<code>GPIO_Mode_IN_FLOATING</code>)、上拉输入模式(<code>GPIO_Mode_IPU</code>)、下拉输入模式(<code>GPIO_Mode_IPD</code>)、模拟输入模式(<code>GPIO_Mode_AIN</code>)；<code>4</code>种输出模式，分别是普通推挽输出模式(<code>GPIO_Mode_Out_PP</code>)、普通开漏输出模式(<code>GPIO_Mode_Out_OD</code>)、复用推挽输出模式(<code>GPIO_Mode_AF_PP</code>)、复用开漏输出模式(<code>GPIO_Mode_AF_OD</code>)。</p>
+<h3 id="输入模式"><a href="#输入模式" class="headerlink" title="输入模式"></a>输入模式</h3><p>&emsp;&emsp;浮空输入模式：</p>
+<p><img src="/2019/03/19/单片机/STM32的GPIO工作原理/1.jpg" height="277" width="461"></p>
+<p>&emsp;&emsp;<code>IO</code>口的电平状态经过<code>TTL</code>施密特触发器(开)，再到输入数据寄存器，<code>CPU</code>即可从数据寄存器读取到该电平状态。内部的上拉下拉的开关是关闭的。当此<code>IO</code>口悬空，其电平状态是不确定的，由外部输入决定，这个模式直接用电压表测量其引脚电压为<code>1.X</code>伏。由于其输入阻抗比较大，一般这种输入模式用于标准的通讯协议(如<code>I2C</code>、<code>USART</code>)的接收端。<br>&emsp;&emsp;上拉输入模式：</p>
+<p><img src="/2019/03/19/单片机/STM32的GPIO工作原理/2.jpg" height="260" width="456"></p>
+<p>&emsp;&emsp;和浮空很相似，唯一不同地方在于，上拉的开关被打开，若<code>IO</code>口处于悬空状态，会有上拉电阻拉高。即默认电平为高电平。<br>&emsp;&emsp;下拉输入模式：</p>
+<p><img src="/2019/03/19/单片机/STM32的GPIO工作原理/3.jpg" height="255" width="448"></p>
+<p>&emsp;&emsp;和上拉输入模式很相似，唯一不同的地方在于下拉的开关被打开，<code>IO</code>口悬空时默认电平为低电平。<br>&emsp;&emsp;模拟输入模式：</p>
+<p><img src="/2019/03/19/单片机/STM32的GPIO工作原理/4.jpg" height="264" width="453"></p>
+<p>&emsp;&emsp;接入到<code>IO</code>口的不是电平状态，而是电压(<code>2V</code>、<code>3V</code>等)，上下拉被关闭、<code>TTL</code>施密特触发器被关闭，加在<code>IO</code>口的电压直接到模拟输入。当<code>IO</code>口被用作<code>ADC</code>采样时就是这种结构，当使用<code>ADC</code>外设时，必须设置为模拟输入模式。</p>
+<h3 id="输出模式"><a href="#输出模式" class="headerlink" title="输出模式"></a>输出模式</h3><p>&emsp;&emsp;普通推挽输出模式：</p>
+<p><img src="/2019/03/19/单片机/STM32的GPIO工作原理/5.jpg" height="260" width="455"></p>
+<p>&emsp;&emsp;往寄存器写<code>1</code>，通过输出控制电路，<code>P-MOS</code>管导通，<code>N-MOS</code>管关闭，<code>IO</code>口即为高电平；往寄存器写<code>0</code>，通过输出控制电路，<code>P-MOS</code>管关闭，<code>N-MOS</code>管导通，<code>IO</code>口即为低电平。两个管子轮流导通，一个负责灌电流、一个负责拉电流，使其负载能力和开关速度都比普通的方式有很大的提升，推挽输出的低电平为<code>0V</code>，高电平为<code>3.3V</code>。无论何时，<code>CPU</code>都可以通过输入驱动器读取该<code>IO</code>口的实际电平值。<br>&emsp;&emsp;普通开漏输出模式：</p>
+<p><img src="/2019/03/19/单片机/STM32的GPIO工作原理/6.jpg" height="261" width="453"></p>
+<p>&emsp;&emsp;该模式下，<code>P-MOS</code>管不起作用，往寄存器写<code>0</code>，通过输出控制电路，则使<code>N-MOS</code>管导通，使输出接地，<code>IO</code>口即为低电平；往寄存器写<code>1</code>，<code>N-MOS</code>管截止，此时<code>IO</code>口即不是高电平也不是低电平，为高阻态，即无法直接输出高电平，使用时必须在外部接上一个上拉电阻。当输出为高阻态时，由上拉将该<code>IO</code>口拉高，一般用于电平不匹配的情况下，如需要输出<code>5V</code>高电平，就需要加上拉电阻，电源为<code>5V</code>。当输出为高阻态时，由上拉电阻和电源向外输出<code>5V</code>电平。<br>&emsp;&emsp;注意此模式具有<code>线与</code>特性，即很多个开漏模式引脚连在一起时，只有当所有引脚都输出高阻态(即<code>1</code>)，才会被外部上拉电阻拉高提供电平，此时电平的电压为外部上拉电阻所接电源的电压。若其中一个引脚为低电平，那线路就相当于短接到地，使得整条线路为低电平(<code>0V</code>)。<br>&emsp;&emsp;上拉电阻的阻值决定了逻辑电平转换的沿的速度，阻值越大，速度越低功耗越小。只有在写<code>1</code>时，才可以通过输入驱动器读取该<code>IO</code>口的实际电平值，利用此原理，适合模拟<code>I2C</code>，接上拉电阻，就能够正确输出<code>0</code>和<code>1</code>，读值时先<code>GPIO_SetBits(GPIOB, GPIO_Pin_0)</code>拉高，然后使用<code>GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_0)</code>读<code>IO</code>的值。<br>&emsp;&emsp;复用推挽输出模式：</p>
+<p><img src="/2019/03/19/单片机/STM32的GPIO工作原理/7.jpg" height="275" width="459"></p>
+<p>&emsp;&emsp;复用推挽输出模式和普通推挽输出模式基本是一样，只是一个是由片上外设控制，一个是由<code>CPU</code>控制。无论何时，<code>CPU</code>都可以通过输入驱动器读取该<code>IO</code>口的实际电平值。<br>&emsp;&emsp;复用开漏输出模式：</p>
+<p><img src="/2019/03/19/单片机/STM32的GPIO工作原理/8.jpg" height="277" width="461"></p>
+<p>&emsp;&emsp;复用开漏输出模式和普通开漏输出模式基本是一样，只是一个是由片上外设控制，一个是由<code>CPU</code>控制。无论何时，<code>CPU</code>都可以通过输入驱动器读取该<code>IO</code>口的实际电平值。复用模式是根据<code>GPIO</code>的复用功能来选择的，如<code>GPIO</code>的引脚作用串口<code>TX</code>，则采用复用推挽输出模式，如果是<code>I2C</code>、<code>SMBUS</code>这些线与功能的复用场合则采用复用开漏输出模式。在使用任何一种开漏模式时，一般都是接上拉电阻。<br>&emsp;&emsp;通常有<code>5</code>种方式使用某个引脚功能，它们的配置方式如下：</p>
+<ul>
+<li>作为普通<code>GPIO</code>输入：根据需要配置该引脚为浮空输入、带弱上拉输入或带弱下拉输入，同时不要使能该引脚对应的所有复用功能模块。</li>
+<li>作为普通<code>GPIO</code>输出：根据需要配置该引脚为推挽输出或开漏输出，同时不要使能该引脚对应的所有复用功能模块。</li>
+<li>作为普通模拟输入：配置该引脚为模拟输入模式，同时不要使能该引脚对应的所有复用功能模块。</li>
+<li>作为内置外设的输入：根据需要配置该引脚为浮空输入、带弱上拉输入或带弱下拉输入，同时使能该引脚对应的某个复用功能模块。</li>
+<li>作为内置外设的输出：根据需要配置该引脚为复用推挽输出或复用开漏输出，同时使能该引脚对应的所有复用功能模块。</li>
+</ul>
+<p>&emsp;&emsp;如果有多个复用功能模块对应同一个引脚，只能使能其中之一，其它模块保持非使能状态。<code>STM32</code>复位后，<code>IO</code>端口处于输入浮空状态。复位后，<code>JTAG</code>引脚被置于输入上拉或下拉模式：</p>
+<ul>
+<li><code>PA15</code>：<code>JTDI</code>置于上拉模式。</li>
+<li><code>PA14</code>：<code>JTCK</code>置于下拉模式。</li>
+<li><code>PA13</code>：<code>JTMS</code>置于上拉模式。</li>
+<li><code>PB4</code>：<code>JNTRST</code>置于上拉模式。</li>
+</ul>
+<p>&emsp;&emsp;所有<code>IO</code>端口都具有外部中断能力，端口必须配置成输入模式，才能使用外部中断功能。<code>IO</code>端口复用功能配置：</p>
+<ul>
+<li>对于复用功能输入，端口可以配置成任意输入模式或者复用功能输出模式。</li>
+<li>对于复用功能输出，端口必须配置成复用功能输出。</li>
+<li>对于双向复用功能，端口必须配置成复用功能输出。</li>
+<li><code>STM32</code>的部分<code>IO</code>端口的复用功能可以重新映射成另外的复用功能。</li>
+<li><code>STM32</code>具有<code>GPIO</code>锁定机制，即锁定<code>GPIO</code>配置，下次复位前不能再修改。</li>
+<li>当<code>LSE</code>振荡器关闭时，<code>OSC32_IN</code>和<code>OSC32_OUT</code>可以用作通用<code>IO</code>即<code>PC14</code>和<code>PC15</code>。</li>
+<li>当进入待机模式或者备份域由<code>VBAT</code>供电，<code>PC14</code>、<code>PC15</code>功能丢失，该两个<code>IO</code>口线设置为模拟输入功能。</li>
+<li><code>OSC_IN</code>和<code>OSC_OUT</code>可以重新映射为<code>PD0</code>、<code>PD1</code>。<code>PD</code>、<code>PD1</code>用于输出地时候仅能用于<code>50MHz</code>输出模式。</li>
+<li><code>PC13</code>、<code>PC14</code>、<code>PC15</code>只能用于<code>2MHz</code>的输出模式，最多只能带<code>30pf</code>的负载，并且同时只能使用一个引脚。</li>
+</ul>
+<hr>
+<h3 id="STM32的GPIO相关寄存器"><a href="#STM32的GPIO相关寄存器" class="headerlink" title="STM32的GPIO相关寄存器"></a>STM32的GPIO相关寄存器</h3><p>&emsp;&emsp;每个<code>GPIO</code>端口有两个<code>32</code>位配置寄存器(<code>GPIOx_CRH</code>、<code>GPIOx_CRL</code>)分别控制每个端口的高<code>8</code>位和低<code>8</code>位。如果<code>IO</code>口是<code>0</code>至<code>7</code>，则写<code>CRL</code>寄存器；如果<code>IO</code>口是<code>8</code>至<code>15</code>，则写<code>CRH</code>寄存器。两个<code>32</code>位数据寄存器(<code>GPIOx_IDR</code>、<code>GPIOx_ODR</code>)一个是输入数据寄存器，另一个是输出寄存器。<code>32</code>位<code>置位/复位</code>寄存器为<code>GPIOx_BSRR</code>，<code>16</code>位复位寄存器为<code>GPIOx_BRR</code>，<code>32</code>位锁定寄存器为<code>GPIOx_LCKR</code>。常用的<code>IO</code>端口寄存器只有四个，即<code>CRH</code>、<code>CRL</code>、<code>IDR</code>、<code>ODR</code>。<br>&emsp;&emsp;数据手册中列出了每个<code>I/O</code>端口的特定硬件特征，<code>GPIO</code>端口的每个位可以由软件分别配置成多种模式。每个<code>I/O</code>端口位可以自由编程，然而<code>I/0</code>端口寄存器必须按<code>32</code>位字被访问(不允许半字或字节访问)。另外，<code>STM32</code>的每个端口使用前都要将其时钟使能，<code>STM32</code>的<code>GPIO</code>的时钟统一挂接在<code>APB2</code>上，具体的使能寄存器为<code>RCC_APB2ENR</code>，该寄存器的第<code>2</code>位到第<code>8</code>位分别控制<code>GPIOx</code>(<code>x = A、B、C、D、E、F、G</code>)端口的时钟使能。当外设时钟没有启用时，程序不能读出外设寄存器的数值。例如打开<code>PORTA</code>时钟为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RCC-&gt;APB2ENR |= <span class="number">1</span> &lt;&lt; <span class="number">2</span>; <span class="comment">/* 使能PORTA时钟 */</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;使能外设时钟后，<code>GPIOA</code>的十六位就可以按照设定的状态工作了，之后就是具体设置哪一位了。以第<code>8</code>位为例，即高位的首位，在<code>GPIOx_CRH</code>寄存器中进行设置，<code>GPIOA</code>的每一位都由该寄存器的四位来设定相应的参数，这四位中的高两位(<code>CNF0</code>、<code>CNF1</code>)设置<code>GPIO</code>的输入输出模式，低两位(<code>MODE0</code>、<code>MODE1</code>)是设置<code>GPIO</code>的输出频率。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 清掉PA8原来的设置，同时屏蔽其它端口，不影响其它端口的设置 */</span></span><br><span class="line">GPIOA-&gt;CRH &amp;= <span class="number">0xFFFFFFF0</span>;</span><br><span class="line">GPIOA-&gt;CRH |= <span class="number">0x00000003</span>; <span class="comment">/* PA8推挽输出 */</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;十六进制中的<code>3</code>换成二进制是<code>0011</code>。前两位<code>00</code>表示推挽输出，<code>11</code>代表输出频率<code>50MHz</code>，若<code>CRH |= 0x4</code>，表示模拟输入模式(<code>ADC</code>使用)，<code>0x3</code>表示推挽输出模式(用作输出口，<code>50M</code>速率)，<code>0x8</code>表示<code>上/下拉</code>输入模式(用作输入口)，<code>0xB</code>表示复用输出(使用<code>IO</code>口的第二功能，<code>50M</code>速率)。这是对一位的操作，当然也可以多位操作，因为<code>STM32</code>对<code>GPIO</code>操作必须是<code>32</code>位全字操作，设置完成后<code>GPIOA</code>的第<code>8</code>位就可以使用了。之后给<code>GPIOA-&gt;ODR = 0x xxxx xxxx</code>送数据就可以了。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/19/单片机/MDK寄存器地址名称映射/" rel="next" title="MDK寄存器地址名称映射">
+                <i class="fa fa-chevron-left"></i> MDK寄存器地址名称映射
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/19/ucos和ucgui/ucgui添加自定义汉字库/" rel="prev" title="ucgui添加自定义汉字库">
+                ucgui添加自定义汉字库 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#输入模式"><span class="nav-number">1.</span> <span class="nav-text">输入模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#输出模式"><span class="nav-number">2.</span> <span class="nav-text">输出模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#STM32的GPIO相关寄存器"><span class="nav-number">3.</span> <span class="nav-text">STM32的GPIO相关寄存器</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;GPU和TPU可以从根本上减少执行单个training step所需的时间。为了达到高性能，我们需要一个高效的input pipeline，它可以在当前step完成后为下一个step高效分发数据。tf.data的API可以帮助构建灵活和高效的input pipeline。该文档解释了tf.data的API特性以及最佳实践，来跨多种模型和加速器构建高性能tensorflow">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tensorflow之input pipeline性能指南">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/15/深度学习/Tensorflow之input pipeline性能指南/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;GPU和TPU可以从根本上减少执行单个training step所需的时间。为了达到高性能，我们需要一个高效的input pipeline，它可以在当前step完成后为下一个step高效分发数据。tf.data的API可以帮助构建灵活和高效的input pipeline。该文档解释了tf.data的API特性以及最佳实践，来跨多种模型和加速器构建高性能tensorflow">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/15/深度学习/Tensorflow之input%20pipeline性能指南/1.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/15/深度学习/Tensorflow之input%20pipeline性能指南/2.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/15/深度学习/Tensorflow之input%20pipeline性能指南/3.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/15/深度学习/Tensorflow之input%20pipeline性能指南/4.png">
+<meta property="og:updated_time" content="2019-03-13T07:35:21.752Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Tensorflow之input pipeline性能指南">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;GPU和TPU可以从根本上减少执行单个training step所需的时间。为了达到高性能，我们需要一个高效的input pipeline，它可以在当前step完成后为下一个step高效分发数据。tf.data的API可以帮助构建灵活和高效的input pipeline。该文档解释了tf.data的API特性以及最佳实践，来跨多种模型和加速器构建高性能tensorflow">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/02/15/深度学习/Tensorflow之input%20pipeline性能指南/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/15/深度学习/Tensorflow之input pipeline性能指南/">
+
+
+
+
+
+  <title>Tensorflow之input pipeline性能指南 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/15/深度学习/Tensorflow之input pipeline性能指南/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Tensorflow之input pipeline性能指南</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-15T18:34:45+08:00">
+                2019-02-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;<code>GPU</code>和<code>TPU</code>可以从根本上减少执行单个<code>training step</code>所需的时间。为了达到高性能，我们需要一个高效的<code>input pipeline</code>，它可以在当前<code>step</code>完成后为下一个<code>step</code>高效分发数据。<code>tf.data</code>的<code>API</code>可以帮助构建灵活和高效的<code>input pipeline</code>。该文档解释了<code>tf.data</code>的<code>API</code>特性以及最佳实践，来跨多种模型和加速器构建高性能<code>tensorflow input pipelines</code>。</p>
+<h3 id="Input-Pipeline结构"><a href="#Input-Pipeline结构" class="headerlink" title="Input Pipeline结构"></a>Input Pipeline结构</h3><p>&emsp;&emsp;一个典型的<code>tensorflow training input pipeline</code>可以看成是一个<code>ETL process</code>问题：</p>
+<ul>
+<li><code>Extract(E)</code>：从持久化存储中读取数据，可以是本地(比如<code>HDD</code>或<code>SSD</code>)或远程(比如<code>GCS</code>或<code>HDFS</code>)。</li>
+<li><code>Transform(T)</code>：利用<code>CPU cores</code>来解析和执行在数据上的预处理操作，例如图片解压、数据转换(随机裁减、翻转、颜色扭曲)、重排(<code>shuffling</code>)以及<code>batching</code>。</li>
+<li><code>Load(L)</code>：在加速设备上(例如<code>GPU</code>或<code>TPU</code>)加载转换后的数据，执行机器学习模型。</li>
+</ul>
+<p>这种模式(<code>pattern</code>)可以有效地利用<code>CPU</code>，同时保留加速器让它去处理模型训练部分的重任。另外，将<code>input pipeline</code>看成是一个<code>ETL process</code>，这种结构更有利于性能优化。</p>
+<p>&emsp;&emsp;当使用<code>tf.estimator.Estimator</code>的<code>API</code>时，前两个<code>phases</code>(<code>Extract</code>和<code>Transform</code>)可以在<code>input_fn</code>中被捕获，然后传给<code>tf.estimator.Estimator.train</code>。在代码中，看起来实现如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">parse_fn</span><span class="params">(example)</span>:</span></span><br><span class="line">    <span class="string">""" Parse TFExample records and perform simple data augmentation """</span></span><br><span class="line">    example_fmt = &#123;</span><br><span class="line">        <span class="string">"image"</span>: tf.FixedLengthFeature((), tf.string, <span class="string">""</span>),</span><br><span class="line">        <span class="string">"label"</span>: tf.FixedLengthFeature((), tf.int64, <span class="number">-1</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    parsed = tf.parse_single_example(example, example_fmt)</span><br><span class="line">    image = tf.image.decode_image(parsed[<span class="string">"image"</span>])</span><br><span class="line">    image = _augment_helper(image)  <span class="comment"># augments image using slice, reshape, resize_bilinear</span></span><br><span class="line">    <span class="keyword">return</span> image, parsed[<span class="string">"label"</span>]</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">input_fn</span><span class="params">()</span>:</span></span><br><span class="line">    files = tf.data.Dataset.list_files(<span class="string">"/path/to/dataset/train-*.tfrecord"</span>)</span><br><span class="line">    dataset = files.interleave(tf.data.TFRecordDataset)</span><br><span class="line">    dataset = dataset.shuffle(buffer_size=FLAGS.shuffle_buffer_size)</span><br><span class="line">    dataset = dataset.map(map_func=parse_fn)</span><br><span class="line">    dataset = dataset.batch(batch_size=FLAGS.batch_size)</span><br><span class="line">    <span class="keyword">return</span> dataset</span><br></pre></td></tr></table></figure>
+<h3 id="性能优化"><a href="#性能优化" class="headerlink" title="性能优化"></a>性能优化</h3><p>&emsp;&emsp;新计算设备(比如<code>CPU</code>或<code>TPU</code>)可以以一个越来越快的速率来训练神经网络，而<code>CPU</code>处理速度被证明是个瓶颈。<code>tf.data</code>的<code>API</code>提供给用户相应的构建块来设计<code>input pipeline</code>，可以有效利用<code>CPU</code>，优化在<code>ETL</code>过程中的每一步。</p>
+<h4 id="Pipeling"><a href="#Pipeling" class="headerlink" title="Pipeling"></a>Pipeling</h4><p>&emsp;&emsp;为了执行一个<code>training step</code>，你必须首先<code>extract</code>和<code>transform</code>训练数据，接着将它<code>feed</code>给一个运行在加速器上的模型。然而，在一个原始的同步实现(<code>naive synchronous implementation</code>)中，<code>CPU</code>会准备数据，加速器会保持空闲状态。相反地，当加速器在训练模型时，<code>CPU</code>会保持空闲状态。训练过程的时间会是<code>CPU</code>处理时间和加速器训练时间的总和。<br>&emsp;&emsp;<code>Pipelining</code>会将一个<code>training step</code>的预处理和模型执行在时序上重叠。当加速器执行了<code>N</code>个<code>training step</code>时，<code>CPU</code>会为第<code>N + 1</code>个<code>step</code>准备数据，这样做是为了减少总时间。如果没有做<code>pipeling</code>，<code>CPU</code>和<code>GPU/TPU</code>的空闲时间会有很多：</p>
+<p><img src="/2019/02/15/深度学习/Tensorflow之input pipeline性能指南/1.png" height="72" width="403"></p>
+<p>&emsp;&emsp;而有了<code>pipeling</code>，空闲时间会急剧减少：</p>
+<p><img src="/2019/02/15/深度学习/Tensorflow之input pipeline性能指南/2.png" height="73" width="400"></p>
+<p>&emsp;&emsp;<code>tf.data</code>的<code>API</code>通过<code>tf.data.Dataset.prefetch</code>转换，提供了一个软件实现的管道机制(<code>software pipeling</code>)，该转换可以被用于将数据生产时间和数据消费时间相解耦。特别的，该转换会使用一个后台线程，以及一个内部缓存(<code>internal buffer</code>)，来<code>prefetch</code>来自<code>input dataset</code>的元素(在它们被请求之前)。这样，为了达到上述的<code>pipeling</code>效果，你可以添加<code>prefetch(1)</code>到你的<code>dataset pipeline</code>中(或者<code>prefetch(n)</code>，如果单个<code>training step</code>消费<code>n</code>个元素的话)。<br>&emsp;&emsp;为了在我们的示例中达到该变化，可以做如下更改，将：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">dataset = dataset.batch(batch_size=FLAGS.batch_size)</span><br><span class="line"><span class="keyword">return</span> dataset</span><br></pre></td></tr></table></figure>
+<p>变更成：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dataset = dataset.batch(batch_size=FLAGS.batch_size)</span><br><span class="line">dataset = dataset.prefetch(buffer_size=FLAGS.prefetch_buffer_size)</span><br><span class="line"><span class="keyword">return</span> dataset</span><br></pre></td></tr></table></figure>
+<p>注意，<code>prefetch</code>转换在任何时间都会有好处，有机会将一个<code>producer</code>的工作量和一个<code>consumer</code>的工作量在时序上重合。</p>
+<h4 id="并行化数据转换"><a href="#并行化数据转换" class="headerlink" title="并行化数据转换"></a>并行化数据转换</h4><p>&emsp;&emsp;当准备一个<code>batch</code>时，<code>input elements</code>需要被预处理。为了这个目的，<code>tf.data</code>的<code>API</code>提供了<code>tf.data.Dataset.map</code>转换，它会将一个用户定义的函数(例如运行示例中的<code>parse_fn</code>)应用到<code>input dataset</code>中的每个元素上。由于<code>input elements</code>相互独立，预处理可以跨多个<code>CPU core</code>并行进行。为了达到该目的，<code>map</code>转换提供了<code>num_parallel_calls</code>参数来指定并行度。例如，下图展示了在<code>map</code>转换中设置<code>num_parallel_calls=2</code>的效果：</p>
+<p><img src="/2019/02/15/深度学习/Tensorflow之input pipeline性能指南/3.png" height="196" width="342"></p>
+<p>&emsp;&emsp;选择<code>num_parallel_calls</code>的最佳值取决于你的硬件、训练数据的特性(比如<code>size</code>和<code>shape</code>)、<code>map</code>函数的开销、以及在<code>CPU</code>上同时发生的其它处理过程，一个简单的启发法(<code>heuristic</code>)是使用可提供的<code>CPU cores</code>的数目。例如，如果机器具有<code>4</code>个<code>cores</code>，那么设置<code>num_parallel_calls=4</code>更有效。在另一方面，将<code>num_parallel_calls</code>设置为一个比可提供的<code>CPU</code>数更大的值，会导致无效调度，反而会减慢速度。<br>&emsp;&emsp;可以将代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dataset = dataset.map(map_func=parse_fn)</span><br></pre></td></tr></table></figure>
+<p>更改为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dataset = dataset.map(map_func=parse_fn, num_parallel_calls=FLAGS.num_parallel_calls)</span><br></pre></td></tr></table></figure>
+<p>更进一步，如果你的<code>batch_size</code>是几百或几千，你的<code>pipeline</code>将可能从<code>batch</code>创建并行化中获得额外收益。为了达到该目的，<code>tf.data</code>的<code>API</code>提供了<code>tf.contrib.data.map_and_batch</code>转换，它可以用效地将<code>map</code>转换和<code>batch</code>转换相<code>混合</code>(<code>fuse</code>)。<br>&emsp;&emsp;可以将下面代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">dataset = dataset.map(map_func=parse_fn, num_parallel_calls=FLAGS.num_parallel_calls)</span><br><span class="line">dataset = dataset.batch(batch_size=FLAGS.batch_size)</span><br></pre></td></tr></table></figure>
+<p>更改为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">dataset = dataset.apply(</span><br><span class="line">    tf.contrib.data.map_and_batch(</span><br><span class="line">        map_func=parse_fn, batch_size=FLAGS.batch_size</span><br><span class="line">    )</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h4 id="数据抽取并行化"><a href="#数据抽取并行化" class="headerlink" title="数据抽取并行化"></a>数据抽取并行化</h4><p>&emsp;&emsp;在现实中，<code>input data</code>可以在远端存储(例如<code>GCS</code>或<code>HDFS</code>)，可能因为<code>input data</code>太大在本地存不下，也可能因为训练是分布式的，不希望在每台机器上复制<code>input data</code>。当在本地读取数据时，一个<code>dataset pipeline</code>可以很好地工作，而当远端读取时可能会有<code>I/O</code>瓶颈。这是由于以下在本地存储和远端存储的不同之处：</p>
+<ul>
+<li>首字节的时间(<code>Time-to-first-byte</code>)：从远端存储上读取一个文件的首字节，可以会比本地存储花费多个数量级。</li>
+<li>读取吞吐量(<code>Read throughput</code>)：远端存储通常提供了更大的聚集带宽，读取单个文件可能只利用了该带宽的一小部分。</li>
+</ul>
+<p>另一方面，一旦原始字节被读到内存中，有必要做并行化和数据压缩(比如<code>protobuf</code>)，这会增加额外开销。这种开销不用管数据是否在本地或远端存储，但在远端存储的情况下，如果数据没有有效地做<code>prefetch</code>，开销会很大。<br>&emsp;&emsp;为了减轻多种数据抽取开销的影响，<code>tf.data</code>提供了<code>tf.contrib.data.parallel_interleave</code>转换。使用该转换来并行化其它<code>datasets</code>内容(比如<code>data file readers</code>)交错执行。<code>datasets</code>的重合数目可以通过<code>cycle_length</code>参数进行指定。</p>
+<p><img src="/2019/02/15/深度学习/Tensorflow之input pipeline性能指南/4.png" height="199" width="358"></p>
+<p>&emsp;&emsp;为了在运行示例中应用该变化，将：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dataset = files.interleave(tf.data.TFRecordDataset)</span><br></pre></td></tr></table></figure>
+<p>变更为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">dataset = files.apply(</span><br><span class="line">    tf.contrib.data.parallel_interleave(</span><br><span class="line">        tf.data.TFRecordDataset, cycle_length=FLAGS.num_parallel_readers</span><br><span class="line">    )</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>远端存储系统的吞吐量可以随时间变化，这是由于负载和网络事件。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/15/深度学习/RNN的MNIST实验/" rel="next" title="RNN的MNIST实验">
+                <i class="fa fa-chevron-left"></i> RNN的MNIST实验
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/15/深度学习/TensorFlow制作TFRecord数据集/" rel="prev" title="TensorFlow制作TFRecord数据集">
+                TensorFlow制作TFRecord数据集 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Input-Pipeline结构"><span class="nav-number">1.</span> <span class="nav-text">Input Pipeline结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#性能优化"><span class="nav-number">2.</span> <span class="nav-text">性能优化</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Pipeling"><span class="nav-number">2.1.</span> <span class="nav-text">Pipeling</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#并行化数据转换"><span class="nav-number">2.2.</span> <span class="nav-text">并行化数据转换</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#数据抽取并行化"><span class="nav-number">2.3.</span> <span class="nav-text">数据抽取并行化</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

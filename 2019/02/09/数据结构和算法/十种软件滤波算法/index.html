@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="限幅滤波法&amp;emsp;&amp;emsp;先根据经验判断，确定两次采样允许的最大偏差值，设为A。每次检测到新采样值时进行判断：  如果本次新采样值与上一次滤波效果之差&amp;lt;= A，则本次采样值有效，令本次滤波结果等于新采样值。 如果本次采样值与上次滤波结果之差&amp;gt; A，则本次采样值无效，放弃本次采样值，本次滤波结果等于上次滤波结果。  &amp;emsp;&amp;emsp;优点是能有效克服因偶然因素引起的脉冲干扰">
+<meta property="og:type" content="article">
+<meta property="og:title" content="十种软件滤波算法">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/09/数据结构和算法/十种软件滤波算法/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="限幅滤波法&amp;emsp;&amp;emsp;先根据经验判断，确定两次采样允许的最大偏差值，设为A。每次检测到新采样值时进行判断：  如果本次新采样值与上一次滤波效果之差&amp;lt;= A，则本次采样值有效，令本次滤波结果等于新采样值。 如果本次采样值与上次滤波结果之差&amp;gt; A，则本次采样值无效，放弃本次采样值，本次滤波结果等于上次滤波结果。  &amp;emsp;&amp;emsp;优点是能有效克服因偶然因素引起的脉冲干扰">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-02-09T03:12:39.802Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="十种软件滤波算法">
+<meta name="twitter:description" content="限幅滤波法&amp;emsp;&amp;emsp;先根据经验判断，确定两次采样允许的最大偏差值，设为A。每次检测到新采样值时进行判断：  如果本次新采样值与上一次滤波效果之差&amp;lt;= A，则本次采样值有效，令本次滤波结果等于新采样值。 如果本次采样值与上次滤波结果之差&amp;gt; A，则本次采样值无效，放弃本次采样值，本次滤波结果等于上次滤波结果。  &amp;emsp;&amp;emsp;优点是能有效克服因偶然因素引起的脉冲干扰">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/09/数据结构和算法/十种软件滤波算法/">
+
+
+
+
+
+  <title>十种软件滤波算法 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/09/数据结构和算法/十种软件滤波算法/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">十种软件滤波算法</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-09T12:02:09+08:00">
+                2019-02-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="限幅滤波法"><a href="#限幅滤波法" class="headerlink" title="限幅滤波法"></a>限幅滤波法</h3><p>&emsp;&emsp;先根据经验判断，确定两次采样允许的最大偏差值，设为<code>A</code>。每次检测到新采样值时进行判断：</p>
+<ul>
+<li>如果本次新采样值与上一次滤波效果之差<code>&lt;= A</code>，则本次采样值有效，令本次滤波结果等于新采样值。</li>
+<li>如果本次采样值与上次滤波结果之差<code>&gt; A</code>，则本次采样值无效，放弃本次采样值，本次滤波结果等于上次滤波结果。</li>
+</ul>
+<p>&emsp;&emsp;优点是能有效克服因偶然因素引起的脉冲干扰；缺点是无法抑制那种周期性的干扰，且平滑度差。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> A 10 <span class="comment">/* 两次采样的最大误差值，该值需要使用者根据实际情况设置 */</span></span></span><br><span class="line">uchar Value; <span class="comment">/* 上次采样有效值 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function">uchar <span class="title">AmplitudeLimiterFilter</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    uchar NewValue, <span class="comment">/* 当前采样的值 */</span></span><br><span class="line">          ReturnValue;</span><br><span class="line">    NewValue = GetAD(); <span class="comment">/* 本次采样值 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( ( NewValue - Value ) &gt; A ) || ( ( Value - NewValue ) &gt; A ) ) )</span><br><span class="line">        ReturnValue = Value;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            ReturnValue = NewValue;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ( ReturnValue ); <span class="comment">/* 返回值，本次滤波结果 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="中位值滤波法"><a href="#中位值滤波法" class="headerlink" title="中位值滤波法"></a>中位值滤波法</h3><p>&emsp;&emsp;连续采样<code>N</code>次值，把采样值按大小排列，取中间值为本次有效值。<br>&emsp;&emsp;优点是能有效克服因偶然因素引起的波动干扰；对温度、液位等变化缓慢的被测参数有良好的滤波效果；缺点是对流量、速度等快速变化的参数不宜。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 9 <span class="comment">/* 数组长度 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function">unchar <span class="title">MiddleValueFilter</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    unchar i, j, k;</span><br><span class="line">    uchar temp;</span><br><span class="line">    uchar ArrDataBuffer[N]; <span class="comment">/* 用来存放一次性采集的N组数据 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; N; i++ ) &#123; <span class="comment">/* 一次采集N个数据放入数组中 */</span></span><br><span class="line">        ArrDataBuffer[i] = GetAD(); <span class="comment">/* 该用来取得当前值 */</span></span><br><span class="line">        Delay(); <span class="comment">/* 延时函数 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; N - <span class="number">1</span>; j++ ) &#123; <span class="comment">/* 采样值由小到大排列 */</span></span><br><span class="line">        <span class="keyword">for</span> ( k = <span class="number">0</span>; k &lt; N - j - <span class="number">1</span>; k++ ) &#123;</span><br><span class="line">            <span class="keyword">if</span> ( ArrDataBuffer[k] &gt; ArrDataBuffer[k + <span class="number">1</span>] ) &#123;</span><br><span class="line">                temp = ArrDataBuffer[k];</span><br><span class="line">                ArrDataBuffer[k] = ArrDataBuffer[k + <span class="number">1</span>];</span><br><span class="line">                ArrDataBuffer[k + <span class="number">1</span>] = temp;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ( ArrDataBuffer[ ( N - <span class="number">1</span> ) / <span class="number">2</span>] ); <span class="comment">/* 取中间值 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="算术平均滤波法"><a href="#算术平均滤波法" class="headerlink" title="算术平均滤波法"></a>算术平均滤波法</h3><p>&emsp;&emsp;连续取<code>N</code>个值进行算术平均运算。<code>N</code>较大时，信号平滑度较高，但灵敏度较低；<code>N</code>较小时，信号平滑度低，但灵敏度较高。<br>&emsp;&emsp;优点是适用于对一般具有随机干扰的信号进行滤波。这种信号的特点是有一个平均值，信号在某一数值范围附近上下波动；缺点是对于测量速度较慢或要求数据计算较快的实时控制不适用。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 12</span></span><br><span class="line">​</span><br><span class="line"><span class="function">uchar <span class="title">ArithmeticalAverageValueFilter</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    uchar i;</span><br><span class="line">    uchar Value;</span><br><span class="line">    uchar sum;</span><br><span class="line">    sum = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; N; i++ ) &#123;</span><br><span class="line">        sum += GetAD();</span><br><span class="line">        Delay();</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    Value = sum / N;</span><br><span class="line">    <span class="keyword">return</span> ( Value );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="递推平均滤波法"><a href="#递推平均滤波法" class="headerlink" title="递推平均滤波法"></a>递推平均滤波法</h3><p>&emsp;&emsp;把连续<code>N</code>个采集值看成一个队列，每次采集到的新数据放入队尾，并扔掉原来队首的数据。把队列中的N个数据进行平均计算，即可获得新的滤波结果。<br>&emsp;&emsp;优点是对周期性干扰有良好的抑制作用，平滑度高，适用于高频振荡的系统；缺点是灵敏度低，对偶然出现的脉冲性干扰的抑制作用较差，不适于脉冲干扰较严重的场合。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 12</span></span><br><span class="line">uchar Data[N];</span><br><span class="line">​</span><br><span class="line"><span class="function">uchar <span class="title">Gilde</span> <span class="params">( Data[] )</span> </span>&#123;</span><br><span class="line">    ucahr i, Value, sum;</span><br><span class="line">    sum = <span class="number">0</span>;</span><br><span class="line">    Data[N] = GetAD();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; N; i++ ) &#123;</span><br><span class="line">        Data[i] = Data[i + <span class="number">1</span>]; <span class="comment">/* 所有数据左移，低位仍掉 */</span></span><br><span class="line">        sum += Data[i];</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    Value = sum / N;</span><br><span class="line">    <span class="keyword">return</span> ( Value );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="中位值平均滤波法"><a href="#中位值平均滤波法" class="headerlink" title="中位值平均滤波法"></a>中位值平均滤波法</h3><p>&emsp;&emsp;中位值平均滤波法又称脉冲干扰平均滤波法，相当于<code>中位值滤波法</code>加上<code>算术平均滤波法</code>。连续采集<code>N</code>个数据，去掉一个最大和最小值，然后计算<code>N - 2</code>个数的平均值。<br>&emsp;&emsp;优点是融合了两种滤波的优点，对于偶然出现的脉冲性干扰，可消除有其引起的采样值偏差，对周期干扰有良好的抑制作用，平滑度高，适于高频振荡的系统；缺点是测量速度慢。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 12</span></span><br><span class="line">​</span><br><span class="line"><span class="function">uchar <span class="title">Middle</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ucahr i, j, k, l;</span><br><span class="line">    uchar temp;</span><br><span class="line">    uchar ArrDataBuffer[N];</span><br><span class="line">    uchar sum, Value;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; N; i++ ) &#123; <span class="comment">/* 一次采集N个数据，存入数组 */</span></span><br><span class="line">        ArrDataBuffer[i] = GetAD();</span><br><span class="line">        Delay();</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; N - <span class="number">1</span>; j++ ) &#123; <span class="comment">/* 采样值由小到大排列 */</span></span><br><span class="line">        <span class="keyword">for</span> ( k = <span class="number">0</span>; k &lt; N - j - <span class="number">1</span>; k++ ) &#123;</span><br><span class="line">            <span class="keyword">if</span> ( ArrDataBuffer[k] &gt; ArrDataBuffer[k + <span class="number">1</span>] ) &#123;</span><br><span class="line">                temp = ArrDataBuffer[k];</span><br><span class="line">                ArrDataBuffer[k] = ArrDataBuffer[k + <span class="number">1</span>];</span><br><span class="line">                ArrDataBuffer[k + <span class="number">1</span>] = temp;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( l = <span class="number">0</span>; l &lt; N - <span class="number">1</span>; l++ ) &#123;</span><br><span class="line">        sum = ArrDataBuffer[l];</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    Value = Sum / ( N - <span class="number">2</span> );</span><br><span class="line">    <span class="keyword">return</span> ( Value );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="递推中位值平均滤波法"><a href="#递推中位值平均滤波法" class="headerlink" title="递推中位值平均滤波法"></a>递推中位值平均滤波法</h3><p>&emsp;&emsp;相当于<code>中位值滤波法</code>加上<code>递推平均滤波法</code>。这种方法把连续<code>N</code>个值看成一个队列，每次采集到一个新数据放入队尾，并扔掉原来队首的值。把队列中的<code>N</code>个数据先去掉一个最大值和最小值，然后计算<code>N - 2</code>个数据的平均值。<br>&emsp;&emsp;优点是对于偶然出现的脉冲性干扰，可消除由其引起的采样值偏差，对周期性干扰有良好的抑制作用，平滑度高，适用于高频振荡的系统；缺点是测量速度慢。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">char</span> <span class="title">Filter</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> max, min;</span><br><span class="line">    <span class="keyword">int</span> sum;</span><br><span class="line">    <span class="keyword">char</span> i;</span><br><span class="line">    QUEUE[<span class="number">0</span>] = NewData;</span><br><span class="line">    max = QUEUE[<span class="number">0</span>];</span><br><span class="line">    min = QUEUE[<span class="number">0</span>];</span><br><span class="line">    sum = QUEUE[<span class="number">0</span>];</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = n - <span class="number">1</span>; i != <span class="number">0</span>; i-- ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( QUEUE[i] &gt; max ) &#123;</span><br><span class="line">            max = QUEUE[i];</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( QUEUE[i] &lt; min ) &#123;</span><br><span class="line">            min = QUEUE[i];</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        sum += QUEUE[i];</span><br><span class="line">        QUEUE[i] = QUEUE[i - <span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    i = n - <span class="number">2</span>;</span><br><span class="line">    sum = sum - max - min + i / <span class="number">2</span>; <span class="comment">/* 加入(n-2)/2目的为了四舍五入 */</span></span><br><span class="line">    sum = sum / i;</span><br><span class="line">    <span class="keyword">return</span> ( sum );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="限幅平均滤波法"><a href="#限幅平均滤波法" class="headerlink" title="限幅平均滤波法"></a>限幅平均滤波法</h3><p>&emsp;&emsp;相当于<code>限幅滤波法</code>加上<code>递推平均滤波法</code>。每次采样先进行限幅处理，再进行队列平均滤波处理。<br>&emsp;&emsp;优点是对于偶然出现的脉冲性干扰，可消除有其引起的采样值偏差。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> A 10</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 12</span></span><br><span class="line">​</span><br><span class="line">uchar Data[N];</span><br><span class="line">​</span><br><span class="line"><span class="function">uchar <span class="title">Limit</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ucahr i, Value, sum;</span><br><span class="line">    Data[N] = GetAD();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( ( Data[N] - Data[N - <span class="number">1</span>] ) &gt; A ) || ( ( Data[N - <span class="number">1</span>] - Data[N] ) &gt; A ) ) )</span><br><span class="line">        Data[N] = Data[N - <span class="number">1</span>];</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            Data[N] = NewValue;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; N; i++ ) &#123;</span><br><span class="line">    Data[i] = Data[i + <span class="number">1</span>];</span><br><span class="line">        sum += Data[i];</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    Value = sum / N;</span><br><span class="line">    <span class="keyword">return</span> ( Value );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="一阶滞后滤波法"><a href="#一阶滞后滤波法" class="headerlink" title="一阶滞后滤波法"></a>一阶滞后滤波法</h3><p>&emsp;&emsp;算法一：<code>本次结果滤波结果 = a * 本次采样值 + (1 - a) * 上次结果</code>，其中<code>a</code>代表滤波系数，取值范围是<code>0</code>至<code>1</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> a 128</span></span><br><span class="line">uchar Value;</span><br><span class="line">​</span><br><span class="line"><span class="function">ucahr <span class="title">OneFactorialFiler</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    uchar NewValue;</span><br><span class="line">    uchar ReturnValue;</span><br><span class="line">    NewValue = GetAD();</span><br><span class="line">    ReturnValue = ( <span class="number">255</span> - a ) * NewValue + a * Value;</span><br><span class="line">    ReturnValue /= <span class="number">255</span>;</span><br><span class="line">    <span class="keyword">return</span> ( ReturnValue );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;算法二代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> Thre_value 10 <span class="comment">/* 比较门槛值 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 50 <span class="comment">/* 数组长度 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">float</span> Or_data[N]; <span class="comment">/* 采集的数据 */</span></span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">char</span> Dr0_flag = <span class="number">0</span>, Dr1_flag = <span class="number">0</span>; <span class="comment">/* 前一次比较与当前比较的方向位 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">float</span> <span class="title">abs</span> <span class="params">( <span class="keyword">float</span> first, <span class="keyword">float</span> second )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">float</span> <span class="built_in">abs</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( first &gt; second ) &#123;</span><br><span class="line">        <span class="built_in">abs</span> = first - second;</span><br><span class="line">        Dr1_flag = <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">abs</span> = second - first;</span><br><span class="line">        Dr1_flag = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ( <span class="built_in">abs</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">filter</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    uchar i = <span class="number">0</span>,</span><br><span class="line">          F_count = <span class="number">0</span>, <span class="comment">/* 滤波计数器 */</span></span><br><span class="line">          coeff = <span class="number">0</span>; <span class="comment">/* 滤波系数 */</span></span><br><span class="line">    <span class="keyword">float</span> Abs = <span class="number">0.00</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">1</span>; i &lt; N; i++ ) &#123; <span class="comment">/* 确定一阶滤波系数 */</span></span><br><span class="line">        Abs = <span class="built_in">abs</span> ( Or_data[i - <span class="number">1</span>], Or_data[i] );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( ! ( Dr1_flag ^ Dr0_flag ) ) &#123; <span class="comment">/* 前后数据变化方向一致 */</span></span><br><span class="line">            F_count++;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( Abs &gt;= Thre_value ) &#123;</span><br><span class="line">                F_count++;</span><br><span class="line">                F_count++;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( F_count &gt;= <span class="number">12</span> ) &#123;</span><br><span class="line">                F_count = <span class="number">12</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            coeff = <span class="number">20</span> * F_count;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123; <span class="comment">/* 去抖动 */</span></span><br><span class="line">            coeff = <span class="number">5</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 一阶滤波算法 */</span></span><br><span class="line">        <span class="keyword">if</span> ( Dr1_flag == <span class="number">0</span> ) &#123; <span class="comment">/* 当前值小于前一个值 */</span></span><br><span class="line">            Or_data[i] = Or_data[i - <span class="number">1</span>] - coeff * ( Or_data[i - <span class="number">1</span>] - Or_data[i] ) / <span class="number">256</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            Or_data[i] = Or_data[i - <span class="number">1</span>] + coeff * ( Or_data[i] - Or_data[i - <span class="number">1</span>] ) / <span class="number">256</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        F_count = <span class="number">0</span>; <span class="comment">/* 滤波计数器清零 */</span></span><br><span class="line">        Dr0_flag = Dr1_flag;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="加权递推平均滤波法"><a href="#加权递推平均滤波法" class="headerlink" title="加权递推平均滤波法"></a>加权递推平均滤波法</h3><p>&emsp;&emsp;加权递推平均滤波法是对递推平均滤波法的改进，即不同时刻的数据加以不同的权。通常是越接近现时刻的数据，权取得越大。给予新采样值的权系数越大，则灵敏度越高，但信号的平滑度越低。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 10</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CoeSum 55</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">const</span> Coefficient[N] = &#123;<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>, <span class="number">10</span>&#125;;</span><br><span class="line">uchar Data[N];</span><br><span class="line">​</span><br><span class="line"><span class="function">uchar <span class="title">AAGAFilter</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    uchar i, Value, sum;</span><br><span class="line">    sum = <span class="number">0</span>;</span><br><span class="line">    Data[N] = GetAD();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; N; i++ ) &#123;</span><br><span class="line">        Data[i] = Data[i + <span class="number">1</span>];</span><br><span class="line">        sum += Data[i] * Coefficient[i];</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    Value = sum / CoeSum;</span><br><span class="line">    <span class="keyword">return</span> ( Value );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="消抖滤波法"><a href="#消抖滤波法" class="headerlink" title="消抖滤波法"></a>消抖滤波法</h3><p>&emsp;&emsp;将每次采样值与当前有效值比较，如果采样值等于当前有效值，则计数器清零，否则计数器加<code>1</code>。然后，判断计数器是否大于或等于上限<code>N</code>(溢出)。如果溢出，将本次值替换当前有效值，并清计数器。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 20</span></span><br><span class="line">uchar count;</span><br><span class="line">uchar Value;</span><br><span class="line">​</span><br><span class="line"><span class="function">uchar <span class="title">Avoid</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    uchar NewValue;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( NewValue == Value ) &#123;</span><br><span class="line">        count = <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        count++;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( count &gt; N ) &#123;</span><br><span class="line">            count = <span class="number">0</span>;</span><br><span class="line">            Value = NewValue;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ( Value );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<strong>补充说明</strong>：滑动平均滤波算法(递推平均滤波法)的第二种写法：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> FilterI = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* ADNum为获得的AD数，n为数组value_buf[]的元素个数 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GlideFilterAD</span> <span class="params">( <span class="keyword">int</span> value_buf[], <span class="keyword">int</span> n, <span class="keyword">int</span> ADNum )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    value_buf[FilterI++] = ADNum;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( FilterI == n ) &#123;</span><br><span class="line">        FilterI = <span class="number">0</span>; <span class="comment">/* 先进先出，再求平均值 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( count = <span class="number">0</span>; count &lt; n; count++ ) &#123;</span><br><span class="line">        sum += value_buf[count];</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ( <span class="keyword">int</span> ) ( sum / n );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/09/数据结构和算法/逆波兰表达式/" rel="next" title="逆波兰表达式">
+                <i class="fa fa-chevron-left"></i> 逆波兰表达式
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/09/数据结构和算法/单链表/" rel="prev" title="单链表">
+                单链表 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#限幅滤波法"><span class="nav-number">1.</span> <span class="nav-text">限幅滤波法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#中位值滤波法"><span class="nav-number">2.</span> <span class="nav-text">中位值滤波法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#算术平均滤波法"><span class="nav-number">3.</span> <span class="nav-text">算术平均滤波法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#递推平均滤波法"><span class="nav-number">4.</span> <span class="nav-text">递推平均滤波法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#中位值平均滤波法"><span class="nav-number">5.</span> <span class="nav-text">中位值平均滤波法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#递推中位值平均滤波法"><span class="nav-number">6.</span> <span class="nav-text">递推中位值平均滤波法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#限幅平均滤波法"><span class="nav-number">7.</span> <span class="nav-text">限幅平均滤波法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一阶滞后滤波法"><span class="nav-number">8.</span> <span class="nav-text">一阶滞后滤波法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#加权递推平均滤波法"><span class="nav-number">9.</span> <span class="nav-text">加权递推平均滤波法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#消抖滤波法"><span class="nav-number">10.</span> <span class="nav-text">消抖滤波法</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

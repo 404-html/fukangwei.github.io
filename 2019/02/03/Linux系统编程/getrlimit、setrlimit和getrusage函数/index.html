@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;为了支持多用户同时登录以及多个应用连接，UNIX系统给系统管理员提供了控制系统资源的许多方法。这种资源限制包括CPU时间、内存使用量以及磁盘使用量。资源控制允许你调整系统到最佳的使用率。UNIX的早期版本中，一些在编译时设置的系统限制如果需要修改，则需要重新编译整个系统。然而，如果并非所有的运行中的系统资源都需要重新编译整个系统，那么现代的UNIX系统可以调整大多数这些资源">
+<meta property="og:type" content="article">
+<meta property="og:title" content="getrlimit、setrlimit和getrusage函数">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/03/Linux系统编程/getrlimit、setrlimit和getrusage函数/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;为了支持多用户同时登录以及多个应用连接，UNIX系统给系统管理员提供了控制系统资源的许多方法。这种资源限制包括CPU时间、内存使用量以及磁盘使用量。资源控制允许你调整系统到最佳的使用率。UNIX的早期版本中，一些在编译时设置的系统限制如果需要修改，则需要重新编译整个系统。然而，如果并非所有的运行中的系统资源都需要重新编译整个系统，那么现代的UNIX系统可以调整大多数这些资源">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-02-03T09:39:00.710Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="getrlimit、setrlimit和getrusage函数">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;为了支持多用户同时登录以及多个应用连接，UNIX系统给系统管理员提供了控制系统资源的许多方法。这种资源限制包括CPU时间、内存使用量以及磁盘使用量。资源控制允许你调整系统到最佳的使用率。UNIX的早期版本中，一些在编译时设置的系统限制如果需要修改，则需要重新编译整个系统。然而，如果并非所有的运行中的系统资源都需要重新编译整个系统，那么现代的UNIX系统可以调整大多数这些资源">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/03/Linux系统编程/getrlimit、setrlimit和getrusage函数/">
+
+
+
+
+
+  <title>getrlimit、setrlimit和getrusage函数 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/03/Linux系统编程/getrlimit、setrlimit和getrusage函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">getrlimit、setrlimit和getrusage函数</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-03T17:50:03+08:00">
+                2019-02-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;为了支持多用户同时登录以及多个应用连接，<code>UNIX</code>系统给系统管理员提供了控制系统资源的许多方法。这种资源限制包括<code>CPU</code>时间、内存使用量以及磁盘使用量。资源控制允许你调整系统到最佳的使用率。<code>UNIX</code>的早期版本中，一些在编译时设置的系统限制如果需要修改，则需要重新编译整个系统。然而，如果并非所有的运行中的系统资源都需要重新编译整个系统，那么现代的<code>UNIX</code>系统可以调整大多数这些资源的限制。<br>&emsp;&emsp;<code>getrlimit</code>允许一个进程查询所受的的系统限制，这些系统限制通过一对硬/软限制对来指定。当一个软限制被超过时，进程还可以继续，当然这取决于限制的类型，同时一个信号会发送给进程。另一方面，进程不可以超过它的硬限制。软限制值可以被进程设置在位于<code>0</code>和最大硬限制间的任意值。硬限制值不能被任何进程降低，仅仅超级用户可以增加之。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/resource.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getrlimit</span> <span class="params">( <span class="keyword">int</span> resource, struct rlimit *rlp )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">setrlimit</span> <span class="params">( <span class="keyword">int</span> resource, <span class="keyword">const</span> struct rlimit *rlp )</span></span>;</span><br></pre></td></tr></table></figure>
+<p><code>getrlimit</code>和<code>setrlimit</code>都使用下面的数据结构：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rlimit</span> &#123;</span></span><br><span class="line">    <span class="keyword">rlim_t</span> rlim_cur;</span><br><span class="line">    <span class="keyword">rlim_t</span> rlim_max;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p><code>rlim_cur</code>为指定的资源指定当前的系统软限制，<code>rlim_max</code>将为指定的资源指定当前的系统硬限制。<br>&emsp;&emsp;<code>getrlimit</code>和<code>setrlimit</code>函数的第一个参数是资源参数，这个参数用来指定进程获取信息的那个资源。可能的资源值如下所示，你也可以在<code>/usr/include/sys/resource.h</code>中找到它们：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RLIMIT_CPU     0  <span class="comment">/* cpu time in milliseconds                 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RLIMIT_FSIZE   1  <span class="comment">/* maximum file size                        */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RLIMIT_DATA    2  <span class="comment">/* data size                                */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RLIMIT_STACK   3  <span class="comment">/* stack size                               */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RLIMIT_CORE    4  <span class="comment">/* core file size                           */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RLIMIT_RSS     5  <span class="comment">/* resident set size                        */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RLIMIT_MEMLOCK 6  <span class="comment">/* locked-in-memory address space           */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RLIMIT_NPROC   7  <span class="comment">/* number of processes                      */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RLIMIT_NOFILE  8  <span class="comment">/* number of open files                     */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RLIMIT_SBSIZE  9  <span class="comment">/* maximum size of all socket buffers       */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RLIMIT_VMEM    10 <span class="comment">/* virtual process size (inclusive of mmap) */</span></span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>RLIMIT_CPU</code>资源限制指定一个进程可以取得<code>CPU</code>执行任务的毫秒数。一般地，一个进程仅仅有一个软限制而没有硬限制。如果超出软限制，进程会收到一个<code>SIGXCPU</code>信号。</li>
+<li><code>RLIMIT_FSIZE</code>限制指定一个进程可以创建的最大文件大小，以字节为单位。比如，如果<code>RLIMIT_FSIZE</code>设置为<code>0</code>，那么进程将根本不能创建文件。如果进程超出此限制，就会发出<code>SIGFSZ</code>信号。</li>
+<li><code>RLIMIT_DATA</code>限制指定一个进程数据段可占据的最大字节值。一个进程的数据段就是放置动态内存的一个区域(<code>C/C++</code>用<code>malloc</code>分配的内存)。如果超出限制，分配新内存的操作将会遭到失败。</li>
+<li><code>RLIMIT_STACK</code>限制指定进程栈可占据的最大字节数。一旦超出硬限制，进程会收到<code>SIGSEV</code>信号。</li>
+<li><code>RLIMIT_CORE</code>限制指定了进程可以创建的最大<code>core</code>文件的大小。如果此限制设为<code>0</code>，将不能创建。另外，当达到此限制时，所有正在写<code>core</code>文件的进程都将被中断。</li>
+<li><code>RMIMIT_RSS</code>限制了进程的常驻集大小(<code>resident set size</code>)可占据的最大字节数，这个进程的常驻集和进程所使用的物理内存数有关。</li>
+<li><code>RLIMIT_MEMLOCK</code>限制指定了进程可以使用系统调用到<code>mlock</code>进行锁定的最大字节数。</li>
+<li><code>RLIMIT_NPROC</code>限制指定了一个指定用户可以开启的最多并发进程数，这里的用户是通过进程来确定的有效用户<code>ID</code>。</li>
+<li><code>RLIMIT_NOFILE</code>限制指定了进程可以打开的最多文件数。</li>
+<li><code>RLIMIT_SBSIZE</code>限制指定用户在任何时刻可使用的<code>mbufs</code>数。</li>
+<li><code>RLIMIT_VMEM</code>限制说明一个进程的映射地址空间可以占据的字节数。如果超出限制，分配动态内存和到<code>mmap</code>的调用会失败。</li>
+</ul>
+<p>&emsp;&emsp;<code>RLIM_INFINITY</code>宏用来去除对一个资源的限制。换句话说，将一个资源的硬限制设置为<code>RLIM_INFINITY</code>，将会导致此种资源的使用没有任何系统限制；将软限制设置为<code>RLIM_INFINITY</code>将会阻止进程收到任何软限制警告。如果你的进程不想为那些会导致进程在超过软限制时发送信号的资源设置一个信号处理器，这个参数将变得非常有用。<br>&emsp;&emsp;如果使用了<code>getrlimit</code>参数，那么第二个参数需要设置为一个到<code>rlimit</code>结构的有效指针。然后<code>getrlimit</code>会将适当的限制值放入此结构。另外，在改变限制时，<code>setrlimit</code>会使用在第二个参数中设置值。将值设置为<code>0</code>将会阻止使用此资源。将值设置为<code>RLIM_INFINITY</code>会除去对该资源的所有限制。这些函数都在执行成功后都返回<code>0</code>，反之为<code>-1</code>。有任何错误产生，这些函数会相应的设置<code>errno</code>。<br>&emsp;&emsp;<code>getpagesize</code>函数原型如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getpagesize</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>在介绍<code>getrusage</code>函数前，我们需要讨论一下<code>getpagesize</code>函数。一些进程状态是根据使用的分页(<code>pages</code>)来显示的。分页的内存仅仅是一段内存，通常为<code>4096</code>字节左右。但是分页大小却千差万别，并且它不会固定编入(<code>hard-coded</code>)你的系统。取而代之的是，要确定本地系统的分页大小(<code>pagesize</code>)需要使用<code>getpagesize</code>函数。<code>getpagesize</code>的返回值就是每个分页使用的字节数。<br>&emsp;&emsp;现在我们知道如何查看系统限制，还需要知道如何确定当前进程资源的使用量，<code>getrusage</code>函数就是用于此目的。一个进程可以确定它的内存使用量、<code>CPU</code>执行时间、甚至可获得其子进程的相关信息。因此，<code>getrusage</code>函数的一个用途就是帮助系统避免逃逸进程(<code>runaway</code>)的出现。逃逸进程指的是那些不受系统控制的进程，它们或者使用了过多的<code>CPU</code>(比如循环调用)、或者是超过了内存使用量的限制(导致内存泄漏)。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/resource.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RUSAGE_SELF      0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RUSAGE_CHILDREN -1</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getrusage</span> <span class="params">( <span class="keyword">int</span> who, struct rusage *rusage )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>who</code>可以设置为<code>RUSAGE_SELF</code>或者<code>RUSAGE_CHILDREN</code>。如果设置成<code>RUSAGE_SELF</code>，那么将会以当前进程的相关信息来填充<code>rusage</code>结构。反之，如果设置成<code>RUSAGE_CHILDREN</code>，那么<code>rusage</code>结构中的数据都将是当前进程的子进程的信息。<br>&emsp;&emsp;<code>rusage</code>结构体定义在<code>/usr/include/sys/resource.h</code>中，它含有以下成员变量：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rusage</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">ru_utime</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">ru_stime</span>;</span></span><br><span class="line">    <span class="keyword">long</span> ru_maxrss;</span><br><span class="line">    <span class="keyword">long</span> ru_ixrss;</span><br><span class="line">    <span class="keyword">long</span> ru_idrss;</span><br><span class="line">    <span class="keyword">long</span> ru_isrss;</span><br><span class="line">    <span class="keyword">long</span> ru_minflt;</span><br><span class="line">    <span class="keyword">long</span> ru_majflt;</span><br><span class="line">    <span class="keyword">long</span> ru_nswap;</span><br><span class="line">    <span class="keyword">long</span> ru_inblock;</span><br><span class="line">    <span class="keyword">long</span> ru_oublock;</span><br><span class="line">    <span class="keyword">long</span> ru_msgsnd;</span><br><span class="line">    <span class="keyword">long</span> ru_msgrcv;</span><br><span class="line">    <span class="keyword">long</span> ru_nsignals;</span><br><span class="line">    <span class="keyword">long</span> ru_nvcsw;</span><br><span class="line">    <span class="keyword">long</span> ru_nivcsw;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>ru_utime</code>和<code>ru_stime</code>：它们包含了在用户模式和系统模式中执行时间的总和，都使用<code>timeval</code>结构。</li>
+<li><code>ru_maxrss</code>：保存了常驻集的内存使用数，其值根据内存分页的使用来确定。</li>
+<li><code>ru_ixrss</code>：指文本段(<code>text segment</code>)使用的内存数乘以执行滴答数。</li>
+<li><code>ru_idrss</code>：指进程所使用的私有内存数(<code>KB</code>)乘以执行滴答数。</li>
+<li><code>ru_isrss</code>：指栈使用的内存数(<code>KB</code>为单位)乘以执行滴答数。</li>
+<li><code>ru_minflt</code>：指不需要<code>I/O</code>的页缺失数，页缺失发生在内核需要得到一个内存页以供进程访问时。</li>
+<li><code>ru_majflt</code>：指需要<code>I/O</code>的页缺失数，页缺失发生在内核需要得到一个内存页以供进程访问时。</li>
+<li><code>ru_nswap</code>：有时一个进程会被调出内存，以提供空间给其他进程使用。<code>ru_nswap</code>指的就是一个进程将要调出内存的次数。</li>
+<li><code>ru_inblock</code>：指文件系统需要为一个读请求执行输入操作的次数。</li>
+<li><code>ru_oublock</code>：指文件系统需要为一个写入请求执行输出操作的次数。</li>
+<li><code>ru_msgsnd</code>：指发送的<code>IPC</code>信息总数</li>
+<li><code>ru_msgrcv</code>：指收到的<code>IPC</code>信息总数。</li>
+<li><code>ru_nsignals</code>：指进程收到的信号总数。</li>
+<li><code>ru_nvcsw</code>：一个进程主动上下文切换总数。主动上下文切换发生在一个进程放弃它的<code>CPU</code>分时时，通常是一个进程等待某可用资源时。</li>
+<li><code>ru_nivcsw</code>：包含了因高优先级进程运行导致的上下文切换总数。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/resource.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rusage</span> <span class="title">start</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rusage</span> <span class="title">end</span>;</span></span><br><span class="line">    FILE *fp;</span><br><span class="line">    <span class="keyword">int</span> rc, i;</span><br><span class="line">    <span class="keyword">double</span> usertime, kerneltime;</span><br><span class="line">    rc = getrusage ( RUSAGE_SELF, &amp;start );</span><br><span class="line">    fp = <span class="literal">NULL</span>;</span><br><span class="line">    fp = fopen ( <span class="string">"getrusage.log"</span>, <span class="string">"a+"</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( fp != <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">10000000</span>; i++ ) &#123;</span><br><span class="line">            <span class="built_in">fprintf</span> ( fp, <span class="string">"%d"</span>, i );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    fclose ( fp );</span><br><span class="line">    rc = getrusage ( RUSAGE_SELF, &amp;end );</span><br><span class="line">    usertime = ( end.ru_utime.tv_sec - start.ru_utime.tv_sec ) + \</span><br><span class="line">               ( end.ru_utime.tv_usec - start.ru_utime.tv_usec ) / <span class="number">10e6</span>;</span><br><span class="line">    kerneltime = ( end.ru_stime.tv_sec - start.ru_stime.tv_sec ) + \</span><br><span class="line">                 ( end.ru_stime.tv_usec - start.ru_stime.tv_usec ) / <span class="number">10e6</span>;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The user time is: %f\n"</span>, usertime );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The system_time is: %f\n"</span>, kerneltime );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/03/Linux系统编程/nice、getpriority和setpriority函数/" rel="next" title="nice、getpriority和setpriority函数">
+                <i class="fa fa-chevron-left"></i> nice、getpriority和setpriority函数
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/03/Linux系统编程/Linux多线程编程/" rel="prev" title="Linux多线程编程">
+                Linux多线程编程 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

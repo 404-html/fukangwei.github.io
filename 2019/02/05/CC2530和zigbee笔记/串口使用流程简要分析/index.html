@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="串口配置&amp;emsp;&amp;emsp;zigbee协议栈的串口使用dma或者isr中断模式，系统默认的具体配置是dma模式。打开HAL\Target\CC2530EB\Config\ hal_board_cfg.h这个文件，此文件主要进行HAL的一些基础配置以及宏定义声明等，从中找到如下部分： 1234567891011121314151617181920212223242526272829303132">
+<meta property="og:type" content="article">
+<meta property="og:title" content="串口使用流程简要分析">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/串口使用流程简要分析/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="串口配置&amp;emsp;&amp;emsp;zigbee协议栈的串口使用dma或者isr中断模式，系统默认的具体配置是dma模式。打开HAL\Target\CC2530EB\Config\ hal_board_cfg.h这个文件，此文件主要进行HAL的一些基础配置以及宏定义声明等，从中找到如下部分： 1234567891011121314151617181920212223242526272829303132">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-02-05T07:00:33.056Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="串口使用流程简要分析">
+<meta name="twitter:description" content="串口配置&amp;emsp;&amp;emsp;zigbee协议栈的串口使用dma或者isr中断模式，系统默认的具体配置是dma模式。打开HAL\Target\CC2530EB\Config\ hal_board_cfg.h这个文件，此文件主要进行HAL的一些基础配置以及宏定义声明等，从中找到如下部分： 1234567891011121314151617181920212223242526272829303132">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/串口使用流程简要分析/">
+
+
+
+
+
+  <title>串口使用流程简要分析 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/串口使用流程简要分析/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">串口使用流程简要分析</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T15:24:20+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="串口配置"><a href="#串口配置" class="headerlink" title="串口配置"></a>串口配置</h3><p>&emsp;&emsp;<code>zigbee</code>协议栈的串口使用<code>dma</code>或者<code>isr</code>中断模式，系统默认的具体配置是<code>dma</code>模式。打开<code>HAL\Target\CC2530EB\Config\ hal_board_cfg.h</code>这个文件，此文件主要进行<code>HAL</code>的一些基础配置以及宏定义声明等，从中找到如下部分：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> HAL_UART <span class="comment">/* Set to TRUE enable UART usage, FALSE disable it */</span></span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">if</span> (defined ZAPP_P1) || (defined ZAPP_P2) || (defined ZTOOL_P1) || (defined ZTOOL_P2)</span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">define</span> HAL_UART TRUE</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">define</span> HAL_UART FALSE</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> HAL_UART</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">if</span> HAL_DMA <span class="comment">/* Always prefer to use DMA over ISR */</span></span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">ifndef</span> HAL_UART_DMA</span></span><br><span class="line">            <span class="meta">#<span class="meta-keyword">if</span> (defined ZAPP_P1) || (defined ZTOOL_P1)</span></span><br><span class="line">                <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_DMA  1</span></span><br><span class="line">            <span class="meta">#<span class="meta-keyword">elif</span> (defined ZAPP_P2) || (defined ZTOOL_P2)</span></span><br><span class="line">                <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_DMA  2</span></span><br><span class="line">            <span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">                <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_DMA  1</span></span><br><span class="line">            <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_ISR  0</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">ifndef</span> HAL_UART_ISR</span></span><br><span class="line">            <span class="meta">#<span class="meta-keyword">if</span> (defined ZAPP_P1) || (defined ZTOOL_P1)</span></span><br><span class="line">                <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_ISR  1</span></span><br><span class="line">            <span class="meta">#<span class="meta-keyword">elif</span> (defined ZAPP_P2) || (defined ZTOOL_P2)</span></span><br><span class="line">                <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_ISR  2</span></span><br><span class="line">            <span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">                <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_ISR  1</span></span><br><span class="line">            <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_DMA  0</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* Used to set P2 priority - USART0 over USART1 if both are defined */</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">if</span> ((HAL_UART_DMA == 1) || (HAL_UART_ISR == 1))</span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_PRIPO  0x00</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_PRIPO  0x40</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_DMA  0</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_ISR  0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>也就是说，如果之前没有定义<code>uart</code>，那么检查<code>(defined ZAPP_P1) || (defined ZAPP_P2) || (defined ZTOOL_P1) || (defined ZTOOL_P2)</code>是否成立。一旦使用了其中的一种，那么就<code>#define HAL_UART TRUE</code>，也就是说启用<code>uart</code>。再看看下面的代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">if</span> HAL_UART</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> HAL_DMA <span class="comment">/* Always prefer to use DMA over ISR */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> HAL_UART_DMA</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">if</span> (defined ZAPP_P1) || (defined ZTOOL_P1)</span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_DMA  1</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">elif</span> (defined ZAPP_P2) || (defined ZTOOL_P2)</span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_DMA  2</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">        <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_DMA  1</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HAL_UART_ISR  0</span></span><br></pre></td></tr></table></figure>
+<p>如果采取了上面四种宏定义之一，则默认开启为<code>dma</code>模式并关闭<code>isr</code>模式；反之，如果发现<code>HAL_UART_DMA</code>不成立，则开启<code>HAL_UART_ISR</code>并关闭<code>HAL_UART_DMA</code>。下面的代码进行相关优先级的设定：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Used to set P2 priority - USART0 over USART1 if both are defined */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> ((HAL_UART_DMA == 1) || (HAL_UART_ISR == 1))</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_PRIPO  0x00</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> HAL_UART_PRIPO  0x40</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HAL_UART_DMA  0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HAL_UART_ISR  0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>在<code>SerialApp_Init</code>函数中，我们可以对串口进行配置，打开该函数可以见到如下内容：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">halUARTCfg_t uartConfig;</span><br><span class="line">uartConfig.configured           = TRUE;              <span class="comment">/* 2x30 don't care - see uart driver */</span></span><br><span class="line">uartConfig.baudRate             = SERIAL_APP_BAUD;</span><br><span class="line">uartConfig.flowControl          = FALSE;</span><br><span class="line">uartConfig.flowControlThreshold = SERIAL_APP_THRESH; <span class="comment">/* 2x30 don't care - see uart driver */</span></span><br><span class="line">uartConfig.rx.maxBufSize        = SERIAL_APP_RX_SZ;  <span class="comment">/* 2x30 don't care - see uart driver */</span></span><br><span class="line">uartConfig.tx.maxBufSize        = SERIAL_APP_TX_SZ;  <span class="comment">/* 2x30 don't care - see uart driver */</span></span><br><span class="line">uartConfig.idleTimeout          = SERIAL_APP_IDLE;   <span class="comment">/* 2x30 don't care - see uart driver */</span></span><br><span class="line">uartConfig.intEnable            = TRUE;              <span class="comment">/* 2x30 don't care - see uart driver */</span></span><br><span class="line">uartConfig.callBackFunc         = SerialApp_CallBack;</span><br><span class="line">HalUARTOpen ( SERIAL_APP_PORT, &amp;uartConfig );</span><br></pre></td></tr></table></figure>
+<p>第<code>1</code>行进行了变量的定义，第<code>2</code>至<code>10</code>行进行了本<code>task</code>中串口相关参数的配置，注意第<code>10</code>行：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uartConfig.callBackFunc = SerialApp_CallBack;</span><br></pre></td></tr></table></figure>
+<p>这段代码令串口的回调函数为<code>SerialApp_CallBack</code>，如果不打算使用回调，则此处直接<code>= NULL</code>即可。<br>&emsp;&emsp;对于回调函数，这些函数必须由应用程序执行，用于给上层传递硬件(中断、计数器、定时器等)或轮询机制(<code>UART</code>轮询、定时器轮询等)产生的事件。通过回调函数参数(比如一个指向数据的指针)进行的数据访问仅在函数执行时是有效的，当函数返回时不能视为有效。如果这些函数在中断的情况下执行，它必须是有效的，且不能执行<code>CPU</code>密集的操作或使用关键部分。<br>&emsp;&emsp;回调函数是一个指针类型，赋值为<code>SerialApp_CallBack</code>对应的指针地址，而被调用的函数名字叫做<code>SerialApp_CallBack</code>。它有<code>port</code>和<code>event</code>这两个参数，<code>port</code>指的是<code>uart0</code>或<code>uart1</code>；关于<code>event</code>，此处的对应的事件有四种，根据<code>HAL</code>层接口资料可以知道：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>事件</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HAL_UART_RX_FULL</code></td>
+<td><code>Rx</code>缓冲区满了</td>
+</tr>
+<tr>
+<td><code>HAL_UART_RX_ABOUT_FULL</code></td>
+<td><code>Rx</code>缓冲区处于<code>maxRxBufSize</code>(流量控制阈值)</td>
+</tr>
+<tr>
+<td><code>HAL_UART_RX_TIMEOUT</code></td>
+<td><code>Rx</code>空闲<code>idleTimout</code>的时间</td>
+</tr>
+<tr>
+<td><code>HAL_UART_TX_FULL</code></td>
+<td><code>Tx</code>缓冲区满了</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>当把参数配置完后，使用<code>HalUARTOpen (SERIAL_APP_PORT, &amp;uartConfig);</code>函数开启串口并加载配置。</p>
+<h3 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h3><p>&emsp;&emsp;<code>osalInitTasks</code>函数如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">osalInitTasks</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    uint8 taskID = <span class="number">0</span>;</span><br><span class="line">    tasksEvents = ( uint16 * ) osal_mem_alloc ( <span class="keyword">sizeof</span> ( uint16 ) * tasksCnt );</span><br><span class="line">    osal_memset ( tasksEvents, <span class="number">0</span>, ( <span class="keyword">sizeof</span> ( uint16 ) * tasksCnt ) );</span><br><span class="line">    macTaskInit ( taskID++ );</span><br><span class="line">    nwk_init ( taskID++ );</span><br><span class="line">    Hal_Init ( taskID++ );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined( MT_TASK )</span></span><br><span class="line">    MT_TaskInit ( taskID++ );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    APS_Init ( taskID++ );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined ( ZIGBEE_FRAGMENTATION )</span></span><br><span class="line">    APSF_Init ( taskID++ );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    ZDApp_Init ( taskID++ );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined ( ZIGBEE_FREQ_AGILITY ) || defined ( ZIGBEE_PANID_CONFLICT )</span></span><br><span class="line">    ZDNwkMgr_Init ( taskID++ );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    SerialApp_Init ( taskID );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;1. 按照流程，首先是<code>osalInitTasks</code>函数，打开<code>Hal_Init(taskID++);</code>，看到如下内容：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/****************************************</span></span><br><span class="line"><span class="comment"> * @fn      Hal_Init</span></span><br><span class="line"><span class="comment"> * @brief   Hal Initialization function</span></span><br><span class="line"><span class="comment"> * @param   task_id - Hal TaskId</span></span><br><span class="line"><span class="comment"> * @return  None</span></span><br><span class="line"><span class="comment"> ****************************************/</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Hal_Init</span> <span class="params">( uint8 task_id )</span> </span>&#123;</span><br><span class="line">    Hal_TaskID = task_id; <span class="comment">/* Register task ID */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>也就是注册<code>task_id</code>。<br>&emsp;&emsp;2. 之后要初始化的是<code>SerialApp_Init(taskID)</code>函数。下面说一下初始化串口用的函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HalUARTOpen ( SERIAL_APP_PORT, &amp;uartConfig );</span><br></pre></td></tr></table></figure>
+<p><code>SERIAL_APP_PORT</code>即为该<code>APP</code>所用的串口<code>port</code>，而第二个参数就是加载前面配置的参数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">uint8 <span class="title">HalUARTOpen</span> <span class="params">( uint8 port, halUARTCfg_t *config )</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> (HAL_UART_DMA == 1)</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( port == HAL_UART_PORT_0 ) &#123;</span><br><span class="line">        HalUARTOpenDMA ( config );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> (HAL_UART_DMA == 2)</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( port == HAL_UART_PORT_1 ) &#123;</span><br><span class="line">        HalUARTOpenDMA ( config );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> (HAL_UART_ISR == 1)</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( port == HAL_UART_PORT_0 ) &#123;</span><br><span class="line">        HalUARTOpenISR ( config );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> (HAL_UART_ISR == 2)</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( port == HAL_UART_PORT_1 ) &#123;</span><br><span class="line">        HalUARTOpenISR ( config );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> (HAL_UART_DMA == 0) &amp;&amp; (HAL_UART_ISR == 0)</span></span><br><span class="line">    <span class="comment">/* UART is not enabled. Do nothing. */</span></span><br><span class="line">    ( <span class="keyword">void</span> ) port; <span class="comment">/* unused argument */</span></span><br><span class="line">    ( <span class="keyword">void</span> ) config; <span class="comment">/* unused argument */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="keyword">return</span> HAL_UART_SUCCESS;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此处具体的程序分支是根据前期配置的结果来进行的，此处默认为DMA模式，所以进到第一个分支里面：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/******************************************************************************</span></span><br><span class="line"><span class="comment"> * @fn      HalUARTOpenDMA</span></span><br><span class="line"><span class="comment"> * @brief   Open a port according tp the configuration specified by parameter</span></span><br><span class="line"><span class="comment"> * @param   config - contains configuration information</span></span><br><span class="line"><span class="comment"> * @return  none</span></span><br><span class="line"><span class="comment"> *****************************************************************************/</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">HalUARTOpenDMA</span> <span class="params">( halUARTCfg_t *config )</span> </span>&#123;</span><br><span class="line">    dmaCfg.uartCB = config-&gt;callBackFunc;</span><br><span class="line">    <span class="comment">/* Only supporting subset of baudrate for code size - other is possible */</span></span><br><span class="line">    HAL_UART_ASSERT ( ( config-&gt;baudRate == HAL_UART_BR_9600 ) ||</span><br><span class="line">                      ( config-&gt;baudRate == HAL_UART_BR_19200 ) ||</span><br><span class="line">                      ( config-&gt;baudRate == HAL_UART_BR_38400 ) ||</span><br><span class="line">                      ( config-&gt;baudRate == HAL_UART_BR_57600 ) ||</span><br><span class="line">                      ( config-&gt;baudRate == HAL_UART_BR_115200 ) );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( config-&gt;baudRate == HAL_UART_BR_57600 ||</span><br><span class="line">         config-&gt;baudRate == HAL_UART_BR_115200 ) &#123;</span><br><span class="line">        UxBAUD = <span class="number">216</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        UxBAUD = <span class="number">59</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">switch</span> ( config-&gt;baudRate ) &#123;</span><br><span class="line">        <span class="keyword">case</span> HAL_UART_BR_9600:</span><br><span class="line">            UxGCR = <span class="number">8</span>;</span><br><span class="line">            <span class="comment">/* (32768Hz / (9600bps / 10 bits)), 10 bits include start and stop bits */</span></span><br><span class="line">            dmaCfg.txTick = <span class="number">35</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">case</span> HAL_UART_BR_19200:</span><br><span class="line">            UxGCR = <span class="number">9</span>;</span><br><span class="line">            dmaCfg.txTick = <span class="number">18</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">case</span> HAL_UART_BR_38400:</span><br><span class="line">            UxGCR = <span class="number">10</span>;</span><br><span class="line">            dmaCfg.txTick = <span class="number">9</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">case</span> HAL_UART_BR_57600:</span><br><span class="line">            UxGCR = <span class="number">10</span>;</span><br><span class="line">            dmaCfg.txTick = <span class="number">6</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            UxGCR = <span class="number">11</span>; <span class="comment">/* HAL_UART_BR_115200 */</span></span><br><span class="line">            dmaCfg.txTick = <span class="number">3</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( config-&gt;flowControl ) &#123; <span class="comment">/* 8 bits/char; no parity; 1 stop bit */</span></span><br><span class="line">        UxUCR = UCR_FLOW | UCR_STOP;</span><br><span class="line">        PxSEL |= HAL_UART_Px_CTS;</span><br><span class="line">        <span class="comment">/* DMA Rx is always on (self-resetting). So flow must be controlled by</span></span><br><span class="line"><span class="comment">           the S/W polling the Rx buffer level. Start by allowing flow. */</span></span><br><span class="line">        PxOUT &amp;= ~HAL_UART_Px_RTS;</span><br><span class="line">        PxDIR |=  HAL_UART_Px_RTS;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        UxUCR = UCR_STOP;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* Clear the DMA Rx trigger */</span></span><br><span class="line">    dmaCfg.rxBuf[<span class="number">0</span>] = * ( <span class="keyword">volatile</span> uint8 * ) DMA_UDBUF;</span><br><span class="line">    HAL_DMA_CLEAR_IRQ ( HAL_DMA_CH_RX );</span><br><span class="line">    HAL_DMA_ARM_CH ( HAL_DMA_CH_RX );</span><br><span class="line">    osal_memset ( dmaCfg.rxBuf, ( DMA_PAD ^ <span class="number">0xFF</span> ), HAL_UART_DMA_RX_MAX * <span class="number">2</span> );</span><br><span class="line">    UxCSR |= CSR_RE;</span><br><span class="line">    UxDBUF = <span class="number">0</span>; <span class="comment">/* Prime the DMA-ISR pump */</span></span><br><span class="line">    dmaCfg.txDMAPending = FALSE; <span class="comment">/* Initialize that TX DMA is not pending */</span></span><br><span class="line">    dmaCfg.txShdwValid = FALSE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>根据<code>HalUARTOpenDMA(halUARTCfg_t *config)</code>可知，其代入的参数正是那个配置变量<code>halUARTCfg_t uartConfig;</code>。进入函数的第一件事就是：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dmaCfg.uartCB = config-&gt;callBackFunc;</span><br></pre></td></tr></table></figure>
+<p>此处的变量<code>dmaCfg</code>也就是与<code>uartConfig</code>不同类型的，另一个串口配置用的变量。要说明的是，<code>HalUARTOpenDMA(halUARTCfg_t *config)</code>以及其他一些相关的串口函数都在<code>hal_uart_dma.c</code>这个文件里面，而<code>static uartDMACfg_t dmaCfg;</code>这句定义也是在这个文件中的，故下面的其他一些函数可以直接调用。</p>
+<h3 id="执行部分"><a href="#执行部分" class="headerlink" title="执行部分"></a>执行部分</h3><p>&emsp;&emsp;进入<code>osal_start_system</code>这个函数，按照顺序分别看这几个函数。<br>&emsp;&emsp;1. <code>Hal_ProcessPoll</code>对硬件处理进行轮询：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Hal_ProcessPoll</span> <span class="params">()</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> (defined HAL_TIMER) &amp;&amp; (HAL_TIMER == TRUE)</span></span><br><span class="line">    HalTimerTick(); <span class="comment">/* Timer Poll */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> (defined HAL_UART) &amp;&amp; (HAL_UART == TRUE)</span></span><br><span class="line">    HalUARTPoll(); <span class="comment">/* UART Poll */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;对于前半部分，简单提一下：<code>HalTimerTick</code>本函数在中断禁用时由<code>HAL</code>驱动任务调用，来为应用程序创建一个标记。要是用<code>HalTimerTick</code>，定时器服务在调用之前，必须使用<code>HalTimerConfig</code>配置，<code>intEnable</code>设置为<code>FALSE</code>。<code>HalTimerTick</code>在每个标记使用提供的回调函数返回应用程序。标记的持续时间使用<code>HalTimerConfig</code>提供的信息配置。<br>&emsp;&emsp;主要说后半部分，也是核心部分：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">HalUARTPoll</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> HAL_UART_DMA</span></span><br><span class="line">    HalUARTPollDMA();</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> HAL_UART_ISR</span></span><br><span class="line">    HalUARTPollISR();</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>默认<code>dma</code>的情况下，进入第一句函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**************************************************</span></span><br><span class="line"><span class="comment"> * @fn      HalUARTPollDMA</span></span><br><span class="line"><span class="comment"> * @brief   Poll a USART module implemented by DMA</span></span><br><span class="line"><span class="comment"> * @param   none</span></span><br><span class="line"><span class="comment"> * @return  none</span></span><br><span class="line"><span class="comment"> **************************************************/</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">HalUARTPollDMA</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    uint16 cnt = <span class="number">0</span>;</span><br><span class="line">    uint8 evt = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( HAL_UART_DMA_NEW_RX_BYTE ( dmaCfg.rxHead ) ) &#123;</span><br><span class="line">        uint16 tail = findTail();</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* If the DMA has transferred in more Rx bytes, reset the Rx idle timer */</span></span><br><span class="line">        <span class="keyword">if</span> ( dmaCfg.rxTail != tail ) &#123;</span><br><span class="line">            dmaCfg.rxTail = tail;</span><br><span class="line">​</span><br><span class="line">            <span class="comment">/* Re-sync the shadow on any 1st byte(s) received */</span></span><br><span class="line">            <span class="keyword">if</span> ( dmaCfg.rxTick == <span class="number">0</span> ) &#123;</span><br><span class="line">                dmaCfg.rxShdw = ST0;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            dmaCfg.rxTick = HAL_UART_DMA_IDLE;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( dmaCfg.rxTick ) &#123;</span><br><span class="line">            <span class="comment">/* Use the LSB of the sleep timer (ST0 must be read first anyway) */</span></span><br><span class="line">            uint8 decr = ST0 - dmaCfg.rxShdw;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( dmaCfg.rxTick &gt; decr ) &#123;</span><br><span class="line">                dmaCfg.rxTick -= decr;</span><br><span class="line">                dmaCfg.rxShdw = ST0;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                dmaCfg.rxTick = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        cnt = HalUARTRxAvailDMA();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        dmaCfg.rxTick = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( cnt &gt;= HAL_UART_DMA_FULL ) &#123; <span class="comment">/* HAL_UART_DMA_FULL=128-16=112 */</span></span><br><span class="line">        evt = HAL_UART_RX_FULL; <span class="comment">/* HAL_UART_RX_FULL=0x01 */</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( cnt &gt;= HAL_UART_DMA_HIGH ) &#123;</span><br><span class="line">        evt = HAL_UART_RX_ABOUT_FULL;</span><br><span class="line">        PxOUT |= HAL_UART_Px_RTS;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( cnt &amp;&amp; !dmaCfg.rxTick ) &#123;</span><br><span class="line">        evt = HAL_UART_RX_TIMEOUT;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( dmaCfg.txMT ) &#123;</span><br><span class="line">        dmaCfg.txMT = FALSE;</span><br><span class="line">        evt |= HAL_UART_TX_EMPTY;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( dmaCfg.txShdwValid ) &#123;</span><br><span class="line">        uint8 decr = ST0;</span><br><span class="line">        decr -= dmaCfg.txShdw;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( decr &gt; dmaCfg.txTick ) &#123;</span><br><span class="line">            <span class="comment">/* No protection for txShdwValid is required</span></span><br><span class="line"><span class="comment">               because while the shadow was valid, DMA ISR cannot be triggered</span></span><br><span class="line"><span class="comment">               to cause concurrent access to this variable */</span></span><br><span class="line">            dmaCfg.txShdwValid = FALSE;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( dmaCfg.txDMAPending &amp;&amp; !dmaCfg.txShdwValid ) &#123;</span><br><span class="line">        <span class="comment">/* UART TX DMA is expected to be fired and enough time has</span></span><br><span class="line"><span class="comment">           lapsed since last DMA ISR to know that DBUF can be overwritten */</span></span><br><span class="line">        halDMADesc_t *ch = HAL_DMA_GET_DESC1234 ( HAL_DMA_CH_TX );</span><br><span class="line">        halIntState_t intState;</span><br><span class="line">        dmaCfg.txDMAPending = FALSE; <span class="comment">/* Clear the DMA pending flag */</span></span><br><span class="line">        HAL_DMA_SET_SOURCE ( ch, dmaCfg.txBuf[dmaCfg.txSel] );</span><br><span class="line">        HAL_DMA_SET_LEN ( ch, dmaCfg.txIdx[dmaCfg.txSel] );</span><br><span class="line">        dmaCfg.txSel ^= <span class="number">1</span>;</span><br><span class="line">        HAL_ENTER_CRITICAL_SECTION ( intState );</span><br><span class="line">        HAL_DMA_ARM_CH ( HAL_DMA_CH_TX );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">            <span class="keyword">asm</span> ( <span class="string">"NOP"</span> );</span><br><span class="line">        &#125; <span class="keyword">while</span> ( !HAL_DMA_CH_ARMED ( HAL_DMA_CH_TX ) );</span><br><span class="line">​</span><br><span class="line">        HAL_DMA_CLEAR_IRQ ( HAL_DMA_CH_TX );</span><br><span class="line">        HAL_DMA_MAN_TRIGGER ( HAL_DMA_CH_TX );</span><br><span class="line">        HAL_EXIT_CRITICAL_SECTION ( intState );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( evt &amp;&amp; ( dmaCfg.uartCB != <span class="literal">NULL</span> ) ) &#123;</span><br><span class="line">        dmaCfg.uartCB ( HAL_UART_DMA - <span class="number">1</span>, evt );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>纵观整个函数，首先令<code>cnt</code>、<code>evt</code>为<code>0</code>，中间是触发规则，最后判断：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( evt &amp;&amp; ( dmaCfg.uartCB != <span class="literal">NULL</span> ) ) &#123;</span><br><span class="line">    dmaCfg.uartCB ( HAL_UART_DMA - <span class="number">1</span>, evt );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于前面设置过回调的程序，这里只要<code>evt</code>非零条件即可满足，也就是说，只要触发了<code>evt</code>且回调非空，那么就启动回调函数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dmaCfg.uartCB ( HAL_UART_DMA - <span class="number">1</span>, evt );</span><br></pre></td></tr></table></figure>
+<p>因为回调本身是指针，所以通过这样写的方式，启动回调，代入参数为<code>(HAL_UART_DMA-1, evt)</code>。通过这个轮询函数来决定是否启用回调函数，注意此时尚未进入<code>taskArr</code>队列的最后一个，也就是用户自己的那个程序，比如<code>SerialApp_ProcessEvent</code>。<br>&emsp;&emsp;现在具体看回调函数的内容：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">SerialApp_CallBack</span> <span class="params">( uint8 port, uint8 event )</span> </span>&#123;</span><br><span class="line">    ( <span class="keyword">void</span> ) port;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( event &amp; ( HAL_UART_RX_FULL | HAL_UART_RX_ABOUT_FULL | \</span><br><span class="line">                     HAL_UART_RX_TIMEOUT ) ) &amp;&amp; !SerialApp_TxLen ) &#123;</span><br><span class="line">        SerialApp_Send();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中的<code>if</code>语句，重点关心的是：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">event &amp; ( HAL_UART_RX_FULL | HAL_UART_RX_ABOUT_FULL | HAL_UART_RX_TIMEOUT )</span><br></pre></td></tr></table></figure>
+<p>前文提到过有<code>4</code>种事件均可以产生触发回调的<code>event</code>，此处根据需要写了<code>3</code>种，这个具体可以因项目而异。如果<code>if</code>条件满足，则发生如下过程：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">SerialApp_Send</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( !SerialApp_TxLen &amp;&amp; ( SerialApp_TxLen = \</span><br><span class="line">         HalUARTRead ( SERIAL_APP_PORT, SerialApp_TxBuf + <span class="number">1</span>, SERIAL_APP_TX_MAX ) ) ) &#123;</span><br><span class="line">        <span class="comment">/* Pre-pend sequence number to the Tx message */</span></span><br><span class="line">        SerialApp_TxBuf[<span class="number">0</span>] = ++SerialApp_TxSeq;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( SerialApp_TxLen ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( afStatus_SUCCESS != \</span><br><span class="line">                 AF_DataRequest ( &amp;SerialApp_TxAddr, ( endPointDesc_t * ) &amp;SerialApp_epDesc,</span><br><span class="line">                     SERIALAPP_CLUSTERID1, SerialApp_TxLen + <span class="number">1</span>, SerialApp_TxBuf,</span><br><span class="line">                     &amp;SerialApp_MsgID, <span class="number">0</span>, AF_DEFAULT_RADIUS ) ) &#123;</span><br><span class="line">            osal_set_event ( SerialApp_TaskID, SERIALAPP_SEND_EVT );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先是对发送队列的一些检测，然后调用<code>AF_DataRequest</code>函数发送到空中，如果发送不成功，则设置事情标志，等到后面在<code>osal</code>中重发。至此，一个数据从串口进来，到转发到空中的过程便完成了。对于这个回调的作用，必须要说明的是：</p>
+<ul>
+<li>一般来说，回调只是用来传递<code>收到串口消息</code>这个信息，也就是说，在函数核心应该只有一句：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">osal_set_event ( SerialApp_TaskID, SERIALAPP_SEND_EVT );</span><br></pre></td></tr></table></figure>
+<ul>
+<li>如果必须要在回调中直接处理数据，当然也可以在回调之中写程序处理事情，但是不建议处理的任务太密集，可能导致溢出等问题。</li>
+<li>如果采用设置<code>event</code>的方式对数据进行处理，那么需要知道，这个处理不是立马处理的，是在后面轮到该<code>event</code>的时候才处理的。</li>
+</ul>
+<p>&emsp;&emsp;<code>taskArr</code>最后一项：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">UINT16 <span class="title">SerialApp_ProcessEvent</span> <span class="params">( uint8 task_id, UINT16 events )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>当走到这里的时，每轮程序已经进入了最后一个大函数，比如在本工程中：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( events &amp; SYS_EVENT_MSG ) &#123;</span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( events &amp; SERIALAPP_SEND_EVT ) &#123;</span><br><span class="line">    SerialApp_Send();</span><br><span class="line">    <span class="keyword">return</span> ( events ^ SERIALAPP_SEND_EVT );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( events &amp; SERIALAPP_RESP_EVT ) &#123;</span><br><span class="line">    SerialApp_Resp();</span><br><span class="line">    <span class="keyword">return</span> ( events ^ SERIALAPP_RESP_EVT );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>有这样的<code>3</code>个分支，而第二个，<code>events &amp; SERIALAPP_SEND_EVT</code>，也就是前面回调里面当无线电发送失败时<code>set</code>的<code>event</code>，它最终在这里被第二次调用，也就是重新发送一遍。所以换句话，对于实时性要求不高的工程，先在回调里面设置好要触发什么事件，然后事件在此大函数中处理(比如对外设的控制指令等)。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/05/CC2530和zigbee笔记/OSAL层API函数/" rel="next" title="OSAL层API函数">
+                <i class="fa fa-chevron-left"></i> OSAL层API函数
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/05/CC2530和zigbee笔记/CC2530基础实验/" rel="prev" title="CC2530基础实验">
+                CC2530基础实验 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#串口配置"><span class="nav-number">1.</span> <span class="nav-text">串口配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#初始化"><span class="nav-number">2.</span> <span class="nav-text">初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#执行部分"><span class="nav-number">3.</span> <span class="nav-text">执行部分</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="概述&amp;emsp;&amp;emsp;OSAL(Operating System Abstraction Layer)，翻译为操作系统抽象层。OSAL就是一种支持多任务运行的系统资源分配机制，它与标准的操作系统还是有很大的区别。简单而言，OSAL实现了类似操作系统的某些功能，但并不能称之为真正意义上的操作系统。 OSAL任务运行方式&amp;emsp;&amp;emsp;我们以TI 1.2.1的BLE协议栈中的Simple">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OSAL原理">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/03/11/CC2530和zigbee笔记/OSAL原理/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="概述&amp;emsp;&amp;emsp;OSAL(Operating System Abstraction Layer)，翻译为操作系统抽象层。OSAL就是一种支持多任务运行的系统资源分配机制，它与标准的操作系统还是有很大的区别。简单而言，OSAL实现了类似操作系统的某些功能，但并不能称之为真正意义上的操作系统。 OSAL任务运行方式&amp;emsp;&amp;emsp;我们以TI 1.2.1的BLE协议栈中的Simple">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/11/CC2530和zigbee笔记/OSAL原理/1.png">
+<meta property="og:updated_time" content="2019-03-11T14:59:37.799Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="OSAL原理">
+<meta name="twitter:description" content="概述&amp;emsp;&amp;emsp;OSAL(Operating System Abstraction Layer)，翻译为操作系统抽象层。OSAL就是一种支持多任务运行的系统资源分配机制，它与标准的操作系统还是有很大的区别。简单而言，OSAL实现了类似操作系统的某些功能，但并不能称之为真正意义上的操作系统。 OSAL任务运行方式&amp;emsp;&amp;emsp;我们以TI 1.2.1的BLE协议栈中的Simple">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/03/11/CC2530和zigbee笔记/OSAL原理/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/03/11/CC2530和zigbee笔记/OSAL原理/">
+
+
+
+
+
+  <title>OSAL原理 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/11/CC2530和zigbee笔记/OSAL原理/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">OSAL原理</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-11T20:09:28+08:00">
+                2019-03-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>&emsp;&emsp;<code>OSAL</code>(<code>Operating System Abstraction Layer</code>)，翻译为<code>操作系统抽象层</code>。<code>OSAL</code>就是一种支持多任务运行的系统资源分配机制，它与标准的操作系统还是有很大的区别。简单而言，<code>OSAL</code>实现了类似操作系统的某些功能，但并不能称之为真正意义上的操作系统。</p>
+<h3 id="OSAL任务运行方式"><a href="#OSAL任务运行方式" class="headerlink" title="OSAL任务运行方式"></a>OSAL任务运行方式</h3><p>&emsp;&emsp;我们以<code>TI 1.2.1</code>的<code>BLE</code>协议栈中的<code>SimpleBLEPeripheral</code>为例，分析一下<code>OSAL</code>。其中有一个<code>simpleBLEPeripheral.c</code>文件，里面有<code>2</code>个比较重要的函数：<code>SimpleBLEPeripheral_Init</code>和<code>SimpleBLEPeripheral_ProcessEvent</code>。<code>SimpleBLEPeripheral_Init</code>是任务的初始化函数，而<code>SimpleBLEPeripheral_ProcessEvent</code>则负责处理传递给此任务的事件。大概浏览一下<code>SimpleBLEPeripheral_ProcessEvent</code>这个函数，可以发现此函数的主要功能是判断由参数传递的事件类型，然后执行相应的事件处理函数。由此，可以推断出<code>BLE</code>协议栈应用程序的运行机制如下：</p>
+<p><img src="/2019/03/11/CC2530和zigbee笔记/OSAL原理/1.png" height="235" width="437"></p>
+<p>&emsp;&emsp;当有一个事件发生的时候，<code>OSAL</code>负责将此事件分配给能够处理此事件的任务，然后此任务判断事件的类型，调用相应的事件处理程序进行处理。明白了这个问题，新的问题又摆在了我们的面前：<code>OSAL</code>是如何传递事件给任务的。</p>
+<h3 id="OSAL的事件传递机制"><a href="#OSAL的事件传递机制" class="headerlink" title="OSAL的事件传递机制"></a>OSAL的事件传递机制</h3><p>&emsp;&emsp;在试图弄清楚这个问题之前，我们需要弄清楚另外一个十分基础而重要的问题，那就是如何向我们的应用程序中添加一个任务。打开<code>OSAL_SimpleBLEPeripheral.c</code>文件，这里可以找到数组<code>tasksArr</code>和函数<code>osalInitTasks</code>。<code>TaskArr</code>这个数组里存放了所有任务的事件处理函数的地址，在这里事件处理函数就代表了任务本身，也就是说事件处理函数标识了与其对应的任务。<code>osalInitTasks</code>是<code>OSAL</code>的任务初始化函数，所有任务的初始化工作都在这里面完成，并且自动给每个任务分配一个<code>ID</code>。<br>&emsp;&emsp;要添加新任务，需要编写新任务的事件处理函数和初始化函数，然后将事件处理函数的地址加入此数组，最后在<code>osalInitTasks</code>中调用此任务的初始化函数。在此例中，<code>SimpleBLEPeripheral_ProcessEvent</code>这个函数被添加到了数组的末尾，<code>SimpleBLEPeripheral_Init</code>这个函数在<code>osalInitTasks</code>中被调用。<br>&emsp;&emsp;值得注意的是，<code>TaskArr</code>数组里各任务函数的排列顺序要与<code>osalInitTasks</code>函数中调用各任务初始化函数的顺序必须一致，只有这样才能够保证每个任务能够通过初始化函数接收到正确的任务<code>ID</code>。另外，为了保存任务初始化函数所接收的任务<code>ID</code>，我们需要给每一个任务定义一个全局变量来保存这个<code>ID</code>。在<code>SimpleBLEPeripheral.c</code>中定义了一个全局变量<code>SimpleBLEPeripheral_TaskID</code>，并且在<code>SimpleBLEPeripheral_Init</code>函数中进行了赋值：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SimpleBLEPeripheral_TaskID = task_id;</span><br></pre></td></tr></table></figure>
+<p>这条语句将分配给<code>SimpleBLEPeripheral</code>的任务<code>ID</code>保存了下来。到此，我们就给应用程序中完整的添加了一个任务。<br>&emsp;&emsp;我们回到<code>OSAL</code>如何将事件分配给任务这个问题上来，在<code>OSAL_SimpleBLEPeripheral.c</code>文件中，在定义<code>TaskArr</code>这个数组之后，又定义了两个全局变量：<code>tasksCnt</code>和<code>tasksEvents</code>。<code>tasksCnt</code>这个变量保存了当前的任务个数；<code>tasksEvents</code>是一个指向数组的指针，此数组保存了当前任务的状态。在任务初始化函数中做了如下操作：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tasksEvents = ( uint16 * ) osal_mem_alloc ( <span class="keyword">sizeof</span> ( uint16 ) * tasksCnt );</span><br><span class="line">osal_memset ( tasksEvents, <span class="number">0</span>, ( <span class="keyword">sizeof</span> ( uint16 ) * tasksCnt ) );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>osal_mem_alloc</code>为当前<code>OSAL</code>中的各任务分配存储空间(实际上是一个任务数组)，函数返回指向任务缓冲区的指针，因此<code>tasksEvents</code>指向该任务数组(任务队列)。注意<code>tasksEvents</code>和<code>tasksArr</code>里的顺序是一一对应的，<code>tasksArr</code>中的第<code>i</code>个事件处理函数对应于<code>tasksEvents</code>中的第<code>i</code>个任务的事件；<code>osal_memset</code>把开辟的内存全部设置为<code>0</code>。<code>sizeof(uint16)</code>是<code>2</code>个字节，即一个任务的长度(任务函数同样是<code>uint16</code>定义)，乘以任务数量<code>tasksCnt</code>，即全部内存空间。我们可以看出所有任务的状态都被初始化为<code>0</code>，代表了当前任务没有需要响应的事件。<br>&emsp;&emsp;紧接着来到<code>main</code>函数，先来看<code>osal_init_system</code>这个函数。在此函数中，<code>osalInitTasks</code>被调用，从而<code>tasksEvents</code>中的所有内容被初始化为<code>0</code>。之后进入了<code>osal_start_system</code>函数，此函数为一个死循环，在这个循环中完成了所有的事件分配。首先来看这样一段代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> ( tasksEvents[idx] ) &#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">while</span> ( ++idx &lt; tasksCnt );</span><br></pre></td></tr></table></figure>
+<p>当<code>tasksEvents</code>这个数组中的某个元素不为<code>0</code>，即代表此任务有事件需要相应，事件类型取决于这个元素的值，这个<code>do-while</code>循环会选出当前优先级最高的需要响应的任务。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">events = ( tasksArr[idx] ) ( idx, events );</span><br></pre></td></tr></table></figure>
+<p>此语句调用<code>tasksArr</code>数组里面相应的事件处理函数来响应事件。如果我们新添加的任务有了需要响应的事件，那么此任务的事件处理程序将会被调用。就这样，<code>OSAL</code>就将需要响应的事件传递给了对应的任务处理函数进行处理。<code>tasksArr[idx]</code>就是一个函数指针数组，里面存储的就是函数的指针：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> pTaskEventHandlerFn tasksArr[] = &#123;</span><br><span class="line">    LL_ProcessEvent,                 <span class="comment">/* task 0  */</span></span><br><span class="line">    Hal_ProcessEvent,                <span class="comment">/* task 1  */</span></span><br><span class="line">    HCI_ProcessEvent,                <span class="comment">/* task 2  */</span></span><br><span class="line">#<span class="keyword">if</span> defined ( OSAL_CBTIMER_NUM_TASKS )</span><br><span class="line">    OSAL_CBTIMER_PROCESS_EVENT ( osal_CbTimerProcessEvent ), <span class="comment">/* task 3  */</span></span><br><span class="line">#endif</span><br><span class="line">    L2CAP_ProcessEvent,              <span class="comment">/* task 4  */</span></span><br><span class="line">    GAP_ProcessEvent,                <span class="comment">/* task 5  */</span></span><br><span class="line">    GATT_ProcessEvent,               <span class="comment">/* task 6  */</span></span><br><span class="line">    SM_ProcessEvent,                 <span class="comment">/* task 7  */</span></span><br><span class="line">    GAPRole_ProcessEvent,            <span class="comment">/* task 8  */</span></span><br><span class="line">    GAPBondMgr_ProcessEvent,         <span class="comment">/* task 9  */</span></span><br><span class="line">    GATTServApp_ProcessEvent,        <span class="comment">/* task 10 */</span></span><br><span class="line">    SimpleBLEPeripheral_ProcessEvent <span class="comment">/* task 11 */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>假设<code>idx = 11</code>，就是调用了<code>events = (tasksArr[11])(11, events)</code>，其实就是执行了<code>SimpleBLEPeripheral_ProcessEvent(11, events);</code>函数。</p>
+<h3 id="事件的捕获"><a href="#事件的捕获" class="headerlink" title="事件的捕获"></a>事件的捕获</h3><p>&emsp;&emsp;不过接下来就有了更加深入的问题了：事件是如何被捕获的？直观一些来说就是，<code>tasksEvents</code>这个数组里的元素是什么时候被设定为非零数，来表示有事件需要处理的？为了详细的说明这个过程，我们将以<code>SimpleBLEPeripheral</code>这个例程中响应按键的过程来进行说明。其他的事件虽然稍有差别，却是大同小异。<br>&emsp;&emsp;按键在我们的应用里面应该属于硬件资源，所以<code>OSAL</code>理应为我们提供使用和管理这些硬件的服务。稍微留意一下之前说过的<code>tasksArr</code>这样一个数组，它保存了所有任务的事件处理函数。我们从中发现了一个很重要的信息：<code>Hal_ProcessEvent</code>。<code>HAL</code>(<code>Hardware Abstraction Layer</code>)翻译为<code>硬件抽象层</code>。许多人在这里经常把将<code>BLE</code>的硬件抽象层与物理层混为一谈。在这里，我们应该将<code>BLE</code>的硬件抽象层与物理层区分开来。硬件抽象层所包含的范围是我们当前硬件电路上面所有对于系统可用的设备资源；而物理层则是针对无线通信而言，它所包含的仅限于支持无线通讯的硬件设备。通过这个重要的信息，可以得出这样一个结论：<code>OSAL</code>将硬件的管理也作为一个任务来处理。那么我们很自然地去寻找<code>Hal_ProcessEvent</code>这个事件处理函数，看看它究竟是如何管理硬件资源的。<br>&emsp;&emsp;在<code>HAL\Commn\hal_drivers.c</code>这个文件中找到这个函数，我们直接分析与按键有关的一部分代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( events &amp;HAL_KEY_EVENT ) &#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> (defined HAL_KEY) &amp;&amp; (HAL_KEY == TRUE)</span></span><br><span class="line">    HalKeyPoll(); <span class="comment">/* Check for keys */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !Hal_KeyIntEnable ) &#123; <span class="comment">/* if interrupt disabled, do next polling */</span></span><br><span class="line">        osal_start_timerEx ( Hal_TaskID, HAL_KEY_EVENT, <span class="number">100</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* HAL_KEY */</span></span></span><br><span class="line">    <span class="keyword">return</span> events ^ HAL_KEY_EVENT;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;在事件处理函数接收到<code>HAL_KEY_EVENT</code>这样一个事件后，首先执行<code>HalKeyPoll</code>函数。由于这个例程的按键采用查询的方法获取，所以是禁止中断的，于是表达式<code>!Hal_KeyIntEnable</code>的值为真。那么<code>osal_start_timerEx(Hal_TaskID, HAL_KEY_EVENT, 100)</code>得以执行。<code>osal_start_timerEx</code>这是一个很常用的函数，它在这里的功能是经过<code>100</code>毫秒后，向<code>Hal_TaskID</code>这个<code>ID</code>所标示的任务(也就是其本身)发送一个<code>HAL_KEY_EVENT</code>事件。这样以来，每经过<code>100</code>毫秒，<code>Hal_ProcessEvent</code>这个事件处理函数都会至少执行一次来处理<code>HAL_KEY_EVENT</code>事件，也就是说每隔<code>100</code>毫秒都会执行<code>HalKeyPoll</code>函数。<br>&emsp;&emsp;那么我们来看看<code>HalKeyPoll</code>函数到底在搞什么鬼！代码中给的注释为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HalKeyPoll(); <span class="comment">/* Check for keys */</span></span><br></pre></td></tr></table></figure>
+<p>我们推断这个函数的作用是检查当前的按键情况。进入函数一看，<code>keys</code>变量(在函数起始位置定义的)获得了当前按键的状态。最后有一个十分重要的函数调用：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">( pHalKeyProcessFunction ) ( keys, HAL_KEY_STATE_NORMAL );</span><br></pre></td></tr></table></figure>
+<p><code>pHalKeyProcessFunction</code>函数指针指向了如下函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">OnBoard_KeyCallback</span> <span class="params">( uint8 keys, uint8 state )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>此函数在<code>OnBoard.c</code>文件中可以找到。这个函数又调用了：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">OnBoard_KeyCallback</span> <span class="params">( uint8 keys, uint8 state )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>在这个函数中，按键的状态信息被封装到了一个消息结构体中。最后有一个极其重要的函数被调用了：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">osal_msg_send ( registeredKeysTaskID, ( uint8 * ) msgPtr );</span><br></pre></td></tr></table></figure>
+<p>与前面的<code>pHalKeyProcessFunction</code>相同，先直接告诉大家<code>registeredKeysTaskID</code>所指示的任务正是我们需要响应按键的<code>SimpleBLEPeripheral</code>这个任务。也就是说，在这里我们向<code>SimpleBLEPeripheral</code>发送了一个附带按键信息的消息。在<code>osal_msg_send</code>函数中：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">osal_set_event ( destination_task, SYS_EVENT_MSG );</span><br></pre></td></tr></table></figure>
+<p>将被调用，它在这里的作用是设置<code>destination_task</code>这个任务的事件为<code>SYS_EVENT_MSG</code>。而这个<code>destination_task</code>正式由<code>osal_msg_send</code>这个函数通过参数传递而来的，它也指示的是<code>SimpleBLEPeripheral</code>这个任务。在<code>osal_set_event</code>这个函数中，有这样一个语句：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tasksEvents[task_id] |= event_flag;</span><br></pre></td></tr></table></figure>
+<p>至此，刚才所提到的问题得到了解决。我们再将这个过程整理一遍。<br>&emsp;&emsp;首先<code>OSAL</code>专门建立了一个任务来对硬件资源进行管理，这个任务的事件处理函数是<code>Hal_ProcessEvent</code>。在这个函数中通过调用<code>osal_start_timerEx(Hal_TaskID, HAL_KEY_EVENT, 100);</code>这个函数使得每隔<code>100</code>毫秒就会执行一次<code>HalKeyPoll</code>函数。<code>HalKeyPoll</code>获取当前按键的状态，并且通过调用<code>OnBoard_KeyCallback</code>函数向<code>SimpleBLEPeripheral</code>任务发送一个按键消息，并且设置<code>tasksEvents</code>中<code>SimpleBLEPeripheral</code>所对应的值为非零。如此，当<code>main</code>函数里这样一段代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> ( tasksEvents[idx] ) &#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">while</span> ( ++idx &lt; tasksCnt );</span><br></pre></td></tr></table></figure>
+<p>执行了该代码以后，<code>SimpleBLEPeripheral</code>这个任务就会被挑选出来。然后通过：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">events = ( tasksArr[idx] ) ( idx, events );</span><br></pre></td></tr></table></figure>
+<p>这个函数调用其事件处理函数，完成事件的响应。现在，我们回过头来处理我们之前遗留下来的问题。<br>&emsp;&emsp;1. <code>pHalKeyProcessFunction</code>这个函数指针为何指向了<code>OnBoard_KeyCallback</code>函数。在<code>HAL\Common\hal_drivers.c</code>这个文件中，我们找到了<code>HalDriverInit</code>这个函数，在这个函数中，按键的初始化函数<code>HalKeyInit</code>被调用。在<code>HalKeyInit</code>中有这样的语句：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pHalKeyProcessFunction = <span class="literal">NULL</span>;</span><br></pre></td></tr></table></figure>
+<p>这说明在初始化以后<code>pHalKeyProcessFunction</code>并没有指向任何一个函数。那么<code>pHalKeyProcessFunction</code>是什么时候被赋值的呢？就在<code>HalKeyInit</code>的下方有一个这样的函数<code>HalKeyConfig</code>。其中有这样一条语句：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pHalKeyProcessFunction = cback;</span><br></pre></td></tr></table></figure>
+<p><code>cback</code>是<code>HalKeyConfig</code>所传进来的参数，所以想要知道它所指向的函数，必须找到其调用的地方。在<code>main</code>函数中有这样一个函数调用：<code>InitBoard(OB_READY);</code>，此函数中做了如下调用：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HalKeyConfig ( OnboardKeyIntEnable, OnBoard_KeyCallback );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;2. <code>registeredKeysTaskID</code>为什么标识了<code>SimpleBLEPeripheral</code>这个任务？由于<code>OSAL</code>是一个支持多任务的调度机制，所以在同一时间内将会有多个任务同时运行。但是从逻辑上来讲，一个事件只能由一个任务来处理，按键事件也不例外。那么如何向<code>OSAL</code>声明处理按键事件的任务是<code>SimpleBLEPeripheral</code>呢？在<code>SimpleBLEPeripheral_Init</code>(<code>SimpleBLEPeripheral</code>的任务初始化函数)中有这么一个语句：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RegisterForKeys ( SimpleBLEPeripheral_TaskID );</span><br></pre></td></tr></table></figure>
+<p><code>RegisterForKeys</code>函数向<code>OSAL</code>声明按键事件将由<code>SimpleBLEPeripheral</code>任务来处理。在<code>RegisterForKeys</code>函数中：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">registeredKeysTaskID = task_id;</span><br></pre></td></tr></table></figure>
+<p>我想我不用再做多余的解释了。</p>
+<h3 id="消息队列"><a href="#消息队列" class="headerlink" title="消息队列"></a>消息队列</h3><p>&emsp;&emsp;首先我需要向大家解释清楚消息与事件的联系。事件是驱动任务去执行某些操作的条件，当系统产生了一个事件，将这个传递给相应的任务后，任务才能执行一个相应的操作。但是某些事件在它发生的同时，又伴随着一些附加信息的产生。任务的事件处理函数在处理这个事件的时候，还需要参考其附加信息。最典型的一类便是按键消息，它同时产生了一个哪个按键被按下了附加信息。所以在<code>OnBoard_SendKeys</code>这个函数中，不仅向<code>SimpleBLEPeripheral</code>发送了事件，还通过调用<code>osal_msg_send</code>函数向<code>SimpleBLEPeripheral</code>发送了一个消息，这个消息记录了这个事件的附加信息。在<code>SimpleBLEPeripheral_ProcessEvent</code>中，通过：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MSGpkt = ( afIncomingMSGPacket_t * ) osal_msg_receive ( SimpleBLEPeripheral_TaskID );</span><br></pre></td></tr></table></figure>
+<p>获取了这样一个消息，然后再进一步处理。<code>OSAL</code>在后台维护了一个消息队列，每一个消息都会被放到这个消息队列中去，当任务接收到事件以后，从消息队列中获取属于自己的消息，然后进行处理。</p>
+<hr>
+<p>&emsp;&emsp;首先看的当然是<code>main</code>函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    osal_int_disable ( INTS_ALL ); <span class="comment">/* Turn off interrupts 关闭全局中断“EA = 0”，初始化过程不响应任何中断 */</span></span><br><span class="line">    HAL_BOARD_INIT(); <span class="comment">/* Initialization for board related stuff such as LEDs 配置了时钟、LED、串口 */</span></span><br><span class="line">    zmain_vdd_check(); <span class="comment">/* Make sure supply voltage is high enough to run 检查电源电压 */</span></span><br><span class="line">    zmain_ram_init();<span class="comment">/* Initialize stack memory 初始化堆内存 */</span></span><br><span class="line">    InitBoard ( OB_COLD ); <span class="comment">/* Initialize board I/O 初始化板子用到的IO口 */</span></span><br><span class="line">    HalDriverInit(); <span class="comment">/*Initialze HAL drivers 初始化外设 */</span></span><br><span class="line">    osal_nv_init ( <span class="literal">NULL</span> ); <span class="comment">/* Initialize NV System 系统初始化 */</span></span><br><span class="line">    zgInit(); <span class="comment">/* Initialize basic NV items 任务初始化 */</span></span><br><span class="line">    ZMacInit(); <span class="comment">/* Initialize the MAC */</span></span><br><span class="line">    zmain_ext_addr(); <span class="comment">/* Determine the extended address 确定长地址 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> NONWK</span></span><br><span class="line">    afInit(); <span class="comment">/* Since the AF isn't a task, call it's initialization routine */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    osal_init_system(); <span class="comment">/* Initialize the operating system 系统初始化 */</span></span><br><span class="line">    osal_int_enable ( INTS_ALL ); <span class="comment">/* Allow interrupts 使能中断 */</span></span><br><span class="line">    InitBoard ( OB_READY ); <span class="comment">/* Final board initialization 后期初始化 */</span></span><br><span class="line">    zmain_dev_info(); <span class="comment">/* Display information about this device 显示设备信息 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> LCD_SUPPORTED</span></span><br><span class="line">    zmain_lcd_init(); <span class="comment">/* Display the device info on the LCD */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> WDT_IN_PM1</span></span><br><span class="line">    WatchDogEnable ( WDTIMX ); <span class="comment">/* If WDT is used, this is a good place to enable it. 使用看门狗 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    osal_start_system(); <span class="comment">/* No Return from here 正常情况下不返回 */</span></span><br><span class="line">    <span class="keyword">return</span> ( <span class="number">0</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中含有<code>osal</code>的都是与操作系统相关的。这里主要提一下这些函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HalDriverInit(); <span class="comment">/* Initialze HAL drivers 初始化外设 */</span></span><br></pre></td></tr></table></figure>
+<p>片内外设与片外外设基本上在这个函数中初始化，像<code>Timer</code>、<code>DMA</code>、<code>LCD</code>等，该函数调用后设备即可使用。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zgInit(); <span class="comment">/* Initialize basic NV items */</span></span><br></pre></td></tr></table></figure>
+<p>这个函数通过调用：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zgInitItems ( setDefault ); <span class="comment">/* Initialize the items table */</span></span><br></pre></td></tr></table></figure>
+<p>初始化了数组<code>zgItemTable</code>(<code>ZGlobal Item Table</code>)。<br>&emsp;&emsp;我们讨论的任务在如下函数中调用<code>osalInitTasks</code>进行初始化：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">osal_init_system(); <span class="comment">/* Initialize the operating system */</span></span><br></pre></td></tr></table></figure>
+<p>在该函数中为每一个任务分配了一个<code>ID</code>号，这个<code>ID</code>号在任务切换的时候将用到。该函数中的初始化函数的顺序与函数指针数组<code>const pTaskEventHandlerFn tasksArr[];</code>中对应的任务的顺序是一致的，这一点不难理解，就是为了保证任务与<code>ID</code>号的对应。该函数中还有这么两条语句值得注意：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tasksEvents = ( uint16 * ) osal_mem_alloc ( <span class="keyword">sizeof</span> ( uint16 ) * tasksCnt ); <span class="comment">/* 申请空间，用于存放任务 */</span></span><br><span class="line">osal_memset ( tasksEvents, <span class="number">0</span>, ( <span class="keyword">sizeof</span> ( uint16 ) * tasksCnt ) ); <span class="comment">/* 用0初始化申请到的空间 */</span></span><br></pre></td></tr></table></figure>
+<p><code>tasksEvents</code>是一个指针，任务切换的时候就是通过<code>tasksEvents</code>来查找需要处理的任务。<code>tasksEvents</code>指向的对象保存的是对应任务的掩码。最后通过调用如下函数启动操作系统：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">osal_start_system(); <span class="comment">/* No Return from here */</span></span><br></pre></td></tr></table></figure>
+<p>该函数正常情况下是不返回的。然后所有的任务都在这个<code>for</code>循环中被处理：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">if</span> !defined ( ZBIT ) &amp;&amp; !defined ( UBIT )</span></span><br><span class="line"><span class="keyword">for</span> ( ;; ) <span class="comment">/* Forever Loop */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#123;</span><br><span class="line">    uint8 idx = <span class="number">0</span>;</span><br><span class="line">    osalTimeUpdate(); <span class="comment">/* 定时器任务更新 */</span></span><br><span class="line">    Hal_ProcessPoll(); <span class="comment">/* This replaces MT_SerialPoll() and osal_check_timer() 轮询处理 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> ( tasksEvents[idx] ) &#123; <span class="comment">/* Task is highest priority that is ready 查找优先级最高的任务 */</span></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> ( ++idx &lt; tasksCnt ); <span class="comment">/* tasksCnt为总的任务数 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( idx &lt; tasksCnt ) &#123; <span class="comment">/* 任务数检查 */</span></span><br><span class="line">        uint16 events;</span><br><span class="line">        halIntState_t intState;</span><br><span class="line">        HAL_ENTER_CRITICAL_SECTION ( intState ); <span class="comment">/* 保存中断状态 */</span></span><br><span class="line">        events = tasksEvents[idx]; <span class="comment">/* 取出任务后立即清除 */</span></span><br><span class="line">        tasksEvents[idx] = <span class="number">0</span>; <span class="comment">/* Clear the Events for this task */</span></span><br><span class="line">        HAL_EXIT_CRITICAL_SECTION ( intState ); <span class="comment">/* 恢复中断状态 */</span></span><br><span class="line">        events = ( tasksArr[idx] ) ( idx, events ); <span class="comment">/* 执行任务，返回值是未处理的事件的掩码 */</span></span><br><span class="line">        HAL_ENTER_CRITICAL_SECTION ( intState );</span><br><span class="line">        <span class="comment">/* Add back unprocessed events to the current task 添加未被处理的任务 */</span></span><br><span class="line">        tasksEvents[idx] |= events;</span><br><span class="line">        HAL_EXIT_CRITICAL_SECTION ( intState );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined( POWER_SAVING )</span></span><br><span class="line">    <span class="keyword">else</span> &#123; <span class="comment">/* Complete pass through all task events with no activity */</span></span><br><span class="line">        osal_pwrmgr_powerconserve(); <span class="comment">/* Put the processor/system into sleep 当任务ID号出错时进入睡眠 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;当有任务需要处理时，便调用函数<code>osal_set_event</code>添加任务：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*----------------------------------------------------------------</span></span><br><span class="line"><span class="comment"> * @fn osal_set_event</span></span><br><span class="line"><span class="comment"> * @brief</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This function is called to set the event flags for a task. The</span></span><br><span class="line"><span class="comment"> * event passed in is OR'd into the task's event variable.</span></span><br><span class="line"><span class="comment"> * 设置事件标志,这些事件保存到变量task</span></span><br><span class="line"><span class="comment"> * @param uint8 task_id - receiving tasks ID</span></span><br><span class="line"><span class="comment"> * @param uint8 event_flag - what event to set</span></span><br><span class="line"><span class="comment"> * @return SUCCESS, INVALID_TASK</span></span><br><span class="line"><span class="comment">-----------------------------------------------------------------*/</span></span><br><span class="line"><span class="function">uint8 <span class="title">osal_set_event</span> <span class="params">( uint8 task_id, uint16 event_flag )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( task_id &lt; tasksCnt ) &#123; <span class="comment">/* 正确的ID */</span></span><br><span class="line">        halIntState_t   intState;</span><br><span class="line">        HAL_ENTER_CRITICAL_SECTION ( intState ); <span class="comment">/* Hold off interrupts */</span></span><br><span class="line">        tasksEvents[task_id] |= event_flag; <span class="comment">/* Stuff the event bit(s) 添加需要处理的事件的掩码 */</span></span><br><span class="line">        HAL_EXIT_CRITICAL_SECTION ( intState ); <span class="comment">/* Release interrupts */</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> ( INVALID_TASK );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ( SUCCESS );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>再看函数<code>osal_start_system</code>，对于<code>tasksEvents</code>就比较清楚了。在所有调用<code>osal_set_event</code>的函数中，比较值得关注的是<code>osalTimerUpdate</code>，先来看看函数体：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*-----------------------------------------------------</span></span><br><span class="line"><span class="comment"> * @fn osalTimerUpdate</span></span><br><span class="line"><span class="comment"> * @brief Update the timer structures for a timer tick.</span></span><br><span class="line"><span class="comment"> * @param none</span></span><br><span class="line"><span class="comment"> * @return none</span></span><br><span class="line"><span class="comment"> * 更新定时器任务</span></span><br><span class="line"><span class="comment">-----------------------------------------------------*/</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">osalTimerUpdate</span> <span class="params">( uint16 updateTime )</span> </span>&#123;</span><br><span class="line">    halIntState_t intState;</span><br><span class="line">    osalTimerRec_t *srchTimer;</span><br><span class="line">    osalTimerRec_t *prevTimer;</span><br><span class="line">    HAL_ENTER_CRITICAL_SECTION ( intState ); <span class="comment">/* Hold off interrupts 保存中断状态 */</span></span><br><span class="line">    osal_systemClock += updateTime; <span class="comment">/* Update the system time 更新系统时间 */</span></span><br><span class="line">    HAL_EXIT_CRITICAL_SECTION ( intState ); <span class="comment">/* Re-enable interrupts 恢复中断状态 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( timerHead != <span class="literal">NULL</span> ) &#123; <span class="comment">/* Look for open timer slot */</span></span><br><span class="line">        srchTimer = timerHead; <span class="comment">/* Add it to the end of the timer list 添加到定时器列表 */</span></span><br><span class="line">        prevTimer = ( <span class="keyword">void</span> * ) <span class="literal">NULL</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( srchTimer ) &#123; <span class="comment">/* Look for open timer slot 遍历链表 */</span></span><br><span class="line">            osalTimerRec_t *freeTimer = <span class="literal">NULL</span>;</span><br><span class="line">            HAL_ENTER_CRITICAL_SECTION ( intState ); <span class="comment">/* Hold off interrupts */</span></span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( srchTimer-&gt;timeout &lt;= updateTime ) &#123; <span class="comment">/* 超时检查 */</span></span><br><span class="line">                srchTimer-&gt;timeout = <span class="number">0</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                srchTimer-&gt;timeout = srchTimer-&gt;timeout - updateTime;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="comment">/* When timeout or delete (event_flag == 0) 需要处理的事件 */</span></span><br><span class="line">            <span class="keyword">if</span> ( srchTimer-&gt;timeout == <span class="number">0</span> || srchTimer-&gt;event_flag == <span class="number">0</span> ) &#123;</span><br><span class="line">                <span class="keyword">if</span> ( prevTimer == <span class="literal">NULL</span> ) &#123; <span class="comment">/* Take out of list */</span></span><br><span class="line">                    timerHead = srchTimer-&gt;next;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    prevTimer-&gt;next = srchTimer-&gt;next;</span><br><span class="line">                &#125;</span><br><span class="line">​</span><br><span class="line">                freeTimer = srchTimer; <span class="comment">/* Setup to free memory 设置要被释放的资源 */</span></span><br><span class="line">                srchTimer = srchTimer-&gt;next; <span class="comment">/* Next */</span></span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                prevTimer = srchTimer; <span class="comment">/* Get next 下一个任务 */</span></span><br><span class="line">                srchTimer = srchTimer-&gt;next;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            HAL_EXIT_CRITICAL_SECTION ( intState ); <span class="comment">/* Re-enable interrupts */</span></span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( freeTimer ) &#123; <span class="comment">/* 释放任务 */</span></span><br><span class="line">                <span class="keyword">if</span> ( freeTimer-&gt;timeout == <span class="number">0</span> ) &#123;</span><br><span class="line">                    <span class="comment">/* 时间到了，设置事件标志以等待处理 */</span></span><br><span class="line">                    osal_set_event ( freeTimer-&gt;task_id, freeTimer-&gt;event_flag );</span><br><span class="line">                &#125;</span><br><span class="line">​</span><br><span class="line">                osal_mem_free ( freeTimer ); <span class="comment">/* 释放该定时器任务的资源 */</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在我所使用的版本中，该函数只被两个函数调用，分别是：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*------------------------------------------------------</span></span><br><span class="line"><span class="comment"> * @fn osal_adjust_timers</span></span><br><span class="line"><span class="comment"> * @brief Update the timer structures for elapsed ticks.</span></span><br><span class="line"><span class="comment"> * @param none</span></span><br><span class="line"><span class="comment"> * @return none</span></span><br><span class="line"><span class="comment">------------------------------------------------------*/</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">osal_adjust_timers</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    uint16 eTime;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( timerHead != <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        eTime = TimerElapsed() /  TICK_COUNT; <span class="comment">/* Compute elapsed time (msec) */</span></span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( eTime ) &#123;</span><br><span class="line">            osalTimerUpdate ( eTime );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/*------------------------------------------------------------------------</span></span><br><span class="line"><span class="comment"> * @fn osalTimeUpdate</span></span><br><span class="line"><span class="comment"> * @brief Uses the free running rollover count of the MAC backoff timer;</span></span><br><span class="line"><span class="comment"> *        this timer runs freely with a constant 320 usec interval. The</span></span><br><span class="line"><span class="comment"> *        count of 320-usec ticks is converted to msecs and used to update</span></span><br><span class="line"><span class="comment"> *        the OSAL clock and Timers by invoking osalClockUpdate() and</span></span><br><span class="line"><span class="comment"> *        osalTimerUpdate(). This function is intended to be invoked</span></span><br><span class="line"><span class="comment"> *        from the background, not interrupt level.</span></span><br><span class="line"><span class="comment"> * @param None</span></span><br><span class="line"><span class="comment"> * @return None</span></span><br><span class="line"><span class="comment">------------------------------------------------------------------------*/</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">osalTimeUpdate</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 定时器任务更新 */</span></span><br><span class="line">    uint16 tmp;</span><br><span class="line">    uint16 ticks320us;</span><br><span class="line">    uint16 elapsedMSec = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">/* Get the free-running count of 320us timer ticks 设置时间片 */</span></span><br><span class="line">    tmp = macMcuPrecisionCount(); <span class="comment">/* 获取溢出值，该溢出值是一个累计的溢出值 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( tmp != previousMacTimerTick ) &#123; <span class="comment">/* 相等则代表没有溢出 */</span></span><br><span class="line">        <span class="comment">/* Calculate the elapsed ticks of the free-running timer 计算已经消耗的时间 */</span></span><br><span class="line">        ticks320us = tmp - previousMacTimerTick;</span><br><span class="line">        <span class="comment">/* Store the MAC Timer tick count for the next time through this function 保存当前时间 */</span></span><br><span class="line">        previousMacTimerTick = tmp;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* It is necessary to loop to convert the usecs to msecs in increments so as  not to</span></span><br><span class="line"><span class="comment">           overflow the 16-bit variables. 这是必要的循环转换usecs毫秒的增量，以免溢出16位变量。*/</span></span><br><span class="line">        <span class="keyword">while</span> ( ticks320us &gt; MAXCALCTICKS ) &#123;</span><br><span class="line">            ticks320us -= MAXCALCTICKS;</span><br><span class="line">            elapsedMSec += MAXCALCTICKS * <span class="number">8</span> / <span class="number">25</span>;</span><br><span class="line">            remUsTicks += MAXCALCTICKS * <span class="number">8</span> % <span class="number">25</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* update converted number with remaining ticks from loop and the accumulated remainder from loop */</span></span><br><span class="line">        tmp = ( ticks320us * <span class="number">8</span> ) + remUsTicks;</span><br><span class="line">        <span class="comment">/* Convert the 320 us ticks into milliseconds and a remainder */</span></span><br><span class="line">        elapsedMSec += tmp / <span class="number">25</span>;</span><br><span class="line">        remUsTicks = tmp % <span class="number">25</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* Update OSAL Clock and Timers 更新系统定时器 */</span></span><br><span class="line">        <span class="keyword">if</span> ( elapsedMSec ) &#123;</span><br><span class="line">            osalClockUpdate ( elapsedMSec ); <span class="comment">/* 更新系统时间 */</span></span><br><span class="line">            osalTimerUpdate ( elapsedMSec ); <span class="comment">/* 更新定时器任务，并设置需要处理的任务的掩码标志 */</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>都是跟定时器相关的。在函数<code>osalTimerUpdate</code>开头定义了两个指针：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">osalTimerRec_t *srchTimer;</span><br><span class="line">osalTimerRec_t *prevTimer;</span><br></pre></td></tr></table></figure>
+<p>其结构<code>osalTimerRec_t</code>定义为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">void</span> *next;</span><br><span class="line">    uint16 timeout;</span><br><span class="line">    uint16 event_flag;</span><br><span class="line">    uint8 task_id;</span><br><span class="line">&#125; osalTimerRec_t;</span><br></pre></td></tr></table></figure>
+<p>操作一个单向链表，链表头为<code>timerHead</code>，该链表中保存了所有需要定时执行的任务，这些任务在函数<code>osalAddTimer</code>中被创建。而该函数只被<code>osal_start_timerEx</code>调用：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">uint8 <span class="title">osal_start_timerEx</span> <span class="params">( uint8 taskID, uint16 event_id, uint16 timeout_value )</span> </span>&#123;</span><br><span class="line">    halIntState_t intState;</span><br><span class="line">    osalTimerRec_t *newTimer;</span><br><span class="line">    HAL_ENTER_CRITICAL_SECTION ( intState ); <span class="comment">/* Hold off interrupts 保存中断状态 */</span></span><br><span class="line">    newTimer = osalAddTimer ( taskID, event_id , timeout_value ); <span class="comment">/* Add timer 添加定时器任务 */</span></span><br><span class="line">    HAL_EXIT_CRITICAL_SECTION ( intState );  <span class="comment">/* Re-enable interrupts */</span></span><br><span class="line">    <span class="keyword">return</span> ( ( newTimer != <span class="literal">NULL</span> ) ? SUCCESS : NO_TIMER_AVAIL );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中<code>event_id</code>跟如下函数中<code>event_flag</code>的作用是一样的，都是最后被写入到<code>tasksEvents</code>中的掩码。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">uint8 <span class="title">osal_set_event</span> <span class="params">( uint8 task_id, uint16 event_flag )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>通过函数<code>osal_set_event</code>更改<code>tasksEvents</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tasksEvents[task_id] |= event_flag; <span class="comment">/* Stuff the event bit(s) 添加需要处理的事件的掩码 */</span></span><br></pre></td></tr></table></figure>
+<p>函数<code>osal_start_timerEx</code>使用结构<code>osalTimerRec_t</code>临时保存<code>newTimer-&gt;event_flag = event_flag;</code>。最后通过在主循环中调用<code>osalTimeUpdate</code>，通过代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( freeTimer ) &#123; <span class="comment">/* 释放任务 */</span></span><br><span class="line">    <span class="keyword">if</span> ( freeTimer-&gt;timeout == <span class="number">0</span> ) &#123;</span><br><span class="line">        <span class="comment">/* 时间到了，设置事件标志以等待处理 */</span></span><br><span class="line">        osal_set_event ( freeTimer-&gt;task_id, freeTimer-&gt;event_flag );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    osal_mem_free ( freeTimer ); <span class="comment">/* 释放该定时器任务的资源 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后还是调用函数<code>osal_set_event</code>对<code>tasksEvents</code>进行更改。当一个任务处理完毕时在主循环中清除相应的掩码。<br>&emsp;&emsp;当然，当一开始进入函数<code>osal_start_system</code>中时，应该是没有任务的。这个时候，任务是通过中断层层调用，最后还是调用函数<code>osal_set_event</code>添加任务。在<code>ZigBee</code>协议栈中，中断函数是通过宏来实现的。这些宏在<code>Hal_mcu.h</code>文件中定义：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _PRAGMA(x)                    _Pragma(#x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HAL_ISR_FUNC_DECLARATION(f,v) _PRAGMA(vector=v) __near_func __interrupt void f(void)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HAL_ISR_FUNC_PROTOTYPE(f,v)   _PRAGMA(vector=v) __near_func __interrupt void f(void)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HAL_ISR_FUNCTION(f,v)         HAL_ISR_FUNC_PROTOTYPE(f,v); HAL_ISR_FUNC_DECLARATION(f,v)</span></span><br></pre></td></tr></table></figure>
+<p>当需要编写一个中断函数实体，使用宏<code>HAL_ISR_FUNCTION(f,v)</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">HAL_ISR_FUNCTION ( halKeyPort0Isr, P0INT_VECTOR ) &#123; <span class="comment">/* P0口中断服务函数 */</span></span><br><span class="line">    <span class="keyword">if</span> ( ( HAL_KEY_SW_6_PXIFG &amp; HAL_KEY_SW_6_BIT ) || ( HAL_KEY_SW_7_PXIFG &amp; HAL_KEY_SW_7_BIT ) ) &#123;</span><br><span class="line">        halProcessKeyInterrupt();</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* Clear the CPU interrupt flag for Port_0 PxIFG has to be cleared before PxIF 清除中断标志 */</span></span><br><span class="line">    HAL_KEY_SW_6_PXIFG = <span class="number">0</span>;</span><br><span class="line">    HAL_KEY_CPU_PORT_0_IF = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">HAL_ISR_FUNCTION ( halTimer1Isr, T1_VECTOR ) &#123; <span class="comment">/* 定时器1中断服务函数 */</span></span><br><span class="line">    halProcessTimer1 ();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">HAL_ISR_FUNCTION ( macMcuRfIsr, RF_VECTOR ) <span class="comment">/* RF中断服务函数 */</span></span><br></pre></td></tr></table></figure>
+<p>只要对这些宏进行展开，就得到了<code>CC2530</code>中断服务函数的形式。下面就来看一下中断服务函数是怎样添加任务的。<code>P0</code>口中断服务函数调用了函数<code>halProcessKeyInterrupt</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*---------------------------------------------------------------------------------------------</span></span><br><span class="line"><span class="comment"> * @fn halProcessKeyInterrupt</span></span><br><span class="line"><span class="comment"> * @brief Checks to see if it's a valid key interrupt, saves interrupt driven key states for</span></span><br><span class="line"><span class="comment"> *        processing by HalKeyRead(), and debounces keys by scheduling HalKeyRead() 25ms later.</span></span><br><span class="line"><span class="comment">----------------------------------------------------------------------------------------------*/</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">halProcessKeyInterrupt</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">bool</span> valid = FALSE;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 检查中断源 */</span></span><br><span class="line">    <span class="keyword">if</span> ( HAL_KEY_SW_6_PXIFG &amp; HAL_KEY_SW_6_BIT ) &#123; <span class="comment">/* Interrupt Flag has been set */</span></span><br><span class="line">        HAL_KEY_SW_6_PXIFG = ~ ( HAL_KEY_SW_6_BIT ); <span class="comment">/* Clear Interrupt Flag */</span></span><br><span class="line">        valid = TRUE;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( HAL_KEY_SW_7_PXIFG &amp; HAL_KEY_SW_7_BIT ) &#123; <span class="comment">/* Interrupt Flag has been set */</span></span><br><span class="line">        HAL_KEY_SW_7_PXIFG = ~ ( HAL_KEY_SW_7_BIT ); <span class="comment">/* Clear Interrupt Flag */</span></span><br><span class="line">        valid = TRUE;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( HAL_KEY_JOY_MOVE_PXIFG &amp; HAL_KEY_JOY_MOVE_BIT ) &#123; <span class="comment">/* Interrupt Flag has been set */</span></span><br><span class="line">        HAL_KEY_JOY_MOVE_PXIFG = ~ ( HAL_KEY_JOY_MOVE_BIT ); <span class="comment">/* Clear Interrupt Flag */</span></span><br><span class="line">        valid = TRUE;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( valid ) &#123; <span class="comment">/* 添加定时器任务 */</span></span><br><span class="line">        <span class="comment">/* 使用定时器定时触发任务 */</span></span><br><span class="line">        osal_start_timerEx ( Hal_TaskID, HAL_KEY_EVENT, HAL_KEY_DEBOUNCE_VALUE );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在函数<code>osal_start_timerEx</code>中添加了一个定时任务，其中<code>ID</code>号就不用多说了，<code>HAL_KEY_EVENT</code>是将要被添加到<code>tasksEvents</code>的任务的掩码，<code>HAL_KEY_DEBOUNCE_VALUE</code>则是用来进行消抖的一个时间值。当按键按下时会产生抖动，而通常消抖的方法是延时。所以我们也可以知道，在这里产生<code>IO</code>口中断的是按键。并不是每个中断都必须添加对应的任务，例如定时器中断。在中断服务函数中，是否添加对应的任务应视具体情况而定。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/11/C++语法详解/文件操作总结/" rel="next" title="文件操作总结">
+                <i class="fa fa-chevron-left"></i> 文件操作总结
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/12/CC2530和zigbee笔记/Contiki的rtimer定时器/" rel="prev" title="Contiki的rtimer定时器">
+                Contiki的rtimer定时器 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OSAL任务运行方式"><span class="nav-number">2.</span> <span class="nav-text">OSAL任务运行方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OSAL的事件传递机制"><span class="nav-number">3.</span> <span class="nav-text">OSAL的事件传递机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#事件的捕获"><span class="nav-number">4.</span> <span class="nav-text">事件的捕获</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#消息队列"><span class="nav-number">5.</span> <span class="nav-text">消息队列</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="什么是位段和别名区&amp;emsp;&amp;emsp;MCS51有位操作，以一位(BIT)为数据对象的操作，MCS51可以简单的将P1口的第2位独立操作，例如P1.2 = 0; P1.2 = 1;，这样就把P1口的第三个脚(BIT2)置0或置1。而现在STM32的位段、位带别名区就为了实现这样的功能。它的对象可以是SRAM、I/O和外设空间。要实现对这些地方的某一位的操作。&amp;emsp;&amp;emsp;它是这样做到">
+<meta property="og:type" content="article">
+<meta property="og:title" content="STM32的BIT_BAND和别名区">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/01/19/单片机/STM32的BIT_BAND和别名区/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="什么是位段和别名区&amp;emsp;&amp;emsp;MCS51有位操作，以一位(BIT)为数据对象的操作，MCS51可以简单的将P1口的第2位独立操作，例如P1.2 = 0; P1.2 = 1;，这样就把P1口的第三个脚(BIT2)置0或置1。而现在STM32的位段、位带别名区就为了实现这样的功能。它的对象可以是SRAM、I/O和外设空间。要实现对这些地方的某一位的操作。&amp;emsp;&amp;emsp;它是这样做到">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-01-19T05:52:42.586Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="STM32的BIT_BAND和别名区">
+<meta name="twitter:description" content="什么是位段和别名区&amp;emsp;&amp;emsp;MCS51有位操作，以一位(BIT)为数据对象的操作，MCS51可以简单的将P1口的第2位独立操作，例如P1.2 = 0; P1.2 = 1;，这样就把P1口的第三个脚(BIT2)置0或置1。而现在STM32的位段、位带别名区就为了实现这样的功能。它的对象可以是SRAM、I/O和外设空间。要实现对这些地方的某一位的操作。&amp;emsp;&amp;emsp;它是这样做到">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/01/19/单片机/STM32的BIT_BAND和别名区/">
+
+
+
+
+
+  <title>STM32的BIT_BAND和别名区 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/19/单片机/STM32的BIT_BAND和别名区/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">STM32的BIT_BAND和别名区</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-19T12:37:59+08:00">
+                2019-01-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="什么是位段和别名区"><a href="#什么是位段和别名区" class="headerlink" title="什么是位段和别名区"></a>什么是位段和别名区</h3><p>&emsp;&emsp;<code>MCS51</code>有位操作，以一位(<code>BIT</code>)为数据对象的操作，<code>MCS51</code>可以简单的将<code>P1</code>口的第<code>2</code>位独立操作，例如<code>P1.2 = 0; P1.2 = 1;</code>，这样就把<code>P1</code>口的第三个脚(<code>BIT2</code>)置<code>0</code>或置<code>1</code>。而现在<code>STM32</code>的位段、位带别名区就为了实现这样的功能。它的对象可以是<code>SRAM</code>、<code>I/O</code>和<code>外设空间</code>。要实现对这些地方的某一位的操作。<br>&emsp;&emsp;它是这样做到的：在寻址空间(<code>32</code>位对应的地址空间为<code>4GB</code>)的另一地方，取个别名区空间，从这个地址开始处，每一个字(<code>32BIT</code>)对应<code>SRAM</code>或<code>I/O</code>的一位。这样<code>1MB</code>的<code>SRAM</code>就可以有<code>32MB</code>的对应别名区空间，就是<code>1</code>位膨胀到<code>32</code>位(<code>1BIT</code>变为<code>1</code>个字)。我们对这个别名区空间内的某一字操作(置<code>0</code>或置<code>1</code>)，就等于它映射的<code>SRAM</code>或<code>I/O</code>相应的某地址的某一位的操作。</p>
+<h3 id="使用位段的好处"><a href="#使用位段的好处" class="headerlink" title="使用位段的好处"></a>使用位段的好处</h3><p>&emsp;&emsp;简单来说，可以把代码缩小、速度更快、效率更高、更安全。一般操作要<code>6</code>条指令，而使用位带和别名区只要<code>4</code>条指令。一般的操作是<code>读-改-写</code>的方式，而位带别名区是<code>写</code>操作，防止中断对<code>读-改-写</code>的方式的影响。</p>
+<h3 id="应用说明"><a href="#应用说明" class="headerlink" title="应用说明"></a>应用说明</h3><p>&emsp;&emsp;支持了位带操作(<code>bit_band</code>)，有两个区中实现了位带。其中一个是<code>SRAM</code>区的最低<code>1MB</code>范围，第二个则是片内外设区的最低<code>1MB</code>范围。这两个区中的地址除了可以像普通的<code>RAM</code>一样使用外，它们还都有自己的<code>位带别名区</code>。位带别名区把每个比特膨胀成一个<code>32</code>位的字。每个比特膨胀成一个<code>32</code>位的字，就是把<code>1M</code>扩展为<code>32M</code>。于是位于<code>RAM</code>地址<code>0x200000000</code>的一个字节扩展为<code>8</code>个<code>32</code>位的字，扩展后每位相对应的的地址是<code>0x220000000</code>、<code>0x220000004</code>、<code>0x220000008</code>、<code>0x22000000C</code>、<code>0x220000010</code>、<code>0x220000014</code>、<code>0x220000018</code>、<code>0x22000001C</code>。支持位带操作的两个内存区的范围是：</p>
+<ul>
+<li><code>0x2000_0000</code>至<code>0x200F_FFFF</code>(<code>SRAM</code>区中的最低<code>1MB</code>)</li>
+<li><code>0x4000_0000</code>至<code>0x400F_FFFF</code>(片上外设区中的最低<code>1MB</code>)</li>
+</ul>
+<p>&emsp;&emsp;对<code>SRAM</code>位带区的某个比特，记该比特所在字节的地址为<code>A</code>，位序号为<code>n</code>(<code>0 &lt;= n &lt;= 7</code>)，则它在别名区的地址为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">AliasAddr = <span class="number">0x22000000</span> + ((A - <span class="number">0x20000000</span>) * <span class="number">8</span> + n) * <span class="number">4</span></span><br><span class="line">          = <span class="number">0x22000000</span> + (A - <span class="number">0x20000000</span>) * <span class="number">32</span> + n * <span class="number">4</span></span><br></pre></td></tr></table></figure>
+<p>对于片上外设位带区的某个比特，记该比特所在字节的地址为<code>A</code>，位序号为<code>n</code>(<code>0 &lt;= n &lt;= 7</code>)，则该比特在别名区的地址为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">AliasAddr = <span class="number">0x42000000</span> + ((A - <span class="number">0x40000000</span>) * <span class="number">8</span> + n) * <span class="number">4</span></span><br><span class="line">          = <span class="number">0x42000000</span> + (A - <span class="number">0x40000000</span>) * <span class="number">32</span> + n * <span class="number">4</span></span><br></pre></td></tr></table></figure>
+<p>上式中，<code>* 4</code>表示一个字为<code>4</code>个字节，<code>* 8</code>表示一个字节中有<code>8</code>个比特。<br>&emsp;&emsp;把<code>位带地址 + 位序号</code>转换别名地址宏为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BITBAND(addr, bitnum) \</span></span><br><span class="line">    ((addr &amp; <span class="number">0xF0000000</span>) + <span class="number">0x2000000</span> + \</span><br><span class="line">    ((addr &amp; <span class="number">0xFFFFF</span>) &lt;&lt; <span class="number">5</span>) + (bitnum &lt;&lt; <span class="number">2</span>))</span><br></pre></td></tr></table></figure>
+<p>这个宏定义后面的算式<code>(addr &amp; 0xF0000000) + 0x2000000 + ((addr &amp; 0xFFFFF) &lt;&lt; 5) + (bitnum &lt;&lt; 2)</code>，<code>addr &amp; 0xF0000000</code>取出最高的四位，其实就是用于区别<code>SRAM</code>(<code>0x20000000</code>)还是片上外设(<code>0x40000000</code>)的。<code>+ 0x2000000</code>对于<code>SRAM</code>位带区则得到<code>0x22000000</code>，对于片上外设位带区则得到<code>0x42000000</code>。(<code>addr &amp; 0xFFFFF</code>)等效于(<code>addr &amp; 0x000FFFFF</code>)，就是屏蔽掉高<code>12</code>位(个人认为屏蔽高<code>12</code>位和屏蔽高<code>4</code>位效果是一样的，地址范围是<code>0x2000_0000</code>至<code>0x200F_FFFF</code>和<code>0x4000_0000</code>至<code>0x400F_FFFF</code>，无非就是不要那个<code>2</code>和<code>4</code>)，<code>&lt;&lt; 5</code>就等效于乘以<code>32</code>(同样<code>&lt;&lt; 2</code>等效于乘以<code>4</code>)。<br>&emsp;&emsp;把该地址转换成一个指针：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MEM_ADDR(addr) *((volatile unsigned long *) (addr))</span></span><br></pre></td></tr></table></figure>
+<p>例如点亮<code>LED</code>，使用<code>STM32</code>库为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GPIO_ResetBits ( GPIOC, GPIO_Pin_4 ); <span class="comment">/* 关LED5 */</span></span><br><span class="line">GPIO_SetBits ( GPIOC, GPIO_Pin_7 ); <span class="comment">/* 开LED2 */</span></span><br></pre></td></tr></table></figure>
+<p>一般读操作如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">STM32_Gpioc_Regs-&gt;bsrr.bit.BR4 = <span class="number">1</span>; <span class="comment">/* 清除对应的ODRy位为0 */</span></span><br><span class="line">STM32_Gpioc_Regs-&gt;bsrr.bit.BS7 = <span class="number">1</span>; <span class="comment">/* 设置对应的ODRy位为1 */</span></span><br></pre></td></tr></table></figure>
+<p>如果使用位带别名区操作：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">STM32_BB_Gpioc_Regs-&gt;BSRR.BR[<span class="number">4</span>] = <span class="number">1</span>; <span class="comment">/* 清除对应的ODRy位为0 */</span></span><br><span class="line">STM32_BB_Gpioc_Regs-&gt;BSRR.BS[<span class="number">7</span>] = <span class="number">1</span>; <span class="comment">/* 设置对应的ODRy位为1 */</span></span><br></pre></td></tr></table></figure>
+<p>代码比<code>STM32</code>库高效十倍！<br>&emsp;&emsp;对内存变量的位操作如下：假设<code>SRAM</code>变量为<code>long CRCValue;</code>，对<code>32</code>位变量的<code>BIT1</code>置<code>1</code>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MEM_ADDR ( BITBAND ( ( u32 ) &amp;CRCValue, <span class="number">1</span> ) ) = <span class="number">0x1</span>;</span><br></pre></td></tr></table></figure>
+<p>对任意一位(例如第<code>23</code>位)判断：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( MEM_ADDR ( BITBAND ( ( u32 ) &amp;CRCValue, <span class="number">23</span> ) ) == <span class="number">1</span> ) &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Cortex-M3中关于位段的定义"><a href="#Cortex-M3中关于位段的定义" class="headerlink" title="Cortex-M3中关于位段的定义"></a>Cortex-M3中关于位段的定义</h3><p>&emsp;&emsp;<code>Cortex-M3</code>存储器映像包括两个位段区。这两个位段区将别名存储器区中的每个字映射到位段存储器区的一个位，在别名存储区写入一个字具有对位段区的目标位执行<code>读-改-写</code>操作的相同效果。所有<code>STM32F10x</code>外设寄存器都被映射到一个位段区。这个特性在各个函数中对单个比特进行置<code>1</code>或置<code>0</code>操作时被大量使用，用以减小和优化代码尺寸。<br>&emsp;&emsp;映射公式给出别名区中的每个字是如何对应位带区的相应位的，公式如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bit_word_offset = (byte_offset * <span class="number">32</span>) + (bit_number * <span class="number">4</span>)</span><br><span class="line">bit_word_addr = bit_band_base + bit_word_offset</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>bit_word_offset</code>：目标位在存取器位段区中的位置。</li>
+<li><code>bit_word_addr</code>：别名存储器区中字的地址，它映射到某个目标位。</li>
+<li><code>bit_band_base</code>：别名区的起始地址。</li>
+<li><code>byte_offset</code>：包含目标位的字节在位段中的序号。</li>
+<li><code>bit_number</code>：目标位所在位置(<code>0</code>至<code>31</code>)。</li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/01/19/单片机/STM32使用注意/" rel="next" title="STM32使用注意">
+                <i class="fa fa-chevron-left"></i> STM32使用注意
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/01/19/单片机/Cortex-M3中GPIO位输出的方法/" rel="prev" title="Cortex-M3中GPIO位输出的方法">
+                Cortex-M3中GPIO位输出的方法 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#什么是位段和别名区"><span class="nav-number">1.</span> <span class="nav-text">什么是位段和别名区</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用位段的好处"><span class="nav-number">2.</span> <span class="nav-text">使用位段的好处</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#应用说明"><span class="nav-number">3.</span> <span class="nav-text">应用说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Cortex-M3中关于位段的定义"><span class="nav-number">4.</span> <span class="nav-text">Cortex-M3中关于位段的定义</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

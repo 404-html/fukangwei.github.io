@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;对于udp-client.c进行分析： 1234567891011121314151617181920212223242526272829303132333435363738394041424344PROCESS_THREAD ( udp_client_process, ev, data ) &amp;#123;    static struct etimer et;    uip">
+<meta property="og:type" content="article">
+<meta property="og:title" content="udp之client和server">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/05/Contiki和uip/udp之client和server/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;对于udp-client.c进行分析： 1234567891011121314151617181920212223242526272829303132333435363738394041424344PROCESS_THREAD ( udp_client_process, ev, data ) &amp;#123;    static struct etimer et;    uip">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-02-05T02:14:05.950Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="udp之client和server">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;对于udp-client.c进行分析： 1234567891011121314151617181920212223242526272829303132333435363738394041424344PROCESS_THREAD ( udp_client_process, ev, data ) &amp;#123;    static struct etimer et;    uip">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/05/Contiki和uip/udp之client和server/">
+
+
+
+
+
+  <title>udp之client和server | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/Contiki和uip/udp之client和server/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">udp之client和server</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T09:47:51+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;对于<code>udp-client.c</code>进行分析：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">PROCESS_THREAD ( udp_client_process, ev, data ) &#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">etimer</span> <span class="title">et</span>;</span></span><br><span class="line">    <span class="keyword">uip_ipaddr_t</span> ipaddr;</span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">    PRINTF ( <span class="string">"UDP client process started\n"</span> );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> UIP_CONF_ROUTER</span></span><br><span class="line">    set_global_address();</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    print_local_addresses(); <span class="comment">/* 打印所有本地可用的地址 */</span></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">resolv_status_t</span> status = RESOLV_STATUS_UNCACHED;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( status != RESOLV_STATUS_CACHED ) &#123;</span><br><span class="line">        status = set_connection_address ( &amp;ipaddr ); <span class="comment">/* 设定连接的远端IP地址 */</span></span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( status == RESOLV_STATUS_RESOLVING ) &#123; <span class="comment">/* 处理一些异常情况 */</span></span><br><span class="line">            PROCESS_WAIT_EVENT_UNTIL ( ev == resolv_event_found );</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( status != RESOLV_STATUS_CACHED ) &#123;</span><br><span class="line">            PRINTF ( <span class="string">"Can't get connection address.\n"</span> );</span><br><span class="line">            PROCESS_YIELD();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 这里和普通的socket编程一样，先申请一个conn，再进行绑定，其中conn中包括远端的IP地址 */</span></span><br><span class="line">    client_conn = udp_new ( &amp;ipaddr, UIP_HTONS ( <span class="number">3000</span> ), <span class="literal">NULL</span> );</span><br><span class="line">    udp_bind ( client_conn, UIP_HTONS ( <span class="number">3001</span> ) );</span><br><span class="line">    PRINTF ( <span class="string">"Created a connection with the server "</span> );</span><br><span class="line">    PRINT6ADDR ( &amp;client_conn-&gt;ripaddr ); <span class="comment">/* 将一个IPV6地址打印出来 */</span></span><br><span class="line">    PRINTF ( <span class="string">"local/remote port %u/%u\n"</span>, UIP_HTONS ( client_conn-&gt;lport ), \</span><br><span class="line">             UIP_HTONS ( client_conn-&gt;rport ) );</span><br><span class="line">    etimer_set ( &amp;et, SEND_INTERVAL );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        PROCESS_YIELD();</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( etimer_expired ( &amp;et ) ) &#123;</span><br><span class="line">            timeout_handler();</span><br><span class="line">            etimer_restart ( &amp;et );</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( ev == tcpip_event ) &#123; <span class="comment">/* 收到响应信息 */</span></span><br><span class="line">            tcpip_handler();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们再对其中的几个函数进行分析：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">print_local_addresses</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">uint8_t</span> state;</span><br><span class="line">    PRINTF ( <span class="string">"Client IPv6 addresses: "</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; UIP_DS6_ADDR_NB; i++ ) &#123;</span><br><span class="line">        state = uip_ds6_if.addr_list[i].state;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( uip_ds6_if.addr_list[i].isused &amp;&amp; \</span><br><span class="line">             ( state == ADDR_TENTATIVE || state == ADDR_PREFERRED ) ) &#123;</span><br><span class="line">            PRINT6ADDR ( &amp;uip_ds6_if.addr_list[i].ipaddr );</span><br><span class="line">            PRINTF ( <span class="string">"\n"</span> );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个函数的主要作用就是打印一下可用的<code>IP</code>地址。<code>UIP_DS6_ADDR_NB</code>这个应该是<code>IPV6</code>的地址的数量，在原来的代码中为<code>3</code>。<code>uip_ds6_if</code>是<code>uip-ds6</code>中定义的一个数据结构，包含了所有的接口变量：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">uip_ds6_netif</span> &#123;</span></span><br><span class="line">    <span class="keyword">uint32_t</span> link_mtu;</span><br><span class="line">    <span class="keyword">uint8_t</span> cur_hop_limit;</span><br><span class="line">    <span class="keyword">uint32_t</span> base_reachable_time; <span class="comment">/* in msec */</span></span><br><span class="line">    <span class="keyword">uint32_t</span> reachable_time;      <span class="comment">/* in msec */</span></span><br><span class="line">    <span class="keyword">uint32_t</span> retrans_timer;       <span class="comment">/* in msec */</span></span><br><span class="line">    <span class="keyword">uint8_t</span> maxdadns;</span><br><span class="line">    <span class="keyword">uip_ds6_addr_t</span> addr_list[UIP_DS6_ADDR_NB];</span><br><span class="line">    <span class="keyword">uip_ds6_aaddr_t</span> aaddr_list[UIP_DS6_AADDR_NB];</span><br><span class="line">    <span class="keyword">uip_ds6_maddr_t</span> maddr_list[UIP_DS6_MADDR_NB];</span><br><span class="line">&#125; <span class="keyword">uip_ds6_netif_t</span>;</span><br></pre></td></tr></table></figure>
+<p><code>addr_list</code>中就是所有的<code>IPV6</code>地址。<code>for</code>循环就是将其中的<code>IPV6</code>地址都查找一遍，看它的状态。<code>IPV6</code>的地址有三种状态，一种是<code>PREFERRED</code>，代表<code>IPv6</code>地址可用；第二种是<code>TENTATIVE</code>，代表未知；最后一种代表其他主机正在使用，即<code>DEPRECATED</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">set_connection_address</span> <span class="params">( <span class="keyword">uip_ipaddr_t</span> *ipaddr )</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _QUOTEME(x) #x</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> QUOTEME(x) _QUOTEME(x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> UDP_CONNECTION_ADDR</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( uiplib_ipaddrconv ( QUOTEME ( UDP_CONNECTION_ADDR ), ipaddr ) == <span class="number">0</span> ) &#123;</span><br><span class="line">        PRINTF ( <span class="string">"UDP client failed to parse address '%s'\n"</span>, QUOTEME ( UDP_CONNECTION_ADDR ) );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">elif</span> UIP_CONF_ROUTER</span></span><br><span class="line">    uip_ip6addr ( ipaddr, <span class="number">0xaaaa</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0x0212</span>, <span class="number">0x7404</span>, <span class="number">0x0004</span>, <span class="number">0x0404</span> );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">    uip_ip6addr ( ipaddr, <span class="number">0xfe80</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0x6466</span>, <span class="number">0x6666</span>, <span class="number">0x6666</span>, <span class="number">0x6666</span> );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* UDP_CONNECTION_ADDR */</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这段代码就是将<code>IPV6</code>地址赋值到<code>ipaddr</code>当中。首先定义<code>UDP_CONNECTION_ADDR</code>变量，这个变量的作用就是放置文本型的<code>IPV6</code>地址。为了方便，需要将文本型的(也就是直接给出的那种<code>128</code>位地址)转换成通用的格式。<code>if</code>内是转换不成功的情况，会针对不成功的情况进行处理。<br>&emsp;&emsp;下面是<code>PROCESS_THREAD</code>的代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">PROCESS_THREAD ( udp_server_process, ev, data ) &#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> UIP_CONF_ROUTER</span></span><br><span class="line">    <span class="keyword">uip_ipaddr_t</span> ipaddr;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* UIP_CONF_ROUTER */</span></span></span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">    PRINTF ( <span class="string">"UDP server started\n"</span> );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> RESOLV_CONF_SUPPORTS_MDNS</span></span><br><span class="line">    resolv_set_hostname ( <span class="string">"contiki-udp-server"</span> ); <span class="comment">/* 设置主机的名字 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> UIP_CONF_ROUTER</span></span><br><span class="line">    uip_ip6addr ( &amp;ipaddr, <span class="number">0xaaaa</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span> ); <span class="comment">/* 设置IPV6地址中后面部分的 */</span></span><br><span class="line">    uip_ds6_set_addr_iid ( &amp;ipaddr, &amp;uip_lladdr ); <span class="comment">/* 设置IPV6地址中的Initializer部分 */</span></span><br><span class="line">    uip_ds6_addr_add ( &amp;ipaddr, <span class="number">0</span>, ADDR_AUTOCONF ); <span class="comment">/* 为地址的后面部分添加前缀 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* UIP_CONF_ROUTER */</span></span></span><br><span class="line">    print_local_addresses();</span><br><span class="line">    server_conn = udp_new ( <span class="literal">NULL</span>, UIP_HTONS ( <span class="number">3001</span> ), <span class="literal">NULL</span> );</span><br><span class="line">    udp_bind ( server_conn, UIP_HTONS ( <span class="number">3000</span> ) );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        PROCESS_YIELD();</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( ev == tcpip_event ) &#123;</span><br><span class="line">            tcpip_handler();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>uip_ds6_set_addr_iid</code>函数如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">uip_ds6_set_addr_iid</span> <span class="params">( <span class="keyword">uip_ipaddr_t</span> *ipaddr, <span class="keyword">uip_lladdr_t</span> *lladdr )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* We consider only links with IEEE EUI-64 identifier or</span></span><br><span class="line"><span class="comment">     * IEEE 48-bit MAC addresses */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> (UIP_LLADDR_LEN == 8)</span></span><br><span class="line">    <span class="built_in">memcpy</span> ( ipaddr-&gt;u8 + <span class="number">8</span>, lladdr, UIP_LLADDR_LEN );</span><br><span class="line">    ipaddr-&gt;u8[<span class="number">8</span>] ^= <span class="number">0x02</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">elif</span> (UIP_LLADDR_LEN == 6)</span></span><br><span class="line">    <span class="built_in">memcpy</span> ( ipaddr-&gt;u8 + <span class="number">8</span>, lladdr, <span class="number">3</span> );</span><br><span class="line">    ipaddr-&gt;u8[<span class="number">11</span>] = <span class="number">0xff</span>;</span><br><span class="line">    ipaddr-&gt;u8[<span class="number">12</span>] = <span class="number">0xfe</span>;</span><br><span class="line">    <span class="built_in">memcpy</span> ( ipaddr-&gt;u8 + <span class="number">13</span>, ( <span class="keyword">uint8_t</span> * ) lladdr + <span class="number">3</span>, <span class="number">3</span> );</span><br><span class="line">    ipaddr-&gt;u8[<span class="number">8</span>] ^= <span class="number">0x02</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">error</span> uip-ds6.c cannot build interface address when UIP_LLADDR_LEN is not 6 or 8</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个函数就是为了给<code>IPv6</code>地址的<code>identifier</code>赋值。<code>IPv6</code>地址分为两部分，但是共享一段内存，对两个的任意一个赋值都可以：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">union</span> <span class="keyword">uip_ip6addr_t</span> &#123;</span><br><span class="line">    <span class="keyword">uint8_t</span>  u8[<span class="number">16</span>]; <span class="comment">/* Initializer, must come first. */</span></span><br><span class="line">    <span class="keyword">uint16_t</span> u16[<span class="number">8</span>];</span><br><span class="line">&#125; <span class="keyword">uip_ip6addr_t</span>;</span><br></pre></td></tr></table></figure>
+<p>当我们不用<code>MAC</code>地址来赋值时，就需要用<code>IEEE 802.15.4</code>的地址来赋值。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uip_ds6_addr_add ( &amp;ipaddr, <span class="number">0</span>, ADDR_AUTOCONF );</span><br></pre></td></tr></table></figure>
+<p>这个函数主要是给标识符赋值前<code>64</code>位。处理数据到来时的函数如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">tcpip_handler</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> seq_id;</span><br><span class="line">    <span class="keyword">char</span> buf[MAX_PAYLOAD_LEN];</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( uip_newdata() ) &#123;</span><br><span class="line">        ( ( <span class="keyword">char</span> * ) uip_appdata ) [uip_datalen()] = <span class="number">0</span>;</span><br><span class="line">        PRINTF ( <span class="string">"Server received: '%s' from "</span>, ( <span class="keyword">char</span> * ) uip_appdata );</span><br><span class="line">        PRINT6ADDR ( &amp;UIP_IP_BUF-&gt;srcipaddr );</span><br><span class="line">        PRINTF ( <span class="string">"\n"</span> );</span><br><span class="line">        uip_ipaddr_copy ( &amp;server_conn-&gt;ripaddr, &amp;UIP_IP_BUF-&gt;srcipaddr );</span><br><span class="line">        PRINTF ( <span class="string">"Responding with message: "</span> );</span><br><span class="line">        <span class="built_in">sprintf</span> ( buf, <span class="string">"Hello from the server! (%d)"</span>, ++seq_id );</span><br><span class="line">        PRINTF ( <span class="string">"%s\n"</span>, buf );</span><br><span class="line">        uip_udp_packet_send ( server_conn, buf, <span class="built_in">strlen</span> ( buf ) );</span><br><span class="line">        <span class="comment">/* Restore server connection to allow data from any node */</span></span><br><span class="line">        <span class="built_in">memset</span> ( &amp;server_conn-&gt;ripaddr, <span class="number">0</span>, <span class="keyword">sizeof</span> ( server_conn-&gt;ripaddr ) );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>查看库函数就可以很清楚的知道，<code>uip_newdata</code>就是代表是否有新的数据到来，<code>uip_appdata</code>直接就是代表到来的数据，<code>uip_datalen</code>是指到来数据的长度。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uip_ipaddr_copy ( &amp;server_conn-&gt;ripaddr, &amp;UIP_IP_BUF-&gt;srcipaddr );</span><br></pre></td></tr></table></figure>
+<p>这句代码是将客户端的地址赋值到申请的<code>conn</code>中，因为服务器需要回复客户机，因此需要客户机的地址。通过接收到的这个数据找到源端的地址。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UIP_IP_BUF ((struct uip_ip_hdr *)&amp;uip_buf[UIP_LLH_LEN])</span></span><br></pre></td></tr></table></figure>
+<p>这句可以知道<code>UIP_IP_BUF</code>其实代表的是<code>uip_buf</code>，查看库函数可以知道<code>uip_buf</code>就是代表的接收数据的缓存区。但是这个数据不能直接将源端的地址提取出来，因此将其强制转换成<code>uip_ip_hdr</code>格式，而这种格式可以直接得到源端数据。<code>uip_ip_hdr</code>数据格式为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">uip_ip_hdr</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> UIP_CONF_IPV6</span></span><br><span class="line">    <span class="comment">/* IPV6 header */</span></span><br><span class="line">    <span class="keyword">uint8_t</span> vtc;</span><br><span class="line">    <span class="keyword">uint8_t</span> tcflow;</span><br><span class="line">    <span class="keyword">uint16_t</span> flow;</span><br><span class="line">    <span class="keyword">uint8_t</span> len[<span class="number">2</span>];</span><br><span class="line">    <span class="keyword">uint8_t</span> proto, ttl;</span><br><span class="line">    <span class="keyword">uip_ip6addr_t</span> srcipaddr, destipaddr;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span> <span class="comment">/* UIP_CONF_IPV6 */</span></span></span><br><span class="line">    <span class="comment">/* IPV4 header */</span></span><br><span class="line">    <span class="keyword">uint8_t</span> vhl,</span><br><span class="line">            tos,</span><br><span class="line">            len[<span class="number">2</span>],</span><br><span class="line">            ipid[<span class="number">2</span>],</span><br><span class="line">            ipoffset[<span class="number">2</span>],</span><br><span class="line">            ttl,</span><br><span class="line">            proto;</span><br><span class="line">    <span class="keyword">uint16_t</span> ipchksum;</span><br><span class="line">    <span class="keyword">uip_ipaddr_t</span> srcipaddr, destipaddr;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* UIP_CONF_IPV6 */</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>可以看到<code>srcipaddr</code>就是源端的地址。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/05/Contiki和uip/Contiki系统定时器/" rel="next" title="Contiki系统定时器">
+                <i class="fa fa-chevron-left"></i> Contiki系统定时器
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/05/Contiki和uip/uip之protothreads/" rel="prev" title="uip之protothreads">
+                uip之protothreads <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="FatFs&amp;emsp;&amp;emsp;FatFS是一个为小型嵌入式系统设计的通用FAT(File Allocation Table)文件系统模块。FatFs的编写遵循ANSI C，并且完全与磁盘I/O层分开，因此它独立(不依赖)于硬件架构。它可以被嵌入到低成本的微控制器中，如AVR、8051、PIC、ARM、Z80、68K，而不需要做任何修改。  &amp;emsp;&amp;emsp;特点如下：  Windows兼">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FatFs文件系统">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/24/嵌入式笔记/FatFs文件系统/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="FatFs&amp;emsp;&amp;emsp;FatFS是一个为小型嵌入式系统设计的通用FAT(File Allocation Table)文件系统模块。FatFs的编写遵循ANSI C，并且完全与磁盘I/O层分开，因此它独立(不依赖)于硬件架构。它可以被嵌入到低成本的微控制器中，如AVR、8051、PIC、ARM、Z80、68K，而不需要做任何修改。  &amp;emsp;&amp;emsp;特点如下：  Windows兼">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/24/嵌入式笔记/FatFs文件系统/1.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/24/嵌入式笔记/FatFs文件系统/2.png">
+<meta property="og:updated_time" content="2019-02-25T04:55:30.409Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="FatFs文件系统">
+<meta name="twitter:description" content="FatFs&amp;emsp;&amp;emsp;FatFS是一个为小型嵌入式系统设计的通用FAT(File Allocation Table)文件系统模块。FatFs的编写遵循ANSI C，并且完全与磁盘I/O层分开，因此它独立(不依赖)于硬件架构。它可以被嵌入到低成本的微控制器中，如AVR、8051、PIC、ARM、Z80、68K，而不需要做任何修改。  &amp;emsp;&amp;emsp;特点如下：  Windows兼">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/02/24/嵌入式笔记/FatFs文件系统/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/24/嵌入式笔记/FatFs文件系统/">
+
+
+
+
+
+  <title>FatFs文件系统 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/24/嵌入式笔记/FatFs文件系统/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">FatFs文件系统</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-24T21:10:05+08:00">
+                2019-02-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="FatFs"><a href="#FatFs" class="headerlink" title="FatFs"></a>FatFs</h3><p>&emsp;&emsp;<code>FatFS</code>是一个为小型嵌入式系统设计的通用<code>FAT</code>(<code>File Allocation Table</code>)文件系统模块。<code>FatFs</code>的编写遵循<code>ANSI C</code>，并且完全与磁盘<code>I/O</code>层分开，因此它独立(不依赖)于硬件架构。它可以被嵌入到低成本的微控制器中，如<code>AVR</code>、<code>8051</code>、<code>PIC</code>、<code>ARM</code>、<code>Z80</code>、<code>68K</code>，而不需要做任何修改。</p>
+<p><img src="/2019/02/24/嵌入式笔记/FatFs文件系统/1.png" height="304" width="283"></p>
+<p>&emsp;&emsp;特点如下：</p>
+<ul>
+<li><code>Windows</code>兼容的<code>FAT</code>文件系统。</li>
+<li>不依赖于平台，易于移植。</li>
+<li>代码和工作区占用空间非常小。</li>
+</ul>
+<p>&emsp;&emsp;多种配置选项：</p>
+<ul>
+<li>多卷(物理驱动器和分区)。</li>
+<li>多<code>ANSI/OEM</code>代码页，包括<code>DBCS</code>。</li>
+<li>在<code>ANSI/OEM</code>或<code>Unicode</code>中长文件名的支持。</li>
+<li><code>RTOS</code>的支持。</li>
+<li>多扇区大小的支持。</li>
+<li>只读、最少<code>API</code>、<code>I/O</code>缓冲区等等。</li>
+</ul>
+<h3 id="应用程序接口"><a href="#应用程序接口" class="headerlink" title="应用程序接口"></a>应用程序接口</h3><p>&emsp;&emsp;<code>FatFs</code>模块为应用程序提供了下列函数，这些函数描述了<code>FatFs</code>能对<code>FAT</code>卷执行哪些操作。</p>
+<h4 id="f-mount"><a href="#f-mount" class="headerlink" title="f_mount"></a>f_mount</h4><p>&emsp;&emsp;在<code>FatFs</code>模块上注册或注销一个工作区(文件系统对象)：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_mount</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE Drive, <span class="comment">/* 逻辑驱动器号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    FATFS *FileSystemObject <span class="comment">/* 工作区指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Drive</code>为注册/注销工作区的逻辑驱动器号(<code>0</code>至<code>9</code>)，<code>FileSystemObject</code>为工作区(文件系统对象)指针。返回值为<code>FR_OK</code>表示成功，<code>FR_INVALID_DRIVE</code>表示驱动器号无效。<br>&emsp;&emsp;<code>f_mount</code>函数在<code>FatFs</code>模块上注册或注销一个工作区。在使用任何其他文件函数之前，必须使用该函数为每个卷注册一个工作区。要注销一个工作区，只要指定<code>FileSystemObject</code>为<code>NULL</code>即可，然后该工作区可以被丢弃。该函数只初始化给定的工作区，以及将该工作区的地址注册到内部表中，不访问磁盘<code>I/O</code>层。卷装入过程是在<code>f_mount</code>函数后或存储介质改变后的第一次文件访问时完成的。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">f_mount ( <span class="number">0</span>, &amp;fs );</span><br></pre></td></tr></table></figure>
+<h4 id="f-open"><a href="#f-open" class="headerlink" title="f_open"></a>f_open</h4><p>&emsp;&emsp;创建或打开一个用于访问文件的文件对象：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_open</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject, <span class="comment">/* 空白文件对象结构指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> XCHAR *FileName, <span class="comment">/* 文件名指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE ModeFlags <span class="comment">/* 模式标志 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileObject</code>为将被创建的文件对象结构的指针；<code>FileName</code>指定了将被创建或打开的文件名；<code>ModeFlags</code>指定文件的访问类型和打开方法，它是由下列标志的一个组合指定的：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FA_READ</code></td>
+<td>指定读访问对象，可以从文件中读取数据。与<code>FA_WRITE</code>结合可以进行读写访问</td>
+</tr>
+<tr>
+<td><code>FA_WRITE</code></td>
+<td>指定写访问对象，可以向文件中写入数据。与<code>FA_READ</code>结合可以进行读写访问</td>
+</tr>
+<tr>
+<td><code>FA_OPEN_EXISTING</code></td>
+<td>打开文件，如果文件不存在，则打开失败(默认)</td>
+</tr>
+<tr>
+<td><code>FA_OPEN_ALWAYS</code></td>
+<td>如果文件存在，则打开；否则，创建一个新文件</td>
+</tr>
+<tr>
+<td><code>FA_CREATE_NEW</code></td>
+<td>创建一个新文件，如果文件已存在，则创建失败</td>
+</tr>
+<tr>
+<td><code>FA_CREATE_ALWAYS</code></td>
+<td>创建一个新文件，如果文件已存在，则它将被截断并覆盖</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>注意当<code>_FS_READONLY == 1</code>时，模式标志<code>FA_WRITE</code>、<code>FA_CREATE_ALWAYS</code>、<code>FA_CREATE_NEW</code>、<code>FA_OPEN_ALWAYS</code>是无效的。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功，该文件对象有效。</li>
+<li><code>FR_NO_FILE</code>：找不到该文件。</li>
+<li><code>FR_NO_PATH</code>：找不到该路径。</li>
+<li><code>FR_INVALID_NAME</code>：文件名无效。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+<li><code>FR_EXIST</code>：该文件已存在。</li>
+<li><code>FR_DENIED</code>：由于下列原因，所需的访问被拒绝：</li>
+</ul>
+<ol>
+<li>以写模式打开一个只读文件。</li>
+<li>由于存在一个同名的只读文件或目录，而导致文件无法被创建。</li>
+<li>由于目录表或磁盘已满，而导致文件无法被创建。</li>
+</ol>
+<ul>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_WRITE_PROTECTED</code>：在存储介质被写保护的情况下，以写模式打开或创建文件对象。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>接口函数中的一个错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_ENABLED</code>：逻辑驱动器没有工作区。</li>
+<li><code>FR_NO_FILESYSTEM</code>：磁盘上没有有效的<code>FAT</code>卷。</li>
+</ul>
+<p>&emsp;&emsp;如果函数成功，则创建一个文件对象。该文件对象被后续的读/写函数用来访问文件。如果想要关闭一个打开的文件对象，则使用<code>f_close</code>函数。如果不关闭修改后的文件，那么文件可能会崩溃。在使用任何文件函数之前，必须使用<code>f_mount</code>函数为驱动器注册一个工作区。只有这样，其他文件函数才能正常工作。文件拷贝的代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    FATFS fs[<span class="number">2</span>]; <span class="comment">/* 逻辑驱动器的工作区(文件系统对象) */</span></span><br><span class="line">    FIL fsrc, fdst; <span class="comment">/* 文件对象 */</span></span><br><span class="line">    BYTE buffer[<span class="number">4096</span>]; <span class="comment">/* 文件拷贝缓冲区 */</span></span><br><span class="line">    FRESULT res; <span class="comment">/* FatFs函数公共结果代码 */</span></span><br><span class="line">    UINT br, bw; <span class="comment">/* 文件读/写字节计数 */</span></span><br><span class="line">    <span class="comment">/* 为逻辑驱动器注册工作区 */</span></span><br><span class="line">    f_mount ( <span class="number">0</span>, &amp;fs[<span class="number">0</span>] );</span><br><span class="line">    f_mount ( <span class="number">1</span>, &amp;fs[<span class="number">1</span>] );</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 打开驱动器1上的源文件 */</span></span><br><span class="line">    res = f_open ( &amp;fsrc, <span class="string">"1:srcfile.dat"</span>, FA_OPEN_EXISTING | FA_READ );</span><br><span class="line">    <span class="keyword">if</span> ( res ) &#123;</span><br><span class="line">        die ( res );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 在驱动器0上创建目标文件 */</span></span><br><span class="line">    res = f_open ( &amp;fdst, <span class="string">"0:dstfile.dat"</span>, FA_CREATE_ALWAYS | FA_WRITE );</span><br><span class="line">    <span class="keyword">if</span> ( res ) &#123;</span><br><span class="line">        die ( res );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123; <span class="comment">/* 拷贝源文件到目标文件 */</span></span><br><span class="line">        res = f_read ( &amp;fsrc, buffer, <span class="keyword">sizeof</span> ( buffer ), &amp;br );</span><br><span class="line">        <span class="keyword">if</span> ( res || br == <span class="number">0</span> ) &#123;</span><br><span class="line">            <span class="keyword">break</span>; <span class="comment">/* 文件结束错误 */</span></span><br><span class="line">        &#125;</span><br><span class="line">        res = f_write ( &amp;fdst, buffer, br, &amp;bw );</span><br><span class="line">        <span class="keyword">if</span> ( res || bw &lt; br ) &#123;</span><br><span class="line">            <span class="keyword">break</span>; <span class="comment">/* 磁盘满错误 */</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 关闭打开的文件 */</span></span><br><span class="line">    f_close ( &amp;fsrc );</span><br><span class="line">    f_close ( &amp;fdst );</span><br><span class="line">    <span class="comment">/* 注销工作区(在废弃前) */</span></span><br><span class="line">    f_mount ( <span class="number">0</span>, <span class="literal">NULL</span> );</span><br><span class="line">    f_mount ( <span class="number">1</span>, <span class="literal">NULL</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="f-close"><a href="#f-close" class="headerlink" title="f_close"></a>f_close</h4><p>&emsp;&emsp;关闭一个打开的文件：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_close</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject <span class="comment">/* 文件对象结构的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileObject</code>指向将被关闭的已打开的文件对象结构的指针。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：文件对象已被成功关闭。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_INVALID_OBJECT</code>：文件对象无效。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_close</code>函数关闭一个打开的文件对象。无论向文件写入任何数据，文件的缓存信息都将被写回到磁盘。该函数成功后，文件对象不再有效，并且可以被丢弃。如果文件对象是在只读模式下打开的，不需要使用该函数，也能被丢弃。</p>
+<h4 id="f-read"><a href="#f-read" class="headerlink" title="f_read"></a>f_read</h4><p>&emsp;&emsp;从一个文件读取数据：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_read</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject, <span class="comment">/* 文件对象结构的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">void</span> *Buffer, <span class="comment">/* 存储读取数据的缓冲区的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    UINT ByteToRead, <span class="comment">/* 要读取的字节数 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    UINT *ByteRead <span class="comment">/* 返回已读取字节数变量的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileObject</code>指向将被读取的已打开的文件对象结构的指针；<code>Buffer</code>是指向存储读取数据的缓冲区的指针；<code>ByteToRead</code>为要读取的字节数，在<code>UINT</code>范围内；<code>ByteRead</code>指向返回已读取字节数的<code>UINT</code>变量的指针。在调用该函数后，无论结果如何，数值都是有效的。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_DENIED</code>：由于文件是以非读模式打开的，而导致该函数被拒绝。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_INVALID_OBJECT</code>：文件对象无效。</li>
+</ul>
+<p>&emsp;&emsp;文件对象中的读/写指针以已读取字节数增加。该函数成功后，应该检查<code>*ByteRead</code>来检测文件是否结束。在读操作过程中，一旦<code>*ByteRead &lt; ByteToRead</code>，则读/写指针到达了文件结束位置。以读取的方式打开文件，然后将文件内容通过串口输出：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">res = f_open ( &amp;fsrc, <span class="string">"news/news.txt"</span>, FA_READ );</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> ( !res ) &#123;</span><br><span class="line">    Debug ( <span class="string">"open news/news.txt: %d\r\n"</span>, res );</span><br><span class="line">    br = <span class="number">1</span>;</span><br><span class="line">    a = <span class="number">0</span>;</span><br><span class="line">    Debug ( <span class="string">"文件内容:"</span> );</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( a = <span class="number">0</span>; a &lt; <span class="number">512</span>; a++ ) &#123;</span><br><span class="line">            buffer[a] = <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        res = f_read ( &amp;fsrc, buffer, <span class="keyword">sizeof</span> ( buffer ), &amp;br );</span><br><span class="line">        Debug ( <span class="string">"%s\r\n"</span>, buffer );</span><br><span class="line">        <span class="keyword">if</span> ( res || br &lt; <span class="keyword">sizeof</span> ( buffer ) ) &#123; <span class="comment">/* error or eof */</span></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">f_close ( &amp;fsrc ); <span class="comment">/* 不论是打开，还是新建文件，一定记得关闭 */</span></span><br></pre></td></tr></table></figure>
+<h4 id="f-write"><a href="#f-write" class="headerlink" title="f_write"></a>f_write</h4><p>&emsp;&emsp;写入数据到一个文件：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_write</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject, <span class="comment">/* 文件对象结构的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> <span class="keyword">void</span> *Buffer, <span class="comment">/* 存储写入数据的缓冲区的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    UINT ByteToWrite, <span class="comment">/* 要写入的字节数 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    UINT *ByteWritten <span class="comment">/* 返回已写入字节数变量的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileObject</code>指向将被写入的已打开的文件对象结构的指针；<code>Buffer</code>是指向存储写入数据的缓冲区的指针；<code>ByteToRead</code>为要写入的字节数，在<code>UINT</code>范围内；<code>ByteRead</code>指向返回已写入字节数的<code>UINT</code>变量的指针。在调用该函数后，无论结果如何，数值都是有效的。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_DENIED</code>：由于文件是以非写模式打开的，而导致该函数被拒绝。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_INVALID_OBJECT</code>：文件对象无效。</li>
+</ul>
+<p>&emsp;&emsp;文件对象中的读/写指针以已写入字节数增加。该函数成功后，应该检查<code>*ByteWritten</code>来检测磁盘是否已满。在写操作过程中，一旦<code>*ByteWritten &lt; *ByteToWritten</code>，则意味着该卷已满。向文件中写内容的代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsigned</span> <span class="keyword">char</span> buffer[<span class="number">100</span>] = <span class="string">"This is a new file, the data is just written in!"</span>;</span><br><span class="line">res = f_open ( &amp;fsrc, <span class="string">"new/NewText.txt"</span>, FA_WRITE | FA_CREATE_ALWAYS );</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> ( res == FR_OK ) &#123;</span><br><span class="line">    Debug ( <span class="string">"create file ok!\r\n"</span> );</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        res = f_write ( &amp;fsrc, buffer, <span class="number">100</span>, &amp;bw );</span><br><span class="line">        <span class="keyword">if</span> ( res ) &#123;</span><br><span class="line">            Debug ( <span class="string">"write error : %d\r\n"</span>, res );</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        Debug ( <span class="string">"write ok!\r\n"</span> );</span><br><span class="line">    &#125; <span class="keyword">while</span> ( bw &lt; <span class="number">100</span> ); <span class="comment">/* 判断是否写完(“bw&gt;100”表示写入完成) */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">f_close ( &amp;fsrc ); <span class="comment">/* 关闭文件，必须和f_open函数成对出现 */</span></span><br></pre></td></tr></table></figure>
+<h4 id="f-lseek"><a href="#f-lseek" class="headerlink" title="f_lseek"></a>f_lseek</h4><p>&emsp;&emsp;移动一个打开的文件对象的文件读/写指针，也可以被用来扩展文件大小(簇预分配)。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_lseek</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject, <span class="comment">/* 文件对象结构指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    DWORD Offset <span class="comment">/* 文件字节偏移 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileObject</code>是打开的文件对象的指针，<code>Offset</code>是相对于文件起始处的字节数。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_INVALID_OBJECT</code>：文件对象无效。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_lseek</code>函数当<code>FS_MINIMIZE &lt;= 2</code>时可用。<code>offset</code>只能被指定为相对于文件起始处的字节数，当在写模式下指定了一个超过文件大小的<code>offset</code>时，文件的大小将被扩展，并且该扩展的区域中的数据是未定义的，这适用于为快速写操作迅速地创建一个大的文件。<code>f_lseek</code>函数成功后，为了确保读/写指针已被正确地移动，必须检查文件对象中的成员<code>fptr</code>。如果<code>fptr</code>不是所期望的值，则发生了下列情况之一：</p>
+<ul>
+<li>文件结束：指定的<code>offset</code>被钳在文件大小，因为文件已被以只读模式打开。</li>
+<li>磁盘满：卷上没有足够的空闲空间去扩展文件大小。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">res = f_open ( &amp;fsrc, <span class="string">"news/news.txt"</span>, FA_WRITE );</span><br><span class="line">res = f_lseek ( &amp;fsrc, <span class="number">500</span> ); <span class="comment">/* 指针指向第500个字节 */</span></span><br><span class="line">res = f_write ( &amp;fsrc, <span class="string">"500"</span>, <span class="number">3</span>, &amp;bw );</span><br><span class="line">res = f_lseek ( &amp;fsrc, fsrc.fptr + <span class="number">100</span> ); <span class="comment">/* 指针向前移动100个字节 */</span></span><br><span class="line">res = f_write ( &amp;fsrc, <span class="string">"forward"</span>, <span class="number">8</span>, &amp;bw );</span><br><span class="line">res = f_lseek ( &amp;fsrc, fsrc.fptr - <span class="number">200</span> ); <span class="comment">/* 指针向后移动200个字节 */</span></span><br><span class="line">res = f_write ( &amp;fsrc, <span class="string">"backward"</span>, <span class="number">9</span>, &amp;bw );</span><br><span class="line">res = f_lseek ( &amp;fsrc, fsrc.fsize ); <span class="comment">/* 指针指向文件末尾 */</span></span><br><span class="line">res = f_write ( &amp;fsrc, <span class="string">"end"</span>, <span class="number">3</span>, &amp;bw );</span><br><span class="line">res = f_close ( &amp;fsrc );</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/02/24/嵌入式笔记/FatFs文件系统/2.png" height="198" width="506"></p>
+<h4 id="f-truncate"><a href="#f-truncate" class="headerlink" title="f_truncate"></a>f_truncate</h4><p>&emsp;&emsp;截断文件大小：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_truncate</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject <span class="comment">/* 文件对象结构指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileObject</code>为待截断的打开的文件对象的指针。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_DENIED</code>：由于文件是以非写模式打开的，而导致该函数被拒绝。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_INVALID_OBJECT</code>：文件对象无效。</li>
+</ul>
+<p><code>f_truncate</code>函数当<code>_FS_READONLY == 0</code>并且<code>_FS_MINIMIZE == 0</code>时可用，它截断文件到当前的文件读/写指针。当文件读/写指针已经指向文件结束时，该函数不起作用。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">res = f_open ( &amp;fsrc, <span class="string">"news/news.txt"</span>, FA_WRITE );</span><br><span class="line">res = f_lseek ( &amp;fsrc, <span class="number">60</span> ); <span class="comment">/* 指针指向第60个字节 */</span></span><br><span class="line">res = f_truncate ( &amp;fsrc ); <span class="comment">/* 将文件在此截断 */</span></span><br><span class="line">res = f_sync ( &amp;fsrc ); <span class="comment">/* 关闭文件 */</span></span><br></pre></td></tr></table></figure>
+<p>运行程序之后，文件大小变成了<code>60</code>个字节。</p>
+<h4 id="f-sync"><a href="#f-sync" class="headerlink" title="f_sync"></a>f_sync</h4><p>&emsp;&emsp;冲洗一个写文件的缓存信息：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_sync</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject <span class="comment">/* 文件对象结构的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileObject</code>为待冲洗的打开的文件对象的指针。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的FAT结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_INVALID_OBJECT</code>：文件对象无效。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_sync</code>函数当<code>_FS_READONLY == 0</code>时可用。<code>f_sync</code>函数和<code>f_close</code>函数执行同样的过程，但是文件仍处于打开状态，并且可以继续对文件执行读、写、移动指针操作。这适用于以写模式长时间打开文件，比如数据记录器。定期的或<code>f_write</code>后立即执行<code>f_sync</code>可以将由于突然断电或移去磁盘而导致数据丢失的风险最小化。在<code>f_close</code>前立即执行<code>f_sync</code>没有作用，因为在<code>f_close</code>中执行了<code>f_sync</code>。换句话说，这两个函数的差异就是文件对象是不是无效的。</p>
+<h4 id="f-opendir"><a href="#f-opendir" class="headerlink" title="f_opendir"></a>f_opendir</h4><p>&emsp;&emsp;打开一个目录：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_opendir</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    DIR *DirObject, <span class="comment">/* 空白目录对象结构的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> XCHAR *DirName <span class="comment">/* 目录名的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>DirObject</code>为待创建的空白目录对象的指针；<code>DirName</code>指定了将被打开的目录名。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功，目录对象被创建。该目录对象被后续调用，用来读取目录项。</li>
+<li><code>FR_NO_PATH</code>：找不到路径。</li>
+<li><code>FR_INVALID_NAME</code>：路径名无效。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_ENABLED</code>：逻辑驱动器没有工作区。</li>
+<li><code>FR_NO_FILESYSTEM</code>：磁盘上没有有效的<code>FAT</code>卷。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_opendir</code>函数当<code>_FS_MINIMIZE &lt;= 1</code>时可用。<code>f_opendir</code>函数打开一个已存在的目录，并为后续的调用创建一个目录对象。该目录对象结构可以在任何时候不经任何步骤而被丢弃。</p>
+<h4 id="f-readdir"><a href="#f-readdir" class="headerlink" title="f_readdir"></a>f_readdir</h4><p>&emsp;&emsp;读取目录项：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_readdir</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    DIR *DirObject, <span class="comment">/* 指向打开的目录对象结构的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    FILINFO *FileInfo <span class="comment">/* 指向文件信息结构的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>DirObject</code>为打开的目录对象的指针，<code>FileInfo</code>存储已读取项的文件信息结构指针。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_INVALID_OBJECT</code>：文件对象无效。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_readdir</code>函数当<code>_FS_MINIMIZE &lt;= 1</code>时可用，它顺序地读取目录项。目录中的所有项可以通过重复调用<code>f_readdir</code>函数被读取。当所有目录项已被读取并且没有项要读取时，该函数没有任何错误地返回一个空字符串到<code>f_name</code>成员中。当<code>FileInfo</code>给定一个空指针时，目录对象的读索引将被回绕。<br>&emsp;&emsp;当<code>LFN</code>功能被使能时，在使用<code>f_readdir</code>函数之前，文件信息结构中的<code>lfname</code>和<code>lfsize</code>必须被初始化为有效数值。<code>lfname</code>是一个返回长文件名的字符串缓冲区指针。<code>lfsize</code>是以字符为单位的字符串缓冲区的大小。如果读缓冲区或<code>LFN</code>工作缓冲区的大小(对于<code>LFN</code>)不足，或者对象没有<code>LFN</code>，则一个空字符串将被返回到<code>LFN</code>读缓冲区。如果<code>LFN</code>包含任何不能被转换为OEM代码的字符，则一个空字符串将被返回，但是这不是<code>Unicode API</code>配置的情况。当<code>lfname</code>是一个空字符串时，没有<code>LFN</code>的任何数据被返回。当对象没有<code>LFN</code>时，任何小型大写字母可以被包含在<code>SFN</code>中。<br>&emsp;&emsp;当相对路径功能被使能(<code>_FS_RPATH == 1</code>)时，<code>.</code>和<code>..</code>目录项不会被过滤掉，并且它将出现在读目录项中。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">scan_files</span> <span class="params">( <span class="keyword">char</span> *path )</span> </span>&#123;</span><br><span class="line">    FRESULT res;</span><br><span class="line">    FILINFO fno;</span><br><span class="line">    DIR dir;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">char</span> *fn;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> _USE_LFN</span></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">char</span> lfn[_MAX_LFN * ( _DF1S ? <span class="number">2</span> : <span class="number">1</span> ) + <span class="number">1</span>];</span><br><span class="line">    fno.lfname = lfn;</span><br><span class="line">    fno.lfsize = <span class="keyword">sizeof</span> ( lfn );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    res = f_opendir ( &amp;dir, path );</span><br><span class="line">    <span class="keyword">if</span> ( res == FR_OK ) &#123;</span><br><span class="line">        i = <span class="built_in">strlen</span> ( path );</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">            res = f_readdir ( &amp;dir, &amp;fno );</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> ( res != FR_OK || fno.fname[<span class="number">0</span>] == <span class="number">0</span> ) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> ( fno.fname[<span class="number">0</span>] == <span class="string">'.'</span> ) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> _USE_LFN</span></span><br><span class="line">            fn = *fno.lfname ? fno.lfname : fno.fname;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">            fn = fno.fname;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">            <span class="keyword">if</span> ( fno.fattrib &amp; AM_DIR ) &#123;</span><br><span class="line">                <span class="built_in">sprintf</span> ( &amp;path[i], <span class="string">"/%s"</span>, fn );</span><br><span class="line">                res = scan_files ( path );</span><br><span class="line">                <span class="keyword">if</span> ( res != FR_OK ) &#123;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                path[i] = <span class="number">0</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="built_in">printf</span> ( <span class="string">"%s/%s\n"</span>, path, fn );</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;下面的程序先打开文件夹<code>folde/move</code>，然后查找其中的存档文件，并通过串口输出读取的文件名：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( f_opendir ( &amp;dirs, <span class="string">"folder/move"</span> ) == FR_OK ) &#123; <span class="comment">/* 打开文件夹 */</span></span><br><span class="line">    <span class="keyword">while</span> ( f_readdir ( &amp;dirs, &amp;finfo ) == FR_OK ) &#123; <span class="comment">/* 按照顺序读文件夹 */</span></span><br><span class="line">        <span class="keyword">if</span> ( !finfo.fname[<span class="number">0</span>] ) &#123;</span><br><span class="line">            <span class="keyword">break</span>; <span class="comment">/* 如果文件名为0，结束 */</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> ( finfo.fattrib == AM_ARC ) &#123; <span class="comment">/* 判断文件属性 */</span></span><br><span class="line">            Debug ( <span class="string">"文件名: %s\r\n"</span>, finfo.fname );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>if(finfo.fattrib == AM_ARC)</code>意思是只对存档文件进行处理，存档表示该文件在上次备份前已经修改过了，一些备份软件在备份系统后会把这些文件默认地设为存档属性。</p>
+<h4 id="f-getfree"><a href="#f-getfree" class="headerlink" title="f_getfree"></a>f_getfree</h4><p>&emsp;&emsp;获取空闲簇的数目：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_getfree</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> XCHAR *Path, <span class="comment">/* 驱动器的根目录 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    DWORD *Clusters, <span class="comment">/* 存储空闲簇数目变量的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    FATFS **FileSystemObject <span class="comment">/* 文件系统对象指针的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Path</code>指定了逻辑驱动器的目录；<code>Clusters</code>存储空闲簇数目的<code>DWORD</code>变量的指针；<code>FileSystemObject</code>是相应文件系统对象指针的指针。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_ENABLED</code>：逻辑驱动器没有工作区。</li>
+<li><code>FR_NO_FILESYSTEM</code>：磁盘上没有有效的FAT卷。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_getfree</code>函数当<code>_FS_READONLY == 0</code>并且<code>_FS_MINIMIZE == 0</code>时有效。<code>f_getfree</code>函数获取驱动器上空闲簇的数目。文件系统对象中的成员<code>csize</code>是每簇中的扇区数，因此以扇区为单位的空闲空间可以被计算出来。当<code>FAT32</code>卷上的<code>FSInfo</code>结构不同步时，该函数返回一个错误的空闲簇计数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">FATFS *fs;</span><br><span class="line">DWORD fre_clust, fre_sect, tot_sect;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Get drive information and free clusters */</span></span><br><span class="line">res = f_getfree ( <span class="string">"/"</span>, &amp;fre_clust, &amp;fs );</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> ( res ) &#123;</span><br><span class="line">    die ( res );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Get total sectors and free sectors */</span></span><br><span class="line">tot_sect = ( fs-&gt;max_clust - <span class="number">2</span> ) * fs-&gt;csize;</span><br><span class="line">fre_sect = fre_clust * fs-&gt;csize;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Print free space in unit of KB (assuming 512B/sector) */</span></span><br><span class="line"><span class="built_in">printf</span> (</span><br><span class="line">    <span class="string">"%lu KB total drive space.\n"</span></span><br><span class="line">    <span class="string">"%lu KB available.\n"</span>,</span><br><span class="line">    fre_sect / <span class="number">2</span>, tot_sect / <span class="number">2</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<h4 id="f-stat"><a href="#f-stat" class="headerlink" title="f_stat"></a>f_stat</h4><p>&emsp;&emsp;获取文件状态：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_stat</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> XCHAR *FileName, <span class="comment">/* 文件名或目录名的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    FILINFO *FileInfo <span class="comment">/* FILINFO结构的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileName</code>指定了待获取其信息的文件或目录；<code>FileInfo</code>是存储信息的空白<code>FILINFO</code>结构的指针。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_NO_FILE</code>：找不到文件或目录。</li>
+<li><code>FR_NO_PATH</code>：找不到路径。</li>
+<li><code>FR_INVALID_NAME</code>：路径名无效。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_ENABLED</code>：逻辑驱动器没有工作区。</li>
+<li><code>FR_NO_FILESYSTEM</code>：磁盘上没有有效的<code>FAT</code>卷。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_stat</code>函数当<code>_FS_MINIMIZE == 0</code>时可用。<code>f_stat</code>函数获取一个文件或目录的信息。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 读取folder目录下newname.txt文件的信息 */</span></span><br><span class="line">res = f_stat ( <span class="string">"folder/newname.txt"</span>, &amp;finfo );</span><br><span class="line"><span class="keyword">if</span> ( res ) &#123;</span><br><span class="line">    Debug ( <span class="string">"newname.txt err: %d\r\n"</span>, res );</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    Debug ( <span class="string">"newname.txt size: %lu\r\n"</span>, finfo.fsize ); <span class="comment">/* 文件长度 */</span></span><br><span class="line">    Debug ( <span class="string">"fdate: %d\r\n"</span>, finfo.fdate ); <span class="comment">/* 最近修改日期 */</span></span><br><span class="line">    Debug ( <span class="string">"ftime: %d\r\n"</span>, finfo.ftime ); <span class="comment">/* 最近修改时间 */</span></span><br><span class="line">    Debug ( <span class="string">"fattrib: %d\r\n"</span>, finfo.fattrib ); <span class="comment">/* 文件属性 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="f-mkdir"><a href="#f-mkdir" class="headerlink" title="f_mkdir"></a>f_mkdir</h4><p>&emsp;&emsp;创建一个目录：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_mkdir</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> XCHAR *DirName <span class="comment">/* 目录名的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>DirName</code>指定了待创建的目录名。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_NO_PATH</code>：找不到路径。</li>
+<li><code>FR_INVALID_NAME</code>：路径名无效。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+<li><code>FR_DENIED</code>：由于目录表或磁盘满，而导致目录不能被创建。</li>
+<li><code>FR_EXIST</code>：已经存在同名的文件或目录。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_WRITE_PROTECTED</code>：存储介质被写保护。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_ENABLED</code>：逻辑驱动器没有工作区。</li>
+<li><code>FR_NO_FILESYSTEM</code>：磁盘上没有有效的<code>FAT</code>卷。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_mkdir</code>函数当<code>_FS_READONLY == 0</code>并且<code>_FS_MINIMIZE == 0</code>时可用。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">res = f_mkdir ( <span class="string">"sub1"</span> );</span><br><span class="line"><span class="keyword">if</span> ( res ) &#123;</span><br><span class="line">    die ( res );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">res = f_mkdir ( <span class="string">"sub1/sub2"</span> );</span><br><span class="line"><span class="keyword">if</span> ( res ) &#123;</span><br><span class="line">    die ( res );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">res = f_mkdir ( <span class="string">"sub1/sub2/sub3"</span> );</span><br><span class="line"><span class="keyword">if</span> ( res ) &#123;</span><br><span class="line">    die ( res );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="f-unlink"><a href="#f-unlink" class="headerlink" title="f_unlink"></a>f_unlink</h4><p>&emsp;&emsp;移除一个对象：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_unlink</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> XCHAR *FileName <span class="comment">/* 对象名的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileName</code>指定了一个待移除的对象。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_NO_FILE</code>：找不到文件或目录。</li>
+<li><code>FR_NO_PATH</code>：找不到路径。</li>
+<li><code>FR_INVALID_NAME</code>：路径名无效。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+<li><code>FR_DENIED</code>：由于下列原因之一，而导致该函数被拒绝：</li>
+</ul>
+<ol>
+<li>对象具有只读属性。</li>
+<li>目录不是空的。</li>
+</ol>
+<ul>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_WRITE_PROTECTED</code>：存储介质被写保护。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_ENABLED</code>：逻辑驱动器没有工作区。</li>
+<li><code>FR_NO_FILESYSTEM</code>：磁盘上没有有效的<code>FAT</code>卷。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_unlink</code>函数当<code>_FS_READONLY == 0</code>并且<code>_FS_MINIMIZE == 0</code>时可用。删除文件夹时，不能为当前文件夹，也不能为非空文件夹；删除文件时，不能为已打开文件，也不能为只读文件。</p>
+<h4 id="f-chmod"><a href="#f-chmod" class="headerlink" title="f_chmod"></a>f_chmod</h4><p>&emsp;&emsp;修改一个文件或目录的属性：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_chmod</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> XCHAR *FileName, <span class="comment">/* 文件或目录的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE Attribute, <span class="comment">/* 属性标志 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE AttributeMask <span class="comment">/* 属性掩码 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileName</code>指定了一个待被修改属性的文件或目录；<code>Attribute</code>是待被设置的属性标志，可以是下列标志的一个或任意组合，指定的标志被设置，其他的被清除。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AM_RDO</code></td>
+<td>只读</td>
+</tr>
+<tr>
+<td><code>AM_ARC</code></td>
+<td>存档</td>
+</tr>
+<tr>
+<td><code>AM_SYS</code></td>
+<td>系统</td>
+</tr>
+<tr>
+<td><code>AM_HID</code></td>
+<td>隐藏</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_NO_FILE</code>：找不到文件或目录。</li>
+<li><code>FR_NO_PATH</code>：找不到路径。</li>
+<li><code>FR_INVALID_NAME</code>：路径名无效。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_WRITE_PROTECTED</code>：存储介质被写保护。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_ENABLED</code>：逻辑驱动器没有工作区。</li>
+<li><code>FR_NO_FILESYSTEM</code>：磁盘上没有有效的FAT卷。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_chmod</code>函数当<code>_FS_READONLY == 0</code>并且<code>_FS_MINIMIZE == 0</code>时可用。对文件<code>newname.txt</code>置位<code>ARC</code>和<code>SYS</code>属性，取消<code>HID</code>和<code>REO</code>属性：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">res = f_chmod ( <span class="string">"folder/newname.txt"</span>, AM_ARC | AM_SYS, AM_ARC | AM_RDO | AM_HID | AM_SYS );</span><br><span class="line"><span class="keyword">if</span> ( res ) &#123;</span><br><span class="line">    Debug ( <span class="string">"err:%d\r\n"</span>, res );</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    res = f_stat ( <span class="string">"folder/newname.txt"</span>, &amp;finfo );</span><br><span class="line">    Debug ( <span class="string">"%d\r\n"</span>, finfo.fattrib );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对文件夹<code>new</code>置位<code>SYS</code>和<code>ARC</code>属性，取消<code>HID</code>和<code>RDO</code>属性：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">res = f_chmod ( <span class="string">"new"</span>, AM_SYS | AM_ARC, AM_ARC | AM_RDO | AM_HID | AM_SYS );</span><br><span class="line"><span class="keyword">if</span> ( res ) &#123;</span><br><span class="line">    Debug ( <span class="string">"err:%d\r\n"</span>, res );</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    res = f_stat ( <span class="string">"new"</span>, &amp;finfo );</span><br><span class="line">    Debug ( <span class="string">"%d\r\n"</span>, finfo.fattrib );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="f-utime"><a href="#f-utime" class="headerlink" title="f_utime"></a>f_utime</h4><p>&emsp;&emsp;<code>f_utime</code>函数修改一个文件或目录的时间戳：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_utime</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> XCHAR *FileName, <span class="comment">/* 文件或目录路径的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> FILINFO *TimeDate <span class="comment">/* 待设置的时间和日期 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileName</code>指定了一个待修改时间戳的文件或目录；<code>TimeDate</code>是文件信息结构指针，其中成员<code>ftime</code>和<code>fdata</code>存储了一个待被设置的的时间戳，不关心任何其他成员。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_NO_FILE</code>：找不到文件或目录。</li>
+<li><code>FR_NO_PATH</code>：找不到路径。</li>
+<li><code>FR_INVALID_NAME</code>：路径名无效。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_WRITE_PROTECTED</code>：存储介质被写保护。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_ENABLED</code>：逻辑驱动器没有工作区。</li>
+<li><code>FR_NO_FILESYSTEM</code>：磁盘上没有有效的<code>FAT</code>卷。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_utime</code>函数当<code>_FS_READONLY == 0</code>并且<code>_FS_MINIMIZE == 0</code>时可用。作者在官网中公布了另外一个函数<code>set_timestamp</code>，这个函数可以写入常规的日期时间，然后按日期存储格式将数据整合后调用<code>f_utime</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">set_timestamp</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">char</span> *obj, <span class="comment">/* Pointer to the file name */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> year, <span class="keyword">int</span> month, <span class="keyword">int</span> mday,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> hour, <span class="keyword">int</span> min, <span class="keyword">int</span> sec</span></span></span><br><span class="line"><span class="function"><span class="params">)</span> </span>&#123;</span><br><span class="line">    FILINFO fno;</span><br><span class="line">    fno.fdate = ( WORD ) ( ( ( year - <span class="number">1980</span> ) * <span class="number">512U</span> ) | month * <span class="number">32U</span> | mday );</span><br><span class="line">    fno.ftime = ( WORD ) ( hour * <span class="number">2048U</span> | min * <span class="number">32U</span> | sec / <span class="number">2U</span> );</span><br><span class="line">    <span class="keyword">return</span> f_utime ( obj, &amp;fno );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">res = set_timestamp ( <span class="string">"123.txt"</span>, <span class="number">2001</span>, <span class="number">06</span>, <span class="number">05</span>, <span class="number">02</span>, <span class="number">03</span>, <span class="number">34</span> ); <span class="comment">/* 修改123.txt的时间 */</span></span><br><span class="line">Debug ( <span class="string">"%d\r\n"</span>, res );</span><br></pre></td></tr></table></figure>
+<h4 id="f-rename"><a href="#f-rename" class="headerlink" title="f_rename"></a>f_rename</h4><p>&emsp;&emsp;重命名一个对象：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_rename</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> XCHAR *OldName, <span class="comment">/* 原对象名的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> XCHAR *NewName <span class="comment">/* 新对象名的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>OldName</code>指定了待被重命名的原对象名，<code>NewName</code>指定了重命名后的新对象名，不能包含驱动器号。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_NO_FILE</code>：找不到文件或目录。</li>
+<li><code>FR_NO_PATH</code>：找不到路径。</li>
+<li><code>FR_INVALID_NAME</code>：文件名无效。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_EXIST</code>：新名和一个已存在的对象名冲突。</li>
+<li><code>FR_DENIED</code>：由于任何原因，而导致新名不能被创建。</li>
+<li><code>FR_WRITE_PROTECTED</code>：存储介质被写保护。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_ENABLED</code>：逻辑驱动器没有工作区。</li>
+<li><code>FR_NO_FILESYSTEM</code>：磁盘上没有有效的<code>FAT</code>卷。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_rename</code>函数当<code>_FS_READONLY == 0</code>并且<code>_FS_MINIMIZE == 0</code>时可用。<code>f_rename</code>函数重命名一个对象，并且也可以将对象移动到其他目录。逻辑驱动器号由原名决定，新名不能包含一个逻辑驱动器号。不要重命名打开的对象。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">f_rename ( <span class="string">"oldname.txt"</span>, <span class="string">"newname.txt"</span> ); <span class="comment">/* 重命名一个对象 */</span></span><br><span class="line">f_rename ( <span class="string">"oldname.txt"</span>, <span class="string">"dir1/newname.txt"</span> ); <span class="comment">/* 重命名并且移动一个对象到另一个目录 */</span></span><br></pre></td></tr></table></figure>
+<h4 id="f-mkfs"><a href="#f-mkfs" class="headerlink" title="f_mkfs"></a>f_mkfs</h4><p>&emsp;&emsp;在驱动器上创建一个文件系统：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_mkfs</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE Drive, <span class="comment">/* 逻辑驱动器号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE PartitioningRule, <span class="comment">/* 分区规则 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    WORD AllocSize <span class="comment">/* 分配单元大小 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Drive</code>为待格式化的逻辑驱动器号(<code>0</code>至<code>9</code>)；当<code>PartitioningRule</code>给定<code>0</code>时，首先在驱动器上的第一个扇区创建一个分区表，然后文件系统被创建在分区上。这被称为<code>FDISK</code>格式化，用于硬盘和存储卡。当给定<code>1</code>时，文件系统从第一个扇区开始创建，而没有分区表。这被称为超级软盘(<code>SFD</code>)格式化，用于软盘和可移动磁盘；<code>AllocSize</code>指定每簇中以字节为单位的分配单元大小。数值必须是<code>0</code>或从<code>512</code>到<code>32K</code>之间<code>2</code>的幂。当指定<code>0</code>时，簇大小取决于卷大小。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_WRITE_PROTECTED</code>：驱动器被写保护。</li>
+<li><code>FR_NOT_ENABLED</code>：逻辑驱动器没有工作区。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_MKFS_ABORTED</code>：由于下列原因之一，而导致函数在开始格式化前终止：</li>
+</ul>
+<ol>
+<li>磁盘容量太小。</li>
+<li>参数无效。</li>
+<li>该驱动器不允许的簇大小</li>
+</ol>
+<p>&emsp;&emsp;<code>f_mkfs</code>函数当<code>_FS_READOLNY == 0</code>并且<code>_USE_MKFS == 1</code>时可用。对于可移动媒介，有两种分区规则，即<code>FDISK</code>和<code>SFD</code>，通过参数<code>PartitioningRule</code>选择。<code>FDISK</code>格式在大多数情况下被推荐使用。该函数当前不支持多分区，因此物理驱动器上已存在的分区将被删除，并且重新创建一个占据全部磁盘空间的新分区。</p>
+<h4 id="f-forward"><a href="#f-forward" class="headerlink" title="f_forward"></a>f_forward</h4><p>&emsp;&emsp;读取文件数据并将其转发到数据流设备：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_forward</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject, <span class="comment">/* 文件对象 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    UINT ( *Func ) ( <span class="keyword">const</span> BYTE *, UINT ), <span class="comment">/* 数据流函数 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    UINT ByteToFwd, <span class="comment">/* 要转发的字节数 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    UINT *ByteFwd <span class="comment">/* 已转发的字节数 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileObject</code>为打开的文件对象的指针；<code>Func</code>是用户定义的数据流函数的指针；<code>ByteToFwd</code>是要转发的字节数，在<code>UINT</code>范围内；<code>ByteFwd</code>是返回已转发的字节数的<code>UINT</code>变量的指针。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_DENIED</code>：由于文件已经以非读模式打开，而导致函数失败。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_INVALID_OBJECT</code>：文件对象无效。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_forward</code>函数当<code>_USE_FORWARD == 1</code>并且<code>_FS_TINY == 1</code>时可用。<code>f_forward</code>函数从文件中读取数据并将数据转发到输出流，而不使用数据缓冲区。这适用于小存储系统，因为它在应用模块中不需要任何数据缓冲区。文件对象的文件指针以转发的字节数增加。如果<code>*ByteFwd &lt; ByteToFwd</code>并且没有错误，则意味着由于文件结束或在数据传输过程中流忙，请求的字节不能被传输。音频播放的示例如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 数据传输函数，将被f_forward函数调用 */</span></span><br><span class="line"><span class="function">UINT <span class="title">out_stream</span> <span class="params">( <span class="comment">/* 返回已发送字节数或流状态 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> BYTE *p, <span class="comment">/* 将被发送的数据块的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    UINT btf <span class="comment">/* &gt; 0：传输调用(将被发送的字节数)；0：检测调用 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span> </span>&#123;</span><br><span class="line">    UINT cnt = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> ( btf == <span class="number">0</span> ) &#123; <span class="comment">/* 检测调用 */</span></span><br><span class="line">        <span class="comment">/* 返回流状态(0: 忙，1: 就绪) */</span></span><br><span class="line">        <span class="comment">/* 当检测调用时，一旦它返回就绪，那么在后续的传输调用时，</span></span><br><span class="line"><span class="comment">           它必须接收至少一个字节，或者f_forward将以FR_INT_ERROR而失败 */</span></span><br><span class="line">        <span class="keyword">if</span> ( FIFO_READY ) &#123;</span><br><span class="line">            cnt = <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123; <span class="comment">/* 传输调用 */</span></span><br><span class="line">        <span class="keyword">do</span> &#123; <span class="comment">/* 当有数据要发送并且流就绪时重复 */</span></span><br><span class="line">            FIFO_PORT = *p++;</span><br><span class="line">            cnt++;</span><br><span class="line">        &#125; <span class="keyword">while</span> ( cnt &lt; btf &amp;&amp; FIFO_READY );</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> cnt;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">FRESULT <span class="title">play_file</span> <span class="params">( <span class="comment">/* 使用f_forward函数 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">char</span> *fn <span class="comment">/* 待播放的音频文件名的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span> </span>&#123;</span><br><span class="line">    FRESULT rc;</span><br><span class="line">    FIL fil;</span><br><span class="line">    UINT dmy;</span><br><span class="line">    rc = f_open ( &amp;fil, fn, FA_READ ); <span class="comment">/* 以只读模式打开音频文件 */</span></span><br><span class="line">    <span class="comment">/* 重复，直到文件指针到达文件结束位置 */</span></span><br><span class="line">    <span class="keyword">while</span> ( rc == FR_OK &amp;&amp; fil.fptr &lt; fil.fsize ) &#123;</span><br><span class="line">        <span class="comment">/* 任何其他处理... */</span></span><br><span class="line">        <span class="comment">/* 定期或请求时填充输出流 */</span></span><br><span class="line">        rc = f_forward ( &amp;fil, out_stream, <span class="number">1000</span>, &amp;dmy );</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* 该只读的音频文件对象不需要关闭就可以被丢弃 */</span></span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="f-chdir"><a href="#f-chdir" class="headerlink" title="f_chdir"></a>f_chdir</h4><p>&emsp;&emsp;<code>f_chdir</code>函数改变一个驱动器的当前目录：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_chdir</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> XCHAR *Path <span class="comment">/* 路径名的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Path</code>指针指定了将要进去的目录。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_NO_PATH</code>：找不到路径。</li>
+<li><code>FR_INVALID_NAME</code>：路径名无效。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+<li><code>FR_NOT_READY</code>：由于驱动器中没有存储介质或任何其他原因，而导致磁盘驱动器无法工作。</li>
+<li><code>FR_DISK_ERR</code>：由于底层磁盘<code>I/O</code>函数中的错误，而导致该函数失败。</li>
+<li><code>FR_INT_ERR</code>：由于一个错误的<code>FAT</code>结构或一个内部错误，而导致该函数失败。</li>
+<li><code>FR_NOT_ENABLED</code>：逻辑驱动器没有工作区。</li>
+<li><code>FR_NO_FILESYSTEM</code>：磁盘上没有有效的<code>FAT</code>卷。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_chdir</code>函数当<code>_FS_RPATH == 1</code>时可用。当一个逻辑驱动器被自动挂载时，它的当前目录被初始化为根目录。注意当前目录被保存在每个文件系统对象中，因此它也影响使用同一逻辑驱动器的其它任务。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">f_chdir ( <span class="string">"/dir1"</span> ); <span class="comment">/* 改变当前驱动器的当前目录(根目录下的dir1) */</span></span><br><span class="line">f_chdir ( <span class="string">"2:.."</span> ); <span class="comment">/* 改变驱动器2的当前目录(父目录) */</span></span><br></pre></td></tr></table></figure>
+<h4 id="f-chdrive"><a href="#f-chdrive" class="headerlink" title="f_chdrive"></a>f_chdrive</h4><p>&emsp;&emsp;<code>f_chdrive</code>函数改变当前驱动器：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FRESULT <span class="title">f_chdrive</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE Drive <span class="comment">/* 逻辑驱动器号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Drive</code>指定将被设置为当前驱动器的逻辑驱动器号。返回值如下：</p>
+<ul>
+<li><code>FR_OK</code>：函数成功。</li>
+<li><code>FR_INVALID_DRIVE</code>：驱动器号无效。</li>
+</ul>
+<p>&emsp;&emsp;<code>f_chdrive</code>函数当<code>_FS_RPATH == 1</code>时可用。当前驱动器号初始值为<code>0</code>，注意当前驱动器被保存为一个静态变量，因此它也影响使用文件函数的其它任务。</p>
+<h4 id="f-gets"><a href="#f-gets" class="headerlink" title="f_gets"></a>f_gets</h4><p>&emsp;&emsp;<code>f_gets</code>从文件中读取一个字符串：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">char</span> *<span class="title">f_gets</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">char</span> *Str, <span class="comment">/* 读缓冲区 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> Size, <span class="comment">/* 读缓冲区大小 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject <span class="comment">/* 文件对象 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Str</code>存储读取字符串的读缓冲区指针，<code>Size</code>为读缓冲区大小，<code>FileObject</code>为打开的文件对象结构指针。当函数执行成功后，<code>Str</code>将被返回。<br>&emsp;&emsp;<code>f_gets</code>函数当<code>_USE_STRFUNC == 1</code>或者<code>_USE_STRFUNC == 2</code>时可用。如果<code>_USE_STRFUNC == 2</code>，文件中包含的<code>\r</code>则被去除。<code>f_gets</code>函数是<code>f_read</code>的一个封装函数，当读取到<code>\n</code>、文件结束或缓冲区被填冲了<code>Size - 1</code>个字符时，读操作结束，读取的字符串以<code>\0</code>结束。当文件结束或读操作中发生了任何错误，<code>f_gets</code>返回一个空字符串。可以使用宏<code>f_eof</code>和<code>f_error</code>检查<code>EOF</code>和错误状态。</p>
+<h4 id="f-putc"><a href="#f-putc" class="headerlink" title="f_putc"></a>f_putc</h4><p>&emsp;&emsp;<code>f_putc</code>函数向文件中写入一个字符：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">f_putc</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> Chr, <span class="comment">/* 字符 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject <span class="comment">/* 文件对象 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Chr</code>为待写入的字符，<code>FileObject</code>为打开的文件对象结构的指针。当字符被成功地写入后，函数返回该字符。由于磁盘满或任何错误而导致函数失败，将返回<code>EOF</code>。<br>&emsp;&emsp;<code>f_putc</code>函数当<code>(_FS_READONLY == 0) &amp;&amp; (_USE_STRFUNC == 1 || _USE_STRFUNC == 2)</code>时可用。当<code>_USE_STRFUNC == 2</code>时，字符<code>\n</code>被转换为<code>\r\n</code>写入文件中。<code>f_putc</code>函数是<code>f_write</code>的一个封装函数。</p>
+<h4 id="f-puts"><a href="#f-puts" class="headerlink" title="f_puts"></a>f_puts</h4><p>&emsp;&emsp;<code>f_puts</code>函数向文件中写入一个字符串：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">f_puts</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> <span class="keyword">char</span> *Str, <span class="comment">/* 字符串指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject <span class="comment">/* 文件对象指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Str</code>为待写入的字符串的指针，<code>\0</code>字符不会被写入；<code>FileObject</code>为打开的文件对象结构的指针。函数执行成功后，将返回写入的字符数。由于磁盘满或任何错误而导致函数失败，将返回<code>EOF</code>。<br>&emsp;&emsp;<code>f_puts</code>当<code>(_FS_READONLY == 0) &amp;&amp; (_USE_STRFUNC == 1 || _USE_STRFUNC == 2)</code>时可用。当<code>_USE_STRFUNC == 2</code>时，字符串中的<code>\n</code>被转换为<code>\r\n</code>写入文件中。<code>f_puts</code>是<code>f_putc</code>的一个封装函数。</p>
+<h4 id="f-printf"><a href="#f-printf" class="headerlink" title="f_printf"></a>f_printf</h4><p>&emsp;&emsp;<code>f_printf</code>函数向文件中写入一个格式化字符串：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">f_printf</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    FIL *FileObject, <span class="comment">/* 文件对象指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> <span class="keyword">char</span> *Foramt, <span class="comment">/* 格式化字符串指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    ...</span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>FileObject</code>为已打开的文件对象结构的指针，<code>Format</code>是格式化字符串指针，<code>...</code>是可选参数。函数执行成功后，将返回写入的字符数。由于磁盘满或任何错误而导致函数失败，将返回<code>EOF</code>。<br>&emsp;&emsp;<code>f_printf</code>函数当<code>(_FS_READONLY == 0) &amp;&amp; (_USE_STRFUNC == 1 || _USE_STRFUNC == 2)</code>时可用。当<code>_USE_STRFUNC == 2</code>时，包含在格式化字符串中的<code>\n</code>将被转换成<code>\r\n</code>写入文件中。<code>f_printf</code>函数是<code>f_putc</code>和<code>f_puts</code>的一个封装函数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">f_printf ( &amp;fil, <span class="string">"%6d"</span>, <span class="number">-200</span> ); <span class="comment">/* "  -200" */</span></span><br><span class="line">f_printf ( &amp;fil, <span class="string">"%02u"</span>, <span class="number">5</span> ); <span class="comment">/* "05" */</span></span><br><span class="line">f_printf ( &amp;fil, <span class="string">"%ld"</span>, <span class="number">12345678L</span> ); <span class="comment">/* "12345678" */</span></span><br><span class="line">f_printf ( &amp;fil, <span class="string">"%08lX"</span>, <span class="number">1194684U</span>L ); <span class="comment">/* "00123ABC" */</span></span><br><span class="line">f_printf ( &amp;fil, <span class="string">"%s"</span>, <span class="string">"String"</span> ); <span class="comment">/* "String" */</span></span><br><span class="line">f_printf ( &amp;fil, <span class="string">"%c"</span>, <span class="string">'a'</span> ); <span class="comment">/* "a" */</span></span><br></pre></td></tr></table></figure>
+<h3 id="磁盘I-O接口"><a href="#磁盘I-O接口" class="headerlink" title="磁盘I/O接口"></a>磁盘I/O接口</h3><p>&emsp;&emsp;由于<code>FatFs</code>模块完全与磁盘<code>I/O</code>层分开，因此底层磁盘<code>I/O</code>需要下列函数去读/写物理磁盘以及获取当前时间。由于底层磁盘<code>I/O</code>模块并不是<code>FatFs</code>的一部分，因此它必须由用户提供。</p>
+<h4 id="disk-initialize"><a href="#disk-initialize" class="headerlink" title="disk_initialize"></a>disk_initialize</h4><p>&emsp;&emsp;初始化磁盘驱动器函数如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">DSTATUS <span class="title">disk_initialize</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE Drive <span class="comment">/* 物理驱动器号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Drive</code>指定待初始化的物理驱动器号。<code>disk_initialize</code>函数返回一个磁盘状态作为结果。函数成功后，返回值中的<code>STA_NOINIT</code>标志被清除。<code>disk_initialize</code>函数被<code>FatFs</code>模块在卷挂载过程中调用，去管理存储介质的改变。当<code>FatFs</code>模块起作用时，或卷上的<code>FAT</code>结构可以被瓦解时，应用程序不能调用该函数。可以使用<code>f_mount</code>函数去重新初始化文件系统。</p>
+<h4 id="disk-status"><a href="#disk-status" class="headerlink" title="disk_status"></a>disk_status</h4><p>&emsp;&emsp;获取当前磁盘的状态：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">DSTATUS <span class="title">disk_status</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE Drive <span class="comment">/* 物理驱动器号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Drive</code>指定待确认的物理驱动器号。返回值是磁盘状态，是下列标志的组合：</p>
+<ul>
+<li><code>STA_NOINIT</code>：指示磁盘驱动器还没有被初始化。当系统复位、磁盘移除和<code>disk_initialize</code>函数失败时，该标志被设置；当<code>disk_initialize</code>函数成功时，该标志被清除。</li>
+<li><code>STA_NODISK</code>：指示驱动器中没有存储介质。当安装了磁盘驱动器后，该标志始终被清除。</li>
+<li><code>STA_PROTECTED</code>：指示存储介质被写保护。在不支持写保护缺口的驱动器上，该标志始终被清除。当<code>STA_NODISK</code>被设置时，该标志无效。</li>
+</ul>
+<h4 id="disk-read"><a href="#disk-read" class="headerlink" title="disk_read"></a>disk_read</h4><p>&emsp;&emsp;从磁盘驱动器中读取扇区：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">DRESULT <span class="title">disk_read</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE Drive, <span class="comment">/* 物理驱动器号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE *Buffer, <span class="comment">/* 读取数据缓冲区的指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    DWORD SectorNumber, <span class="comment">/* 起始扇区号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE SectorCount <span class="comment">/* 要读取的扇区数 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Drive</code>指定物理驱动器号；<code>Buffer</code>是存储读取数据的缓冲区的指针，该缓冲区大小需要满足要读取的字节数(<code>扇区大小 * 扇区总数</code>)，由上层指定的存储器地址可能会也可能不会以字边界对齐；<code>SectorNumber</code>指定在逻辑块地址(<code>LBA</code>)中的起始扇区号；<code>SectorCount</code>指定要读取的扇区数(<code>1</code>至<code>255</code>)。返回值如下：</p>
+<ul>
+<li><code>RES_OK</code>：函数成功。</li>
+<li><code>RES_ERROR</code>：在读操作过程中发生了不能恢复的硬错误。</li>
+<li><code>RES_PARERR</code>：无效的参数。</li>
+<li><code>RES_NOTRDY</code>：磁盘驱动器还没被初始化。</li>
+</ul>
+<h4 id="disk-write"><a href="#disk-write" class="headerlink" title="disk_write"></a>disk_write</h4><p>&emsp;&emsp;向磁盘驱动器中写入扇区：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">DRESULT <span class="title">disk_write</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE Drive, <span class="comment">/* 物理驱动器号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> BYTE *Buffer, <span class="comment">/* 写入数据缓冲区的指针(可能未对齐) */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    DWORD SectorNumber, <span class="comment">/* 起始扇区号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE SectorCount <span class="comment">/* 要写入的扇区数 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Drive</code>指定物理驱动器号；<code>Buffer</code>是存储写入数据的缓冲区的指针，由上层指定的存储器地址可能会也可能不会以字边界对齐；<code>SectorNumber</code>指定在逻辑块地址(<code>LBA</code>)中的起始扇区号；<code>SectorCount</code>指定要写入的扇区数(<code>1</code>至<code>255</code>)。返回值如下：</p>
+<ul>
+<li><code>RES_OK</code>：函数成功。</li>
+<li><code>RES_ERROR</code>：在读操作过程中发生了不能恢复的硬错误。</li>
+<li><code>RES_WRPRT</code>：存储介质被写保护。</li>
+<li><code>RES_PARERR</code>：无效的参数。</li>
+<li><code>RES_NOTRDY</code>：磁盘驱动器还没被初始化。</li>
+</ul>
+<p>在只读配置中，不需要此函数。</p>
+<h4 id="disk-ioctl"><a href="#disk-ioctl" class="headerlink" title="disk_ioctl"></a>disk_ioctl</h4><p>&emsp;&emsp;控制设备特定的功能以及磁盘读写以外的其它功能：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">DRESULT <span class="title">disk_ioctl</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE Drive, <span class="comment">/* 驱动器号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    BYTE Command, <span class="comment">/* 控制命令代码 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">void</span> *Buffer <span class="comment">/* 数据传输缓冲区 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Drive</code>指定驱动器号(<code>1</code>至<code>9</code>)；<code>Command</code>指定命令代码；<code>Buffer</code>取决于命令代码的参数缓冲区的指针，当不使用时，指定一个<code>NULL</code>指针。返回值如下：</p>
+<ul>
+<li><code>RES_OK</code>：函数成功。</li>
+<li><code>RES_ERROR</code>：发生错误。</li>
+<li><code>RES_PARERR</code>：无效的命令代码。</li>
+<li><code>RES_NOTRDY</code>：磁盘驱动器还没被初始化。</li>
+</ul>
+<p>&emsp;&emsp;<code>FatFs</code>模块只使用下述与设备无关的命令，没有使用任何设备相关功能。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CTRL_SYNC</code></td>
+<td>确保磁盘驱动器已经完成等待写过程。当磁盘<code>I/O</code>模块有一个写回高速缓存时，立即冲洗脏扇区。在只读配置中，不需要该命令</td>
+</tr>
+<tr>
+<td><code>GET_SECTOR_SIZE</code></td>
+<td>返回驱动器的扇区大小赋给<code>Buffer</code>指向的<code>WORD</code>变量。在单个扇区大小配置中(<code>_MAX_SS</code>为<code>512</code>)，不需要该命令</td>
+</tr>
+<tr>
+<td><code>GET_SECTOR_COUNT</code></td>
+<td>返回总扇区数赋给<code>Buffer</code>指向的<code>DWORD</code>变量。只在<code>f_mkfs</code>函数中，使用了该命令</td>
+</tr>
+<tr>
+<td><code>GET_BLOCK_SIZE</code></td>
+<td>返回以扇区为单位的存储阵列的擦除块大小赋给<code>Buffer</code>指向的<code>DWORD</code>变量。当擦除块大小未知或是磁盘设备时，返回<code>1</code>。只在<code>f_mkfs</code>函数中，使用了该命令</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="get-fattime"><a href="#get-fattime" class="headerlink" title="get_fattime"></a>get_fattime</h4><p>&emsp;&emsp;获取当前时间：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">DWORD <span class="title">get_fattime</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>返回的当前时间被打包进一个<code>DWORD</code>数值。各位域定义如下：</p>
+<ul>
+<li><code>bit[31:25]</code>：年，从<code>1980</code>年开始算起(<code>0</code>至<code>127</code>)。</li>
+<li><code>bit[24:21]</code>：月(<code>1</code>至<code>12</code>)。</li>
+<li><code>bit[20:16]</code>：日(<code>1</code>至<code>31</code>)。</li>
+<li><code>bit[15:11]</code>：时(<code>0</code>至<code>23</code>)。</li>
+<li><code>bit[10:5]</code>：分(<code>0</code>至<code>59</code>)。</li>
+<li><code>bit[4:0]</code>：<code>秒/2</code>(<code>0</code>至<code>29</code>)，由此可见<code>FatFs</code>的时间分辨率为<code>2</code>秒。</li>
+</ul>
+<p>&emsp;&emsp;<code>get_fattime</code>函数必须返回任何有效的时间，即使系统不支持实时时钟。如果返回一个<code>0</code>，则文件将没有一个有效的时间。在只读配置中，不需要此函数。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/24/Python语法/openpyxl模块/" rel="next" title="openpyxl模块">
+                <i class="fa fa-chevron-left"></i> openpyxl模块
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/25/Linux应用笔记/curses库使用/" rel="prev" title="curses库使用">
+                curses库使用 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#FatFs"><span class="nav-number">1.</span> <span class="nav-text">FatFs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#应用程序接口"><span class="nav-number">2.</span> <span class="nav-text">应用程序接口</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#f-mount"><span class="nav-number">2.1.</span> <span class="nav-text">f_mount</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-open"><span class="nav-number">2.2.</span> <span class="nav-text">f_open</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-close"><span class="nav-number">2.3.</span> <span class="nav-text">f_close</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-read"><span class="nav-number">2.4.</span> <span class="nav-text">f_read</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-write"><span class="nav-number">2.5.</span> <span class="nav-text">f_write</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-lseek"><span class="nav-number">2.6.</span> <span class="nav-text">f_lseek</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-truncate"><span class="nav-number">2.7.</span> <span class="nav-text">f_truncate</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-sync"><span class="nav-number">2.8.</span> <span class="nav-text">f_sync</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-opendir"><span class="nav-number">2.9.</span> <span class="nav-text">f_opendir</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-readdir"><span class="nav-number">2.10.</span> <span class="nav-text">f_readdir</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-getfree"><span class="nav-number">2.11.</span> <span class="nav-text">f_getfree</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-stat"><span class="nav-number">2.12.</span> <span class="nav-text">f_stat</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-mkdir"><span class="nav-number">2.13.</span> <span class="nav-text">f_mkdir</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-unlink"><span class="nav-number">2.14.</span> <span class="nav-text">f_unlink</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-chmod"><span class="nav-number">2.15.</span> <span class="nav-text">f_chmod</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-utime"><span class="nav-number">2.16.</span> <span class="nav-text">f_utime</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-rename"><span class="nav-number">2.17.</span> <span class="nav-text">f_rename</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-mkfs"><span class="nav-number">2.18.</span> <span class="nav-text">f_mkfs</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-forward"><span class="nav-number">2.19.</span> <span class="nav-text">f_forward</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-chdir"><span class="nav-number">2.20.</span> <span class="nav-text">f_chdir</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-chdrive"><span class="nav-number">2.21.</span> <span class="nav-text">f_chdrive</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-gets"><span class="nav-number">2.22.</span> <span class="nav-text">f_gets</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-putc"><span class="nav-number">2.23.</span> <span class="nav-text">f_putc</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-puts"><span class="nav-number">2.24.</span> <span class="nav-text">f_puts</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#f-printf"><span class="nav-number">2.25.</span> <span class="nav-text">f_printf</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#磁盘I-O接口"><span class="nav-number">3.</span> <span class="nav-text">磁盘I/O接口</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#disk-initialize"><span class="nav-number">3.1.</span> <span class="nav-text">disk_initialize</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#disk-status"><span class="nav-number">3.2.</span> <span class="nav-text">disk_status</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#disk-read"><span class="nav-number">3.3.</span> <span class="nav-text">disk_read</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#disk-write"><span class="nav-number">3.4.</span> <span class="nav-text">disk_write</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#disk-ioctl"><span class="nav-number">3.5.</span> <span class="nav-text">disk_ioctl</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#get-fattime"><span class="nav-number">3.6.</span> <span class="nav-text">get_fattime</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

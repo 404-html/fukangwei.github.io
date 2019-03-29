@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="基本概念&amp;emsp;&amp;emsp;我们知道在unix/linux中，正常情况下子进程是通过父进程创建的，子进程再创建新的进程。子进程的结束和父进程的运行是一个异步过程，即父进程永远无法预测子进程到底什么时候结束。当一个进程完成它的工作终止之后，它的父进程需要调用wait或者waitpid系统调用取得子进程的终止状态。  孤儿进程：一个父进程退出，而它的一个或多个子进程还在运行，那么那些子进程将成为孤">
+<meta property="og:type" content="article">
+<meta property="og:title" content="孤儿进程与僵尸进程">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="基本概念&amp;emsp;&amp;emsp;我们知道在unix/linux中，正常情况下子进程是通过父进程创建的，子进程再创建新的进程。子进程的结束和父进程的运行是一个异步过程，即父进程永远无法预测子进程到底什么时候结束。当一个进程完成它的工作终止之后，它的父进程需要调用wait或者waitpid系统调用取得子进程的终止状态。  孤儿进程：一个父进程退出，而它的一个或多个子进程还在运行，那么那些子进程将成为孤">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/1.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/2.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/3.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/4.png">
+<meta property="og:updated_time" content="2019-03-16T06:36:05.132Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="孤儿进程与僵尸进程">
+<meta name="twitter:description" content="基本概念&amp;emsp;&amp;emsp;我们知道在unix/linux中，正常情况下子进程是通过父进程创建的，子进程再创建新的进程。子进程的结束和父进程的运行是一个异步过程，即父进程永远无法预测子进程到底什么时候结束。当一个进程完成它的工作终止之后，它的父进程需要调用wait或者waitpid系统调用取得子进程的终止状态。  孤儿进程：一个父进程退出，而它的一个或多个子进程还在运行，那么那些子进程将成为孤">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/">
+
+
+
+
+
+  <title>孤儿进程与僵尸进程 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">孤儿进程与僵尸进程</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-16T12:20:37+08:00">
+                2019-03-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h3><p>&emsp;&emsp;我们知道在<code>unix/linux</code>中，正常情况下子进程是通过父进程创建的，子进程再创建新的进程。子进程的结束和父进程的运行是一个异步过程，即父进程永远无法预测子进程到底什么时候结束。当一个进程完成它的工作终止之后，它的父进程需要调用<code>wait</code>或者<code>waitpid</code>系统调用取得子进程的终止状态。</p>
+<ul>
+<li>孤儿进程：一个父进程退出，而它的一个或多个子进程还在运行，那么那些子进程将成为孤儿进程。孤儿进程将被<code>init</code>进程(进程号为<code>1</code>)所收养，并由<code>init</code>进程对它们完成状态收集工作。</li>
+<li>僵尸进程：一个进程使用<code>fork</code>创建子进程，如果子进程退出，而父进程并没有调用<code>wait</code>或<code>waitpid</code>获取子进程的状态信息，那么子进程的进程描述符仍然保存在系统中。这种进程称之为僵尸进程。</li>
+</ul>
+<h3 id="问题及危害"><a href="#问题及危害" class="headerlink" title="问题及危害"></a>问题及危害</h3><p>&emsp;&emsp;<code>unix</code>提供了一种机制可以保证只要父进程想知道子进程结束时的状态信息就可以得到。这种机制就是：在每个进程退出的时候，内核释放该进程所有的资源，包括打开的文件、占用的内存等。但是仍然为其保留一定的信息(包括进程号<code>the process ID</code>、退出状态<code>the termination status of the process</code>、运行时间<code>the amount of CPU time taken by the process</code>等)，直到父进程通过<code>wait/waitpid</code>来取时才释放。但这样就导致了问题，如果父进程不调用<code>wait/waitpid</code>的话，那么保留的那段信息就不会释放，其进程号就会一直被占用。但是系统所能使用的进程号是有限的，如果大量地产生僵尸进程，将因为没有可用的进程号而导致系统不能产生新的进程，这就是僵尸进程的危害。<br>&emsp;&emsp;孤儿进程是没有父进程的进程，孤儿进程的处理这个重任就落到了<code>init</code>进程身上。<code>init</code>进程就好像是一个收容所，专门负责处理孤儿进程的善后工作。每当出现一个孤儿进程的时候，内核就把孤儿进程的父进程设置为<code>init</code>，而<code>init</code>进程会循环地<code>wait</code>它的已经退出的子进程。这样当一个孤儿进程结束了其生命周期的时候，<code>init</code>进程就会处理它的一切善后工作，因此孤儿进程并不会有什么危害。<br>&emsp;&emsp;任何一个子进程(<code>init</code>除外)在<code>exit</code>之后，并非马上就消失掉，而是留下一个称为僵尸进程(<code>Zombie</code>)的数据结构，等待父进程处理，这是每个子进程在结束时都要经过的阶段。如果子进程在<code>exit</code>之后，父进程没有来得及处理，这时用<code>ps</code>命令就能看到子进程的状态是<code>Z</code>。如果父进程能及时处理，可能用<code>ps</code>命令就来不及看到子进程的僵尸状态，但这并不等于子进程不经过僵尸状态。如果父进程在子进程结束之前退出，则子进程将由<code>init</code>接管。<code>init</code>将会以父进程的身份对僵尸状态的子进程进行处理。<br>&emsp;&emsp;僵尸进程危害场景：例如有个进程，它定期地产生一个子进程，这个子进程需要做的事情很少，做完它该做的事情之后就退出了，因此这个子进程的生命周期很短。但是父进程只管生成新的子进程，至于子进程退出之后的事情，则一概不闻不问。这样，系统运行上一段时间之后，系统中就会存在很多的僵死进程，如果用ps命令查看的话，就会看到很多状态为<code>Z</code>的进程。严格地来说，僵死进程并不是问题的根源，罪魁祸首是产生出大量僵死进程的那个父进程。因此，当我们寻求如何消灭系统中大量的僵死进程时，答案就是把产生大量僵死进程的那个元凶枪毙掉(也就是通过<code>kill</code>发送<code>SIGTERM</code>或者<code>SIGKILL</code>信号了)。枪毙了元凶进程之后，它产生的僵死进程就变成了孤儿进程，这些孤儿进程会被<code>init</code>进程接管，<code>init</code>进程会<code>wait</code>这些孤儿进程，释放它们占用的系统进程表中的资源。这样，这些已经僵死的孤儿进程就能瞑目而去了。</p>
+<h3 id="孤儿进程和僵尸进程测试"><a href="#孤儿进程和僵尸进程测试" class="headerlink" title="孤儿进程和僵尸进程测试"></a>孤儿进程和僵尸进程测试</h3><p>&emsp;&emsp;孤儿进程测试程序如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">pid_t</span> pid;</span><br><span class="line">    pid = fork(); <span class="comment">/* 创建一个进程 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( pid &lt; <span class="number">0</span> ) &#123; <span class="comment">/* 创建失败 */</span></span><br><span class="line">        perror ( <span class="string">"fork error:"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( pid == <span class="number">0</span> ) &#123; <span class="comment">/* 子进程 */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"I am the child process.\n"</span> );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"pid: %d\tppid:%d\n"</span>, getpid(), getppid() ); <span class="comment">/* 输出进程ID和父进程ID */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"I will sleep five seconds.\n"</span> );</span><br><span class="line">        sleep ( <span class="number">5</span> ); <span class="comment">/* 睡眠5s，保证父进程先退出 */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"pid: %d\tppid:%d\n"</span>, getpid(), getppid() );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"child process is exited.\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123; <span class="comment">/* 父进程 */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"I am father process.\n"</span> );</span><br><span class="line">        sleep ( <span class="number">1</span> ); <span class="comment">/* 父进程睡眠1s，保证子进程输出进程id */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"father process is  exited.\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/1.png"></p>
+<p>&emsp;&emsp;僵尸进程测试程序<code>1</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">pid_t</span> pid;</span><br><span class="line">    pid = fork();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( pid &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">        perror ( <span class="string">"fork error:"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> ( pid == <span class="number">0</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"I am child process.I am exiting.\n"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"I am father process.I will sleep two seconds\n"</span> );</span><br><span class="line">    sleep ( <span class="number">2</span> ); <span class="comment">/* 等待子进程先退出 */</span></span><br><span class="line">    system ( <span class="string">"ps -o pid,ppid,state,tty,command"</span> ); <span class="comment">/* 输出进程信息 */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"father process is exiting.\n"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/2.png"></p>
+<p>&emsp;&emsp;僵尸进程测试程序<code>2</code>：父进程循环创建子进程，子进程退出，造成多个僵尸进程：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">pid_t</span>  pid;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123; <span class="comment">/* 循环创建子进程 */</span></span><br><span class="line">        pid = fork();</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( pid &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">            perror ( <span class="string">"fork error:"</span> );</span><br><span class="line">            <span class="built_in">exit</span> ( <span class="number">1</span> );</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> ( pid == <span class="number">0</span> ) &#123;</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">"I am a child process.\nI am exiting.\n"</span> );</span><br><span class="line">            <span class="built_in">exit</span> ( <span class="number">0</span> ); <span class="comment">/* 子进程退出，成为僵尸进程 */</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            sleep ( <span class="number">20</span> ); <span class="comment">/* 父进程休眠20s继续创建子进程 */</span></span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/3.png" height="278" width="310"></p>
+<h3 id="僵尸进程解决办法"><a href="#僵尸进程解决办法" class="headerlink" title="僵尸进程解决办法"></a>僵尸进程解决办法</h3><p>&emsp;&emsp;1. 通过信号机制：子进程退出时向父进程发送<code>SIGCHLD</code>信号，父进程处理<code>SIGCHLD</code>信号，在信号处理函数中调用<code>wait</code>进行处理僵尸进程。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;signal.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">sig_child</span> <span class="params">( <span class="keyword">int</span> signo )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">pid_t</span> pid;</span><br><span class="line">    signal ( SIGCHLD, sig_child ); <span class="comment">/* 创建捕捉子进程退出信号 */</span></span><br><span class="line">    pid = fork();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( pid &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">        perror ( <span class="string">"fork error:"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> ( pid == <span class="number">0</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"I am child process,pid id %d.I am exiting.\n"</span>, getpid() );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"I am father process.I will sleep two seconds\n"</span> );</span><br><span class="line">    sleep ( <span class="number">2</span> ); <span class="comment">/* 等待子进程先退出 */</span></span><br><span class="line">    system ( <span class="string">"ps -o pid,ppid,state,tty,command"</span> ); <span class="comment">/* 输出进程信息 */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"father process is exiting.\n"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">sig_child</span> <span class="params">( <span class="keyword">int</span> signo )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">pid_t</span> pid;</span><br><span class="line">    <span class="keyword">int</span> stat;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( ( pid = waitpid ( <span class="number">-1</span>, &amp;stat, WNOHANG ) ) &gt; <span class="number">0</span> ) &#123; <span class="comment">/* 处理僵尸进程 */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"child %d terminated.\n"</span>, pid );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;2. <code>fork</code>两次：<code>Unix环境高级编程</code>的<code>8.6</code>节说的非常详细，原理是将子进程成为孤儿进程，从而其父进程变为<code>init</code>进程，通过<code>init</code>进程可以处理僵尸进程。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">pid_t</span>  pid;</span><br><span class="line">    pid = fork(); <span class="comment">/* 创建第一个子进程 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( pid &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">        perror ( <span class="string">"fork error:"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> ( pid == <span class="number">0</span> ) &#123; <span class="comment">/* 第一个子进程 */</span></span><br><span class="line">        <span class="comment">/* 子进程再创建子进程 */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"I am the first child process.pid:%d\tppid:%d\n"</span>, getpid(), getppid() );</span><br><span class="line">        pid = fork();</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( pid &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">            perror ( <span class="string">"fork error:"</span> );</span><br><span class="line">            <span class="built_in">exit</span> ( <span class="number">1</span> );</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> ( pid &gt; <span class="number">0</span> ) &#123; <span class="comment">/* 第一个子进程退出 */</span></span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">"first procee is exited.\n"</span> );</span><br><span class="line">            <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 第二个子进程睡眠3s保证第一个子进程退出，这样第二个子进程的父亲就是init进程 */</span></span><br><span class="line">        sleep ( <span class="number">3</span> );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"I am the second child process.pid: %d\tppid:%d\n"</span>, getpid(), getppid() );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( waitpid ( pid, <span class="literal">NULL</span>, <span class="number">0</span> ) != pid ) &#123; <span class="comment">/* 父进程处理第一个子进程退出 */</span></span><br><span class="line">        perror ( <span class="string">"waitepid error:"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/16/Linux系统编程/孤儿进程与僵尸进程/4.png"></p>
+<hr>
+<h3 id="僵尸进程概念"><a href="#僵尸进程概念" class="headerlink" title="僵尸进程概念"></a>僵尸进程概念</h3><p>&emsp;&emsp;僵尸进程(<code>Zombie Process</code>)：就是已经结束了的进程，但是没有从进程表中删除。太多了会导致进程表里面条目满了，进而导致系统崩溃，倒是不占用其他系统资源。<br>&emsp;&emsp;在<code>Linux</code>进程的状态中，僵尸进程是非常特殊的一种，它已经放弃了几乎所有内存空间，没有任何可执行代码，也不能被调度，仅仅在进程列表中保留一个位置，记载该进程的退出状态等信息供其他进程收集。除此之外，僵尸进程不再占有任何内存空间。它需要它的父进程来为它收尸，如果他的父进程没安装<code>SIGCHLD</code>信号处理函数调用<code>wait</code>或<code>waitpid</code>等待子进程结束，又没有显式忽略该信号，那么它就一直保持僵尸状态。如果这时父进程结束了，那么<code>init</code>进程自动会接手这个子进程，为它收尸，它还是能被清除的。但是如果如果父进程是一个循环，不会结束，那么子进程就会一直保持僵尸状态，这就是为什么系统中有时会有很多的僵尸进程。</p>
+<h3 id="僵尸进程产生的原因"><a href="#僵尸进程产生的原因" class="headerlink" title="僵尸进程产生的原因"></a>僵尸进程产生的原因</h3><p>&emsp;&emsp;每个<code>Linux</code>进程在进程表里都有一个进入点(<code>entry</code>)，核心程序执行该进程时使用到的一切信息都存储在进入点。当用<code>ps</code>命令察看系统中的进程信息时，看到的就是进程表中的相关数据。当用<code>fork</code>系统调用建立一个新的进程后，核心进程就会在进程表中给这个新进程分配一个进入点，然后将相关信息存储在该进入点所对应的进程表内。这些信息中有一项是其父进程的识别码。当这个进程走完了自己的生命周期后，它会执行<code>exit</code>系统调用，此时原来进程表中的数据会被该进程的退出码(<code>exit code</code>)、执行时所用的<code>CPU</code>时间等数据所取代，这些数据会一直保留到系统将它传递给它的父进程为止。由此可见，僵尸进程的出现时间是在子进程终止后，但是父进程尚未读取这些数据之前。</p>
+<h3 id="僵尸进程的解决方法"><a href="#僵尸进程的解决方法" class="headerlink" title="僵尸进程的解决方法"></a>僵尸进程的解决方法</h3><ul>
+<li>父进程通过<code>wait</code>和<code>waitpid</code>等函数等待子进程结束，这会导致父进程挂起。执行<code>wait</code>或<code>waitpid</code>系统调用，则子进程在终止后会立即把它在进程表中的数据返回给父进程，此时系统会立即删除该进入点。在这种情形下就不会产生僵尸进程。</li>
+<li>如果父进程很忙，那么可以用<code>signal</code>函数为<code>SIGCHLD</code>安装<code>handler</code>。在子进程结束后，父进程会收到该信号，可以在<code>handler</code>中调用<code>wait</code>回收。</li>
+<li>如果父进程不关心子进程什么时候结束，那么可以用<code>signal(SIGCLD, SIG_IGN)</code>或<code>signal(SIGCHLD, SIG_IGN)</code>通知内核，自己对子进程的结束不感兴趣。那么子进程结束后，内核会回收子进程的资源，并不再给父进程发送信号。</li>
+<li><code>fork</code>两次，父进程<code>fork</code>一个子进程，然后继续工作。子进程<code>fork</code>一个孙进程后退出，那么孙进程会被<code>init</code>接管，孙进程结束后，<code>init</code>会回收它的资源。不过子进程的回收还要自己来做。</li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/14/数学和物理/数学符号/" rel="next" title="数学符号">
+                <i class="fa fa-chevron-left"></i> 数学符号
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/16/Linux系统编程/fork和vfork函数/" rel="prev" title="fork和vfork函数">
+                fork和vfork函数 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#基本概念"><span class="nav-number">1.</span> <span class="nav-text">基本概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#问题及危害"><span class="nav-number">2.</span> <span class="nav-text">问题及危害</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#孤儿进程和僵尸进程测试"><span class="nav-number">3.</span> <span class="nav-text">孤儿进程和僵尸进程测试</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#僵尸进程解决办法"><span class="nav-number">4.</span> <span class="nav-text">僵尸进程解决办法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#僵尸进程概念"><span class="nav-number">5.</span> <span class="nav-text">僵尸进程概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#僵尸进程产生的原因"><span class="nav-number">6.</span> <span class="nav-text">僵尸进程产生的原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#僵尸进程的解决方法"><span class="nav-number">7.</span> <span class="nav-text">僵尸进程的解决方法</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

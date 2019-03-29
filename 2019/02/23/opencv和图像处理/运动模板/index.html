@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;运动模板是一种有效的跟踪普通运动的方法，尤其应用在姿态识别中。运动模板方法首先需要的是知道物体的轮廓，而轮廓的获取可以有很多的方法，关于轮廓的获取方法在此不做多余的叙述。&amp;emsp;&amp;emsp;运动模板程序的大致编程思路应该是是这样的：获得当前帧与上一帧的差，然后对差图像进行二值化；更新运动历史图像；然后计算运动历史图像的梯度方向，并将整个运动分割为独立的运动部分，在用一个">
+<meta property="og:type" content="article">
+<meta property="og:title" content="运动模板">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/运动模板/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;运动模板是一种有效的跟踪普通运动的方法，尤其应用在姿态识别中。运动模板方法首先需要的是知道物体的轮廓，而轮廓的获取可以有很多的方法，关于轮廓的获取方法在此不做多余的叙述。&amp;emsp;&amp;emsp;运动模板程序的大致编程思路应该是是这样的：获得当前帧与上一帧的差，然后对差图像进行二值化；更新运动历史图像；然后计算运动历史图像的梯度方向，并将整个运动分割为独立的运动部分，在用一个">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/运动模板/1.png">
+<meta property="og:updated_time" content="2019-02-23T11:37:10.416Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="运动模板">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;运动模板是一种有效的跟踪普通运动的方法，尤其应用在姿态识别中。运动模板方法首先需要的是知道物体的轮廓，而轮廓的获取可以有很多的方法，关于轮廓的获取方法在此不做多余的叙述。&amp;emsp;&amp;emsp;运动模板程序的大致编程思路应该是是这样的：获得当前帧与上一帧的差，然后对差图像进行二值化；更新运动历史图像；然后计算运动历史图像的梯度方向，并将整个运动分割为独立的运动部分，在用一个">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/运动模板/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/运动模板/">
+
+
+
+
+
+  <title>运动模板 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/运动模板/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">运动模板</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-23T20:26:52+08:00">
+                2019-02-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;运动模板是一种有效的跟踪普通运动的方法，尤其应用在姿态识别中。运动模板方法首先需要的是知道物体的轮廓，而轮廓的获取可以有很多的方法，关于轮廓的获取方法在此不做多余的叙述。<br>&emsp;&emsp;运动模板程序的大致编程思路应该是是这样的：获得当前帧与上一帧的差，然后对差图像进行二值化；更新运动历史图像；然后计算运动历史图像的梯度方向，并将整个运动分割为独立的运动部分，在用一个结构序列标记每一个运动分割，最后计算出选择区域的全局运动方向，从而获得运动目标的质心位置与运动方向。<br>&emsp;&emsp;<code>opencv</code>中完成运动模板构建的函数是<code>cvUpdateMotionHistory</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvUpdateMotionHistory</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *silhouette, <span class="comment">/* 非0像素代表前景物体的最新的分割轮廓 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    CvArr *mhi, <span class="comment">/* 运动模板，也即运动历史图像 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> timestamp, <span class="comment">/* 当前系统时间 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> duration <span class="comment">/* 运动跟踪的最大持续时间 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>在<code>cvUpdateMotionHistory</code>中，所有图像都是单通道图像，图像<code>silhouette</code>是一幅单字节图像，其中非零像素代表前景物体的分割轮廓。图像<code>mhi</code>是一幅浮点值图像，代表运动模板(也就是运动历史图像)。<code>timestamp</code>是当前系统时间，以毫秒为单位。<code>mhi</code>中任何比<code>timestamp</code>减去<code>duration</code>的值早(少)的像素将被设置为<code>0</code>。<br>&emsp;&emsp;一旦运动模板记录了不同时间的物体轮廓，就可以用计算<code>mhi</code>图像的梯度来获取全局运动信息。使用如下函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvCalcMotionGradient</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArrs *mhi, <span class="comment">/* 运动历史图像 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    CvArr *mask, <span class="comment">/* 非0值代表此点处的梯度有效 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    CvArr *orientation, <span class="comment">/* 每一点梯度方向的角度 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> delta1,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> delta2, <span class="comment">/* delta1、delta2分别是允许的最小和最大梯度值 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> aperture_size = <span class="number">3</span> <span class="comment">/* 设置梯度算子的宽和高 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>梯度方向求出后，即可以计算全局运动方向，给出如下函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">double</span> <span class="title">cvCalcGlobalOrientation</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="comment">/* 前三个参数都是根据上面两个函数得出来的 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *orientation,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *mask,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *mhi,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> timestamp,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> duration</span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;分割和计算局部运动的函数是<code>cvSegmentMotion</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">CvSeq *<span class="title">cvSegmentMotion</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *mhi, CvArr *seg_mask, CvMemStorage *storage,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> timestamp, <span class="keyword">double</span> seg_thresh)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>示例代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/video/tracking.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/highgui/highgui.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/imgproc/imgproc_c.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctype.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 不同的跟踪参数 */</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">double</span> MHI_DURATION = <span class="number">0.5</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">double</span> MAX_TIME_DELTA = <span class="number">0.5</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">double</span> MIN_TIME_DELTA = <span class="number">0.05</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> N = <span class="number">2</span>; <span class="comment">/* 用于运动检测的循环帧数，与机器速度及FPS设置有关 */</span></span><br><span class="line">IplImage **buf = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">int</span> last = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 临时图像 */</span></span><br><span class="line">IplImage *mhi = <span class="number">0</span>; <span class="comment">/* MHI：运动历史图像 */</span></span><br><span class="line">IplImage *orient = <span class="number">0</span>; <span class="comment">/* 方向 */</span></span><br><span class="line">IplImage *mask = <span class="number">0</span>; <span class="comment">/* 有效的运动掩码 */</span></span><br><span class="line">IplImage *segmask = <span class="number">0</span>; <span class="comment">/* 运动分割映射 */</span></span><br><span class="line">CvMemStorage *storage = <span class="number">0</span>; <span class="comment">/* 临时存储区 */</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* parameters:</span></span><br><span class="line"><span class="comment">  img - input video frame</span></span><br><span class="line"><span class="comment">  dst - resultant motion picture</span></span><br><span class="line"><span class="comment">  args - optional parameters */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">update_mhi</span> <span class="params">( IplImage *img, IplImage *dst, <span class="keyword">int</span> diff_threshold )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">double</span> timestamp = ( <span class="keyword">double</span> ) clock() / CLOCKS_PER_SEC; <span class="comment">/* 获取当前时间，以秒为单位 */</span></span><br><span class="line">    CvSize size = cvSize ( img-&gt;width, img-&gt;height ); <span class="comment">/* 获取当前帧尺寸 */</span></span><br><span class="line">    <span class="keyword">int</span> i, idx1 = last, idx2;</span><br><span class="line">    IplImage *silh;</span><br><span class="line">    CvSeq *seq;</span><br><span class="line">    CvRect comp_rect;</span><br><span class="line">    <span class="keyword">double</span> count;</span><br><span class="line">    <span class="keyword">double</span> angle;</span><br><span class="line">    CvPoint center;</span><br><span class="line">    <span class="keyword">double</span> magnitude;</span><br><span class="line">    CvScalar color;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 开始时为图像分配内存 or 帧尺寸改变时重新分配内存 */</span></span><br><span class="line">    <span class="keyword">if</span> ( !mhi || mhi-&gt;width != size.width || mhi-&gt;height != size.height ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( buf == <span class="number">0</span> ) &#123;</span><br><span class="line">            buf = ( IplImage ** ) <span class="built_in">malloc</span> ( N * <span class="keyword">sizeof</span> ( buf[<span class="number">0</span>] ) );</span><br><span class="line">            <span class="built_in">memset</span> ( buf, <span class="number">0</span>, N * <span class="keyword">sizeof</span> ( buf[<span class="number">0</span>] ) );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; N; i++ ) &#123;</span><br><span class="line">            cvReleaseImage ( &amp;buf[i] );</span><br><span class="line">            buf[i] = cvCreateImage ( size, IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">            cvZero ( buf[i] );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        cvReleaseImage ( &amp;mhi );</span><br><span class="line">        cvReleaseImage ( &amp;orient );</span><br><span class="line">        cvReleaseImage ( &amp;segmask );</span><br><span class="line">        cvReleaseImage ( &amp;mask );</span><br><span class="line">        mhi = cvCreateImage ( size, IPL_DEPTH_32F, <span class="number">1</span> );</span><br><span class="line">        cvZero ( mhi ); <span class="comment">/* clear MHI at the beginning */</span></span><br><span class="line">        orient = cvCreateImage ( size, IPL_DEPTH_32F, <span class="number">1</span> );</span><br><span class="line">        segmask = cvCreateImage ( size, IPL_DEPTH_32F, <span class="number">1</span> );</span><br><span class="line">        mask = cvCreateImage ( size, IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    cvCvtColor ( img, buf[last], CV_BGR2GRAY ); <span class="comment">/* RGB帧图像格式转换为gray */</span></span><br><span class="line">    idx2 = ( last + <span class="number">1</span> ) % N; <span class="comment">/* index of (last - (N-1))th frame */</span></span><br><span class="line">    last = idx2;</span><br><span class="line">    silh = buf[idx2];</span><br><span class="line">    <span class="comment">/* 相邻两帧的差 */</span></span><br><span class="line">    cvAbsDiff ( buf[idx1], buf[idx2], silh );</span><br><span class="line">    cvThreshold ( silh, silh, diff_threshold, <span class="number">1</span>, CV_THRESH_BINARY ); <span class="comment">/* 对差图像做二值化 */</span></span><br><span class="line">    cvUpdateMotionHistory ( silh, mhi, timestamp, MHI_DURATION ); <span class="comment">/* 更新运动历史 */</span></span><br><span class="line">    <span class="comment">/* convert MHI to blue 8u image</span></span><br><span class="line"><span class="comment">       cvCvtScale的第四个参数 shift = (MHI_DURATION - timestamp) * 255. / MHI_DURATION</span></span><br><span class="line"><span class="comment">       控制帧差的消失速率 */</span></span><br><span class="line">    cvCvtScale ( mhi, mask, <span class="number">255.</span> / MHI_DURATION, ( MHI_DURATION - timestamp ) * <span class="number">255.</span> / MHI_DURATION );</span><br><span class="line">    cvZero ( dst );</span><br><span class="line">    cvMerge ( mask, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, dst );</span><br><span class="line">    <span class="comment">/* B, G, R, 0 convert to BLUE image</span></span><br><span class="line"><span class="comment">       计算运动的梯度方向以及正确的方向掩码</span></span><br><span class="line"><span class="comment">       Filter size = 3 */</span></span><br><span class="line">    cvCalcMotionGradient ( mhi, mask, orient, MAX_TIME_DELTA, MIN_TIME_DELTA, <span class="number">3</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !storage ) &#123;</span><br><span class="line">        storage = cvCreateMemStorage ( <span class="number">0</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        cvClearMemStorage ( storage );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 运动分割：获得运动部件的连续序列 */</span></span><br><span class="line">    seq = cvSegmentMotion ( mhi, segmask, storage, timestamp, MAX_TIME_DELTA );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">-1</span>; i &lt; seq-&gt;total; i++ ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( i &lt; <span class="number">0</span> ) &#123; <span class="comment">/* 对整幅图像操作 */</span></span><br><span class="line">            comp_rect = cvRect ( <span class="number">0</span>, <span class="number">0</span>, size.width, size.height );</span><br><span class="line">            color = CV_RGB ( <span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span> );</span><br><span class="line">            magnitude = <span class="number">100</span>; <span class="comment">/* 画线长度以及圆半径的大小控制 */</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123; <span class="comment">/* 第i个运动组件 */</span></span><br><span class="line">            comp_rect = ( ( CvConnectedComp * ) cvGetSeqElem ( seq, i ) )-&gt;rect;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( comp_rect.width + comp_rect.height &lt; <span class="number">100</span> ) &#123; <span class="comment">/* 去掉小的部分 */</span></span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            color = CV_RGB ( <span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span> );</span><br><span class="line">            magnitude = <span class="number">30</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 选择组件ROI */</span></span><br><span class="line">        cvSetImageROI ( silh, comp_rect );</span><br><span class="line">        cvSetImageROI ( mhi, comp_rect );</span><br><span class="line">        cvSetImageROI ( orient, comp_rect );</span><br><span class="line">        cvSetImageROI ( mask, comp_rect );</span><br><span class="line">        <span class="comment">/* 在选择的区域内，计算运动方向 */</span></span><br><span class="line">        angle = cvCalcGlobalOrientation ( orient, mask, mhi, timestamp,  MHI_DURATION );</span><br><span class="line">        angle = <span class="number">360.0</span> - angle; <span class="comment">/* adjust for images with top-left origin */</span></span><br><span class="line">        <span class="comment">/* 在轮廓内计算点数；Norm(L1) = 所有像素值的和 */</span></span><br><span class="line">        count = cvNorm ( silh, <span class="number">0</span>, CV_L1, <span class="number">0</span> );</span><br><span class="line">        cvResetImageROI ( mhi );</span><br><span class="line">        cvResetImageROI ( orient );</span><br><span class="line">        cvResetImageROI ( mask );</span><br><span class="line">        cvResetImageROI ( silh );</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 检查小运动的情形 */</span></span><br><span class="line">        <span class="keyword">if</span> ( count &lt; comp_rect.width * comp_rect.height * <span class="number">0.05</span> ) &#123; <span class="comment">/* 像素的5% */</span></span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 画一个带箭头的记录以表示方向 */</span></span><br><span class="line">        center = cvPoint ( ( comp_rect.x + comp_rect.width / <span class="number">2</span> ), ( comp_rect.y + comp_rect.height / <span class="number">2</span> ) );</span><br><span class="line">        cvCircle ( dst, center, cvRound ( magnitude * <span class="number">1.2</span> ), color, <span class="number">3</span>, CV_AA, <span class="number">0</span> );</span><br><span class="line">        cvLine (</span><br><span class="line">            dst, center,</span><br><span class="line">            cvPoint (</span><br><span class="line">                cvRound ( center.x + magnitude * <span class="built_in">cos</span> ( angle * CV_PI / <span class="number">180</span> ) ),</span><br><span class="line">                cvRound ( center.y - magnitude * <span class="built_in">sin</span> ( angle * CV_PI / <span class="number">180</span> ) )</span><br><span class="line">            ),</span><br><span class="line">            color, <span class="number">3</span>, CV_AA, <span class="number">0</span></span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    IplImage *motion = <span class="number">0</span>;</span><br><span class="line">    CvCapture *capture = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( argc == <span class="number">1</span> || ( argc == <span class="number">2</span> &amp;&amp; <span class="built_in">strlen</span> ( argv[<span class="number">1</span>] ) == <span class="number">1</span> &amp;&amp; <span class="built_in">isdigit</span> ( argv[<span class="number">1</span>][<span class="number">0</span>] ) ) ) &#123;</span><br><span class="line">        capture = cvCaptureFromCAM ( argc == <span class="number">2</span> ? argv[<span class="number">1</span>][<span class="number">0</span>] - <span class="string">'0'</span> : <span class="number">0</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( argc == <span class="number">2</span> ) &#123;</span><br><span class="line">        capture = cvCaptureFromAVI ( argv[<span class="number">1</span>] );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( capture ) &#123;</span><br><span class="line">        cvNamedWindow ( <span class="string">"Motion"</span>, <span class="number">1</span> );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">            IplImage *image = cvQueryFrame ( capture );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( !image ) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( !motion ) &#123;</span><br><span class="line">                motion = cvCreateImage ( cvSize ( image-&gt;width, image-&gt;height ), <span class="number">8</span>, <span class="number">3</span> );</span><br><span class="line">                cvZero ( motion );</span><br><span class="line">                motion-&gt;origin = image-&gt;origin;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            update_mhi ( image, motion, <span class="number">30</span> );</span><br><span class="line">            cvShowImage ( <span class="string">"Motion"</span>, motion );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( cvWaitKey ( <span class="number">1</span> ) &gt;= <span class="number">0</span> ) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        cvReleaseCapture ( &amp;capture );</span><br><span class="line">        cvDestroyWindow ( <span class="string">"Motion"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/02/23/opencv和图像处理/运动模板/1.png" height="249" width="316"></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/23/opencv和图像处理/imdecode和imencode/" rel="next" title="imdecode和imencode">
+                <i class="fa fa-chevron-left"></i> imdecode和imencode
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/24/opencv和图像处理/Condensation算法/" rel="prev" title="Condensation算法">
+                Condensation算法 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

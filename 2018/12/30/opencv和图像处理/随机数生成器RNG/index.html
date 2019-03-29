@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;C语言和C++中产生随机数的方法(rand和srand等)在OpenCV中仍可以用。此外，OpenCV还特地编写了C++的随机数类RNG，C的随机数类CvRNG，以及一些相关的函数。注意如下说明：  关键字前带cv的都是C语言里的写法，不带cv的是C++里的写法。比如CvRNG和RNG，其本质都是一样的。 计算机产生的随机数都是伪随机数，是根据种子seed和特定算法计算出来">
+<meta property="og:type" content="article">
+<meta property="og:title" content="随机数生成器RNG">
+<meta property="og:url" content="http://fukangwei.gitee.io/2018/12/30/opencv和图像处理/随机数生成器RNG/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;C语言和C++中产生随机数的方法(rand和srand等)在OpenCV中仍可以用。此外，OpenCV还特地编写了C++的随机数类RNG，C的随机数类CvRNG，以及一些相关的函数。注意如下说明：  关键字前带cv的都是C语言里的写法，不带cv的是C++里的写法。比如CvRNG和RNG，其本质都是一样的。 计算机产生的随机数都是伪随机数，是根据种子seed和特定算法计算出来">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-01-18T05:43:51.328Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="随机数生成器RNG">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;C语言和C++中产生随机数的方法(rand和srand等)在OpenCV中仍可以用。此外，OpenCV还特地编写了C++的随机数类RNG，C的随机数类CvRNG，以及一些相关的函数。注意如下说明：  关键字前带cv的都是C语言里的写法，不带cv的是C++里的写法。比如CvRNG和RNG，其本质都是一样的。 计算机产生的随机数都是伪随机数，是根据种子seed和特定算法计算出来">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2018/12/30/opencv和图像处理/随机数生成器RNG/">
+
+
+
+
+
+  <title>随机数生成器RNG | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/opencv和图像处理/随机数生成器RNG/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">随机数生成器RNG</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T18:43:42+08:00">
+                2018-12-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/opencv和图像处理/" itemprop="url" rel="index">
+                    <span itemprop="name">opencv和图像处理</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;<code>C</code>语言和<code>C++</code>中产生随机数的方法(<code>rand</code>和<code>srand</code>等)在<code>OpenCV</code>中仍可以用。此外，<code>OpenCV</code>还特地编写了<code>C++</code>的随机数类<code>RNG</code>，<code>C</code>的随机数类<code>CvRNG</code>，以及一些相关的函数。注意如下说明：</p>
+<ul>
+<li>关键字前带<code>cv</code>的都是<code>C</code>语言里的写法，不带<code>cv</code>的是<code>C++</code>里的写法。比如<code>CvRNG</code>和<code>RNG</code>，其本质都是一样的。</li>
+<li>计算机产生的随机数都是伪随机数，是根据种子<code>seed</code>和特定算法计算出来的。所以只要种子一定，算法一定，产生的随机数是相同的。</li>
+<li>要想产生完全重复的随机数，可以用系统时间做种子。在<code>OpenCV</code>中使用<code>GetTickCount</code>，<code>C</code>语言中用<code>time</code>。</li>
+</ul>
+<h3 id="RNG"><a href="#RNG" class="headerlink" title="RNG"></a>RNG</h3><p>&emsp;&emsp;<code>RNG</code>类是<code>opencv</code>里<code>C++</code>的随机数产生器。它可产生一个<code>64</code>位的<code>int</code>随机数。目前可按均匀分布和高斯分布产生随机数。随机数的产生采用的是<code>Multiply-With-Carry</code>算法和<code>Ziggurat</code>算法。<br>&emsp;&emsp;<code>RNG</code>可以产生如下随机数：</p>
+<ul>
+<li><code>RNG(int seed)</code>：使用种子seed产生一个64位随机整数，默认<code>-1</code>。</li>
+<li><code>RNG::uniform()</code>：产生一个均匀分布的随机数。</li>
+<li><code>RNG::gaussian()</code>：产生一个高斯分布的随机数。</li>
+<li><code>RNG::uniform(a,b)</code>：返回一个<code>[a, b)</code>范围的均匀分布的随机数，a和b的数据类型要一致，而且必须是<code>int</code>、<code>float</code>、<code>double</code>中的一种，默认是<code>int</code>。</li>
+<li><code>RNG::gaussian(σ)</code>：返回一个均值为<code>0</code>，标准差为<code>σ</code>的随机数。如果要产生均值为<code>λ</code>，标准差为<code>σ</code>的随机数，可以使用<code>λ + RNG::gaussian(σ)</code>。</li>
+</ul>
+<p>&emsp;&emsp;代码示例如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">RNG rng; <span class="comment">/* 创建RNG对象，使用默认种子“-1” */</span></span><br><span class="line"><span class="keyword">int</span> N1 = rng; <span class="comment">/* 产生64位整数 */</span></span><br><span class="line"><span class="comment">/* 总是得到double类型数据0.000000，因为会调用uniform(int, int)，只会取整数，所以只产生0 */</span></span><br><span class="line"><span class="keyword">double</span> N1a = rng.uniform ( <span class="number">0</span>, <span class="number">1</span> );</span><br><span class="line"><span class="comment">/* 产生[0,1)范围内均匀分布的double类型数据 */</span></span><br><span class="line"><span class="keyword">double</span> N1b = rng.uniform ( ( <span class="keyword">double</span> ) <span class="number">0</span>, ( <span class="keyword">double</span> ) <span class="number">1</span> );</span><br><span class="line"><span class="comment">/* 产生[0,1)范围内均匀分布的float类型数据，注意被自动转换为double了 */</span></span><br><span class="line"><span class="keyword">double</span> N1c = rng.uniform ( <span class="number">0.f</span>, <span class="number">1.f</span> );</span><br><span class="line"><span class="comment">/* 产生[0,1)范围内均匀分布的double类型数据 */</span></span><br><span class="line"><span class="keyword">double</span> N1d = rng.uniform ( <span class="number">0.</span>, <span class="number">1.</span> );</span><br><span class="line"><span class="comment">/* 产生符合均值为0，标准差为2的高斯分布的随机数 */</span></span><br><span class="line"><span class="keyword">double</span> N1g = rng.gaussian ( <span class="number">2</span> );</span><br></pre></td></tr></table></figure>
+<p>其实<code>rng</code>既是一个<code>RNG</code>对象，也是一个随机整数。</p>
+<h3 id="返回下一个随机数"><a href="#返回下一个随机数" class="headerlink" title="返回下一个随机数"></a>返回下一个随机数</h3><p>&emsp;&emsp;上面一次只能返回一个随机数，实际上系统已经生成一个随机数组。如果我们要连续获得随机数，没有必要重新定义一个<code>RNG</code>类，只需要取出随机数组的下一个随机数即可。</p>
+<ul>
+<li><code>RNG::next</code>：返回下一个<code>64</code>位随机整数。</li>
+<li><code>RNG::operator</code>：返回下一个指定类型的随机数。</li>
+</ul>
+<p>&emsp;&emsp;代码示例如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">RNG rng;</span><br><span class="line"><span class="keyword">int</span> N2 = rng.next(); <span class="comment">/* 返回下一个随机整数，即“N1.next();” */</span></span><br><span class="line"><span class="comment">/* 返回下一个指定类型的随机数 */</span></span><br><span class="line"><span class="keyword">int</span> N2a = rng.<span class="keyword">operator</span> uchar(); <span class="comment">/* 返回下一个无符号字符数 */</span></span><br><span class="line"><span class="keyword">int</span> N2b = rng.<span class="keyword">operator</span> schar(); <span class="comment">/* 返回下一个有符号字符数 */</span></span><br><span class="line"><span class="keyword">int</span> N2c = rng.<span class="keyword">operator</span> ushort(); <span class="comment">/* 返回下一个无符号短型 */</span></span><br><span class="line"><span class="keyword">int</span> N2d = rng.<span class="keyword">operator</span> <span class="keyword">short</span> <span class="keyword">int</span>(); <span class="comment">/* 返回下一个短整型数 */</span></span><br><span class="line"><span class="keyword">int</span> N2e = rng.<span class="keyword">operator</span> <span class="keyword">int</span>(); <span class="comment">/* 返回下一个整型数 */</span></span><br><span class="line"><span class="keyword">int</span> N2f = rng.<span class="keyword">operator</span> <span class="keyword">unsigned</span> <span class="keyword">int</span>(); <span class="comment">/* 返回下一个无符号整型数 */</span></span><br><span class="line"><span class="keyword">int</span> N2g = rng.<span class="keyword">operator</span> <span class="keyword">float</span>(); <span class="comment">/* 返回下一个浮点数 */</span></span><br><span class="line"><span class="keyword">int</span> N2h = rng.<span class="keyword">operator</span> <span class="keyword">double</span>(); <span class="comment">/* 返回下一个double型数 */</span></span><br><span class="line"><span class="keyword">int</span> N2i = rng.<span class="keyword">operator</span> ()(); <span class="comment">/* 和“rng.next()”等价 */</span></span><br><span class="line"><span class="keyword">int</span> N2j = rng.<span class="keyword">operator</span> ()(<span class="number">100</span>); <span class="comment">/* 返回[0, 100)范围内的随机数 */</span></span><br></pre></td></tr></table></figure>
+<h3 id="用随机数填充矩阵RNG-fill"><a href="#用随机数填充矩阵RNG-fill" class="headerlink" title="用随机数填充矩阵RNG::fill"></a>用随机数填充矩阵RNG::fill</h3><p>&emsp;&emsp;函数原型如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">fill</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    InputOutputArray mat, <span class="keyword">int</span> distType, InputArray a,</span></span></span><br><span class="line"><span class="function"><span class="params">    InputArray b, <span class="keyword">bool</span> saturateRange = <span class="literal">false</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>mat</code>：输入输出矩阵，最多支持<code>4</code>通道，超过<code>4</code>通道先用<code>reshape</code>改变结构。</li>
+<li><code>distType</code>：<code>UNIFORM</code>或<code>NORMAL</code>，表示均匀分布和高斯分布。</li>
+<li><code>a</code>：如果<code>disType</code>是<code>UNIFORM</code>，则<code>a</code>表示为下界(闭区间)；如果<code>disType</code>是<code>NORMAL</code>，则<code>a</code>表示均值。</li>
+<li><code>b</code>：如果<code>disType</code>是<code>UNIFORM</code>，则<code>b</code>表示为上界(开区间)；如果<code>disType</code>是<code>NORMAL</code>，则<code>b</code>标准差。</li>
+<li><code>saturateRange</code>：只针对均匀分布有效。当为真的时候，会先把产生随机数的范围变换到数据类型的范围，再产生随机数；如果为假，会先产生随机数，再进行截断到数据类型的有效区间。</li>
+</ul>
+<p>&emsp;&emsp;代码如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 产生[1, 1000)均匀分布的int随机数填充fillM */</span></span><br><span class="line">Mat_&lt;<span class="keyword">int</span>&gt; fillM ( <span class="number">3</span>, <span class="number">3</span> );</span><br><span class="line">rng.fill ( fillM, RNG::UNIFORM, <span class="number">1</span>, <span class="number">1000</span> );</span><br><span class="line"><span class="built_in">cout</span> &lt;&lt; <span class="string">"filM = "</span> &lt;&lt; fillM &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function">Mat <span class="title">fillM1</span> <span class="params">( <span class="number">3</span>, <span class="number">3</span>, CV_8U )</span></span>;</span><br><span class="line">rng.fill ( fillM1, RNG::UNIFORM, <span class="number">1</span>, <span class="number">1000</span>, TRUE );</span><br><span class="line"><span class="built_in">cout</span> &lt;&lt; <span class="string">"filM1 = "</span> &lt;&lt; fillM1 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function">Mat <span class="title">fillM2</span> <span class="params">( <span class="number">3</span>, <span class="number">3</span>, CV_8U )</span></span>;</span><br><span class="line">rng.fill ( fillM2, RNG::UNIFORM, <span class="number">1</span>, <span class="number">1000</span>, FALSE );</span><br><span class="line"><span class="built_in">cout</span> &lt;&lt; <span class="string">"filM2 = "</span> &lt;&lt; fillM2 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* fillM1产生的数据都在[0, 255)内，且小于255 */</span></span><br><span class="line"><span class="comment">/* fillM2产生的数据虽然也在同样范围内，但是由于用了截断操作，所以很多数据都是255 */</span></span><br><span class="line"><span class="comment">/* 产生均值为1，标准差为3的随机double数填进fillN */</span></span><br><span class="line">Mat_&lt;<span class="keyword">double</span>&gt;fillN ( <span class="number">3</span>, <span class="number">3</span> );</span><br><span class="line">rng.fill ( fillN, RNG::NORMAL, <span class="number">1</span>, <span class="number">3</span> );</span><br><span class="line"><span class="built_in">cout</span> &lt;&lt; <span class="string">"filN = "</span> &lt;&lt; fillN &lt;&lt; <span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="randu"><a href="#randu" class="headerlink" title="randu"></a>randu</h3><p>&emsp;&emsp;<code>randu</code>的作用是返回均匀分布的随机数，填入数组或矩阵，其函数原型如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">randu ( dst, low, high );</span><br></pre></td></tr></table></figure>
+<p>参数<code>dst</code>是输出数组或矩阵，<code>low</code>是区间下界(闭区间)，<code>high</code>是区间上界(开区间)。代码示例如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Mat_&lt;<span class="keyword">int</span>&gt; randuM ( <span class="number">3</span>, <span class="number">3</span> );</span><br><span class="line">randu ( randuM, Scalar ( <span class="number">0</span> ), Scalar ( <span class="number">255</span> ) );</span><br><span class="line"><span class="built_in">cout</span> &lt;&lt; <span class="string">"randuM = "</span> &lt;&lt; randuM &lt;&lt; <span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+<p>其实<code>randu</code>和<code>rng.fill</code>功能是类似的，只不过<code>rng</code>需要先进行定义。</p>
+<h3 id="randn"><a href="#randn" class="headerlink" title="randn"></a>randn</h3><p>&emsp;&emsp;<code>randn</code>的作用是返回高斯分布的随机数，填入数组或矩阵，其函数原型如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">randn ( dst, mean, stddev );</span><br></pre></td></tr></table></figure>
+<p>参数<code>dst</code>是输出数组或矩阵，<code>mean</code>是均值，<code>stddev</code>是标准差。代码示例如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Mat_&lt;<span class="keyword">int</span>&gt; randnM ( <span class="number">3</span>, <span class="number">3</span> );</span><br><span class="line">randn ( randnM, <span class="number">0</span>, <span class="number">1</span> );</span><br><span class="line"><span class="built_in">cout</span> &lt;&lt; <span class="string">"randnM = "</span> &lt;&lt; randnM &lt;&lt; <span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="randShuffle"><a href="#randShuffle" class="headerlink" title="randShuffle"></a>randShuffle</h3><p>&emsp;&emsp;<code>randShuffle</code>的作用是将原数组(矩阵)打乱，其函数原型如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">randShuffle (InputOutputArray dst, <span class="keyword">double</span> iterFactor = <span class="number">1.</span>, RNG *rng = <span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>dst</code>：输入输出数组(一维)。</li>
+<li><code>iterFactor</code>：决定交换数值的行列的位置的一个系数。</li>
+<li><code>rng</code>：(可选)随机数产生器，它决定了打乱的方法。<code>0</code>表示使用默认的随机数产生器，即<code>seed = -1</code>。</li>
+</ul>
+<p>&emsp;&emsp;代码示例如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Mat randShufM = ( Mat_&lt;<span class="keyword">double</span>&gt; ( <span class="number">2</span>, <span class="number">3</span> ) &lt;&lt; <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span> );</span><br><span class="line">randShuffle ( randShufM, <span class="number">7</span>, <span class="number">0</span> );</span><br><span class="line"><span class="built_in">cout</span> &lt;&lt; <span class="string">"randShufM = "</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; randShufM &lt;&lt; <span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="CvRNG"><a href="#CvRNG" class="headerlink" title="CvRNG"></a>CvRNG</h3><p>&emsp;&emsp;<code>CvRNG</code>的作用是产生<code>64</code>位随机整数，<code>C++</code>版本中的<code>RNG</code>已经代替了<code>CvRNG</code>。</p>
+<h3 id="cvRandArr"><a href="#cvRandArr" class="headerlink" title="cvRandArr"></a>cvRandArr</h3><p>&emsp;&emsp;<code>cvRandArr</code>的作用是用<code>CvRNG</code>产生的随机数填充数组(矩阵)，其函数原型如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvRandArr</span> <span class="params">(CvRNG *rng, CvArr *arr, <span class="keyword">int</span> dist_type, CvScalar param1, CvScalar param2)</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>rng</code>：被<code>cvRNG</code>初始化的<code>RNG</code>状态。</li>
+<li><code>arr</code>：输出数组。</li>
+<li><code>dist_type</code>：<code>CV_RAND_UNI</code>或者<code>CV_RAND_NORMAL</code>。</li>
+<li><code>param1</code>：如果是均匀分布，则它是随机数范围的闭下边界；如果是正态分布，则它是随机数的平均值。</li>
+<li><code>param2</code>：如果是均匀分布，则它是随机数范围的开上边界；如果是正态分布，则它是随机数的标准差。</li>
+</ul>
+<p>&emsp;&emsp;代码示例如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">CvMat *cvM = cvCreateMat ( <span class="number">3</span>, <span class="number">3</span>, CV_16U ); <span class="comment">/* 创建“3 * 3”的矩阵 */</span></span><br><span class="line"><span class="comment">/* 给cvM赋值，范围是[0, 255) */</span></span><br><span class="line">cvRandArr ( &amp;cvRNG, cvM, CV_RAND_UNI, cvScalarAll ( <span class="number">0</span> ), cvScalarAll ( <span class="number">255</span> ) );</span><br><span class="line">​</span><br><span class="line"><span class="built_in">cout</span> &lt;&lt; <span class="string">"cvM = "</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++ ) &#123;</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">3</span>; j++ ) &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; ( <span class="keyword">int</span> ) cvGetReal2D ( cvM, i, j ) &lt;&lt; <span class="string">"   "</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="cvRandInt"><a href="#cvRandInt" class="headerlink" title="cvRandInt"></a>cvRandInt</h3><p>&emsp;&emsp;<code>cvRandInt</code>的函数原型如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="title">cvRandInt</span> <span class="params">( CvRNG *rng )</span></span>;</span><br></pre></td></tr></table></figure>
+<p><code>cvRandInt</code>返回均匀分布的随机<code>32 bit</code>无符号整型值，并更新<code>RNG</code>状态；它和<code>C</code>运行库里面的<code>rand</code>函数十分相似，但是它产生的总是一个<code>32 bit</code>数，而<code>rand</code>返回一个<code>0</code>到<code>RAND_MAX</code>(它是<code>2^16</code>或者<code>2^32</code>，依赖于操作平台)之间的数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> cvInt = cvRandInt ( &amp;cvRNG );</span><br><span class="line"><span class="built_in">cout</span> &lt;&lt; <span class="string">"cvInt = "</span> &lt;&lt; cvInt &lt;&lt; <span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="cvRandReal"><a href="#cvRandReal" class="headerlink" title="cvRandReal"></a>cvRandReal</h3><p>&emsp;&emsp;<code>cvRandReal</code>的函数原型如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">double</span> <span class="title">cvRandReal</span> <span class="params">( CvRNG *rng )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>函数的作用是返回均匀分布的随机浮点数，范围是<code>[0, 1)</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">double</span> cvDouble = cvRandReal ( &amp;cvRNG );</span><br><span class="line"><span class="built_in">cout</span> &lt;&lt; <span class="string">"cvDouble = "</span> &lt;&lt; cvDouble &lt;&lt; <span class="built_in">endl</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h3><p>&emsp;&emsp;示例代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/core/core.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cv.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"highgui.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    RNG rng;</span><br><span class="line">    <span class="keyword">int</span> N1 = rng;</span><br><span class="line">    <span class="keyword">double</span> N1a = rng.uniform ( <span class="number">0</span>, <span class="number">1</span> );</span><br><span class="line">    <span class="keyword">double</span> N1b = rng.uniform ( ( <span class="keyword">double</span> ) <span class="number">0</span>, ( <span class="keyword">double</span> ) <span class="number">1</span> );</span><br><span class="line">    <span class="keyword">double</span> N1c = rng.uniform ( <span class="number">0.f</span>, <span class="number">1.f</span> );</span><br><span class="line">    <span class="keyword">double</span> N1d = rng.uniform ( <span class="number">0.</span>, <span class="number">1.</span> );</span><br><span class="line">    <span class="keyword">double</span> N1g = rng.gaussian ( <span class="number">2</span> );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N1 = "</span> &lt;&lt; N1 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N1a = "</span> &lt;&lt; N1a &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N1b = "</span> &lt;&lt; N1b &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N1c = "</span> &lt;&lt; N1c &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N1d = "</span> &lt;&lt; N1d &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N1g = "</span> &lt;&lt; N1g &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">int</span> N2 = rng.next();</span><br><span class="line">    <span class="keyword">int</span> N2a = rng.<span class="keyword">operator</span> uchar();</span><br><span class="line">    <span class="keyword">int</span> N2b = rng.<span class="keyword">operator</span> schar();</span><br><span class="line">    <span class="keyword">int</span> N2c = rng.<span class="keyword">operator</span> ushort();</span><br><span class="line">    <span class="keyword">int</span> N2d = rng.<span class="keyword">operator</span> <span class="keyword">short</span> <span class="keyword">int</span>();</span><br><span class="line">    <span class="keyword">int</span> N2e = rng.<span class="keyword">operator</span> <span class="keyword">int</span>();</span><br><span class="line">    <span class="keyword">int</span> N2f = rng.<span class="keyword">operator</span> <span class="keyword">unsigned</span> <span class="keyword">int</span>();</span><br><span class="line">    <span class="keyword">int</span> N2g = rng.<span class="keyword">operator</span> <span class="keyword">float</span>();</span><br><span class="line">    <span class="keyword">int</span> N2h = rng.<span class="keyword">operator</span> <span class="keyword">double</span>();</span><br><span class="line">    <span class="keyword">int</span> N2i = rng.<span class="keyword">operator</span> () (); <span class="comment">/* 和“rng.next()”等价 */</span></span><br><span class="line">    <span class="keyword">int</span> N2j = rng.<span class="keyword">operator</span> () ( <span class="number">100</span> ); <span class="comment">/* 返回[0,100)范围内的随机数 */</span></span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N2 = "</span> &lt;&lt; N2 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N2a = "</span> &lt;&lt; N2a &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N2b = "</span> &lt;&lt; N2b &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N2c = "</span> &lt;&lt; N2c &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N2d = "</span> &lt;&lt; N2d &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N2e = "</span> &lt;&lt; N2e &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N2f = "</span> &lt;&lt; N2f &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N2g = "</span> &lt;&lt; N2g &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N2h = "</span> &lt;&lt; N2h &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N2i = "</span> &lt;&lt; N2i &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"N2j = "</span> &lt;&lt; N2j &lt;&lt; <span class="built_in">endl</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    Mat_&lt;<span class="keyword">int</span>&gt;fillM ( <span class="number">3</span>, <span class="number">3</span> );</span><br><span class="line">    rng.fill ( fillM, RNG::UNIFORM, <span class="number">1</span>, <span class="number">1000</span> );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"filM = "</span> &lt;&lt; fillM &lt;&lt; <span class="built_in">endl</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="function">Mat <span class="title">fillM1</span> <span class="params">( <span class="number">3</span>, <span class="number">3</span>, CV_8U )</span></span>;</span><br><span class="line">    rng.fill ( fillM1, RNG::UNIFORM, <span class="number">1</span>, <span class="number">1000</span>, TRUE );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"filM1 = "</span> &lt;&lt; fillM1 &lt;&lt; <span class="built_in">endl</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="function">Mat <span class="title">fillM2</span> <span class="params">( <span class="number">3</span>, <span class="number">3</span>, CV_8U )</span></span>;</span><br><span class="line">    rng.fill ( fillM2, RNG::UNIFORM, <span class="number">1</span>, <span class="number">1000</span>, FALSE );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"filM2 = "</span> &lt;&lt; fillM2 &lt;&lt; <span class="built_in">endl</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    Mat_&lt;<span class="keyword">double</span>&gt;fillN ( <span class="number">3</span>, <span class="number">3</span> );</span><br><span class="line">    rng.fill ( fillN, RNG::NORMAL, <span class="number">1</span>, <span class="number">3</span> );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"filN = "</span> &lt;&lt; fillN &lt;&lt; <span class="built_in">endl</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    Mat_&lt;<span class="keyword">int</span>&gt;randuM ( <span class="number">3</span>, <span class="number">3</span> );</span><br><span class="line">    randu ( randuM, Scalar ( <span class="number">0</span> ), Scalar ( <span class="number">255</span> ) );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"randuM = "</span> &lt;&lt; randuM &lt;&lt; <span class="built_in">endl</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    Mat_&lt;<span class="keyword">int</span>&gt;randnM ( <span class="number">3</span>, <span class="number">3</span> );</span><br><span class="line">    randn ( randnM, <span class="number">0</span>, <span class="number">1</span> );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"randnM = "</span> &lt;&lt; randnM &lt;&lt; <span class="built_in">endl</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    Mat randShufM = ( Mat_&lt;<span class="keyword">double</span>&gt; ( <span class="number">2</span>, <span class="number">3</span> ) &lt;&lt; <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span> );</span><br><span class="line">    randShuffle ( randShufM, <span class="number">7</span>, <span class="number">0</span> );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"randShufM = "</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; randShufM &lt;&lt; <span class="built_in">endl</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    CvRNG cvRNG;</span><br><span class="line">    CvMat *cvM = cvCreateMat ( <span class="number">3</span>, <span class="number">3</span>, CV_16U );</span><br><span class="line">    cvRandArr ( &amp;cvRNG, cvM, CV_RAND_UNI, cvScalarAll ( <span class="number">0</span> ), cvScalarAll ( <span class="number">255</span> ) );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"cvM = "</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++ ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">3</span>; j++ ) &#123;</span><br><span class="line">            <span class="built_in">cout</span> &lt;&lt; ( <span class="keyword">int</span> ) cvGetReal2D ( cvM, i, j ) &lt;&lt; <span class="string">"   "</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">int</span> cvInt = cvRandInt ( &amp;cvRNG );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"cvInt = "</span> &lt;&lt; cvInt &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">double</span> cvDouble = cvRandReal ( &amp;cvRNG );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"cvDouble = "</span> &lt;&lt; cvDouble &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\nrand1 ="</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d "</span>, rand() % <span class="number">10</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\nsrand1 ="</span> );</span><br><span class="line">    srand ( <span class="number">8</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d "</span>, rand() % <span class="number">10</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\nsrand2 ="</span> );</span><br><span class="line">    srand ( ( <span class="keyword">unsigned</span> ) time ( <span class="literal">NULL</span> ) );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d "</span>, rand() % <span class="number">10</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\n"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">N1 = <span class="number">130063606</span></span><br><span class="line">N1a = <span class="number">0</span></span><br><span class="line">N1b = <span class="number">0.901059</span></span><br><span class="line">N1c = <span class="number">0.937133</span></span><br><span class="line">N1d = <span class="number">0.74879</span></span><br><span class="line">N1g = <span class="number">0.610327</span></span><br><span class="line">N2 = <span class="number">-825516420</span></span><br><span class="line">N2a = <span class="number">89</span></span><br><span class="line">N2b = <span class="number">31</span></span><br><span class="line">N2c = <span class="number">63210</span></span><br><span class="line">N2d = <span class="number">-12177</span></span><br><span class="line">N2e = <span class="number">-1825102358</span></span><br><span class="line">N2f = <span class="number">-1445585521</span></span><br><span class="line">N2g = <span class="number">0</span></span><br><span class="line">N2h = <span class="number">0</span></span><br><span class="line">N2i = <span class="number">-1504473379</span></span><br><span class="line">N2j = <span class="number">3</span></span><br><span class="line">​</span><br><span class="line">filM = [<span class="number">206</span>, <span class="number">507</span>, <span class="number">646</span>;</span><br><span class="line">  <span class="number">656</span>, <span class="number">931</span>, <span class="number">673</span>;</span><br><span class="line">  <span class="number">416</span>, <span class="number">656</span>, <span class="number">907</span>]</span><br><span class="line">​</span><br><span class="line">filM1 = [<span class="number">198</span>, <span class="number">192</span>, <span class="number">197</span>;</span><br><span class="line">  <span class="number">41</span>, <span class="number">8</span>, <span class="number">244</span>;</span><br><span class="line">  <span class="number">231</span>, <span class="number">46</span>, <span class="number">7</span>]</span><br><span class="line">​</span><br><span class="line">filM2 = [<span class="number">255</span>, <span class="number">15</span>, <span class="number">255</span>;</span><br><span class="line">  <span class="number">255</span>, <span class="number">77</span>, <span class="number">255</span>;</span><br><span class="line">  <span class="number">175</span>, <span class="number">255</span>, <span class="number">251</span>]</span><br><span class="line">​</span><br><span class="line">filN = [<span class="number">-1.242041528224945</span>, <span class="number">-0.8259760141372681</span>, <span class="number">0.361901268362999</span>;</span><br><span class="line">  <span class="number">4.484118342399597</span>, <span class="number">-4.914619922637939</span>, <span class="number">3.093811929225922</span>;</span><br><span class="line">  <span class="number">0.3505408614873886</span>, <span class="number">1.294025518000126</span>, <span class="number">1.788093090057373</span>]</span><br><span class="line">​</span><br><span class="line">randuM = [<span class="number">91</span>, <span class="number">2</span>, <span class="number">79</span>;</span><br><span class="line">  <span class="number">179</span>, <span class="number">52</span>, <span class="number">205</span>;</span><br><span class="line">  <span class="number">236</span>, <span class="number">8</span>, <span class="number">181</span>]</span><br><span class="line">​</span><br><span class="line">randnM = [<span class="number">-1</span>, <span class="number">1</span>, <span class="number">0</span>;</span><br><span class="line">  <span class="number">1</span>, <span class="number">-2</span>, <span class="number">-2</span>;</span><br><span class="line">  <span class="number">-1</span>, <span class="number">-1</span>, <span class="number">2</span>]</span><br><span class="line">​</span><br><span class="line">randShufM =</span><br><span class="line">[<span class="number">4</span>, <span class="number">2</span>, <span class="number">3</span>;</span><br><span class="line">  <span class="number">1</span>, <span class="number">5</span>, <span class="number">6</span>]</span><br><span class="line">​</span><br><span class="line">cvM = <span class="number">126</span>   <span class="number">39</span>   <span class="number">3</span></span><br><span class="line"><span class="number">136</span>   <span class="number">46</span>   <span class="number">146</span></span><br><span class="line"><span class="number">241</span>   <span class="number">78</span>   <span class="number">132</span></span><br><span class="line">​</span><br><span class="line">cvInt = <span class="number">526971887</span></span><br><span class="line">cvDouble = <span class="number">0.909635</span></span><br><span class="line">​</span><br><span class="line">rand1 =<span class="number">3</span> <span class="number">6</span> <span class="number">7</span> <span class="number">5</span> <span class="number">3</span> <span class="number">5</span> <span class="number">6</span> <span class="number">2</span> <span class="number">9</span> <span class="number">1</span></span><br><span class="line">srand1 =<span class="number">6</span> <span class="number">4</span> <span class="number">2</span> <span class="number">9</span> <span class="number">1</span> <span class="number">3</span> <span class="number">2</span> <span class="number">1</span> <span class="number">7</span> <span class="number">3</span></span><br><span class="line">srand2 =<span class="number">9</span> <span class="number">1</span> <span class="number">1</span> <span class="number">9</span> <span class="number">1</span> <span class="number">7</span> <span class="number">9</span> <span class="number">3</span> <span class="number">7</span> <span class="number">6</span></span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/12/30/opencv和图像处理/cvSeq的用法/" rel="next" title="cvSeq的用法">
+                <i class="fa fa-chevron-left"></i> cvSeq的用法
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/12/30/opencv和图像处理/RGB转灰度算法/" rel="prev" title="RGB转灰度算法">
+                RGB转灰度算法 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#RNG"><span class="nav-number">1.</span> <span class="nav-text">RNG</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#返回下一个随机数"><span class="nav-number">2.</span> <span class="nav-text">返回下一个随机数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#用随机数填充矩阵RNG-fill"><span class="nav-number">3.</span> <span class="nav-text">用随机数填充矩阵RNG::fill</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#randu"><span class="nav-number">4.</span> <span class="nav-text">randu</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#randn"><span class="nav-number">5.</span> <span class="nav-text">randn</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#randShuffle"><span class="nav-number">6.</span> <span class="nav-text">randShuffle</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CvRNG"><span class="nav-number">7.</span> <span class="nav-text">CvRNG</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cvRandArr"><span class="nav-number">8.</span> <span class="nav-text">cvRandArr</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cvRandInt"><span class="nav-number">9.</span> <span class="nav-text">cvRandInt</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cvRandReal"><span class="nav-number">10.</span> <span class="nav-text">cvRandReal</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#代码示例"><span class="nav-number">11.</span> <span class="nav-text">代码示例</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

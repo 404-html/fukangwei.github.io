@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;memdev在驱动中分配一块指定大小的内存空间作为虚拟字符设备，并在驱动中提供只对该内存的读写、控制和定位函数(seek)，以供用户空间的进程能通过Linux系统调用访问该内存。&amp;emsp;&amp;emsp;测试源代码globalmem_test.c如下： 12345678910111213141516171819202122232425262728293031323334353">
+<meta property="og:type" content="article">
+<meta property="og:title" content="memdev虚拟内存设备驱动">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/04/Linux驱动程序/memdev虚拟内存设备驱动/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;memdev在驱动中分配一块指定大小的内存空间作为虚拟字符设备，并在驱动中提供只对该内存的读写、控制和定位函数(seek)，以供用户空间的进程能通过Linux系统调用访问该内存。&amp;emsp;&amp;emsp;测试源代码globalmem_test.c如下： 12345678910111213141516171819202122232425262728293031323334353">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/04/Linux驱动程序/memdev虚拟内存设备驱动/1.jpg">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/04/Linux驱动程序/memdev虚拟内存设备驱动/2.jpg">
+<meta property="og:updated_time" content="2019-02-04T02:21:22.995Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="memdev虚拟内存设备驱动">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;memdev在驱动中分配一块指定大小的内存空间作为虚拟字符设备，并在驱动中提供只对该内存的读写、控制和定位函数(seek)，以供用户空间的进程能通过Linux系统调用访问该内存。&amp;emsp;&amp;emsp;测试源代码globalmem_test.c如下： 12345678910111213141516171819202122232425262728293031323334353">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/02/04/Linux驱动程序/memdev虚拟内存设备驱动/1.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/04/Linux驱动程序/memdev虚拟内存设备驱动/">
+
+
+
+
+
+  <title>memdev虚拟内存设备驱动 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/04/Linux驱动程序/memdev虚拟内存设备驱动/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">memdev虚拟内存设备驱动</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-04T11:10:19+08:00">
+                2019-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;<code>memdev</code>在驱动中分配一块指定大小的内存空间作为虚拟字符设备，并在驱动中提供只对该内存的读写、控制和定位函数(<code>seek</code>)，以供用户空间的进程能通过<code>Linux</code>系统调用访问该内存。<br>&emsp;&emsp;测试源代码<code>globalmem_test.c</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    FILE *fp0 = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">char</span> Buf[<span class="number">4096</span>];</span><br><span class="line">    <span class="keyword">int</span> result;</span><br><span class="line">    <span class="built_in">strcpy</span> ( Buf, <span class="string">"Mem is char dev!"</span> ); <span class="comment">/* 初始化Buf */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"BUF: %s\n"</span>, Buf );</span><br><span class="line">    <span class="comment">/* 打开设备文件 */</span></span><br><span class="line">    fp0 = fopen ( <span class="string">"/dev/globalmem"</span>, <span class="string">"r+"</span> ); <span class="comment">/* 驱动对应的文件名为globalmen，以已读的方式打开 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( fp0 == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        perror ( <span class="string">"Open globalmem Error!\n"</span> );</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    result = fwrite ( Buf, <span class="keyword">sizeof</span> ( Buf ), <span class="number">1</span>, fp0 ); <span class="comment">/* 写入设备 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( result  == <span class="number">-1</span> ) &#123;</span><br><span class="line">        perror ( <span class="string">"fwrite Error!\n"</span> );</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    fseek ( fp0, <span class="number">0</span>, SEEK_SET ); <span class="comment">/* 定位到从文件头开始读，写完后读写指针在文件的尾部 */</span></span><br><span class="line">    <span class="built_in">strcpy</span> ( Buf, <span class="string">"Buf is NULL!"</span> ); <span class="comment">/* 清除Buf */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"BUF: %s\n"</span>, Buf );</span><br><span class="line">    sleep ( <span class="number">1</span> );</span><br><span class="line">    result = fread ( Buf, <span class="keyword">sizeof</span> ( Buf ), <span class="number">1</span>, fp0 ); <span class="comment">/* 从设备中读出数据 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( result  == <span class="number">-1</span> ) &#123;</span><br><span class="line">        perror ( <span class="string">"fread Error!\n"</span> );</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"BUF: %s\n"</span>, Buf );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;驱动源代码<code>globalmem.c</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/mm.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/sched.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/cdev.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/io.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/system.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/uaccess.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/slab.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GLOBALMEM_SIZE 0x1000 <span class="comment">/* 全局内存最大为4K字节 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MEM_CLEAR 0x1         <span class="comment">/* 全局内存清0 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GLOBALMEM_MAJOR 0     <span class="comment">/* 预设的globalmem的主设备号 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> globalmem_major = GLOBALMEM_MAJOR;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">globalmem_dev</span> &#123;</span> <span class="comment">/* globalmem设备结构体 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span> <span class="title">cdev</span>;</span> <span class="comment">/* cdev结构体 */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">char</span> mem[GLOBALMEM_SIZE]; <span class="comment">/* 全局内存 */</span></span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">globalmem_dev</span> *<span class="title">globalmem_devp</span>;</span> <span class="comment">/* 设备结构体指针 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">globalmem_open</span> <span class="params">( struct inode *inode, struct file *filp )</span> </span>&#123; <span class="comment">/* 文件打开函数 */</span></span><br><span class="line">    filp-&gt;private_data = globalmem_devp; <span class="comment">/* 将设备结构体指针赋值给文件私有数据指针 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 文件释放函数 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">globalmem_release</span> <span class="params">( struct inode *inode, struct file *filp )</span> </span>&#123; <span class="comment">/* file结构描述一个正在打开的设备文件 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* ioctl设备控制函数 */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">globalmem_ioctl</span> <span class="params">( struct inode *inodep, struct file *filp, <span class="keyword">unsigned</span> <span class="keyword">int</span> cmd, <span class="keyword">unsigned</span> <span class="keyword">long</span> arg )</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">globalmem_dev</span> *<span class="title">dev</span> = <span class="title">filp</span>-&gt;<span class="title">private_data</span>;</span> <span class="comment">/* 获得设备结构体指针 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">switch</span> ( cmd ) &#123;</span><br><span class="line">        <span class="keyword">case</span> MEM_CLEAR:</span><br><span class="line">            <span class="built_in">memset</span> ( dev-&gt;mem, <span class="number">0</span>, GLOBALMEM_SIZE );</span><br><span class="line">            printk ( KERN_INFO <span class="string">"globalmem is set to zero\n"</span> );</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 读函数 */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> ssize_t <span class="title">globalmem_read</span> <span class="params">( struct file *filp, <span class="keyword">char</span> __user *buf, <span class="keyword">size_t</span> size, <span class="keyword">loff_t</span> *ppos )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> p =  *ppos; <span class="comment">/* file结构中保存的loff_t f_pos:当前读写位置 */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> count = size;</span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">globalmem_dev</span> *<span class="title">dev</span> = <span class="title">filp</span>-&gt;<span class="title">private_data</span>;</span> <span class="comment">/* 获得设备结构体指针 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 分析和获取有效的写长度 */</span></span><br><span class="line">    <span class="keyword">if</span> ( p &gt;= GLOBALMEM_SIZE ) &#123;</span><br><span class="line">        <span class="keyword">return</span> count ?  - ENXIO : <span class="number">0</span>; <span class="comment">/* return ENXIO: No such device or address */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( count &gt; GLOBALMEM_SIZE - p ) &#123;</span><br><span class="line">        count = GLOBALMEM_SIZE - p;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( copy_to_user ( buf, ( <span class="keyword">void</span> * ) ( dev-&gt;mem + p ), count ) ) &#123; <span class="comment">/* 内核空间-&gt;用户空间 */</span></span><br><span class="line">        ret = -EFAULT; <span class="comment">/* Bad address，拷贝不成功 */</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123; <span class="comment">/* 拷贝成功 */</span></span><br><span class="line">        *ppos += count;</span><br><span class="line">        ret = count;</span><br><span class="line">        printk ( KERN_INFO <span class="string">"read %d bytes(s) from position %d\n"</span>, count, p );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 写函数 */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> ssize_t <span class="title">globalmem_write</span> <span class="params">( struct file *filp, <span class="keyword">const</span> <span class="keyword">char</span> __user *buf, <span class="keyword">size_t</span> size, <span class="keyword">loff_t</span> *ppos )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> p =  *ppos;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> count = size;</span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">globalmem_dev</span> *<span class="title">dev</span> = <span class="title">filp</span>-&gt;<span class="title">private_data</span>;</span> <span class="comment">/* 获得设备结构体指针 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 分析和获取有效的写长度 */</span></span><br><span class="line">    <span class="keyword">if</span> ( p &gt;= GLOBALMEM_SIZE ) &#123;</span><br><span class="line">        <span class="keyword">return</span> count ? -ENXIO : <span class="number">0</span>; <span class="comment">/* ENXIO: No such device or addres */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( count &gt; GLOBALMEM_SIZE - p ) &#123;</span><br><span class="line">        count = GLOBALMEM_SIZE - p;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( copy_from_user ( dev-&gt;mem + p, buf, count ) ) &#123; <span class="comment">/* 用户空间-&gt;内核空间 */</span></span><br><span class="line">        ret = -EFAULT; <span class="comment">/* 写失败 */</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123; <span class="comment">/* 写成功 */</span></span><br><span class="line">        *ppos += count;</span><br><span class="line">        ret = count;</span><br><span class="line">        printk ( KERN_INFO <span class="string">"written %d bytes(s) to position %d\n"</span>, count, p );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> loff_t <span class="title">globalmem_llseek</span> <span class="params">( struct file *filp, <span class="keyword">loff_t</span> offset, <span class="keyword">int</span> orig )</span> </span>&#123; <span class="comment">/* seek文件定位函数 */</span></span><br><span class="line">    <span class="keyword">loff_t</span> ret = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">switch</span> ( orig ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>: <span class="comment">/* 相对文件头开始SEEK_SET位置偏移 */</span></span><br><span class="line">            <span class="keyword">if</span> ( offset &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">                ret =  - EINVAL; <span class="comment">/* Invalid argument */</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( ( <span class="keyword">unsigned</span> <span class="keyword">int</span> ) offset &gt; GLOBALMEM_SIZE ) &#123;</span><br><span class="line">                ret =  - EINVAL;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            filp-&gt;f_pos = ( <span class="keyword">unsigned</span> <span class="keyword">int</span> ) offset; <span class="comment">/* file结构的成员“loff_t f_pos”：当前读写位置 */</span></span><br><span class="line">            ret = filp-&gt;f_pos;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">case</span> <span class="number">1</span>: <span class="comment">/* 相对文件当前位置偏移 */</span></span><br><span class="line">            <span class="keyword">if</span> ( ( filp-&gt;f_pos + offset ) &gt; GLOBALMEM_SIZE ) &#123;</span><br><span class="line">                ret =  - EINVAL;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( ( filp-&gt;f_pos + offset ) &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">                ret =  - EINVAL;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            filp-&gt;f_pos += offset;</span><br><span class="line">            ret = filp-&gt;f_pos;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            ret =  - EINVAL;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">globalmem_fops</span> = &#123;</span> <span class="comment">/* 文件操作结构体 */</span></span><br><span class="line">    .owner   = THIS_MODULE,</span><br><span class="line">    .llseek  = globalmem_llseek,</span><br><span class="line">    .read    = globalmem_read,</span><br><span class="line">    .write   = globalmem_write,</span><br><span class="line">    .ioctl   = globalmem_ioctl,</span><br><span class="line">    .open    = globalmem_open,</span><br><span class="line">    .release = globalmem_release,</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">globalmem_setup_cdev</span> <span class="params">( struct globalmem_dev *dev, <span class="keyword">int</span> index )</span> </span>&#123; <span class="comment">/* 初始化并注册cdev */</span></span><br><span class="line">    <span class="keyword">int</span> err, devno = MKDEV ( globalmem_major, index );</span><br><span class="line">    cdev_init ( &amp;dev-&gt;cdev, &amp;globalmem_fops );</span><br><span class="line">    dev-&gt;cdev.owner = THIS_MODULE;</span><br><span class="line">    dev-&gt;cdev.ops = &amp;globalmem_fops;</span><br><span class="line">    err = cdev_add ( &amp;dev-&gt;cdev, devno, <span class="number">1</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( err ) &#123;</span><br><span class="line">        printk ( KERN_NOTICE <span class="string">"Error %d adding LED%d"</span>, err, index );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">globalmem_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 设备驱动模块加载函数 */</span></span><br><span class="line">    <span class="keyword">int</span> result;</span><br><span class="line">    <span class="keyword">dev_t</span> devno = MKDEV ( globalmem_major, <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 申请设备号 */</span></span><br><span class="line">    <span class="keyword">if</span> ( globalmem_major ) &#123;</span><br><span class="line">        result = register_chrdev_region ( devno, <span class="number">1</span>, <span class="string">"globalmem"</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        result = alloc_chrdev_region ( &amp;devno, <span class="number">0</span>, <span class="number">1</span>, <span class="string">"globalmem"</span> ); <span class="comment">/* 动态申请设备号 */</span></span><br><span class="line">        globalmem_major = MAJOR ( devno );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( result &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    globalmem_devp = kmalloc ( <span class="keyword">sizeof</span> ( struct globalmem_dev ), GFP_KERNEL ); <span class="comment">/* 动态申请设备结构体的内存 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !globalmem_devp ) &#123; <span class="comment">/* 申请失败 */</span></span><br><span class="line">        result =  - ENOMEM;</span><br><span class="line">        <span class="keyword">goto</span> fail_malloc;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">memset</span> ( globalmem_devp, <span class="number">0</span>, <span class="keyword">sizeof</span> ( struct globalmem_dev ) );</span><br><span class="line">    globalmem_setup_cdev ( globalmem_devp, <span class="number">0</span> );</span><br><span class="line">    printk ( <span class="string">"globalmem driver installed!\n"</span> );</span><br><span class="line">    printk ( <span class="string">"globalmem_major is:%d\n"</span>, globalmem_major );</span><br><span class="line">    printk ( <span class="string">"the device name is %s\n"</span>, <span class="string">"globalmem"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">fail_malloc:</span><br><span class="line">    unregister_chrdev_region ( devno, <span class="number">1</span> );</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">globalmem_exit</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 模块卸载函数 */</span></span><br><span class="line">    cdev_del ( &amp;globalmem_devp-&gt;cdev ); <span class="comment">/* 注销cdev */</span></span><br><span class="line">    kfree ( globalmem_devp ); <span class="comment">/* 释放设备结构体内存 */</span></span><br><span class="line">    unregister_chrdev_region ( MKDEV ( globalmem_major, <span class="number">0</span> ), <span class="number">1</span> ); <span class="comment">/* 释放设备号 */</span></span><br><span class="line">    printk ( <span class="string">"globalmem driver uninstalled!\n"</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">module_param ( globalmem_major, <span class="keyword">int</span>, S_IRUGO );</span><br><span class="line">​</span><br><span class="line">module_init ( globalmem_init );</span><br><span class="line">module_exit ( globalmem_exit );</span><br><span class="line">MODULE_LICENSE ( <span class="string">"Dual BSD/GPL"</span> );</span><br></pre></td></tr></table></figure>
+<hr>
+<p>&emsp;&emsp;目前有两个设备，它们的主设备号是相同的，但次设备号不同。<br>&emsp;&emsp;测试代码<code>memdev_test.c</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    FILE *fp0 = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">char</span> Buf[<span class="number">4096</span>];</span><br><span class="line">    <span class="keyword">int</span> result;</span><br><span class="line">    <span class="built_in">strcpy</span> ( Buf, <span class="string">"Mem is char dev!"</span> ); <span class="comment">/* 初始化Buf */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"BUF: %s\n"</span>, Buf );</span><br><span class="line">    fp0 = fopen ( <span class="string">"/dev/memdev0"</span>, <span class="string">"r+"</span> ); <span class="comment">/* 文件名为memdev0，其中“0”为此设备号 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( fp0 == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        perror ( <span class="string">"Open Memdev0 Error!\n"</span> );</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    result = fwrite ( Buf, <span class="keyword">sizeof</span> ( Buf ), <span class="number">1</span>, fp0 ); <span class="comment">/* 向设备中写入数据 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( result  == <span class="number">-1</span> ) &#123;</span><br><span class="line">        perror ( <span class="string">"fwrite Error!\n"</span> );</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    fseek ( fp0, <span class="number">0</span>, SEEK_SET ); <span class="comment">/* 重新定位文件位置 */</span></span><br><span class="line">    <span class="built_in">strcpy</span> ( Buf, <span class="string">"Buf is NULL!"</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"BUF: %s\n"</span>, Buf );</span><br><span class="line">    sleep ( <span class="number">1</span> );</span><br><span class="line">    result = fread ( Buf, <span class="keyword">sizeof</span> ( Buf ), <span class="number">1</span>, fp0 ); <span class="comment">/* 从设备中读出数据 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( result  == <span class="number">-1</span> ) &#123;</span><br><span class="line">        perror ( <span class="string">"fread Error!\n"</span> );</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"BUF: %s\n"</span>, Buf );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;驱动代码<code>memdev.h</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _MEMDEV_H_</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _MEMDEV_H_</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MEMDEV_MAJOR</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> MEMDEV_MAJOR 0 <span class="comment">/* 预设的mem的主设备号 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MEMDEV_NR_DEVS</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> MEMDEV_NR_DEVS 2 <span class="comment">/* 设备数 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MEMDEV_SIZE</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> MEMDEV_SIZE 4096</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mem_dev</span> &#123;</span> <span class="comment">/* mem设备描述结构体 */</span></span><br><span class="line">    <span class="keyword">char</span> *data;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> size;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;驱动代码<code>memdev.c</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/mm.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/sched.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/cdev.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/io.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/system.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/uaccess.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/slab.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"memdev.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> mem_major = MEMDEV_MAJOR;</span><br><span class="line">​</span><br><span class="line">module_param ( mem_major, <span class="keyword">int</span>, S_IRUGO );</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mem_dev</span> *<span class="title">mem_devp</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">cdev</span> <span class="title">cdev</span>;</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mem_open</span> <span class="params">( struct inode *inode, struct file *filp )</span> </span>&#123; <span class="comment">/* 文件打开函数 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mem_dev</span> *<span class="title">dev</span>;</span></span><br><span class="line">    <span class="keyword">int</span> num = MINOR ( inode-&gt;i_rdev ); <span class="comment">/* 获取次设备号 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( num &gt;= MEMDEV_NR_DEVS ) &#123;</span><br><span class="line">        <span class="keyword">return</span> -ENODEV; <span class="comment">/* 出错 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    dev = &amp;mem_devp[num];</span><br><span class="line">    <span class="comment">/* 将设备描述结构指针赋值给文件私有数据指针 */</span></span><br><span class="line">    filp-&gt;private_data = dev; <span class="comment">/* 传递的是mem_dev结构数组中其中一个的地址 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mem_release</span> <span class="params">( struct inode *inode, struct file *filp )</span> </span>&#123; <span class="comment">/* 文件释放函数 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 读函数 */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> ssize_t <span class="title">mem_read</span> <span class="params">( struct file *filp, <span class="keyword">char</span> __user *buf, <span class="keyword">size_t</span> size, <span class="keyword">loff_t</span> *ppos )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> p =  *ppos;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> count = size;</span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mem_dev</span> *<span class="title">dev</span> = <span class="title">filp</span>-&gt;<span class="title">private_data</span>;</span> <span class="comment">/* 获得设备结构体指针 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( p &gt;= MEMDEV_SIZE ) &#123; <span class="comment">/* 判断读位置是否有效 */</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( count &gt; MEMDEV_SIZE - p ) &#123;</span><br><span class="line">        count = MEMDEV_SIZE - p;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( copy_to_user ( buf, ( <span class="keyword">void</span> * ) ( dev-&gt;data + p ), count ) ) &#123; <span class="comment">/* 读数据到用户空间 */</span></span><br><span class="line">        ret = -EFAULT;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        *ppos += count;</span><br><span class="line">        ret = count;</span><br><span class="line">        printk ( KERN_INFO <span class="string">"read %d bytes(s) from postion  %d\n"</span>, count, p );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 写函数 */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> ssize_t <span class="title">mem_write</span> <span class="params">( struct file *filp, <span class="keyword">const</span> <span class="keyword">char</span> __user *buf, <span class="keyword">size_t</span> size, <span class="keyword">loff_t</span> *ppos )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> p =  *ppos;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> count = size;</span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mem_dev</span> *<span class="title">dev</span> = <span class="title">filp</span>-&gt;<span class="title">private_data</span>;</span> <span class="comment">/* 获得设备结构体指针 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 分析和获取有效的写长度 */</span></span><br><span class="line">    <span class="keyword">if</span> ( p &gt;= MEMDEV_SIZE ) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( count &gt; MEMDEV_SIZE - p ) &#123;</span><br><span class="line">        count = MEMDEV_SIZE - p;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( copy_from_user ( dev-&gt;data + p, buf, count ) ) &#123; <span class="comment">/* 从用户空间写入数据 */</span></span><br><span class="line">        ret = -EFAULT;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        *ppos += count;</span><br><span class="line">        ret = count;</span><br><span class="line">        printk ( KERN_INFO <span class="string">"written %d bytes(s) to postion %d\n"</span>, count, p );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> loff_t <span class="title">mem_llseek</span> <span class="params">( struct file *filp, <span class="keyword">loff_t</span> offset, <span class="keyword">int</span> whence )</span> </span>&#123; <span class="comment">/* seek文件定位函数 */</span></span><br><span class="line">    <span class="keyword">loff_t</span> newpos;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">switch</span> ( whence ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>: <span class="comment">/* SEEK_SET */</span></span><br><span class="line">            newpos = offset;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">case</span> <span class="number">1</span>: <span class="comment">/* SEEK_CUR */</span></span><br><span class="line">            newpos = filp-&gt;f_pos + offset;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">case</span> <span class="number">2</span>: <span class="comment">/* SEEK_END */</span></span><br><span class="line">            newpos = MEMDEV_SIZE - <span class="number">1</span> + offset;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">default</span>: <span class="comment">/* can't happen */</span></span><br><span class="line">            <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( newpos &lt; <span class="number">0</span> ) || ( newpos &gt; MEMDEV_SIZE ) ) &#123;</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    filp-&gt;f_pos = newpos;</span><br><span class="line">    <span class="keyword">return</span> newpos;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">mem_fops</span> = &#123;</span> <span class="comment">/* 文件操作结构体 */</span></span><br><span class="line">    .owner   = THIS_MODULE,</span><br><span class="line">    .llseek  = mem_llseek,</span><br><span class="line">    .read    = mem_read,</span><br><span class="line">    .write   = mem_write,</span><br><span class="line">    .open    = mem_open,</span><br><span class="line">    .release = mem_release,</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">memdev_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 设备驱动模块加载函数 */</span></span><br><span class="line">    <span class="keyword">int</span> result;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">dev_t</span> devno = MKDEV ( mem_major, <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( mem_major ) &#123;</span><br><span class="line">        result = register_chrdev_region ( devno, MEMDEV_NR_DEVS, <span class="string">"memdev"</span> ); <span class="comment">/* 静态申请设备号 */</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123; <span class="comment">/* 动态分配设备号 */</span></span><br><span class="line">        result = alloc_chrdev_region ( &amp;devno, <span class="number">0</span>, MEMDEV_NR_DEVS, <span class="string">"memdev"</span> );</span><br><span class="line">        mem_major = MAJOR ( devno );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( result &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    cdev_init ( &amp;cdev, &amp;mem_fops ); <span class="comment">/* 初始化cdev结构 */</span></span><br><span class="line">    cdev.owner = THIS_MODULE;</span><br><span class="line">    cdev.ops = &amp;mem_fops;</span><br><span class="line">    cdev_add ( &amp;cdev, MKDEV ( mem_major, <span class="number">0</span> ), MEMDEV_NR_DEVS ); <span class="comment">/* 注册字符设备 */</span></span><br><span class="line">    mem_devp = kmalloc ( MEMDEV_NR_DEVS * <span class="keyword">sizeof</span> ( struct mem_dev ), GFP_KERNEL ); <span class="comment">/* 为mem_devp结构对象分配内存 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !mem_devp ) &#123; <span class="comment">/* 申请失败 */</span></span><br><span class="line">        result = -ENOMEM;</span><br><span class="line">        <span class="keyword">goto</span> fail_malloc;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">memset</span> ( mem_devp, <span class="number">0</span>, <span class="keyword">sizeof</span> ( struct mem_dev ) );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; MEMDEV_NR_DEVS; i++ ) &#123;<span class="comment">/* 为设备分配内存 */</span></span><br><span class="line">        mem_devp[i].size = MEMDEV_SIZE;</span><br><span class="line">        mem_devp[i].data = kmalloc ( MEMDEV_SIZE, GFP_KERNEL );</span><br><span class="line">        <span class="built_in">memset</span> ( mem_devp[i].data, <span class="number">0</span>, MEMDEV_SIZE );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    printk ( <span class="string">"memdev driver installed, with major %d\n"</span>, mem_major );</span><br><span class="line">    printk ( <span class="string">"the device name is %s\n"</span>, <span class="string">"memdev"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">fail_malloc:</span><br><span class="line">    unregister_chrdev_region ( devno, <span class="number">1</span> );</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">memdev_exit</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 模块卸载函数 */</span></span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    cdev_del ( &amp;cdev ); <span class="comment">/* 注销设备 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; MEMDEV_NR_DEVS; i++ ) &#123;</span><br><span class="line">        kfree ( mem_devp[i].data );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    kfree ( mem_devp ); <span class="comment">/* 释放设备结构体内存 */</span></span><br><span class="line">    unregister_chrdev_region ( MKDEV ( mem_major, <span class="number">0</span> ), <span class="number">2</span> ); <span class="comment">/* 释放设备号 */</span></span><br><span class="line">    printk ( <span class="string">"memdev driver uninstalled\n"</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">module_init ( memdev_init );</span><br><span class="line">module_exit ( memdev_exit );</span><br><span class="line">MODULE_LICENSE ( <span class="string">"GPL"</span> );</span><br></pre></td></tr></table></figure>
+<p>下面的代码先取得对那个设备进行操作的设备描述结构指针，然后通过<code>struct file</code>结构中的成员<code>private_data</code>进行传递，而其他<code>ioctl</code>成员中的函数都有带<code>struct file</code>参数，这样就很好传递了<code>men_dev</code>结构，便于以后进行各种操作。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mem_dev</span> *<span class="title">dev</span>;</span></span><br><span class="line"><span class="keyword">int</span> num = MINOR ( inode-&gt;i_rdev ); <span class="comment">/* 获取次设备号 */</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( num &gt;= MEMDEV_NR_DEVS ) &#123;</span><br><span class="line">    <span class="keyword">return</span> -ENODEV; <span class="comment">/* 出错 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">dev = &amp;mem_devp[num];</span><br><span class="line"><span class="comment">/* 将设备描述结构指针赋值给文件私有数据指针 */</span></span><br><span class="line">filp-&gt;private_data = dev; <span class="comment">/* 传递的是mem_dev结构数组中其中一个的地址 */</span></span><br></pre></td></tr></table></figure>
+<p><img src="/2019/02/04/Linux驱动程序/memdev虚拟内存设备驱动/1.jpg" height="165" width="226"></p>
+<p><img src="/2019/02/04/Linux驱动程序/memdev虚拟内存设备驱动/2.jpg" height="143" width="216"></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/04/Linux驱动程序/memdev设备驱动_具有等待队列/" rel="next" title="memdev设备驱动_具有等待队列">
+                <i class="fa fa-chevron-left"></i> memdev设备驱动_具有等待队列
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/04/Linux驱动程序/Linux设备控制接口/" rel="prev" title="Linux设备控制接口">
+                Linux设备控制接口 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

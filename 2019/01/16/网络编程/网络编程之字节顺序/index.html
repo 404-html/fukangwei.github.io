@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;字节顺序是指占内存多于一个字节类型的数据在内存中的存放顺序，各个数据类型在内存中的字节长度可以用sizeof(类型关键字)获得。那么字符是如何存放到内存中的呢？&amp;emsp;&amp;emsp;计算机存储字符有两种顺序：高位字节优先和低位字节优先。那如何理解高位字节和低位字节呢？我们来看数值0x1234在内存的存储方式：     地址 地址1 地址2 地址3 地址4     高位字节">
+<meta property="og:type" content="article">
+<meta property="og:title" content="网络编程之字节顺序">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/01/16/网络编程/网络编程之字节顺序/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;字节顺序是指占内存多于一个字节类型的数据在内存中的存放顺序，各个数据类型在内存中的字节长度可以用sizeof(类型关键字)获得。那么字符是如何存放到内存中的呢？&amp;emsp;&amp;emsp;计算机存储字符有两种顺序：高位字节优先和低位字节优先。那如何理解高位字节和低位字节呢？我们来看数值0x1234在内存的存储方式：     地址 地址1 地址2 地址3 地址4     高位字节">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-01-16T13:20:13.355Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="网络编程之字节顺序">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;字节顺序是指占内存多于一个字节类型的数据在内存中的存放顺序，各个数据类型在内存中的字节长度可以用sizeof(类型关键字)获得。那么字符是如何存放到内存中的呢？&amp;emsp;&amp;emsp;计算机存储字符有两种顺序：高位字节优先和低位字节优先。那如何理解高位字节和低位字节呢？我们来看数值0x1234在内存的存储方式：     地址 地址1 地址2 地址3 地址4     高位字节">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/01/16/网络编程/网络编程之字节顺序/">
+
+
+
+
+
+  <title>网络编程之字节顺序 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/16/网络编程/网络编程之字节顺序/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">网络编程之字节顺序</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-16T22:03:57+08:00">
+                2019-01-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;字节顺序是指占内存多于一个字节类型的数据在内存中的存放顺序，各个数据类型在内存中的字节长度可以用<code>sizeof</code>(类型关键字)获得。那么字符是如何存放到内存中的呢？<br>&emsp;&emsp;计算机存储字符有两种顺序：高位字节优先和低位字节优先。那如何理解<code>高位</code>字节和<code>低位</code>字节呢？我们来看数值<code>0x1234</code>在内存的存储方式：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>地址1</th>
+<th>地址2</th>
+<th>地址3</th>
+<th>地址4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>高位字节优先</td>
+<td><code>4</code></td>
+<td><code>3</code></td>
+<td><code>2</code></td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td>低位字节优先</td>
+<td><code>1</code></td>
+<td><code>2</code></td>
+<td><code>3</code></td>
+<td><code>4</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>&emsp;&emsp;由于一个内存地址是<code>1</code>个字节的大小，即地址<code>1</code>、地址<code>2</code>、地址<code>3</code>、地址<code>4</code>的大小都是<code>1</code>个字节。假设数值<code>0x1234</code>中的<code>1</code>、<code>2</code>、<code>3</code>、<code>4</code>字符都占用一个字节的长度，那么就有如下存储顺序：<br>&emsp;&emsp;<code>低位字节优先</code>：假设申请到的地址的编号是从<code>1</code>至<code>4</code>这样编号的，于是地址<code>1</code>就是低位字节，地址<code>4</code>就是高位字节。根据低位字节优先存储的顺序，数值<code>0x1234</code>中的字符<code>1</code>就先进入地址<code>1</code>，然后字符<code>2</code>就进入地址<code>2</code>，依次类推。最后地址<code>4</code>接收最后一个字符<code>4</code>。<br>&emsp;&emsp;<code>高位字节优先</code>：假设申请到的地址编号是从<code>1</code>至<code>4</code>这样编号的。于是地址<code>1</code>是低位字节，地址<code>4</code>是高位字节。高位字节优先就是先存满高位字节再考虑低位字节。数值<code>0x1234</code>中的字符<code>1</code>就先进入地址<code>4</code>，然后字符<code>2</code>就进入地址<code>3</code>，以此类推最后地址1接收最后一个字符<code>4</code>。<br>&emsp;&emsp;一般来说，<code>Internet</code>上的数据使用的是高位字节优先，基于<code>x86</code>的<code>PC</code>机上的数据是低位字节优先。所以使用了基于<code>x86</code>的<code>PC</code>机要通过<code>Internet</code>传输数据，就要将数据转换成高位字节优先的顺序。有时高位字节优先顺序也称为<code>网络字节顺序</code>，低位字节优先顺序也称为<code>主机字节顺序</code>。</p>
+<h3 id="16位的转换函数：ntohs和htons"><a href="#16位的转换函数：ntohs和htons" class="headerlink" title="16位的转换函数：ntohs和htons"></a>16位的转换函数：ntohs和htons</h3><p>&emsp;&emsp;<code>ntohs(network to host short)</code>是将网络字节顺序转换为主机字节顺序，返回值是一个<code>16</code>位的整数，即<code>2</code>个字节长度的整数<code>short int</code>，也可以写作<code>uint16_t</code>；<code>htons(host to network short)</code>是将主机字节顺序转换为网络字节顺序，返回值也是一个<code>16</code>位的整数<code>short int</code>。<br>&emsp;&emsp;在<code>TCP/IP</code>编程时，端口号是一个<code>16</code>位的整数，而<code>http</code>使用的是<code>TCP</code>的<code>80</code>号端口。但是在使用<code>getservbyname</code>函数获取<code>http</code>的端口号时，却得到的是<code>20480</code>，代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netdb.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">servent</span> *<span class="title">server</span> = <span class="title">NULL</span>;</span></span><br><span class="line">    <span class="keyword">char</span> sername[<span class="number">16</span>] = <span class="string">"\0"</span>;</span><br><span class="line">    <span class="keyword">char</span> proname[<span class="number">4</span>] = <span class="string">"\0"</span>;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"请输入服务名称："</span> );</span><br><span class="line">    gets ( sername );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"请输入传输层的协议（TCP或UDP）："</span> );</span><br><span class="line">    gets ( proname );</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 如果能够通过getserbyname函数找到结果，就输出结果，否则报错 */</span></span><br><span class="line">    <span class="keyword">if</span> ( ( server = getservbyname ( sername, proname ) ) != <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"网络服务端口： "</span> );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, server-&gt;s_port );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"该服务不存在\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这是因为使用<code>getservbyname</code>函数从系统中获取到的端口号是网络字节顺序的值。用<code>ntohs</code>函数就可以将其转换成主机字节顺序的值了，需要将第<code>17</code>行的代码改为<code>printf( &quot;%d\n&quot;, ntohs( server-&gt;s_port ) );</code>。</p>
+<h3 id="如何手算主机字节顺序转换为网络字节顺序？"><a href="#如何手算主机字节顺序转换为网络字节顺序？" class="headerlink" title="如何手算主机字节顺序转换为网络字节顺序？"></a>如何手算主机字节顺序转换为网络字节顺序？</h3><p>&emsp;&emsp;假设某<code>16</code>位的整数，主机字节顺序的值是<code>21</code>，那么它的网络字节顺序是多少？解决步骤如下：<br>&emsp;&emsp;1. 将<code>21</code>化成二进制，如果不足<code>16</code>位就在其前面补<code>0</code>，补满<code>16</code>位。<code>21</code>转换成二进制是<code>10101</code>，在它前面补<code>0</code>，补满<code>16</code>位后就得到<code>0000000000010101</code>。<br>&emsp;&emsp;2. 将这个<code>16</code>位二进制字符平分成两段，每段<code>8</code>位，就是把<code>0000000000010101</code>看成<code>00000000_00010101</code>。<br>&emsp;&emsp;3. 颠倒这两段的顺序，然后去掉第一个字符<code>1</code>前面的<code>0</code>，化成十进制就得到了网络字节顺序的值了：<code>00000000_00010101</code>颠倒后为<code>00010101_00000000</code>，即<code>0001010100000000</code>。去掉第一个<code>1</code>前面的<code>0</code>得到<code>1010100000000</code>，化成十进制得到<code>5376</code>。<br>&emsp;&emsp;通过这个程序可以进行验证：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netdb.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">servent</span> *<span class="title">server</span> = <span class="title">NULL</span>;</span></span><br><span class="line">    <span class="keyword">char</span> sername[<span class="number">16</span>] = <span class="string">"\0"</span>;</span><br><span class="line">    <span class="keyword">char</span> proname[<span class="number">4</span>] = <span class="string">"\0"</span>;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"请输入服务名称："</span> );</span><br><span class="line">    gets ( sername );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"请输入使用的协议："</span> );</span><br><span class="line">    gets ( proname );</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 如果能够通过getserbyname函数找到结果，就输出结果，否则报错 */</span></span><br><span class="line">    <span class="keyword">if</span> ( ( server = getservbyname ( sername, proname ) ) != <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"网络字节顺序值：%d\n"</span>, server-&gt;s_port );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"主机字节顺序值：%d\n"</span>, ntohs ( server-&gt;s_port ) );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"该服务不存在\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>编译后，按提示输入<code>ftp</code>和<code>tcp</code>，就得到网络字节顺序值是<code>5376</code>，主机字节顺序值是<code>21</code>。</p>
+<h3 id="32位转换函数ntohl和htonl"><a href="#32位转换函数ntohl和htonl" class="headerlink" title="32位转换函数ntohl和htonl"></a>32位转换函数ntohl和htonl</h3><p>&emsp;&emsp;<code>ntohl(network to host long)</code>是将网络字节顺序转换为主机字节顺序，返回值是一个<code>32</code>位的整数，即<code>4</code>个字节长度的整数<code>long int</code>，也可以写作<code>uint32_t</code>；<code>htonl(host to network long)</code>是将主机字节顺序转换为网络字节顺序，返回值也是一个<code>32</code>位的整数<code>long int</code>。<code>IP</code>地址使用的是<code>32</code>位的无符号整数，所以在对<code>IP</code>地址进行处理的时候，就需要用到<code>32</code>位的转换了。<br>&emsp;&emsp;一个点分十进制的<code>IP</code>地址是<code>192.168.0.1</code>，其二进制原码为<code>11000000101010000000000000000001</code>，这是主机字符顺序存储的值。将其按照每个字节分隔开来，即每<code>8</code>位分隔开来，得到<code>11000000_10101000_00000000_00000001</code>。将这<code>4</code>段二进制编码进行完全颠倒，就得到了网络字节顺序<code>00000001_00000000_10101000_11000000</code>。去掉第一个字符<code>1</code>前面无效的<code>0</code>，得到<code>1000000001010100011000000</code>，化成十进制得到<code>16820416</code>。<br>&emsp;&emsp;<code>inet_addr</code>函数可以将一个点分十进制的<code>IP</code>地址转换成网络字节顺序的长整形十进制值。同样的，<code>inet_ntoa</code>函数将网络字节顺序的长整形十进制数值的<code>IP</code>地址转换成点分十进制。<br>&emsp;&emsp;下面的代码将一个点分十进制的<code>IP</code>地址转换成它的二进制原码。用<code>inet_addr</code>函数，转换点分十进制的<code>IP</code>为网络字节顺序的长整型十进制数值后，再用<code>ntohl</code>函数将其转换成主机字节顺序的长整型整数，然后使用一个自定义函数将这个主机字节顺序的长整形整数转换成二进制。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netdb.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netinet/in.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 十进制转二进制函数，参数为无符号超长整形(防止溢出) */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">dec</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> x )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( x / <span class="number">2</span> &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">        dec ( x / <span class="number">2</span> );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d"</span>, x % <span class="number">2</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d"</span>, x );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> ipaddr[<span class="number">15</span>] = <span class="string">"\0"</span>;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> hostaddr = <span class="number">0</span>; <span class="comment">/* 主机字节IP的值 */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"请输入IP地址："</span> );</span><br><span class="line">    gets ( ipaddr );</span><br><span class="line">    hostaddr = ntohl ( inet_addr ( ipaddr ) );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"IP地址的网络字节顺序的值：%ld\n"</span>, inet_addr ( ipaddr ) );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"二进制形式是："</span> );</span><br><span class="line">    dec ( ( <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> ) hostaddr );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\n"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/01/16/网络编程/IP数据报首部checksum/" rel="next" title="IP数据报首部checksum">
+                <i class="fa fa-chevron-left"></i> IP数据报首部checksum
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/01/17/网络编程/ping通ipv6地址/" rel="prev" title="ping通ipv6地址">
+                ping通ipv6地址 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#16位的转换函数：ntohs和htons"><span class="nav-number">1.</span> <span class="nav-text">16位的转换函数：ntohs和htons</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#如何手算主机字节顺序转换为网络字节顺序？"><span class="nav-number">2.</span> <span class="nav-text">如何手算主机字节顺序转换为网络字节顺序？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#32位转换函数ntohl和htonl"><span class="nav-number">3.</span> <span class="nav-text">32位转换函数ntohl和htonl</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;回调函数是一个函数的合集，会在训练的阶段中所使用。你可以使用回调函数来查看训练模型的内在状态和统计。你可以传递一个列表的回调函数(作为callbacks关键字参数)到Sequential或Model类型的fit方法。在训练时，相应的回调函数的方法就会被在各自的阶段被调用。&amp;emsp;&amp;emsp;虽然我们称之为回调函数，但事实上Keras的回调函数是一个类，回调函数只是习惯性">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Keras之回调函数">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/01/16/深度学习/Keras之回调函数/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;回调函数是一个函数的合集，会在训练的阶段中所使用。你可以使用回调函数来查看训练模型的内在状态和统计。你可以传递一个列表的回调函数(作为callbacks关键字参数)到Sequential或Model类型的fit方法。在训练时，相应的回调函数的方法就会被在各自的阶段被调用。&amp;emsp;&amp;emsp;虽然我们称之为回调函数，但事实上Keras的回调函数是一个类，回调函数只是习惯性">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-03-13T07:30:53.553Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Keras之回调函数">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;回调函数是一个函数的合集，会在训练的阶段中所使用。你可以使用回调函数来查看训练模型的内在状态和统计。你可以传递一个列表的回调函数(作为callbacks关键字参数)到Sequential或Model类型的fit方法。在训练时，相应的回调函数的方法就会被在各自的阶段被调用。&amp;emsp;&amp;emsp;虽然我们称之为回调函数，但事实上Keras的回调函数是一个类，回调函数只是习惯性">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/01/16/深度学习/Keras之回调函数/">
+
+
+
+
+
+  <title>Keras之回调函数 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/16/深度学习/Keras之回调函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Keras之回调函数</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-16T10:34:19+08:00">
+                2019-01-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;回调函数是一个函数的合集，会在训练的阶段中所使用。你可以使用回调函数来查看训练模型的内在状态和统计。你可以传递一个列表的回调函数(作为<code>callbacks</code>关键字参数)到<code>Sequential</code>或<code>Model</code>类型的<code>fit</code>方法。在训练时，相应的回调函数的方法就会被在各自的阶段被调用。<br>&emsp;&emsp;虽然我们称之为<code>回调函数</code>，但事实上<code>Keras</code>的回调函数是一个类，回调函数只是习惯性称呼。</p>
+<h3 id="Callback"><a href="#Callback" class="headerlink" title="Callback"></a>Callback</h3><p>&emsp;&emsp;该函数用来组建新的回调函数的抽象基类：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.Callback()</span><br></pre></td></tr></table></figure>
+<p>类属性如下：</p>
+<ul>
+<li><code>params</code>：字典，训练参数(例如<code>verbosity</code>、<code>batch size</code>、<code>number of epochs</code>等)。</li>
+<li><code>model</code>：<code>keras.models.Model</code>的实例，它是正在训练的模型的引用。</li>
+</ul>
+<p>被回调函数作为参数的<code>logs</code>字典，它会包含了一系列与当前<code>batch</code>或<code>epoch</code>相关的信息。目前，<code>Sequentia</code>模型类的<code>fit</code>方法会在传入到回调函数的<code>logs</code>里面包含以下的数据：</p>
+<ul>
+<li>在每个<code>epoch</code>的结尾处(<code>on_epoch_end</code>)：<code>logs</code>将包含训练的正确率和误差(<code>acc</code>和<code>loss</code>)，如果指定了验证集，还会包含验证集正确率和误差(<code>val_acc</code>和<code>val_loss</code>)，<code>val_acc</code>还额外需要在<code>compile</code>中启用<code>metrics = [&#39;accuracy&#39;]</code>。</li>
+<li>在每个<code>batch</code>的开始处(<code>on_batch_begin</code>)：<code>logs</code>包含<code>size</code>，即当前<code>batch</code>的样本数。</li>
+<li>在每个<code>batch</code>的结尾处(<code>on_batch_end</code>)：<code>logs</code>包含<code>loss</code>，若启用<code>accuracy</code>，则还包含<code>acc</code>。</li>
+</ul>
+<h3 id="BaseLogger"><a href="#BaseLogger" class="headerlink" title="BaseLogger"></a>BaseLogger</h3><p>&emsp;&emsp;该回调函数用来对每个<code>epoch</code>累加<code>metrics</code>指定的监视指标的<code>epoch</code>平均值：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.BaseLogger()</span><br></pre></td></tr></table></figure>
+<p>这个回调函数被自动应用到每一个<code>Keras</code>模型上面。</p>
+<h3 id="TerminateOnNaN"><a href="#TerminateOnNaN" class="headerlink" title="TerminateOnNaN"></a>TerminateOnNaN</h3><p>&emsp;&emsp;该函数是当遇到<code>NaN</code>损失会停止训练的回调函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.TerminateOnNaN()</span><br></pre></td></tr></table></figure>
+<h3 id="History"><a href="#History" class="headerlink" title="History"></a>History</h3><p>&emsp;&emsp;该函数是把所有事件都记录到<code>History</code>对象的回调函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.History()</span><br></pre></td></tr></table></figure>
+<p>该回调函数在<code>Keras</code>模型上会被自动调用，<code>History</code>对象即为<code>fit</code>方法的返回值。</p>
+<h3 id="ModelCheckpoint"><a href="#ModelCheckpoint" class="headerlink" title="ModelCheckpoint"></a>ModelCheckpoint</h3><p>&emsp;&emsp;该函数在每个训练期之后保存模型：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.ModelCheckpoint(</span><br><span class="line">    filepath, monitor=<span class="string">'val_loss'</span>, verbose=<span class="number">0</span>, save_best_only=<span class="keyword">False</span>,</span><br><span class="line">    save_weights_only=<span class="keyword">False</span>, mode=<span class="string">'auto'</span>, period=<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p><code>filepath</code>可以是格式化的字符串，里面的占位符将会被<code>epoch</code>值和传入<code>on_epoch_end</code>的<code>logs</code>关键字所填入。例如，如果<code>filepath</code>是<code>weights.{epoch:02d}-{val_loss:.2f}.hdf5</code>，那么会生成对应<code>epoch</code>和验证集<code>loss</code>的多个文件。</p>
+<ul>
+<li>filepath：字符串，保存模型的路径。</li>
+<li>monitor：被监测的数据。</li>
+<li><code>verbose</code>：详细信息模式，<code>0</code>或者<code>1</code>。</li>
+<li><code>save_best_only</code>：当设置为<code>True</code>时，将只保存在验证集上性能最好的模型。</li>
+<li><code>mode</code>：<code>auto</code>、<code>min</code>和<code>max</code>其中之一。在<code>save_best_only=True</code>时决定性能最佳模型的评判准则，例如当监测值为<code>val_acc</code>时，模式应为<code>max</code>；当检测值为<code>val_loss</code>时，模式应为<code>min</code>。在<code>auto</code>模式下，评价准则由被监测值的名字自动推断。</li>
+<li><code>save_weights_only</code>：如果为<code>True</code>，那么只有模型的权重会被保存(<code>model.save_weights(filepath)</code>)；否则的话，整个模型会被保存(<code>model.save(filepath)</code>)。</li>
+<li><code>period</code>：每个检查点之间的间隔(训练轮数)。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> keras.callbacks <span class="keyword">import</span> ModelCheckpoint</span><br><span class="line">​</span><br><span class="line">model = Sequential()</span><br><span class="line">model.add(Dense(<span class="number">10</span>, input_dim=<span class="number">784</span>, kernel_initializer=<span class="string">'uniform'</span>))</span><br><span class="line">model.add(Activation(<span class="string">'softmax'</span>))</span><br><span class="line">model.compile(loss=<span class="string">'categorical_crossentropy'</span>, optimizer=<span class="string">'rmsprop'</span>)</span><br><span class="line"><span class="string">""" 如果验证损失下降，那么在每个训练轮之后保存模型 """</span></span><br><span class="line">checkpointer = ModelCheckpoint(filepath=<span class="string">'/tmp/weights.hdf5'</span>,</span><br><span class="line">                               verbose=<span class="number">1</span>, save_best_only=<span class="keyword">True</span>)</span><br><span class="line">model.fit(x_train, y_train, batch_size=<span class="number">128</span>, epochs=<span class="number">20</span>, verbose=<span class="number">0</span>,</span><br><span class="line">          validation_data=(X_test, Y_test), callbacks=[checkpointer])</span><br></pre></td></tr></table></figure>
+<h3 id="EarlyStopping"><a href="#EarlyStopping" class="headerlink" title="EarlyStopping"></a>EarlyStopping</h3><p>&emsp;&emsp;当监测值不再改善时，该回调函数将中止训练：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.EarlyStopping(monitor=<span class="string">'val_loss'</span>, min_delta=<span class="number">0</span>, patience=<span class="number">0</span>, verbose=<span class="number">0</span>, mode=<span class="string">'auto'</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>min_delta</code>：在被监测的数据中被认为是提升的最小变化，例如小于<code>min_delta</code>的绝对变化会被认为没有提升。</li>
+<li><code>patience</code>：当<code>early stop</code>被激活(例如发现<code>loss</code>相比上一个<code>epoch</code>训练没有下降)，则经过<code>patience</code>个<code>epoch</code>后停止训练。</li>
+<li><code>mode</code>：<code>auto</code>、<code>min</code>和<code>max</code>其中之一。在<code>min</code>模式中，当被监测的数据停止下降，训练就会停止；在<code>max</code>模式中，当被监测的数据停止上升，训练就会停止；在<code>auto</code>模式中，方向会自动从被监测的数据的名字中判断出来。</li>
+</ul>
+<h3 id="LearningRateScheduler"><a href="#LearningRateScheduler" class="headerlink" title="LearningRateScheduler"></a>LearningRateScheduler</h3><p>&emsp;&emsp;学习速率定时器：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.LearningRateScheduler(schedule, verbose=<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>参数<code>schedule</code>是一个函数，该函数以<code>epoch</code>号为参数(从<code>0</code>算起的整数)，返回一个新学习率(浮点数)。</p>
+<h3 id="TensorBoard"><a href="#TensorBoard" class="headerlink" title="TensorBoard"></a>TensorBoard</h3><p>&emsp;&emsp;该函数用于<code>Tensorboard</code>基本可视化。<code>TensorBoard</code>是由<code>Tensorflow</code>提供的一个可视化工具。这个回调函数为<code>Tensorboard</code>编写一个日志，使得你可以动态地观察训练和测试指标的图像以及不同层的激活值直方图。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.TensorBoard(</span><br><span class="line">    log_dir=<span class="string">'./logs'</span>, histogram_freq=<span class="number">0</span>, batch_size=<span class="number">32</span>, write_graph=<span class="keyword">True</span>,</span><br><span class="line">    write_grads=<span class="keyword">False</span>, write_images=<span class="keyword">False</span>, embeddings_freq=<span class="number">0</span>,</span><br><span class="line">    embeddings_layer_names=<span class="keyword">None</span>, embeddings_metadata=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>log_dir</code>：用来保存被<code>TensorBoard</code>分析的日志文件的文件名。</li>
+<li><code>histogram_freq</code>：计算各个层激活值直方图的频率(每多少个<code>epoch</code>计算一次)，如果设置为<code>0</code>则不计算。</li>
+<li><code>write_graph</code>：是否在<code>TensorBoard</code>中可视化图像。如果<code>write_graph</code>被设置为<code>True</code>，日志文件会变得非常大。</li>
+<li><code>write_grads</code>：是否在<code>TensorBoard</code>中可视化梯度值直方图。<code>histogram_freq</code>必须要大于<code>0</code>。</li>
+<li><code>batch_size</code>：用以直方图计算的传入神经元网络输入批的大小。</li>
+<li><code>write_images</code>：是否将模型权重以图片的形式可视化。</li>
+<li><code>embeddings_freq</code>：依据该频率(以<code>epoch</code>为单位)筛选保存的<code>embedding</code>层。</li>
+<li><code>embeddings_layer_names</code>：要观察的层名称的列表，若设置为<code>None</code>或空列表，则所有<code>embedding</code>层都将被观察。</li>
+<li><code>embeddings_metadata</code>：一个字典，将层名称映射为包含该<code>embedding</code>层元数据的文件名。如果所有的<code>embedding</code>层都使用相同的元数据文件，则可传递字符串。</li>
+</ul>
+<h3 id="ReduceLROnPlateau"><a href="#ReduceLROnPlateau" class="headerlink" title="ReduceLROnPlateau"></a>ReduceLROnPlateau</h3><p>&emsp;&emsp;当评价指标不再提升时，减少学习率：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.ReduceLROnPlateau(</span><br><span class="line">    monitor=<span class="string">'val_loss'</span>, factor=<span class="number">0.1</span>, patience=<span class="number">10</span>, verbose=<span class="number">0</span>,</span><br><span class="line">    mode=<span class="string">'auto'</span>, epsilon=<span class="number">0.0001</span>, cooldown=<span class="number">0</span>, min_lr=<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>monitor</code>：被监测的数据。</li>
+<li><code>factor</code>：每次减少学习率的因子，学习率将以<code>lr = lr * factor</code>的形式被减少。</li>
+<li><code>patience</code>：当经历了<code>patience</code>个<code>epoch</code>，而模型性能不提升时，学习率减少的动作会被触发。</li>
+<li><code>mode</code>：<code>auto</code>、<code>min</code>或<code>max</code>其中之一。如果是<code>min</code>模式，如果被监测的数据已经停止下降，学习速率会被降低；在<code>max</code>模式，如果被监测的数据已经停止上升，学习速率会被降低；在<code>auto</code>模式，方向会被从被监测的数据中自动推断出来。</li>
+<li><code>epsilon</code>：阈值，用来确定是否进入检测值的<code>平原区</code>。</li>
+<li><code>cooldown</code>：学习率减少后，会经过<code>cooldown</code>个<code>epoch</code>才重新进行正常操作。</li>
+<li><code>min_lr</code>：学习率的下限。</li>
+</ul>
+<p>当学习停滞时，减少<code>2</code>倍或<code>10</code>倍的学习率常常能获得较好的效果。该回调函数检测指标的情况，如果在<code>patience</code>个<code>epoch</code>中看不到模型性能提升，则减少学习率：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">reduce_lr = ReduceLROnPlateau(monitor=<span class="string">'val_loss'</span>, factor=<span class="number">0.2</span>, patience=<span class="number">5</span>, min_lr=<span class="number">0.001</span>)</span><br><span class="line">model.fit(X_train, Y_train, callbacks=[reduce_lr])</span><br></pre></td></tr></table></figure>
+<h3 id="CSVLogger"><a href="#CSVLogger" class="headerlink" title="CSVLogger"></a>CSVLogger</h3><p>&emsp;&emsp;函数原型如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.CSVLogger(filename, separator=<span class="string">','</span>, append=<span class="keyword">False</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>filename</code>：<code>csv</code>文件的文件名。</li>
+<li><code>separator</code>：用来隔离<code>csv</code>文件中元素的字符串。</li>
+<li><code>append</code>：如果为<code>True</code>，则表示如果文件存在则增加(可以被用于继续训练)；如果为<code>False</code>，表示覆盖存在的文件。</li>
+</ul>
+<p>将<code>epoch</code>的训练结果保存在<code>csv</code>文件中，支持所有可被转换为<code>string</code>的值，包括<code>1D</code>的可迭代数值(例如<code>np.ndarray</code>)。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">csv_logger = CSVLogger(<span class="string">'training.log'</span>)</span><br><span class="line">model.fit(X_train, Y_train, callbacks=[csv_logger])</span><br></pre></td></tr></table></figure>
+<h3 id="编写自己的回调函数"><a href="#编写自己的回调函数" class="headerlink" title="编写自己的回调函数"></a>编写自己的回调函数</h3><p>&emsp;&emsp;我们可以通过继承<code>keras.callbacks.Callback</code>编写自己的回调函数。如下示例可以保存每个<code>batch</code>的<code>loss</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LossHistory</span><span class="params">(keras.callbacks.Callback)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">on_train_begin</span><span class="params">(self, logs=&#123;&#125;)</span>:</span></span><br><span class="line">        self.losses = []</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">on_batch_end</span><span class="params">(self, batch, logs=&#123;&#125;)</span>:</span></span><br><span class="line">        self.losses.append(logs.get(<span class="string">'loss'</span>))</span><br><span class="line">​</span><br><span class="line">model = Sequential()</span><br><span class="line">model.add(Dense(<span class="number">10</span>, input_dim=<span class="number">784</span>, kernel_initializer=<span class="string">'uniform'</span>))</span><br><span class="line">model.add(Activation(<span class="string">'softmax'</span>))</span><br><span class="line">model.compile(loss=<span class="string">'categorical_crossentropy'</span>, optimizer=<span class="string">'rmsprop'</span>)</span><br><span class="line">​</span><br><span class="line">history = LossHistory()</span><br><span class="line">model.fit(x_train, y_train, batch_size=<span class="number">128</span>, epochs=<span class="number">20</span>, verbose=<span class="number">0</span>, callbacks=[history])</span><br><span class="line">print(history.losses)</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/01/16/深度学习/Keras之卷积层/" rel="next" title="Keras之卷积层">
+                <i class="fa fa-chevron-left"></i> Keras之卷积层
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/01/16/深度学习/CNN与SVM联用/" rel="prev" title="CNN与SVM联用">
+                CNN与SVM联用 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Callback"><span class="nav-number">1.</span> <span class="nav-text">Callback</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BaseLogger"><span class="nav-number">2.</span> <span class="nav-text">BaseLogger</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TerminateOnNaN"><span class="nav-number">3.</span> <span class="nav-text">TerminateOnNaN</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#History"><span class="nav-number">4.</span> <span class="nav-text">History</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ModelCheckpoint"><span class="nav-number">5.</span> <span class="nav-text">ModelCheckpoint</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EarlyStopping"><span class="nav-number">6.</span> <span class="nav-text">EarlyStopping</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LearningRateScheduler"><span class="nav-number">7.</span> <span class="nav-text">LearningRateScheduler</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TensorBoard"><span class="nav-number">8.</span> <span class="nav-text">TensorBoard</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ReduceLROnPlateau"><span class="nav-number">9.</span> <span class="nav-text">ReduceLROnPlateau</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CSVLogger"><span class="nav-number">10.</span> <span class="nav-text">CSVLogger</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编写自己的回调函数"><span class="nav-number">11.</span> <span class="nav-text">编写自己的回调函数</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

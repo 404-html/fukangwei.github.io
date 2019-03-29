@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;klearn.preprocessing提供了各种公共函数，用于将raw feature vector转换成另外一种更适合评估器工作的格式。 标准化(Standardization)、平均移除法(mean removal)和方差归一化(variance scaling)&amp;emsp;&amp;emsp;scale函数提供了一个快速而简单的方式： 12345678910&amp;gt;&amp;gt;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="sklearn的数据预处理">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/12/机器学习/sklearn的数据预处理/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;klearn.preprocessing提供了各种公共函数，用于将raw feature vector转换成另外一种更适合评估器工作的格式。 标准化(Standardization)、平均移除法(mean removal)和方差归一化(variance scaling)&amp;emsp;&amp;emsp;scale函数提供了一个快速而简单的方式： 12345678910&amp;gt;&amp;gt;">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-02-12T04:49:26.627Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="sklearn的数据预处理">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;klearn.preprocessing提供了各种公共函数，用于将raw feature vector转换成另外一种更适合评估器工作的格式。 标准化(Standardization)、平均移除法(mean removal)和方差归一化(variance scaling)&amp;emsp;&amp;emsp;scale函数提供了一个快速而简单的方式： 12345678910&amp;gt;&amp;gt;">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/12/机器学习/sklearn的数据预处理/">
+
+
+
+
+
+  <title>sklearn的数据预处理 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/12/机器学习/sklearn的数据预处理/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">sklearn的数据预处理</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-12T12:04:27+08:00">
+                2019-02-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;<code>klearn.preprocessing</code>提供了各种公共函数，用于将<code>raw feature vector</code>转换成另外一种更适合评估器工作的格式。</p>
+<h3 id="标准化-Standardization-、平均移除法-mean-removal-和方差归一化-variance-scaling"><a href="#标准化-Standardization-、平均移除法-mean-removal-和方差归一化-variance-scaling" class="headerlink" title="标准化(Standardization)、平均移除法(mean removal)和方差归一化(variance scaling)"></a>标准化(Standardization)、平均移除法(mean removal)和方差归一化(variance scaling)</h3><p>&emsp;&emsp;<code>scale</code>函数提供了一个快速而简单的方式：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">from</span> sklearn <span class="keyword">import</span> preprocessing</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X = np.array([[ <span class="number">1.</span>, <span class="number">-1.</span>,  <span class="number">2.</span>],</span><br><span class="line"><span class="meta">... </span>              [ <span class="number">2.</span>,  <span class="number">0.</span>,  <span class="number">0.</span>],</span><br><span class="line"><span class="meta">... </span>              [ <span class="number">0.</span>,  <span class="number">1.</span>, <span class="number">-1.</span>]])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_scaled = preprocessing.scale(X)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_scaled</span><br><span class="line">array([[ <span class="number">0.</span>  ..., <span class="number">-1.22</span>...,  <span class="number">1.33</span>...],</span><br><span class="line">       [ <span class="number">1.22</span>...,  <span class="number">0.</span>  ..., <span class="number">-0.26</span>...],</span><br><span class="line">       [<span class="number">-1.22</span>...,  <span class="number">1.22</span>..., <span class="number">-1.06</span>...]])</span><br></pre></td></tr></table></figure>
+<p>归一化后的数据其均值为<code>0</code>，方差为<code>1</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_scaled.mean(axis=<span class="number">0</span>)</span><br><span class="line">array([ <span class="number">0.</span>,  <span class="number">0.</span>,  <span class="number">0.</span>])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_scaled.std(axis=<span class="number">0</span>)</span><br><span class="line">array([ <span class="number">1.</span>,  <span class="number">1.</span>,  <span class="number">1.</span>])</span><br></pre></td></tr></table></figure>
+<p>一般会把<code>train</code>和<code>test</code>集放在一起做标准化，或者在<code>train</code>集上做标准化后，用同样的标准化器去标准化<code>test</code>集，此时可以用<code>StandardScaler</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>scaler = preprocessing.StandardScaler().fit(X)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>scaler</span><br><span class="line">StandardScaler(copy=<span class="keyword">True</span>, with_mean=<span class="keyword">True</span>, with_std=<span class="keyword">True</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>scaler.mean_</span><br><span class="line">array([ <span class="number">1.</span> ...,  <span class="number">0.</span> ...,  <span class="number">0.33</span>...])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>scaler.scale_</span><br><span class="line">array([ <span class="number">0.81</span>...,  <span class="number">0.81</span>...,  <span class="number">1.24</span>...])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>scaler.transform(X)</span><br><span class="line">array([[ <span class="number">0.</span>  ..., <span class="number">-1.22</span>...,  <span class="number">1.33</span>...],</span><br><span class="line">       [ <span class="number">1.22</span>...,  <span class="number">0.</span>  ..., <span class="number">-0.26</span>...],</span><br><span class="line">       [<span class="number">-1.22</span>...,  <span class="number">1.22</span>..., <span class="number">-1.06</span>...]])</span><br></pre></td></tr></table></figure>
+<p>通过在<code>StandardScaler</code>的构造函数中设置<code>with_mean=False</code>或者<code>with_std=False</code>，可以禁止均值中心化(<code>centering</code>)和归一化(<code>scaling</code>)。</p>
+<h3 id="将feature归一化到一个范围内"><a href="#将feature归一化到一个范围内" class="headerlink" title="将feature归一化到一个范围内"></a>将feature归一化到一个范围内</h3><p>&emsp;&emsp;另一种标准化方式是将<code>feature</code>归一化到给定的范围内(比如<code>[0, 1]</code>之间)，可以使用<code>MinMaxScaler</code>或者<code>MaxAbsScaler</code>函数。<br>&emsp;&emsp;归一化至<code>[0, 1]</code>的代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_train = np.array([[ <span class="number">1.</span>, <span class="number">-1.</span>,  <span class="number">2.</span>],</span><br><span class="line"><span class="meta">... </span>                    [ <span class="number">2.</span>,  <span class="number">0.</span>,  <span class="number">0.</span>],</span><br><span class="line"><span class="meta">... </span>                    [ <span class="number">0.</span>,  <span class="number">1.</span>, <span class="number">-1.</span>]])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>min_max_scaler = preprocessing.MinMaxScaler()</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_train_minmax = min_max_scaler.fit_transform(X_train)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_train_minmax</span><br><span class="line">array([[ <span class="number">0.5</span>       ,  <span class="number">0.</span>        ,  <span class="number">1.</span>        ],</span><br><span class="line">       [ <span class="number">1.</span>        ,  <span class="number">0.5</span>       ,  <span class="number">0.33333333</span>],</span><br><span class="line">       [ <span class="number">0.</span>        ,  <span class="number">1.</span>        ,  <span class="number">0.</span>        ]])</span><br></pre></td></tr></table></figure>
+<p>如果<code>MinMaxScaler</code>给出了显式的范围，例如<code>feature_range=(min, max)</code>，那么对应的公式为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">X_std = (X - X.min(axis=<span class="number">0</span>)) / (X.max(axis=<span class="number">0</span>) - X.min(axis=<span class="number">0</span>))</span><br><span class="line">X_scaled = X_std / (max - min) + min</span><br></pre></td></tr></table></figure>
+<p><code>MaxAbsScaler</code>以类似的方式工作，它的归一化范围在<code>[-1, 1]</code>之间：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_train = np.array([[ <span class="number">1.</span>, <span class="number">-1.</span>,  <span class="number">2.</span>],</span><br><span class="line"><span class="meta">... </span>                    [ <span class="number">2.</span>,  <span class="number">0.</span>,  <span class="number">0.</span>],</span><br><span class="line"><span class="meta">... </span>                    [ <span class="number">0.</span>,  <span class="number">1.</span>, <span class="number">-1.</span>]])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>max_abs_scaler = preprocessing.MaxAbsScaler()</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_train_maxabs = max_abs_scaler.fit_transform(X_train)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_train_maxabs</span><br><span class="line">array([[ <span class="number">0.5</span>, <span class="number">-1.</span> ,  <span class="number">1.</span> ],</span><br><span class="line">       [ <span class="number">1.</span> ,  <span class="number">0.</span> ,  <span class="number">0.</span> ],</span><br><span class="line">       [ <span class="number">0.</span> ,  <span class="number">1.</span> , <span class="number">-0.5</span>]])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_test = np.array([[ <span class="number">-3.</span>, <span class="number">-1.</span>,  <span class="number">4.</span>]])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_test_maxabs = max_abs_scaler.transform(X_test)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_test_maxabs</span><br><span class="line">array([[<span class="number">-1.5</span>, <span class="number">-1.</span> ,  <span class="number">2.</span> ]])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>max_abs_scaler.scale_</span><br><span class="line">array([ <span class="number">2.</span>,  <span class="number">1.</span>,  <span class="number">2.</span>])</span><br></pre></td></tr></table></figure>
+<h3 id="正态分布化-Normalization"><a href="#正态分布化-Normalization" class="headerlink" title="正态分布化(Normalization)"></a>正态分布化(Normalization)</h3><p>&emsp;&emsp;<code>Normalization</code>用于将各个样本归一化为正态分布，函数<code>normalize</code>提供了这一功能：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>X = [[ <span class="number">1.</span>, <span class="number">-1.</span>,  <span class="number">2.</span>],</span><br><span class="line"><span class="meta">... </span>     [ <span class="number">2.</span>,  <span class="number">0.</span>,  <span class="number">0.</span>],</span><br><span class="line"><span class="meta">... </span>     [ <span class="number">0.</span>,  <span class="number">1.</span>, <span class="number">-1.</span>]]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_normalized = preprocessing.normalize(X, norm=<span class="string">'l2'</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X_normalized</span><br><span class="line">array([[ <span class="number">0.40</span>..., <span class="number">-0.40</span>...,  <span class="number">0.81</span>...],</span><br><span class="line">       [ <span class="number">1.</span>  ...,  <span class="number">0.</span>  ...,  <span class="number">0.</span>  ...],</span><br><span class="line">       [ <span class="number">0.</span>  ...,  <span class="number">0.70</span>..., <span class="number">-0.70</span>...]])</span><br></pre></td></tr></table></figure>
+<p><code>Normalizer</code>类也可以实现这一功能：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>normalizer = preprocessing.Normalizer().fit(X)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>normalizer</span><br><span class="line">Normalizer(copy=<span class="keyword">True</span>, norm=<span class="string">'l2'</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>normalizer.transform(X)</span><br><span class="line">array([[ <span class="number">0.40</span>..., <span class="number">-0.40</span>...,  <span class="number">0.81</span>...],</span><br><span class="line">       [ <span class="number">1.</span>  ...,  <span class="number">0.</span>  ...,  <span class="number">0.</span>  ...],</span><br><span class="line">       [ <span class="number">0.</span>  ...,  <span class="number">0.70</span>..., <span class="number">-0.70</span>...]])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>normalizer.transform([[<span class="number">-1.</span>,  <span class="number">1.</span>, <span class="number">0.</span>]])</span><br><span class="line">array([[<span class="number">-0.70</span>...,  <span class="number">0.70</span>...,  <span class="number">0.</span>  ...]])</span><br></pre></td></tr></table></figure>
+<h3 id="二值化-Binarization"><a href="#二值化-Binarization" class="headerlink" title="二值化(Binarization)"></a>二值化(Binarization)</h3><p>&emsp;&emsp;二值化可以将数值形(<code>numerical</code>)的<code>feature</code>进行阀值化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>X = [[ <span class="number">1.</span>, <span class="number">-1.</span>,  <span class="number">2.</span>],</span><br><span class="line"><span class="meta">... </span>     [ <span class="number">2.</span>,  <span class="number">0.</span>,  <span class="number">0.</span>],</span><br><span class="line"><span class="meta">... </span>     [ <span class="number">0.</span>,  <span class="number">1.</span>, <span class="number">-1.</span>]]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>binarizer = preprocessing.Binarizer().fit(X)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>binarizer</span><br><span class="line">Binarizer(copy=<span class="keyword">True</span>, threshold=<span class="number">0.0</span>)  <span class="comment"># 调整binarizer的threshold</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>binarizer.transform(X)</span><br><span class="line">array([[ <span class="number">1.</span>,  <span class="number">0.</span>,  <span class="number">1.</span>],</span><br><span class="line">       [ <span class="number">1.</span>,  <span class="number">0.</span>,  <span class="number">0.</span>],</span><br><span class="line">       [ <span class="number">0.</span>,  <span class="number">1.</span>,  <span class="number">0.</span>]])</span><br></pre></td></tr></table></figure>
+<h3 id="补充缺失值"><a href="#补充缺失值" class="headerlink" title="补充缺失值"></a>补充缺失值</h3><p>&emsp;&emsp;现实世界中有许多数据集中包含着缺失值(<code>missing values</code>)，经常被编码成空格、<code>NaN</code>或者其它占位符。这样的数据集对于<code>sklearn</code>来说是不兼容的，因为它的输入数据必须是全是数值型的。<br>&emsp;&emsp;一个基本策略是使用不完整的数据，即抛弃掉那些带缺失值的行。然而，缺失的数据中也可能包含有价值的信息。一个更好地策略是补充缺失值，比如从已知的数据中去模拟它们。<br>&emsp;&emsp;<code>Imputer</code>类提供了基本策略来补充缺失值，或者使用均值、中值，或者是行中或列中最常用的值：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> Imputer</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>imp = Imputer(missing_values=<span class="string">'NaN'</span>, strategy=<span class="string">'mean'</span>, axis=<span class="number">0</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>imp.fit([[<span class="number">1</span>, <span class="number">2</span>], [np.nan, <span class="number">3</span>], [<span class="number">7</span>, <span class="number">6</span>]])</span><br><span class="line">Imputer(axis=<span class="number">0</span>, copy=<span class="keyword">True</span>, missing_values=<span class="string">'NaN'</span>, strategy=<span class="string">'mean'</span>, verbose=<span class="number">0</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X = [[np.nan, <span class="number">2</span>], [<span class="number">6</span>, np.nan], [<span class="number">7</span>, <span class="number">6</span>]]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>print(imp.transform(X))</span><br><span class="line">[[ <span class="number">4.</span>          <span class="number">2.</span>        ]</span><br><span class="line"> [ <span class="number">6.</span>          <span class="number">3.666</span>...]</span><br><span class="line"> [ <span class="number">7.</span>          <span class="number">6.</span>        ]]</span><br></pre></td></tr></table></figure>
+<h3 id="多项式特征生成"><a href="#多项式特征生成" class="headerlink" title="多项式特征生成"></a>多项式特征生成</h3><p>&emsp;&emsp;很多情况下，考虑输入数据中的非线性特征来增加模型的复杂性是非常有效的。一个简单常用的方法就是使用多项式特征，它能捕捉到特征中高阶和相互作用的项。<code>PolynomialFeatures</code>类可以实现该功能：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> PolynomialFeatures</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X = np.arange(<span class="number">6</span>).reshape(<span class="number">3</span>, <span class="number">2</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X</span><br><span class="line">array([[<span class="number">0</span>, <span class="number">1</span>],</span><br><span class="line">       [<span class="number">2</span>, <span class="number">3</span>],</span><br><span class="line">       [<span class="number">4</span>, <span class="number">5</span>]])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>poly = PolynomialFeatures(<span class="number">2</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>poly.fit_transform(X)</span><br><span class="line">array([[  <span class="number">1.</span>,   <span class="number">0.</span>,   <span class="number">1.</span>,   <span class="number">0.</span>,   <span class="number">0.</span>,   <span class="number">1.</span>],</span><br><span class="line">       [  <span class="number">1.</span>,   <span class="number">2.</span>,   <span class="number">3.</span>,   <span class="number">4.</span>,   <span class="number">6.</span>,   <span class="number">9.</span>],</span><br><span class="line">       [  <span class="number">1.</span>,   <span class="number">4.</span>,   <span class="number">5.</span>,  <span class="number">16.</span>,  <span class="number">20.</span>,  <span class="number">25.</span>]])</span><br></pre></td></tr></table></figure>
+<p>特征向量<code>X</code>从<code>(X1, X2)</code>被转换成<code>(1, X1, X2, X1^2, X1*X2, X2^2)</code>。<br>&emsp;&emsp;在一些情况下，我们只需要特征中的相互作用项(<code>interaction terms</code>)，它可以通过传入参数<code>interaction_only=True</code>获得：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>X = np.arange(<span class="number">9</span>).reshape(<span class="number">3</span>, <span class="number">3</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>X</span><br><span class="line">array([[<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>],</span><br><span class="line">       [<span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>],</span><br><span class="line">       [<span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>]])</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>poly = PolynomialFeatures(degree=<span class="number">3</span>, interaction_only=<span class="keyword">True</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>poly.fit_transform(X)</span><br><span class="line">array([[   <span class="number">1.</span>,    <span class="number">0.</span>,    <span class="number">1.</span>,    <span class="number">2.</span>,    <span class="number">0.</span>,    <span class="number">0.</span>,    <span class="number">2.</span>,    <span class="number">0.</span>],</span><br><span class="line">       [   <span class="number">1.</span>,    <span class="number">3.</span>,    <span class="number">4.</span>,    <span class="number">5.</span>,   <span class="number">12.</span>,   <span class="number">15.</span>,   <span class="number">20.</span>,   <span class="number">60.</span>],</span><br><span class="line">       [   <span class="number">1.</span>,    <span class="number">6.</span>,    <span class="number">7.</span>,    <span class="number">8.</span>,   <span class="number">42.</span>,   <span class="number">48.</span>,   <span class="number">56.</span>,  <span class="number">336.</span>]])</span><br></pre></td></tr></table></figure>
+<p>特征向量<code>X</code>从<code>(X1, X2, X3)</code>被转换成<code>(1, X1, X2, X3, X1*X2, X1*X3, X2*X3, X1*X2*X3)</code>。</p>
+<hr>
+<h3 id="one-hot编码"><a href="#one-hot编码" class="headerlink" title="one-hot编码"></a>one-hot编码</h3><p>&emsp;&emsp;<code>One-Hot</code>编码又称为<code>一位有效编码</code>，主要是采用位状态寄存器来对个状态进行编码，每个状态都由他独立的寄存器位，并且在任意时候只有一位有效。<br>&emsp;&emsp;在实际的机器学习任务中，特征有时候并不总是连续值，有可能是一些分类值，例如性别可分为<code>male</code>和<code>female</code>。对于这样的特征，通常需要对其进行特征数字化：</p>
+<ul>
+<li>性别：<code>[male, female]</code></li>
+<li>地区：<code>[Europe, US, Asia]</code></li>
+<li>浏览器：<code>[Firefox, Chrome, Safari, Internet Explorer]</code></li>
+</ul>
+<p>对于某一个样本，如<code>[male, US, Internet Explorer]</code>，我们需要将这个分类值的特征数字化，最直接的方法就是采用序列化的方式，即<code>[0, 1, 3]</code>。但是，这样的特征处理并不能直接放入机器学习算法中。<br>&emsp;&emsp;对于上述问题，<code>性别</code>属性是二维的，<code>地区</code>属性是三维的，而<code>浏览器</code>属性则是四维的。我们可以采用<code>One-Hot</code>编码的方式对上述的样本<code>[male, US, Internet Explorer]</code>进行编码，例如<code>male</code>对应<code>[1, 0]</code>，<code>US</code>对应<code>[0, 1, 0]</code>，<code>Internet Explorer</code>对应<code>[0, 0, 0, 1]</code>，则完整的特征数字化的结果为<code>[1, 0, 0, 1, 0, 0, 0, 0, 1]</code>。这样导致的一个结果就是数据会变得非常得稀疏。<br>&emsp;&emsp;可以这样理解：对于每一个特征，如果它有<code>m</code>个可能值，那么经过独热编码后，就变成了<code>m</code>个二元特征，并且这些特征互斥，每次只有一个激活，因此数据会变成稀疏的。这样做的好处主要有：解决了分类器不好处理属性数据的问题；一定程度上也起到了扩充特征的作用。<br>&emsp;&emsp;实际的<code>Python</code>代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> preprocessing</span><br><span class="line">​</span><br><span class="line">enc = preprocessing.OneHotEncoder()</span><br><span class="line">enc.fit([[<span class="number">0</span>, <span class="number">0</span>, <span class="number">3</span>], [<span class="number">1</span>, <span class="number">1</span>, <span class="number">0</span>], [<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>], [<span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>]])</span><br><span class="line">array = enc.transform([[<span class="number">0</span>, <span class="number">1</span>, <span class="number">3</span>]]).toarray()</span><br><span class="line">print(array)</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[[<span class="number">1.</span> <span class="number">0.</span> <span class="number">0.</span> <span class="number">1.</span> <span class="number">0.</span> <span class="number">0.</span> <span class="number">0.</span> <span class="number">0.</span> <span class="number">1.</span>]]</span><br></pre></td></tr></table></figure>
+<p>我们将矩阵排起来看：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[[ <span class="number">0</span> <span class="number">0</span> <span class="number">3</span> ];</span><br><span class="line"> [ <span class="number">1</span> <span class="number">1</span> <span class="number">0</span> ];</span><br><span class="line"> [ <span class="number">0</span> <span class="number">2</span> <span class="number">1</span> ];</span><br><span class="line"> [ <span class="number">1</span> <span class="number">0</span> <span class="number">2</span> ]]</span><br></pre></td></tr></table></figure>
+<p>该矩阵的每一列代表一个特征：</p>
+<ul>
+<li>第一列只有<code>0</code>或<code>1</code>出现，共有两种情况，所以<code>one-hot</code>编码前两维代表第一个特征，也恰好说明了是性别的分类。</li>
+<li>第二列有<code>0</code>、<code>1</code>和<code>2</code>出现，共有三种情况，所以<code>one-hot</code>编码中间三维代表第二个特征，恰好证明了地区所对应的特征。</li>
+<li>第三列有<code>0</code>、<code>1</code>、<code>2</code>和<code>3</code>出现，共有四种情况，所以<code>one-hot</code>编码最后四维代表第三个特征，也是最后一个特征，证明了浏览器的对应的特征。</li>
+</ul>
+<p>这里也很好地解释了<code>一定程度上也起到了扩充特征的作用</code>这句话，其实就是将所有的特征都融入到一个向量里面构成<code>one-hot</code>意义下的特征，一下子变成了<code>9</code>维的向量。特征列如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[[male, female, Europe, US, Asia, Firefox, Chrome, Safari, Internet Explorer]]</span><br></pre></td></tr></table></figure>
+<p>输出结果如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[[ <span class="number">1.</span> <span class="number">0.</span> <span class="number">0.</span> <span class="number">1.</span> <span class="number">0.</span> <span class="number">0.</span> <span class="number">0.</span> <span class="number">0.</span> <span class="number">1.</span>]]</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/12/机器学习/K近邻算法sklearn/" rel="next" title="K近邻算法sklearn">
+                <i class="fa fa-chevron-left"></i> K近邻算法sklearn
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/12/机器学习/Logistic回归sklearn/" rel="prev" title="Logistic回归sklearn">
+                Logistic回归sklearn <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#标准化-Standardization-、平均移除法-mean-removal-和方差归一化-variance-scaling"><span class="nav-number">1.</span> <span class="nav-text">标准化(Standardization)、平均移除法(mean removal)和方差归一化(variance scaling)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#将feature归一化到一个范围内"><span class="nav-number">2.</span> <span class="nav-text">将feature归一化到一个范围内</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#正态分布化-Normalization"><span class="nav-number">3.</span> <span class="nav-text">正态分布化(Normalization)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二值化-Binarization"><span class="nav-number">4.</span> <span class="nav-text">二值化(Binarization)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#补充缺失值"><span class="nav-number">5.</span> <span class="nav-text">补充缺失值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多项式特征生成"><span class="nav-number">6.</span> <span class="nav-text">多项式特征生成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#one-hot编码"><span class="nav-number">7.</span> <span class="nav-text">one-hot编码</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

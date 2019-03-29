@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;Socket API是网络应用程序开发中实际应用的标准API。它是在4.2 BSD UNIX操作系统中首次引入的，现在是任何操作系统的标准特性。事实上，很难找到一种不支持Sockets API的现代语言。尽管该API简单，但是开发新手可能会经历一些常见的问题。本文识别一些最常见的隐患并向您展示如何避免它们。 隐患1：忽略返回状态&amp;emsp;&amp;emsp;第一个隐患很明显，但它">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux套接字编程中的5个隐患">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/03/13/Linux系统编程/Linux套接字编程中的5个隐患/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;Socket API是网络应用程序开发中实际应用的标准API。它是在4.2 BSD UNIX操作系统中首次引入的，现在是任何操作系统的标准特性。事实上，很难找到一种不支持Sockets API的现代语言。尽管该API简单，但是开发新手可能会经历一些常见的问题。本文识别一些最常见的隐患并向您展示如何避免它们。 隐患1：忽略返回状态&amp;emsp;&amp;emsp;第一个隐患很明显，但它">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/13/Linux系统编程/Linux套接字编程中的5个隐患/1.png">
+<meta property="og:updated_time" content="2019-03-13T00:56:40.018Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Linux套接字编程中的5个隐患">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;Socket API是网络应用程序开发中实际应用的标准API。它是在4.2 BSD UNIX操作系统中首次引入的，现在是任何操作系统的标准特性。事实上，很难找到一种不支持Sockets API的现代语言。尽管该API简单，但是开发新手可能会经历一些常见的问题。本文识别一些最常见的隐患并向您展示如何避免它们。 隐患1：忽略返回状态&amp;emsp;&amp;emsp;第一个隐患很明显，但它">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/03/13/Linux系统编程/Linux套接字编程中的5个隐患/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/03/13/Linux系统编程/Linux套接字编程中的5个隐患/">
+
+
+
+
+
+  <title>Linux套接字编程中的5个隐患 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/13/Linux系统编程/Linux套接字编程中的5个隐患/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Linux套接字编程中的5个隐患</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-13T09:30:04+08:00">
+                2019-03-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;<code>Socket API</code>是网络应用程序开发中实际应用的标准<code>API</code>。它是在<code>4.2 BSD UNIX</code>操作系统中首次引入的，现在是任何操作系统的标准特性。事实上，很难找到一种不支持<code>Sockets API</code>的现代语言。尽管该<code>API</code>简单，但是开发新手可能会经历一些常见的问题。本文识别一些最常见的隐患并向您展示如何避免它们。</p>
+<h3 id="隐患1：忽略返回状态"><a href="#隐患1：忽略返回状态" class="headerlink" title="隐患1：忽略返回状态"></a>隐患1：忽略返回状态</h3><p>&emsp;&emsp;第一个隐患很明显，但它是开发新手最容易犯的一个错误。如果您忽略函数的返回状态，当它们失败或部分成功的时候，您也许会迷失。反过来，这可能传播错误，使得定位问题的源头变得困难。捕获并检查每一个返回状态，而不是忽略它们。考虑清单<code>1</code>显示的例子：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> status, sock, mode;</span><br><span class="line"><span class="comment">/* Create a new stream (TCP) socket */</span></span><br><span class="line">sock = socket ( AF_INET, SOCK_STREAM, <span class="number">0</span> );</span><br><span class="line">...</span><br><span class="line">status = send ( sock, buffer, buflen, MSG_DONTWAIT );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( status == <span class="number">-1</span> ) &#123;</span><br><span class="line">    <span class="comment">/* send failed */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"send failed: %s\n"</span>, strerror ( errno ) );</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">/* send succeeded -- or did it? */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>清单<code>1</code>探究一个函数片断，它完成套接字<code>send</code>操作(通过套接字发送数据)。函数的错误状态被捕获并测试，但这个例子忽略了<code>send</code>在无阻塞模式(由<code>MSG_DONTWAIT</code>标志启用)下的一个特性。<br>&emsp;&emsp;<code>send</code>函数有三类可能的返回值：</p>
+<ul>
+<li>如果数据成功地排到传输队列，则返回<code>0</code>。</li>
+<li>如果排队失败，则返回<code>-1</code>(通过使用<code>errno</code>变量可以了解失败的原因)。</li>
+<li>如果不是所有的字符都能够在函数调用时排队，则最终的返回值是发送的字符数。</li>
+</ul>
+<p>&emsp;&emsp;由于<code>send</code>的<code>MSG_DONTWAIT</code>变量的无阻塞性质，函数调用在发送完所有的数据、一些数据或没有发送任何数据后返回。在这里忽略返回状态将导致不完全的发送和随后的数据丢失。</p>
+<h3 id="隐患2：对等套接字闭包"><a href="#隐患2：对等套接字闭包" class="headerlink" title="隐患2：对等套接字闭包"></a>隐患2：对等套接字闭包</h3><p>&emsp;&emsp;<code>UNIX</code>有趣的一面是，您几乎可以把任何东西看成是一个文件，文件本身、目录、管道、设备和套接字都被当作文件。这是新颖的抽象，意味着一整套的<code>API</code>可以用在广泛的设备类型上。<br>&emsp;&emsp;考虑<code>read</code>函数，它从文件读取一定数量的字节。<code>read</code>函数返回读取的字节数(最高为您指定的最大值)；或者<code>-1</code>，表示错误；或者<code>0</code>，如果已经到达文件末尾。<br>&emsp;&emsp;如果在一个套接字上完成一个<code>read</code>操作并得到一个为<code>0</code>的返回值，这表明远程套接字端的对等层调用了<code>close</code>方法。该指示与文件读取相同，即没有多余的数据可以通过描述符读取。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> sock, status;</span><br><span class="line">sock = socket ( AF_INET, SOCK_STREAM, <span class="number">0</span> );</span><br><span class="line">...</span><br><span class="line">status = read ( sock, buffer, buflen );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( status &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">    <span class="comment">/* Data read from the socket */</span></span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> ( status == <span class="number">-1</span> ) &#123;</span><br><span class="line">    <span class="comment">/* Error, check errno, take action... */</span></span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> ( status == <span class="number">0</span> ) &#123;</span><br><span class="line">    <span class="comment">/* Peer closed the socket, finish the close */</span></span><br><span class="line">    close ( sock );</span><br><span class="line">    <span class="comment">/* Further processing... */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同样，可以用<code>write</code>函数来探测对等套接字的闭包。在这种情况下，接收<code>SIGPIPE</code>信号，或如果该信号阻塞，<code>write</code>函数将返回<code>-1</code>，并设置<code>errno</code>为<code>EPIPE</code>。</p>
+<h3 id="隐患3：地址使用错误-EADDRINUSE"><a href="#隐患3：地址使用错误-EADDRINUSE" class="headerlink" title="隐患3：地址使用错误(EADDRINUSE)"></a>隐患3：地址使用错误(EADDRINUSE)</h3><p>&emsp;&emsp;您可以使用<code>bind</code>函数来绑定一个地址(一个接口和一个端口)到一个套接字端点。可以在服务器设置中使用这个函数，以便限制可能有连接到来的接口。也可以在客户端设置中使用这个函数，以便限制应当供出去的连接所使用的接口。<code>bind</code>最常见的用法是关联端口号和服务器，并使用通配符地址(<code>INADDR_ANY</code>)，它允许任何接口为到来的连接所使用。<br>&emsp;&emsp;<code>bind</code>普遍遭遇的问题是试图绑定一个已经在使用的端口。该陷阱是也许没有活动的套接字存在，但仍然禁止绑定端口(<code>bind</code>返回<code>EADDRINUSE</code>)，它由<code>TCP</code>套接字状态<code>TIME_WAIT</code>引起。该状态在套接字关闭后约保留<code>2</code>到<code>4</code>分钟。在<code>TIME_WAIT</code>状态退出之后，套接字被删除，该地址才能被重新绑定而不出问题。<br>&emsp;&emsp;等待<code>TIME_WAIT</code>结束可能是令人恼火的一件事，特别是如果您正在开发一个套接字服务器，就需要停止服务器来做一些改动，然后重启。幸运的是，有方法可以避开<code>TIME_WAIT</code>状态。可以给套接字应用<code>SO_REUSEADDR</code>套接字选项，以便端口可以马上重用。<br>&emsp;&emsp;考虑下面的例子，在绑定地址之前，我以<code>SO_REUSEADDR</code>选项调用<code>setsockopt</code>。为了允许地址重用，我设置整型参数<code>on</code>为<code>1</code>(当然可以设为<code>0</code>来禁止地址重用)。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> sock, ret, on;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">servaddr</span>;</span></span><br><span class="line"><span class="comment">/* Create a new stream (TCP) socket */</span></span><br><span class="line">sock = socket ( AF_INET, SOCK_STREAM, <span class="number">0</span> );</span><br><span class="line"><span class="comment">/* Enable address reuse */</span></span><br><span class="line">on = <span class="number">1</span>;</span><br><span class="line">ret = setsockopt ( sock, SOL_SOCKET, SO_REUSEADDR, &amp;on, <span class="keyword">sizeof</span> ( on ) );</span><br><span class="line"><span class="comment">/* Allow connections to port 8080 from any available interface */</span></span><br><span class="line"><span class="built_in">memset</span> ( &amp;servaddr, <span class="number">0</span>, <span class="keyword">sizeof</span> ( servaddr ) );</span><br><span class="line">servaddr.sin_family = AF_INET;</span><br><span class="line">servaddr.sin_addr.s_addr = htonl ( INADDR_ANY );</span><br><span class="line">servaddr.sin_port = htons ( <span class="number">45000</span> );</span><br><span class="line"><span class="comment">/* Bind to the address (interface/port) */</span></span><br><span class="line">ret = bind ( sock, ( struct sockaddr * ) &amp;servaddr, <span class="keyword">sizeof</span> ( servaddr ) );</span><br></pre></td></tr></table></figure>
+<p>在应用了<code>SO_REUSEADDR</code>选项之后，<code>bind</code>函数将允许地址的立即重用。</p>
+<h3 id="隐患4：发送结构化数据"><a href="#隐患4：发送结构化数据" class="headerlink" title="隐患4：发送结构化数据"></a>隐患4：发送结构化数据</h3><p>&emsp;&emsp;套接字是发送无结构二进制字节流或<code>ASCII</code>数据流(比如<code>HTTP</code>上的<code>HTTP</code>页面，或<code>SMTP</code>上的电子邮件)的完美工具。但是如果试图在一个套接字上发送二进制数据，事情将会变得更加复杂。<br>&emsp;&emsp;例如您想要发送一个整数，您可以肯定接收者将使用同样的方式来解释该整数吗？运行在同一架构上的应用程序可以依赖它们共同的平台来对该类型的数据做出相同的解释。但是如果一个运行在高位优先的<code>PowerPC</code>上的客户端发送一个<code>32</code>位的整数到一个低位优先的<code>Intel</code>，那将会发生什么呢？字节排列将引起不正确的解释。<br>&emsp;&emsp;通过套接字发送一个<code>C</code>语言结构会怎么样呢？这里也会遇到麻烦，因为不是所有的编译器都以相同的方式排列一个结构的元素。结构也可能被压缩以便使浪费的空间最少，这进一步使结构中的元素错位。<br>&emsp;&emsp;幸好有解决这个问题的方案，能够保证两端数据的一致解释。过去，远程过程调用(<code>Remote Procedure Call</code>，<code>RPC</code>)套装工具提供所谓的外部数据表示(<code>External Data Representation</code>，<code>XDR</code>)。<code>XDR</code>为数据定义一个标准的表示来支持异构网络应用程序通信的开发。<br>&emsp;&emsp;现在有两个新的协议提供相似的功能。<code>可扩展标记语言/远程过程调用</code>(<code>XML/RPC</code>)以<code>XML</code>格式安排<code>HTTP</code>上的过程调用。数据和元数据用<code>XML</code>进行编码并作为字符串传输，并通过主机架构把值和它们的物理表示分开。<code>SOAP</code>跟随<code>XML-RPC</code>，以更好的特性和功能扩展了它的思想。</p>
+<h3 id="隐患5：TCP中的帧同步假定"><a href="#隐患5：TCP中的帧同步假定" class="headerlink" title="隐患5：TCP中的帧同步假定"></a>隐患5：TCP中的帧同步假定</h3><p>&emsp;&emsp;<code>TCP</code>不提供帧同步，这使得它对于面向字节流的协议是完美的。这是<code>TCP</code>与<code>UDP</code>的一个重要区别。<code>UDP</code>是面向消息的协议，它保留发送者和接收者之间的消息边界。<code>TCP</code>是一个面向流的协议，它假定正在通信的数据是无结构的，如图<code>1</code>所示：</p>
+<p><img src="/2019/03/13/Linux系统编程/Linux套接字编程中的5个隐患/1.png" height="336" width="377"></p>
+<p align="center" style="color:green">图1 UDP的帧同步能力和缺乏帧同步的TCP</p>
+
+<p>&emsp;&emsp;图<code>1</code>的上部说明一个<code>UDP</code>客户端和服务器。左边的对等层完成两个套接字的写操作，每个为<code>100</code>字节。协议栈的<code>UDP</code>层追踪写的数量，并确保当右边的接收者通过套接字获取数据时，它以同样数量的字节到达。换句话说，为读者保留了写者提供的消息边界。<br>&emsp;&emsp;现在看图<code>1</code>的底部，它为<code>TCP</code>层演示了相同粒度的写操作。两个独立的写操作(每个为<code>100</code>字节)写入流套接字。但在本例中，流套接字的读者得到的是<code>200</code>字节。协议栈的<code>TCP</code>层聚合了两次写操作，这种聚合可以发生在<code>TCP/IP</code>协议栈的发送者或接收者中任何一方。重要的是，要注意到聚合也许不会发生，即<code>TCP</code>只保证数据的有序发送。<br>&emsp;&emsp;对大多数开发人员来说，该陷阱会引起困惑。您想要获得<code>TCP</code>的可靠性和<code>UDP</code>的帧同步。除非改用其他的传输协议，比如流传输控制协议<code>STCP</code>，否则就要求应用层开发人员来实现缓冲和分段功能。</p>
+<h3 id="调试套接字应用程序的工具"><a href="#调试套接字应用程序的工具" class="headerlink" title="调试套接字应用程序的工具"></a>调试套接字应用程序的工具</h3><p>&emsp;&emsp;<code>GNU/Linux</code>提供几个工具，它们可以帮助您发现套接字应用程序中的一些问题。此外，使用这些工具还有教育意义，而且能够帮助解释应用程序和<code>TCP/IP</code>协议栈的行为。</p>
+<h4 id="查看网络子系统的细节"><a href="#查看网络子系统的细节" class="headerlink" title="查看网络子系统的细节"></a>查看网络子系统的细节</h4><p>&emsp;&emsp;<code>netstat</code>工具提供查看<code>GNU/Linux</code>网络子系统的能力。使用<code>netstat</code>可以查看当前活动的连接(按单个协议进行查看)，查看特定状态的连接(比如处于监听状态的服务器套接字)和许多其他的信息。下面展示了<code>netstat</code>提供的一些选项和它们启用的特性。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">netstat --tcp  <span class="comment"># View all TCP sockets currently active</span></span><br><span class="line">netstat --udp  <span class="comment"># View all UDP sockets</span></span><br><span class="line">netstat --listening  <span class="comment"># View all TCP sockets in the listening state</span></span><br><span class="line">netstat --groups  <span class="comment"># View the multicast group membership information</span></span><br><span class="line">netstat --masquerade  <span class="comment"># Display the list of masqueraded connections</span></span><br><span class="line">netstat --statistics  <span class="comment"># View statistics for each protocol</span></span><br></pre></td></tr></table></figure>
+<p>尽管存在许多其他的实用程序，但<code>netstat</code>的功能很全面，它覆盖了<code>route</code>、<code>ifconfig</code>和其他标准<code>GNU/Linux</code>工具的功能。</p>
+<h4 id="监视流量"><a href="#监视流量" class="headerlink" title="监视流量"></a>监视流量</h4><p>&emsp;&emsp;可以使用<code>GNU/Linux</code>的几个工具来检查网络上的低层流量。<code>tcpdump</code>工具是一个比较老的工具，它从网上嗅探网络数据包，打印到<code>stdout</code>或记录在一个文件中。该功能允许查看应用程序产生的流量和<code>TCP</code>生成的低层流控制机制。一个叫做<code>tcpflow</code>的新工具与<code>tcpdump</code>相辅相成，它提供协议流分析和适当地重构数据流的方法，而不管数据包的顺序或重发。下面展示了<code>tcpdump</code>的两个用法模式：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">tcpdump -l -i eth0  <span class="comment"># Display all traffic on the eth0 interface for the local host</span></span><br><span class="line">tcpdump host plato  <span class="comment"># Show all traffic on the network coming from or going to host plato</span></span><br><span class="line">tcpdump host camus and (port http)  <span class="comment"># Show all HTTP traffic for host camus</span></span><br><span class="line">tcpdump tcp port 45000  <span class="comment"># View traffic coming from or going to TCP port 45000 on the local host</span></span><br></pre></td></tr></table></figure>
+<p><code>tcpdump</code>和<code>tcpflow</code>工具有大量的选项，包括创建复杂过滤表达式的能力。</p>
+<h3 id="字节交换还是不呢？"><a href="#字节交换还是不呢？" class="headerlink" title="字节交换还是不呢？"></a>字节交换还是不呢？</h3><p>&emsp;&emsp;<code>Endianness</code>是指内存中字节的排列顺序。高位优先(<code>big endian</code>)按最高有效字节在前排列，然而低位优先(<code>little endian</code>)按照最低有效字节在前排序。<br>&emsp;&emsp;高位优先架构(比如<code>PowerPC</code>)比低位优先架构(比如<code>Intel</code>的<code>Pentium</code>系列，其网络字节顺序是高位优先)有优势。这意味着对高位优先的机器来说，在<code>TCP/IP</code>内控制数据是自然有序的。低位优先架构要求字节交换，对网络应用程序来说，这是一个轻微的性能弱点。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/12/C语言语法详解/类型转换/" rel="next" title="类型转换">
+                <i class="fa fa-chevron-left"></i> 类型转换
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/13/Linux系统编程/消息队列/" rel="prev" title="消息队列">
+                消息队列 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#隐患1：忽略返回状态"><span class="nav-number">1.</span> <span class="nav-text">隐患1：忽略返回状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#隐患2：对等套接字闭包"><span class="nav-number">2.</span> <span class="nav-text">隐患2：对等套接字闭包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#隐患3：地址使用错误-EADDRINUSE"><span class="nav-number">3.</span> <span class="nav-text">隐患3：地址使用错误(EADDRINUSE)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#隐患4：发送结构化数据"><span class="nav-number">4.</span> <span class="nav-text">隐患4：发送结构化数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#隐患5：TCP中的帧同步假定"><span class="nav-number">5.</span> <span class="nav-text">隐患5：TCP中的帧同步假定</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#调试套接字应用程序的工具"><span class="nav-number">6.</span> <span class="nav-text">调试套接字应用程序的工具</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#查看网络子系统的细节"><span class="nav-number">6.1.</span> <span class="nav-text">查看网络子系统的细节</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#监视流量"><span class="nav-number">6.2.</span> <span class="nav-text">监视流量</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#字节交换还是不呢？"><span class="nav-number">7.</span> <span class="nav-text">字节交换还是不呢？</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

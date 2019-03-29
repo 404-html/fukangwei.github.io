@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;Region CNN(RCNN)可以说是利用深度学习进行目标检测的开山之作，主要解决目标检测中的速度和训练集这两个关键问题。  速度：经典的目标检测算法使用滑动窗法依次判断所有可能的区域。本文则预先提取一系列较可能是物体的候选区域，之后仅在这些候选区域上提取特征，进行判断。 训练集：经典的目标检测算法在区域中提取人工设定的特征(Haar、HOG等)。RCNN则需要训练深度网">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RCNN原理">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/16/深度学习/RCNN原理/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;Region CNN(RCNN)可以说是利用深度学习进行目标检测的开山之作，主要解决目标检测中的速度和训练集这两个关键问题。  速度：经典的目标检测算法使用滑动窗法依次判断所有可能的区域。本文则预先提取一系列较可能是物体的候选区域，之后仅在这些候选区域上提取特征，进行判断。 训练集：经典的目标检测算法在区域中提取人工设定的特征(Haar、HOG等)。RCNN则需要训练深度网">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/16/深度学习/RCNN原理/1.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/16/深度学习/RCNN原理/2.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/16/深度学习/RCNN原理/3.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/16/深度学习/RCNN原理/4.png">
+<meta property="og:updated_time" content="2019-03-13T07:36:35.111Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RCNN原理">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;Region CNN(RCNN)可以说是利用深度学习进行目标检测的开山之作，主要解决目标检测中的速度和训练集这两个关键问题。  速度：经典的目标检测算法使用滑动窗法依次判断所有可能的区域。本文则预先提取一系列较可能是物体的候选区域，之后仅在这些候选区域上提取特征，进行判断。 训练集：经典的目标检测算法在区域中提取人工设定的特征(Haar、HOG等)。RCNN则需要训练深度网">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/02/16/深度学习/RCNN原理/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/16/深度学习/RCNN原理/">
+
+
+
+
+
+  <title>RCNN原理 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/16/深度学习/RCNN原理/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">RCNN原理</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-16T15:56:25+08:00">
+                2019-02-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;<code>Region CNN</code>(<code>RCNN</code>)可以说是利用深度学习进行目标检测的开山之作，主要解决目标检测中的速度和训练集这两个关键问题。</p>
+<ul>
+<li>速度：经典的目标检测算法使用滑动窗法依次判断所有可能的区域。本文则预先提取一系列较可能是物体的候选区域，之后仅在这些候选区域上提取特征，进行判断。</li>
+<li>训练集：经典的目标检测算法在区域中提取人工设定的特征(<code>Haar</code>、<code>HOG</code>等)。<code>RCNN</code>则需要训练深度网络进行特征提取。可供使用的有两个数据库：</li>
+</ul>
+<ol>
+<li>较大的识别库(<code>ImageNet ILSVC 2012</code>)：标定每张图片中物体的类别，一千万张图像，共<code>1000</code>类。</li>
+<li>较小的检测库(<code>PASCAL VOC 2007</code>)：标定每张图片中，物体的类别和位置，一万张图像，共<code>20</code>类。</li>
+</ol>
+<p><code>RCNN</code>使用识别库进行预训练，而后用检测库调优参数，最后在检测库上评测。</p>
+<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><p>&emsp;&emsp;<code>RCNN</code>算法分为如下几个步骤：</p>
+<ol>
+<li>输入一张多目标图像，采用<code>selective search</code>算法提取约<code>2000</code>个候选框。</li>
+<li>先在每个候选框周围加上<code>16</code>个像素值为候选框像素平均值的边框，再直接变形为<code>227 * 227</code>的大小。</li>
+<li>先将所有候选框像素减去该候选框像素平均值(预处理操作)，再依次将每个<code>227 * 227</code>的候选框输入<code>AlexNet</code>网络获取<code>4096</code>维的特征(比以前的人工经验特征低两个数量级)，<code>2000</code>个候选框的<code>CNN</code>特征组合成<code>2000 * 4096</code>维矩阵。</li>
+<li>将<code>2000 * 4096</code>维特征与<code>20</code>个<code>SVM</code>组成的权值矩阵<code>4096 * 20</code>相乘(<code>20</code>种分类，因为<code>SVM</code>是二分类器，则有<code>20</code>个<code>SVM</code>)，获得<code>2000 * 20</code>维矩阵(表示每个建议框是某个物体类别的得分)。</li>
+<li>分别对上述<code>2000 * 20</code>维矩阵中每一列(即每一类)进行非极大值抑制(剔除重叠候选框)，得到该列(即该类)得分最高的一些候选框。</li>
+<li>分别用<code>20</code>个回归器对上述<code>20</code>个类别中剩余的候选框进行回归操作，最终得到每个类别的修正后的得分最高的<code>bounding box</code>。</li>
+</ol>
+<p><img src="/2019/02/16/深度学习/RCNN原理/1.png" height="135" width="476"></p>
+<p>&emsp;&emsp;使用了<code>Selective Search</code>方法从一张图像生成约<code>2000</code>至<code>3000</code>个候选区域。基本思路如下：使用一种过分割手段，将图像分割成小区域；查看现有小区域，合并可能性最高的两个区域，重复直到整张图像合并成一个区域位置；输出所有曾经存在过的区域，即所谓的候选区域。候选区域生成和后续步骤相对独立，实际可以使用任意算法进行。<br>&emsp;&emsp;优先合并以下四种区域：颜色(颜色直方图)相近的；纹理(梯度直方图)相近的；合并后总面积小的；合并后的总面积在其<code>BBOX</code>中所占比例大的。第三条保证合并操作的尺度较为均匀，避免一个大区域陆续<code>吃掉</code>其他小区域。假设有区域<code>a-b-c-d-e-f-g-h</code>，较好的合并方式是：<code>ab-cd-ef-gh -&gt; abcd-efgh -&gt; abcdefgh</code>；不好的合并方法是<code>ab-c-d-e-f-g-h -&gt; abcd-e-f-g-h -&gt; abcdef-gh -&gt; abcdefgh</code>。第四条保证合并后形状规则，例如左图适于合并，右图不适于合并：</p>
+<p><img src="/2019/02/16/深度学习/RCNN原理/2.png"></p>
+<p>&emsp;&emsp;上述四条规则只涉及区域的颜色直方图、纹理直方图、面积和位置。合并后的区域特征可以直接由子区域特征计算而来，速度较快。为了尽可能不遗漏候选区域，上述操作在多个颜色空间中同时进行(<code>RGB</code>、<code>HSV</code>或<code>Lab</code>等)。在一个颜色空间中，使用上述四条规则的不同组合进行合并。所有颜色空间与所有规则的全部结果，在去除重复后，都作为候选区域输出。</p>
+<h3 id="候选框搜索"><a href="#候选框搜索" class="headerlink" title="候选框搜索"></a>候选框搜索</h3><p>&emsp;&emsp;从上面的流程图可以看到，搜索的候选框是矩形的，而且是大小各不相同。然而<code>CNN</code>要求输入图片的大小是固定的，如果把搜索的矩形选框不做处理就扔进<code>CNN</code>中，肯定是不行的。因此对于每个输入的候选框都需要缩放到固定的大小。下面讲解要怎么进行缩放处理，为了简单起见，假设下一阶段<code>CNN</code>所需要的输入图片大小是正方形(<code>227 * 227</code>)。<code>RCNN</code>的作者给出了四种变形方式：</p>
+<ul>
+<li>考虑<code>context</code>(图像中的<code>context</code>指<code>RoI</code>周边像素)的各向同性变形，候选框周围像素扩充到<code>227 * 227</code>。若遇到图像边界，则用候选框像素均值填充，如下图第二列。</li>
+<li>不考虑<code>context</code>的各向同性变形，直接用候选框像素均值填充至<code>227 * 227</code>，如下图第三列。</li>
+<li>各向异性变形，简单粗暴地对图像缩放至<code>227 * 227</code>，如下图第四列。</li>
+<li>变形前先进行边界像素填充(<code>padding</code>)处理，即向外扩展建议框边界，以上三种方法中分别采用<code>padding = 0</code>(下图第一行)和<code>padding = 16</code>(下图第二行)进行处理。</li>
+</ul>
+<p>经过作者一系列实验，采用<code>padding = 16</code>的各向异性变形(下图第二行第三列)效果最好，能使<code>mAP</code>提升<code>3</code>至<code>5%</code>。</p>
+<p><img src="/2019/02/16/深度学习/RCNN原理/3.png" height="220" width="418"></p>
+<h3 id="特征提取"><a href="#特征提取" class="headerlink" title="特征提取"></a>特征提取</h3><p>&emsp;&emsp;特征提取分为有监督预训练和特定样本下的微调这两个步骤。网络结构基本借鉴<code>Hinton</code>在<code>ImageNet</code>上的分类网络：</p>
+<p><img src="/2019/02/16/深度学习/RCNN原理/4.png" height="120" width="433"></p>
+<p>&emsp;&emsp;有监督预训练的样本如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>样本</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>正样本</td>
+<td><code>ILSVRC2012</code></td>
+</tr>
+<tr>
+<td>负样本</td>
+<td><code>ILSVRC2012</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>ILSVRC</code>样本集上仅有图像类别标签，没有图像物体位置标注。采用<code>AlexNet</code>网络进行有监督预训练，学习率为<code>0.01</code>。该网络输入为<code>227 * 227</code>的<code>ILSVRC</code>训练集图像，输出最后一层为<code>4096维特征 -&gt; 1000类</code>的映射，训练的是网络参数。</p>
+<p>&emsp;&emsp;特定样本下的微调样本如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>样本</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>正样本</td>
+<td><code>Ground Truth</code>加上与<code>Ground Truth</code>相交<code>IoU &gt; 0.5</code>的候选框(由于<code>Ground Truth</code>太少了)</td>
+</tr>
+<tr>
+<td>负样本</td>
+<td>与<code>Ground Truth</code>相交<code>IoU ≤ 0.5</code>的候选框</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>PASCAL VOC 2007</code>样本集上既有图像中物体类别标签，也有图像中物体位置标签。采用训练好的<code>AlexNet</code>网络进行<code>PASCAL VOC 2007</code>样本集下的微调，学习率为<code>0.001</code>(<code>0.01/10</code>是为了在学习新东西时不至于忘记之前的记忆)。<code>mini-batch</code>为<code>32</code>个正样本和<code>96</code>个负样本(由于正样本太少)。该网络输入为候选框(由<code>selective search</code>而来)变形后的<code>227 * 227</code>的图像，修改了原来的<code>1000</code>为类别输出，改为<code>21</code>维(<code>20</code>类加上背景)输出，训练的是网络参数。</p>
+<h3 id="类别判断"><a href="#类别判断" class="headerlink" title="类别判断"></a>类别判断</h3><p>&emsp;&emsp;对每一类目标，使用一个线性<code>SVM</code>二类分类器进行判别。输入为深度网络输出的<code>4096</code>维特征，输出是否属于此类。由于负样本很多，使用<code>hard negative mining</code>方法。假设要检测车辆，只有当<code>bounding box</code>把整辆车都包含在内才叫正样本；如果<code>bounding box</code>没有包含到车辆，那么就可以把它当做负样本。但问题是当检测窗口只有部分包含物体，那该怎么定义正负样本呢？作者测试了<code>IOU</code>阈值各种方案数值：<code>0</code>、<code>0.1</code>至<code>0.5</code>。最后通过训练发现，如果选择<code>IOU</code>阈值为<code>0.3</code>效果最好(选择为<code>0</code>精度下降了<code>4</code>个百分点，选择<code>0.5</code>精度下降了<code>5</code>个百分点)，即当重叠度小于<code>0.3</code>时，就把它标注为负样本。一旦<code>CNN</code>的<code>f7</code>层特征被提取出来，那么将为每个物体类训练一个<code>svm</code>分类器。使用<code>CNN</code>提取<code>2000</code>个候选框，可以得到<code>2000 * 4096</code>这样的特征向量矩阵，然后只需要把这样的一个矩阵与<code>svm</code>权值矩阵<code>4096 * N</code>点乘(<code>N</code>为分类类别数目，因为我们训练的<code>N</code>个<code>svm</code>，每个<code>svm</code>包含了<code>4096</code>个权值<code>w</code>)，就可以得到结果了。<br>&emsp;&emsp;将得到的特征输入到<code>SVM</code>进行分类，看看这个<code>feature vector</code>所对应的<code>region proposal</code>是需要的物体还是无关的实物(<code>background</code>)。最后使用排序、<code>canny</code>边界检测就得到了需要的<code>bounding box</code>。</p>
+<h3 id="什么叫有监督预训练？为什么要进行有监督预训练？"><a href="#什么叫有监督预训练？为什么要进行有监督预训练？" class="headerlink" title="什么叫有监督预训练？为什么要进行有监督预训练？"></a>什么叫有监督预训练？为什么要进行有监督预训练？</h3><p>&emsp;&emsp;有监督预训练也称之为迁移学习，举例说明：若有大量标注信息的人脸年龄分类的正负样本图片，可以利用该样本训练了<code>CNN</code>网络，用于人脸年龄识别；现在要通过人脸进行性别识别，那么就可以去掉已经训练好的人脸年龄识别网络<code>CNN</code>的最后一层或几层，换成所需要的分类层。前面的网络参数直接使用为初始化参数，修改层的网络参数随机初始化，再利用人脸性别分类的正负样本图片进行训练，得到人脸性别识别网络，这种方法就叫做有监督预训练，可以很好地解决小样本数据无法训练深层<code>CNN</code>网络的问题。小样本数据训练很容易造成网络过拟合，但是在大样本训练后利用其参数初始化网络可以很好地训练小样本，这解决了小样本训练的难题。</p>
+<h3 id="可以不进行特定样本下的微调吗？可以直接采用AlexNet网络的特征进行SVM训练吗？"><a href="#可以不进行特定样本下的微调吗？可以直接采用AlexNet网络的特征进行SVM训练吗？" class="headerlink" title="可以不进行特定样本下的微调吗？可以直接采用AlexNet网络的特征进行SVM训练吗？"></a>可以不进行特定样本下的微调吗？可以直接采用AlexNet网络的特征进行SVM训练吗？</h3><p>&emsp;&emsp;<code>RCNN</code>设计了没有进行微调的对比实验，分别对<code>AlexNet</code>网络的<code>pool5</code>、<code>fc6</code>、<code>fc7</code>层进行特征提取，输入<code>SVM</code>进行训练。这相当于把<code>AlexNet</code>网络当做特征提取器，类似于<code>HOG</code>、<code>SIFT</code>。实验结果发现<code>f6</code>层提取的特征比<code>f7</code>层的<code>mAP</code>还高，<code>pool5</code>层提取的特征与<code>f6</code>、<code>f7</code>层相比<code>mAP</code>差不多。在<code>PASCAL VOC 2007</code>数据集上采取了微调后，<code>fc6</code>、<code>fc7</code>层特征较<code>pool5</code>层特征用于<code>SVM</code>训练提升<code>mAP</code>十分明显。<br>&emsp;&emsp;由此作者得出结论：不针对特定任务进行微调，而将<code>CNN</code>当成特征提取器，<code>pool5</code>层得到的特征是基础特征，类似于<code>HOG</code>、<code>SIFT</code>，类似于只学习到了人脸共性特征；从<code>fc6</code>和<code>fc7</code>等全连接层中所学习到的特征，则是针对特定样本的特征，类似于学习到了分类性别分类年龄的个性特征。</p>
+<h3 id="为什么微调时和训练SVM时所采用的正负样本阈值-0-5和0-3-不一致？"><a href="#为什么微调时和训练SVM时所采用的正负样本阈值-0-5和0-3-不一致？" class="headerlink" title="为什么微调时和训练SVM时所采用的正负样本阈值(0.5和0.3)不一致？"></a>为什么微调时和训练SVM时所采用的正负样本阈值(0.5和0.3)不一致？</h3><p>&emsp;&emsp;微调阶段是由于<code>CNN</code>对小样本容易过拟合，需要大量训练数据，故对<code>IoU</code>限制宽松；<code>SVM</code>适用于小样本训练，故对样本<code>IoU</code>限制严格。</p>
+<h3 id="为什么不直接采用微调后的AlexNet网络最后一层SoftMax进行21分类？"><a href="#为什么不直接采用微调后的AlexNet网络最后一层SoftMax进行21分类？" class="headerlink" title="为什么不直接采用微调后的AlexNet网络最后一层SoftMax进行21分类？"></a>为什么不直接采用微调后的AlexNet网络最后一层SoftMax进行21分类？</h3><p>&emsp;&emsp;因为微调时和训练<code>SVM</code>时所采用的正负样本阈值不同，微调阶段定义的正样本并不强调精准的位置，而<code>SVM</code>正样本只有<code>Ground Truth</code>；并且微调阶段的负样本是随机抽样的，而<code>SVM</code>的负样本是经过<code>hard negative mining</code>方法筛选的。采用<code>SoftMax</code>会使<code>PSACAL VOC 2007</code>测试集上<code>mAP</code>从<code>54.2%</code>降低到<code>50.9%</code>。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/16/深度学习/TensorFlow之猫狗分类/" rel="next" title="TensorFlow之猫狗分类">
+                <i class="fa fa-chevron-left"></i> TensorFlow之猫狗分类
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/17/深度学习/特征金字塔网络FPN/" rel="prev" title="特征金字塔网络FPN">
+                特征金字塔网络FPN <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#流程"><span class="nav-number">1.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#候选框搜索"><span class="nav-number">2.</span> <span class="nav-text">候选框搜索</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#特征提取"><span class="nav-number">3.</span> <span class="nav-text">特征提取</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#类别判断"><span class="nav-number">4.</span> <span class="nav-text">类别判断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#什么叫有监督预训练？为什么要进行有监督预训练？"><span class="nav-number">5.</span> <span class="nav-text">什么叫有监督预训练？为什么要进行有监督预训练？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#可以不进行特定样本下的微调吗？可以直接采用AlexNet网络的特征进行SVM训练吗？"><span class="nav-number">6.</span> <span class="nav-text">可以不进行特定样本下的微调吗？可以直接采用AlexNet网络的特征进行SVM训练吗？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么微调时和训练SVM时所采用的正负样本阈值-0-5和0-3-不一致？"><span class="nav-number">7.</span> <span class="nav-text">为什么微调时和训练SVM时所采用的正负样本阈值(0.5和0.3)不一致？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么不直接采用微调后的AlexNet网络最后一层SoftMax进行21分类？"><span class="nav-number">8.</span> <span class="nav-text">为什么不直接采用微调后的AlexNet网络最后一层SoftMax进行21分类？</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

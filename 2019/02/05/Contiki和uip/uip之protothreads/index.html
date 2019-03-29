@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;通常我们等待一个事件时有阻塞和非阻塞两种方式，uip不支持多线程操作，也不依靠中断来通知事件，所以要使用阻塞的方式。但阻塞这种方式又会白白浪费cpu时间，阻塞在那里等待事件发生，因而uip使用了一种protothreads方式，暂称其为协程。&amp;emsp;&amp;emsp;下面是官方文档的一些简介：协程是一种无堆栈的轻量级线程，它被设计用在服务一些简单有限的内存体系上，如一些嵌入式">
+<meta property="og:type" content="article">
+<meta property="og:title" content="uip之protothreads">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/05/Contiki和uip/uip之protothreads/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;通常我们等待一个事件时有阻塞和非阻塞两种方式，uip不支持多线程操作，也不依靠中断来通知事件，所以要使用阻塞的方式。但阻塞这种方式又会白白浪费cpu时间，阻塞在那里等待事件发生，因而uip使用了一种protothreads方式，暂称其为协程。&amp;emsp;&amp;emsp;下面是官方文档的一些简介：协程是一种无堆栈的轻量级线程，它被设计用在服务一些简单有限的内存体系上，如一些嵌入式">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-02-05T03:27:49.769Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="uip之protothreads">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;通常我们等待一个事件时有阻塞和非阻塞两种方式，uip不支持多线程操作，也不依靠中断来通知事件，所以要使用阻塞的方式。但阻塞这种方式又会白白浪费cpu时间，阻塞在那里等待事件发生，因而uip使用了一种protothreads方式，暂称其为协程。&amp;emsp;&amp;emsp;下面是官方文档的一些简介：协程是一种无堆栈的轻量级线程，它被设计用在服务一些简单有限的内存体系上，如一些嵌入式">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/05/Contiki和uip/uip之protothreads/">
+
+
+
+
+
+  <title>uip之protothreads | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/Contiki和uip/uip之protothreads/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">uip之protothreads</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T11:17:27+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;通常我们等待一个事件时有阻塞和非阻塞两种方式，<code>uip</code>不支持多线程操作，也不依靠中断来通知事件，所以要使用阻塞的方式。但阻塞这种方式又会白白浪费<code>cpu</code>时间，阻塞在那里等待事件发生，因而<code>uip</code>使用了一种<code>protothreads</code>方式，暂称其为<code>协程</code>。<br>&emsp;&emsp;下面是官方文档的一些简介：协程是一种无堆栈的轻量级线程，它被设计用在服务一些简单有限的内存体系上，如一些嵌入式系统等。协程为事件驱动的线性代码执行，提供<code>C</code>的实现。协程可以被用在有或无<code>RTOS</code>(<code>实时操作系统</code>)的结构上。协程是一个非常轻量级、无堆栈线程，提供了事件驱动系统顶层的阻塞上下文的功能，而不需要每个线程的堆栈。协程的目的是实现连续流程的控制，而不需要状态机或者完整的多线程机制支持。在<code>C</code>函数中协程提供条件阻塞。<br>&emsp;&emsp;我们从<code>uip</code>的一个应用实例<code>dhcpc</code>中看一下协程是如何使用及其原理，在<code>dhcpc</code>初始化函数中调用了<code>PT_INIT(&amp;s.pt);</code>。下面是<code>dhcpc</code>的应用主函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="title">PT_THREAD</span> <span class="params">( handle_dhcp ( <span class="keyword">void</span> ) )</span> </span>&#123;</span><br><span class="line">    PT_BEGIN ( &amp;s.pt );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        send_discover(); <span class="comment">/* 发送dhcpc探求包 */</span></span><br><span class="line">        timer_set ( &amp;s.timer, s.ticks );</span><br><span class="line">        PT_WAIT_UNTIL ( &amp;s.pt, uip_newdata() || timer_expired ( &amp;s.timer ) );</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* do something */</span></span><br><span class="line">        <span class="keyword">if</span> ( s.ticks &lt; CLOCK_SECOND * <span class="number">60</span> ) &#123;</span><br><span class="line">            s.ticks *= <span class="number">2</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> ( s.state != STATE_OFFER_RECEIVED );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        send_request(); <span class="comment">/* 发送dhcpc接受包 */</span></span><br><span class="line">        timer_set ( &amp;s.timer, s.ticks );</span><br><span class="line">        PT_WAIT_UNTIL ( &amp;s.pt, uip_newdata() || timer_expired ( &amp;s.timer ) );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( s.ticks &lt;= CLOCK_SECOND * <span class="number">10</span> ) &#123;</span><br><span class="line">            s.ticks += CLOCK_SECOND;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            PT_RESTART ( &amp;s.pt );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> ( s.state != STATE_CONFIG_RECEIVED );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        PT_YIELD ( &amp;s.pt );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PT_END ( &amp;s.pt );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;我们分别看下这几个宏的实现：</p>
+<ul>
+<li>PT_INIT：初始化协程宏，必须在执行相应的协程函数前执行此宏：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_INIT(pt) LC_INIT((pt)-&gt;lc)</span></span><br></pre></td></tr></table></figure>
+<p>我们看到这里又有一个新的宏<code>LC_INIT</code>(这是<code>Local continuations</code>部分)，其实就是初始化状态：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LC_INIT(s) s = 0;</span></span><br></pre></td></tr></table></figure>
+<p>下面是结构pt的定义：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pt</span> &#123;</span></span><br><span class="line">    <span class="keyword">lc_t</span> lc;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>所以<code>PT_INIT(&amp;s.pt);</code>这个宏展开就是：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">s.pt-&gt;lc = <span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>PT_THREAD</code>：定义协程函数的宏，凡是要使用协程的函数都要被此宏定义：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_THREAD(name_args) char name_args</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>PT_BEGIN</code>：协程开始宏：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_BEGIN(pt) &#123; char PT_YIELD_FLAG = 1; LC_RESUME((pt)-&gt;lc)</span></span><br></pre></td></tr></table></figure>
+<p>其中<code>LC_RESUME</code>宏：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LC_RESUME(s) switch(s) &#123; case 0:</span></span><br></pre></td></tr></table></figure>
+<p>所以<code>PT_BEGIN(&amp;s.pt);</code>宏展开如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> PT_YIELD_FLAG = <span class="number">1</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">switch</span> ( s.pt-&gt;lc ) &#123;</span><br><span class="line"><span class="keyword">case</span> <span class="number">0</span>:</span><br></pre></td></tr></table></figure>
+<p>可以看出这个宏就是定义了一个<code>switch</code>的头。</p>
+<ul>
+<li><code>PT_WAIT_UNTIL</code>：等待条件成立宏，此宏将<code>阻塞</code>在这个条件下：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_WAIT_UNTIL(pt, condition) \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                             \</span><br><span class="line">        LC_SET((pt)-&gt;lc);            \</span><br><span class="line">        <span class="keyword">if</span>(!(condition)) &#123;           \</span><br><span class="line">            <span class="keyword">return</span> PT_WAITING;       \</span><br><span class="line">        &#125;                            \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>其中<code>LC_SET</code>宏为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LC_SET(s) s = __LINE__; case __LINE__:</span></span><br></pre></td></tr></table></figure>
+<p><code>__LINE__</code>是编译器内部产生的变量，它表示当前程序的行数。所以将宏展开为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    s = __LINE__; <span class="keyword">case</span> __LINE__;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ! ( condition ) ) &#123;</span><br><span class="line">        <span class="keyword">return</span> PT_WAITING;</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">while</span> ( <span class="number">0</span> )</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>PT_RESTART</code>：重启协程宏：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_RESTART(pt)     \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                   \</span><br><span class="line">        PT_INIT(pt);       \ <span class="comment">/* 关键，将条件归0 */</span></span><br><span class="line">        <span class="keyword">return</span> PT_WAITING; \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>PT_YIELD</code>：放弃执行宏，此宏功能是放弃此次执行函数返回：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_YIELD(pt)             \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                         \</span><br><span class="line">        PT_YIELD_FLAG = <span class="number">0</span>;       \</span><br><span class="line">        LC_SET((pt)-&gt;lc);        \</span><br><span class="line">        <span class="keyword">if</span>(PT_YIELD_FLAG == <span class="number">0</span>) &#123; \</span><br><span class="line">            <span class="keyword">return</span> PT_YIELDED;   \</span><br><span class="line">        &#125;                        \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>PT_END</code>：协程结束宏：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_END(pt) LC_END((pt)-&gt;lc); PT_YIELD_FLAG = 0; \</span></span><br><span class="line">    PT_INIT(pt); <span class="keyword">return</span> PT_ENDED; &#125;</span><br></pre></td></tr></table></figure>
+<p>其中<code>LC_END</code>宏定义为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LC_END(s) &#125;</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;我们将上面那个函数展开：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">char</span> <span class="title">handle_dhcp</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> PT_YIELD_FLAG = <span class="number">1</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">switch</span> ( s.pt-&gt;lc ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">do</span> &#123;</span><br><span class="line">                send_discover(); <span class="comment">/* 发送dhcpc探求包 */</span></span><br><span class="line">                timer_set ( &amp;s.timer, s.ticks );</span><br><span class="line">​</span><br><span class="line">                <span class="keyword">do</span> &#123;</span><br><span class="line">                    s.pt-&gt;lc = __LINE__; <span class="keyword">case</span> __LINE__;</span><br><span class="line">​</span><br><span class="line">                    <span class="keyword">if</span> ( ! ( uip_newdata() ) ) &#123;</span><br><span class="line">                        <span class="keyword">return</span> PT_WAITING;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br><span class="line">            &#125; <span class="keyword">while</span> ( s.state != STATE_OFFER_RECEIVED );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">do</span> &#123;</span><br><span class="line">                send_request(); <span class="comment">/* 发送dhcpc接受包 */</span></span><br><span class="line">                timer_set ( &amp;s.timer, s.ticks );</span><br><span class="line">​</span><br><span class="line">                <span class="keyword">do</span> &#123;</span><br><span class="line">                    s.pt-&gt;lc = __LINE__; <span class="keyword">case</span> __LINE__;</span><br><span class="line">​</span><br><span class="line">                    <span class="keyword">if</span> ( ! ( uip_newdata() ) ) &#123;</span><br><span class="line">                        <span class="keyword">return</span> PT_WAITING;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">                <span class="keyword">if</span> ( s.ticks &lt;= CLOCK_SECOND * <span class="number">10</span> ) &#123;</span><br><span class="line">                    s.ticks += CLOCK_SECOND;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">do</span> &#123;</span><br><span class="line">                        s.pt-&gt;lc = <span class="number">0</span>;</span><br><span class="line">                        <span class="keyword">return</span> PT_WAITING;</span><br><span class="line">                    &#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">while</span> ( s.state != STATE_CONFIG_RECEIVED );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">while</span> ( <span class="number">1</span> ) &#123; <span class="comment">/* 这个死循环是应用中的需求，dhcp后这个程序不要再执行了 */</span></span><br><span class="line">                <span class="keyword">do</span> &#123;</span><br><span class="line">                    PT_YIELD_FLAG = <span class="number">0</span>;</span><br><span class="line">                    s.pt-&gt;lc = __LINE__; <span class="keyword">case</span> __LINE__:</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> ( PT_YIELD_FLAG == <span class="number">0</span> ) &#123;</span><br><span class="line">                        <span class="keyword">return</span> PT_YIELDED;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PT_YIELD_FLAG = <span class="number">0</span>;</span><br><span class="line">    s.pt-&gt;lc = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">return</span> PT_ENDED;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<hr>
+<p>&emsp;&emsp;<code>protothread</code>是专为资源有限的系统设计的一种耗费资源特别少并且不使用堆栈的线程模型，相比于嵌入式操作系统，其有如下优点：</p>
+<ul>
+<li>以纯<code>C</code>语言实现，无硬件依靠性，因此不存在移植的困难。</li>
+<li>极少的资源需求，每个<code>Protothread</code>仅需要<code>2</code>个额外的字节。</li>
+<li>支持阻塞操纵且没有栈的切换。</li>
+</ul>
+<p>&emsp;&emsp;它的缺陷在于：</p>
+<ul>
+<li>函数中不具备可重入型，不能使用局部变量。</li>
+<li>按顺序判断各任务条件是否满足，因此无优先级抢占。</li>
+<li>任务中的各条件也是按顺序判断的，因此要求任务中的条件必须是依次出现的。</li>
+</ul>
+<p>&emsp;&emsp;<code>protothread</code>的阻塞机制：在每个条件判断前，先将当前地址保存到某个变量中，再判断条件是否成立，若条件成立，则往下运行；若条件不成立，则返回。<code>protothread</code>基本源码及注释：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> PC_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PC_H</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> INT16U;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pt</span> &#123;</span></span><br><span class="line">    INT16U lc;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_THREAD_WAITING 0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_THREAD_EXITED  1</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_INIT(pt) (pt)-&gt;lc = 0 <span class="comment">/* 初始化任务变量，只在初始化函数中执行一次就行 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_BEGIN(pt) switch((pt)-&gt;lc) &#123; case 0: <span class="comment">/* 启动任务处理，放在函数开始处 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 等待某个条件成立，若条件不成立则直接退出本函数，下一次进入本函数就直接跳到这个地方判断。</span></span><br><span class="line"><span class="comment">   “__LINE__”是编译器内置宏，代表当前行号，比如：若当前行号为8，</span></span><br><span class="line"><span class="comment">   则“s = __LINE__; case __LINE__:”展开为“s = 8; case 8:” */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_WAIT_UNTIL(pt, condition) (pt)-&gt;lc = __LINE__; case __LINE__: \</span></span><br><span class="line">    <span class="keyword">if</span>(!(condition))  <span class="keyword">return</span></span><br><span class="line">​</span><br><span class="line">#define PT_END(pt) &#125; <span class="comment">/* 结束任务，放在函数的最后 */</span></span><br><span class="line">#define PT_WAIT_WHILE(pt, cond) PT_WAIT_UNTIL((pt), !(cond)) <span class="comment">/* 等待某个条件不成立 */</span></span><br><span class="line">#define PT_WAIT_THREAD(pt, thread) PT_WAIT_UNTIL((pt), (thread)) <span class="comment">/* 等待某个子任务执行完成 */</span></span><br><span class="line">#define PT_SPAWN(pt,thread) \ <span class="comment">/* 新建一个子任务，并等待其执行完退出 */</span></span><br><span class="line">    PT_INIT ( ( pt ) ); \</span><br><span class="line">    PT_WAIT_THREAD ( ( pt ), ( thread ) )</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_RESTART(pt) PT_INIT(pt); return <span class="comment">/* 重新启动某任务执行 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_EXIT(pt)    (pt)-&gt;lc = PT_THREAD_EXITED; return <span class="comment">/* 任务后面的部分不执行，直接退出 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;应用示例如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">pt</span> <span class="title">pt1</span>, <span class="title">pt2</span>;</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> protothread1_flag, protothread2_flag;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">protothread1</span> <span class="params">( struct pt *pt )</span> </span>&#123; <span class="comment">/* 线程1 */</span></span><br><span class="line">    PT_BEGIN ( pt ); <span class="comment">/* 开始时调用 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        protothread1_flag = <span class="number">1</span>;</span><br><span class="line">        <span class="comment">/* 等待protothread2_flag标志置位 */</span></span><br><span class="line">        PT_WAIT_UNTIL ( pt, protothread2_flag != <span class="number">0</span> );</span><br><span class="line">        protothread2_flag = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PT_END ( pt ); <span class="comment">/* 结束时调用 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">protothread2</span> <span class="params">( struct pt *pt )</span> </span>&#123; <span class="comment">/* 线程2 */</span></span><br><span class="line">    PT_BEGIN ( pt );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        protothread2_flag = <span class="number">1</span>;</span><br><span class="line">        PT_WAIT_UNTIL ( pt, protothread1_flag != <span class="number">0</span> );</span><br><span class="line">        protothread1_flag = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PT_END ( pt );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    PT_INIT ( &amp;pt1 ); <span class="comment">/* 初始化 */</span></span><br><span class="line">    PT_INIT ( &amp;pt2 );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        protothread1 ( &amp;pt1 );</span><br><span class="line">        protothread2 ( &amp;pt2 );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>线程<code>1</code>和线程`2的展开式如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">protothread1</span> <span class="params">( struct pt *pt )</span> </span>&#123; <span class="comment">/* 线程1 */</span></span><br><span class="line">    <span class="keyword">switch</span> ( pt-&gt;lc ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">            ;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">                protothread1_flag = <span class="number">1</span>;</span><br><span class="line">                pt-&gt;lc = <span class="number">26</span>; <span class="keyword">case</span> <span class="number">26</span>: <span class="comment">/* 假定当前为26行 */</span></span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> ( protothread2_flag == <span class="number">0</span> ) &#123;</span><br><span class="line">                    <span class="keyword">return</span>; <span class="comment">/* 若protothread2_flag未发生，则返回 */</span></span><br><span class="line">                &#125;</span><br><span class="line">​</span><br><span class="line">                protothread2_flag = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">protothread2</span> <span class="params">( struct pt *pt )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">switch</span> ( pt-&gt;lc ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">            ;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">                protothread2_flag = <span class="number">1</span>;</span><br><span class="line">                pt-&gt;lc = <span class="number">44</span>; <span class="keyword">case</span> <span class="number">44</span>:</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> ( protothread1_flag == <span class="number">0</span> ) &#123;</span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line">​</span><br><span class="line">                myFunc2();</span><br><span class="line">                protothread1_flag = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/05/Contiki和uip/udp之client和server/" rel="next" title="udp之client和server">
+                <i class="fa fa-chevron-left"></i> udp之client和server
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/05/Contiki和uip/STM32移植uip/" rel="prev" title="STM32移植uip">
+                STM32移植uip <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

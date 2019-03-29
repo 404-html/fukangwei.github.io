@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Feature Pyramid Networks for Object Detection&amp;emsp;&amp;emsp;这里介绍的文章是来自Facebook的特征金字塔网络Feature Pyramid Networks(FPN)。FPN主要解决的是物体检测中的多尺度问题，通过简单的网络连接改变，在基本不增加原有模型计算量情况下，大幅度提升了小物体检测的性能。我们将从论文背景、论文思想、结果与结论几方面">
+<meta property="og:type" content="article">
+<meta property="og:title" content="特征金字塔网络FPN">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/02/17/深度学习/特征金字塔网络FPN/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="Feature Pyramid Networks for Object Detection&amp;emsp;&amp;emsp;这里介绍的文章是来自Facebook的特征金字塔网络Feature Pyramid Networks(FPN)。FPN主要解决的是物体检测中的多尺度问题，通过简单的网络连接改变，在基本不增加原有模型计算量情况下，大幅度提升了小物体检测的性能。我们将从论文背景、论文思想、结果与结论几方面">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/17/深度学习/特征金字塔网络FPN/1.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/17/深度学习/特征金字塔网络FPN/2.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/17/深度学习/特征金字塔网络FPN/3.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/02/17/深度学习/特征金字塔网络FPN/4.png">
+<meta property="og:updated_time" content="2019-03-13T07:36:43.496Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="特征金字塔网络FPN">
+<meta name="twitter:description" content="Feature Pyramid Networks for Object Detection&amp;emsp;&amp;emsp;这里介绍的文章是来自Facebook的特征金字塔网络Feature Pyramid Networks(FPN)。FPN主要解决的是物体检测中的多尺度问题，通过简单的网络连接改变，在基本不增加原有模型计算量情况下，大幅度提升了小物体检测的性能。我们将从论文背景、论文思想、结果与结论几方面">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/02/17/深度学习/特征金字塔网络FPN/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/02/17/深度学习/特征金字塔网络FPN/">
+
+
+
+
+
+  <title>特征金字塔网络FPN | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/17/深度学习/特征金字塔网络FPN/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">特征金字塔网络FPN</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-17T10:53:46+08:00">
+                2019-02-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Feature-Pyramid-Networks-for-Object-Detection"><a href="#Feature-Pyramid-Networks-for-Object-Detection" class="headerlink" title="Feature Pyramid Networks for Object Detection"></a>Feature Pyramid Networks for Object Detection</h3><p>&emsp;&emsp;这里介绍的文章是来自<code>Facebook</code>的特征金字塔网络<code>Feature Pyramid Networks</code>(<code>FPN</code>)。<code>FPN</code>主要解决的是物体检测中的多尺度问题，通过简单的网络连接改变，在基本不增加原有模型计算量情况下，大幅度提升了小物体检测的性能。我们将从论文背景、论文思想、结果与结论几方面探讨此论文。<br>&emsp;&emsp;在物体检测里面，有限计算量情况下，网络的深度(对应到感受野)与<code>stride</code>通常是一对矛盾的东西，常用的网络结构对应的<code>stride</code>一般会比较大(例如<code>32</code>)，而图像中的小物体甚至会小于<code>stride</code>的大小，造成的结果就是小物体的检测性能急剧下降。传统解决这个问题的思路包括：</p>
+<ul>
+<li>多尺度训练和测试(又称图像金字塔)，如图<code>(a)</code>所示。目前几乎所有在<code>ImageNet</code>和<code>COCO</code>检测任务上取得好成绩的方法都使用了图像金字塔方法。然而这样的方法由于很高的时间及计算量消耗，难以在实际中应用。</li>
+<li>特征分层，即每层分别预测对应的<code>scale</code>分辨率的检测结果，如图<code>(c)</code>所示。<code>SSD</code>检测框架采用了类似的思想。这样的方法问题在于直接强行让不同层学习同样的语义信息。而对于卷积神经网络而言，不同深度对应着不同层次的语义特征，浅层网络分辨率高，学的更多是细节特征，深层网络分辨率低，学的更多是语义特征。</li>
+</ul>
+<p><img src="/2019/02/17/深度学习/特征金字塔网络FPN/1.png" height="138" width="480"></p>
+<p><img src="/2019/02/17/深度学习/特征金字塔网络FPN/2.png" height="138" width="499"></p>
+<p>因此目前多尺度的物体检测主要面临的挑战为：</p>
+<ul>
+<li>如何学习具有强语义信息的多尺度特征表示。</li>
+<li>如何设计通用的特征表示来解决物体检测中的多个子问题，例如<code>object proposal</code>、<code>box localization</code>和<code>instance segmentation</code>。</li>
+<li>如何高效计算多尺度的特征表示。</li>
+</ul>
+<p>&emsp;&emsp;本文针对这些问题，提出了特征金字塔网络<code>FPN</code>，如图<code>(d)</code>所示，网络直接在原来的单网络上做修改，每个分辨率的<code>feature map</code>引入后一分辨率缩放两倍的<code>feature map</code>做<code>element-wise</code>相加的操作。通过这样的连接，每一层预测所用的<code>feature map</code>都融合了不同分辨率、不同语义强度的特征，融合的不同分辨率的<code>feature map</code>分别做对应分辨率大小的物体检测。这样保证了每一层都有合适的分辨率以及强语义特征。同时，由于此方法只是在原网络基础上加上了额外的跨层连接，在实际应用中几乎不增加额外的时间和计算量。<br>&emsp;&emsp;有人可能会想，其实前面的网络有人也做过不同深度<code>layer</code>的<code>merge</code>啊，通过<code>skip connection</code>就可以了。作者指出，那种方法仍然是只能在最终的<code>single scale</code>的<code>output feature map</code>上做，而我们的方法是在<code>all level</code>上完成：</p>
+<p><img src="/2019/02/17/深度学习/特征金字塔网络FPN/3.png" height="133" width="707"></p>
+<p>&emsp;&emsp;<code>FPN</code>的目标是：<code>ConvNet</code>的<code>pyramidal feature hierarchy</code>有着<code>low to high levels</code>的语义，利用这样的<code>hierarchy</code>构建一个高语义的<code>feature pyramid</code>。<code>ConvNets</code>的<code>forward</code>计算是自下而上的，特征图经过卷积核计算，会以成倍的比例缩小(<code>pooling layer</code>的原因)。但同时有许多卷积层输出的<code>feature map</code>尺寸是一样的，针对输出一样大小的<code>feature map</code>的卷积层统称为<code>stage</code>。<br>&emsp;&emsp;以<code>stage</code>为单位，在构建<code>feature pyramid</code>时，以每个<code>stage</code>为一个<code>pyramid level</code>，取每个<code>stage</code>最后<code>layer</code>输出的<code>feature map</code>作为<code>pyramid level</code>。至于为什么会这么取，论文说：这样取是理所当然的，因为靠后的<code>layer</code>有着更强壮的<code>feature</code>。<br>&emsp;&emsp;前面得到了一个高语义的<code>feature pyramid</code>，高层的<code>feature map</code>有着强语义、大感受野的的特性，底层的<code>feature map</code>有着<code>high-resolution</code>，并且保留对<code>small object</code>的语义。在构建好的<code>feature pyramid</code>上，要设法连接高层和底层，充分利用不同层<code>feature map</code>的特性。那么该怎么连接？<code>FPN</code>的做法是：将高层的<code>feature map</code>上采样得到高分辨率的<code>feature map</code>，再与其在<code>pyramid</code>内下一个<code>level</code>的<code>feature map</code>做横向连接(<code>lateral connections</code>)，这样可以让高层特征得到加强，同时保证横向连接的两层特征在空间尺寸上要相同。这样做是为了利用底层的<code>high-resolution</code>的特性。</p>
+<p><img src="/2019/02/17/深度学习/特征金字塔网络FPN/4.png" height="344" width="436"></p>
+<p>&emsp;&emsp;代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"><span class="keyword">from</span> torch.autograd <span class="keyword">import</span> Variable</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bottleneck</span><span class="params">(nn.Module)</span>:</span>  <span class="comment"># ResNet的block</span></span><br><span class="line">    expansion = <span class="number">4</span></span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, in_planes, planes, stride=<span class="number">1</span>)</span>:</span></span><br><span class="line">        super(Bottleneck, self).__init__()</span><br><span class="line">        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=<span class="number">1</span>, bias=<span class="keyword">False</span>)</span><br><span class="line">        self.bn1 = nn.BatchNorm2d(planes)</span><br><span class="line">        self.conv2 = nn.Conv2d(planes, planes, kernel_size=<span class="number">3</span>, stride=stride, padding=<span class="number">1</span>, bias=<span class="keyword">False</span>)</span><br><span class="line">        self.bn2 = nn.BatchNorm2d(planes)</span><br><span class="line">        self.conv3 = nn.Conv2d(planes, self.expansion * planes, kernel_size=<span class="number">1</span>, bias=<span class="keyword">False</span>)</span><br><span class="line">        self.bn3 = nn.BatchNorm2d(self.expansion * planes)</span><br><span class="line">​</span><br><span class="line">        self.shortcut = nn.Sequential()</span><br><span class="line">        <span class="keyword">if</span> stride != <span class="number">1</span> <span class="keyword">or</span> in_planes != self.expansion * planes:</span><br><span class="line">            self.shortcut = nn.Sequential(</span><br><span class="line">                nn.Conv2d(in_planes, self.expansion * planes, kernel_size=<span class="number">1</span>, stride=stride, bias=<span class="keyword">False</span>),</span><br><span class="line">                nn.BatchNorm2d(self.expansion * planes)</span><br><span class="line">            )</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, x)</span>:</span></span><br><span class="line">        out = F.relu(self.bn1(self.conv1(x)))</span><br><span class="line">        out = F.relu(self.bn2(self.conv2(out)))</span><br><span class="line">        out = self.bn3(self.conv3(out))</span><br><span class="line">        out += self.shortcut(x)</span><br><span class="line">        out = F.relu(out)</span><br><span class="line">        <span class="keyword">return</span> out</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">FPN</span><span class="params">(nn.Module)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, block, num_blocks)</span>:</span></span><br><span class="line">        super(FPN, self).__init__()</span><br><span class="line">        self.in_planes = <span class="number">64</span></span><br><span class="line">​</span><br><span class="line">        self.conv1 = nn.Conv2d(<span class="number">3</span>, <span class="number">64</span>, kernel_size=<span class="number">7</span>, stride=<span class="number">2</span>, padding=<span class="number">3</span>, bias=<span class="keyword">False</span>)</span><br><span class="line">        self.bn1 = nn.BatchNorm2d(<span class="number">64</span>)</span><br><span class="line">​</span><br><span class="line">        <span class="comment"># Bottom-up layers, backbone of the network</span></span><br><span class="line">        self.layer1 = self._make_layer(block, <span class="number">64</span>, num_blocks[<span class="number">0</span>], stride=<span class="number">1</span>)</span><br><span class="line">        self.layer2 = self._make_layer(block, <span class="number">128</span>, num_blocks[<span class="number">1</span>], stride=<span class="number">2</span>)</span><br><span class="line">        self.layer3 = self._make_layer(block, <span class="number">256</span>, num_blocks[<span class="number">2</span>], stride=<span class="number">2</span>)</span><br><span class="line">        self.layer4 = self._make_layer(block, <span class="number">512</span>, num_blocks[<span class="number">3</span>], stride=<span class="number">2</span>)</span><br><span class="line">​</span><br><span class="line">        <span class="comment"># Top layer</span></span><br><span class="line">        self.toplayer = nn.Conv2d(<span class="number">2048</span>, <span class="number">256</span>, kernel_size=<span class="number">1</span>, stride=<span class="number">1</span>, padding=<span class="number">0</span>)  <span class="comment"># Reduce channels</span></span><br><span class="line">​</span><br><span class="line">        <span class="comment"># Smooth layers</span></span><br><span class="line">        self.smooth1 = nn.Conv2d(<span class="number">256</span>, <span class="number">256</span>, kernel_size=<span class="number">3</span>, stride=<span class="number">1</span>, padding=<span class="number">1</span>)</span><br><span class="line">        self.smooth2 = nn.Conv2d(<span class="number">256</span>, <span class="number">256</span>, kernel_size=<span class="number">3</span>, stride=<span class="number">1</span>, padding=<span class="number">1</span>)</span><br><span class="line">        self.smooth3 = nn.Conv2d(<span class="number">256</span>, <span class="number">256</span>, kernel_size=<span class="number">3</span>, stride=<span class="number">1</span>, padding=<span class="number">1</span>)</span><br><span class="line">​</span><br><span class="line">        <span class="comment"># Lateral layers(为了匹配“channel dimension”引入的“1*1”卷积)</span></span><br><span class="line">        self.latlayer1 = nn.Conv2d(<span class="number">1024</span>, <span class="number">256</span>, kernel_size=<span class="number">1</span>, stride=<span class="number">1</span>, padding=<span class="number">0</span>)</span><br><span class="line">        self.latlayer2 = nn.Conv2d(<span class="number">512</span>, <span class="number">256</span>, kernel_size=<span class="number">1</span>, stride=<span class="number">1</span>, padding=<span class="number">0</span>)</span><br><span class="line">        self.latlayer3 = nn.Conv2d(<span class="number">256</span>, <span class="number">256</span>, kernel_size=<span class="number">1</span>, stride=<span class="number">1</span>, padding=<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_make_layer</span><span class="params">(self, block, planes, num_blocks, stride)</span>:</span></span><br><span class="line">        strides = [stride] + [<span class="number">1</span>] * (num_blocks - <span class="number">1</span>)</span><br><span class="line">        layers = []</span><br><span class="line">        <span class="keyword">for</span> stride <span class="keyword">in</span> strides:</span><br><span class="line">            layers.append(block(self.in_planes, planes, stride))</span><br><span class="line">            self.in_planes = planes * block.expansion</span><br><span class="line">        <span class="keyword">return</span> nn.Sequential(*layers)</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_upsample_add</span><span class="params">(self, x, y)</span>:</span>  <span class="comment"># FPN的“lateral connection”部分：upsample以后，element-wise相加</span></span><br><span class="line">        <span class="string">"""</span></span><br><span class="line"><span class="string">        Upsample and add two feature maps.</span></span><br><span class="line"><span class="string">        Args: x: (Variable) top feature map to be upsampled; y: (Variable) lateral feature map.</span></span><br><span class="line"><span class="string">        Returns: (Variable) added feature map.</span></span><br><span class="line"><span class="string">        Note in PyTorch, when input size is odd, the upsampled feature map with</span></span><br><span class="line"><span class="string">        `F.upsample(..., scale_factor=2, mode='nearest')` maybe not equal to the lateral feature map size.</span></span><br><span class="line"><span class="string">        e.g: original input size: [N,_,15,15] -&gt;</span></span><br><span class="line"><span class="string">                                  conv2d feature map size: [N,_,8,8] -&gt;</span></span><br><span class="line"><span class="string">                                  upsampled feature map size: [N,_,16,16]</span></span><br><span class="line"><span class="string">        So we choose bilinear upsample which supports arbitrary output sizes.</span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        _, _, H, W = y.size()</span><br><span class="line">        <span class="keyword">return</span> F.interpolate(x, size=(H, W), mode=<span class="string">'bilinear'</span>, align_corners=<span class="keyword">True</span>) + y</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">forward</span><span class="params">(self, x)</span>:</span></span><br><span class="line">        <span class="comment"># Bottom-up</span></span><br><span class="line">        c1 = F.relu(self.bn1(self.conv1(x)))</span><br><span class="line">        c1 = F.max_pool2d(c1, kernel_size=<span class="number">3</span>, stride=<span class="number">2</span>, padding=<span class="number">1</span>)</span><br><span class="line">        c2 = self.layer1(c1)</span><br><span class="line">        c3 = self.layer2(c2)</span><br><span class="line">        c4 = self.layer3(c3)</span><br><span class="line">        c5 = self.layer4(c4)</span><br><span class="line">        <span class="comment"># Top-down</span></span><br><span class="line">        p5 = self.toplayer(c5)</span><br><span class="line">        p4 = self._upsample_add(p5, self.latlayer1(c4))  <span class="comment"># P4是上一层p5加上侧边来的c4</span></span><br><span class="line">        p3 = self._upsample_add(p4, self.latlayer2(c3))</span><br><span class="line">        p2 = self._upsample_add(p3, self.latlayer3(c2))</span><br><span class="line">        <span class="comment"># Smooth</span></span><br><span class="line">        p4 = self.smooth1(p4)</span><br><span class="line">        p3 = self.smooth2(p3)</span><br><span class="line">        p2 = self.smooth3(p2)</span><br><span class="line">        <span class="keyword">return</span> p2, p3, p4, p5</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">FPN101</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> FPN(Bottleneck, [<span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>])</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test</span><span class="params">()</span>:</span></span><br><span class="line">    net = FPN101()</span><br><span class="line">    fms = net(Variable(torch.randn(<span class="number">1</span>, <span class="number">3</span>, <span class="number">600</span>, <span class="number">900</span>)))</span><br><span class="line">    <span class="keyword">for</span> fm <span class="keyword">in</span> fms:</span><br><span class="line">        print(fm.size())</span><br><span class="line">​</span><br><span class="line">test()</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">torch.Size([<span class="number">1</span>, <span class="number">256</span>, <span class="number">150</span>, <span class="number">225</span>])</span><br><span class="line">torch.Size([<span class="number">1</span>, <span class="number">256</span>, <span class="number">75</span>, <span class="number">113</span>])</span><br><span class="line">torch.Size([<span class="number">1</span>, <span class="number">256</span>, <span class="number">38</span>, <span class="number">57</span>])</span><br><span class="line">torch.Size([<span class="number">1</span>, <span class="number">256</span>, <span class="number">19</span>, <span class="number">29</span>])</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/16/深度学习/RCNN原理/" rel="next" title="RCNN原理">
+                <i class="fa fa-chevron-left"></i> RCNN原理
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/17/深度学习/TensorFlow实现卷积神经网络/" rel="prev" title="TensorFlow实现卷积神经网络">
+                TensorFlow实现卷积神经网络 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Feature-Pyramid-Networks-for-Object-Detection"><span class="nav-number">1.</span> <span class="nav-text">Feature Pyramid Networks for Object Detection</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>

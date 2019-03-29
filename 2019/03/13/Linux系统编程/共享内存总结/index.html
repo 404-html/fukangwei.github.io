@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="&amp;emsp;&amp;emsp;共享内存可以说是最有用的进程间通信方式，也是最快的IPC形式。两个不同进程A、B共享内存的意思是，同一块物理内存被映射到进程A、B各自的进程地址空间。进程A可以即时看到进程B对共享内存中数据的更新，反之亦然。由于多个进程共享同一块内存区域，必然需要某种同步机制，互斥锁和信号量都可以。&amp;emsp;&amp;emsp;采用共享内存通信的一个显而易见的好处是效率高，因为进程可以直接读写内">
+<meta property="og:type" content="article">
+<meta property="og:title" content="共享内存总结">
+<meta property="og:url" content="http://fukangwei.gitee.io/2019/03/13/Linux系统编程/共享内存总结/index.html">
+<meta property="og:site_name" content="暴徒">
+<meta property="og:description" content="&amp;emsp;&amp;emsp;共享内存可以说是最有用的进程间通信方式，也是最快的IPC形式。两个不同进程A、B共享内存的意思是，同一块物理内存被映射到进程A、B各自的进程地址空间。进程A可以即时看到进程B对共享内存中数据的更新，反之亦然。由于多个进程共享同一块内存区域，必然需要某种同步机制，互斥锁和信号量都可以。&amp;emsp;&amp;emsp;采用共享内存通信的一个显而易见的好处是效率高，因为进程可以直接读写内">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/13/Linux系统编程/共享内存总结/1.png">
+<meta property="og:image" content="http://fukangwei.gitee.io/2019/03/13/Linux系统编程/共享内存总结/2.png">
+<meta property="og:updated_time" content="2019-03-13T05:16:17.289Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="共享内存总结">
+<meta name="twitter:description" content="&amp;emsp;&amp;emsp;共享内存可以说是最有用的进程间通信方式，也是最快的IPC形式。两个不同进程A、B共享内存的意思是，同一块物理内存被映射到进程A、B各自的进程地址空间。进程A可以即时看到进程B对共享内存中数据的更新，反之亦然。由于多个进程共享同一块内存区域，必然需要某种同步机制，互斥锁和信号量都可以。&amp;emsp;&amp;emsp;采用共享内存通信的一个显而易见的好处是效率高，因为进程可以直接读写内">
+<meta name="twitter:image" content="http://fukangwei.gitee.io/2019/03/13/Linux系统编程/共享内存总结/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '561O3H1PZB',
+      apiKey: '7631d3cf19ac49bd39ada7163ec937a7',
+      indexName: 'fuxinzi',
+      hits: "",
+      labels: ""
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://fukangwei.gitee.io/2019/03/13/Linux系统编程/共享内存总结/">
+
+
+
+
+
+  <title>共享内存总结 | 暴徒</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">暴徒</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/13/Linux系统编程/共享内存总结/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">共享内存总结</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-13T13:02:59+08:00">
+                2019-03-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>&emsp;&emsp;共享内存可以说是最有用的进程间通信方式，也是最快的<code>IPC</code>形式。两个不同进程<code>A</code>、<code>B</code>共享内存的意思是，同一块物理内存被映射到进程<code>A</code>、<code>B</code>各自的进程地址空间。进程<code>A</code>可以即时看到进程<code>B</code>对共享内存中数据的更新，反之亦然。由于多个进程共享同一块内存区域，必然需要某种同步机制，互斥锁和信号量都可以。<br>&emsp;&emsp;采用共享内存通信的一个显而易见的好处是效率高，因为进程可以直接读写内存，而不需要任何数据的拷贝。对于像管道和消息队列等通信方式，则需要在内核和用户空间进行四次的数据拷贝，而共享内存则只拷贝两次数据：一次从输入文件到共享内存区，另一次从共享内存区到输出文件。实际上，进程之间在共享内存时，并不总是读写少量数据后就解除映射，有新的通信时，再重新建立共享内存区域。而是保持共享区域，直到通信完毕为止，这样数据内容一直保存在共享内存中，并没有写回文件。共享内存中的内容往往是在解除映射时才写回文件的。因此，采用共享内存的通信方式效率是非常高的。<br>&emsp;&emsp;<code>Linux</code>的<code>2.2.x</code>内核支持多种共享内存方式，如<code>mmap</code>系统调用、<code>Posix</code>共享内存以及系统<code>V</code>共享内存。<code>linux</code>发行版本如<code>Redhat 8.0</code>支持<code>mmap</code>系统调用及系统<code>V</code>共享内存，但还没实现<code>Posix</code>共享内存，本文将主要介绍<code>mmap</code>系统调用及系统V共享内存<code>API</code>的原理及应用。</p>
+<h3 id="内核怎样保证各个进程寻址到同一个共享内存区域的内存页面"><a href="#内核怎样保证各个进程寻址到同一个共享内存区域的内存页面" class="headerlink" title="内核怎样保证各个进程寻址到同一个共享内存区域的内存页面"></a>内核怎样保证各个进程寻址到同一个共享内存区域的内存页面</h3><p>&emsp;&emsp;1. <code>page cache</code>及<code>swap cache</code>中页面的区分：一个被访问文件的物理页面都驻留在<code>page cache</code>或<code>swap cache</code>中，一个页面的所有信息由<code>struct page</code>来描述。<code>struct page</code>中有一个域为指针<code>mapping</code>，它指向一个<code>struct address_space</code>类型结构。<code>page cache</code>或<code>swap cache</code>中的所有页面就是根据<code>address_space</code>结构以及一个偏移量来区分的。<br>&emsp;&emsp;2. 文件与<code>address_space</code>结构的对应：一个具体的文件在打开后，内核会在内存中为之建立一个<code>struct inode</code>结构，其中的<code>i_mapping</code>域指向一个<code>address_space</code>结构。这样，一个文件就对应一个<code>address_space</code>结构，一个<code>address_space</code>与一个偏移量能够确定一个<code>page cache</code>或<code>swap cache</code>中的一个页面。因此，当要寻址某个数据时，很容易根据给定的文件及数据在文件内的偏移量而找到相应的页面。<br>&emsp;&emsp;3. 进程调用<code>mmap</code>时，只是在进程空间内新增了一块相应大小的缓冲区，并设置了相应的访问标识，但并没有建立进程空间到物理页面的映射。因此，第一次访问该空间时，会引发一个缺页异常。<br>&emsp;&emsp;4. 对于共享内存映射情况，缺页异常处理程序首先在<code>swap cache</code>中寻找目标页(符合<code>address_space</code>以及偏移量的物理页)，如果找到，则直接返回地址；如果没有找到，则判断该页是否在交换区(<code>swap area</code>)，如果在，则执行一个换入操作；如果上述两种情况都不满足，处理程序将分配新的物理页面，并把它插入到<code>page cache</code>中。进程最终将更新进程页表。<br>&emsp;&emsp;对于映射普通文件情况(非共享映射)，缺页异常处理程序首先会在<code>page cache</code>中根据<code>address_space</code>以及数据偏移量寻找相应的页面。如果没有找到，则说明文件数据还没有读入内存，处理程序会从磁盘读入相应的页面，并返回相应地址，同时进程页表也会更新。<br>&emsp;&emsp;5. 所有进程在映射同一个共享内存区域时，情况都一样，在建立线性地址与物理地址之间的映射之后，不论进程各自的返回地址如何，实际访问的必然是同一个共享内存区域对应的物理页面。<br>&emsp;&emsp;注意，一个共享内存区域可以看作是特殊文件系统shm中的一个文件，<code>shm</code>的安装点在交换区上。</p>
+<h3 id="mmap及其相关系统调用"><a href="#mmap及其相关系统调用" class="headerlink" title="mmap及其相关系统调用"></a>mmap及其相关系统调用</h3><p>&emsp;&emsp;<code>mmap</code>系统调用使得进程之间通过映射同一个普通文件实现共享内存。普通文件被映射到进程地址空间后，进程可以向访问普通内存一样对文件进行访问，不必再调用<code>read</code>、<code>write</code>等操作。<br>&emsp;&emsp;实际上，<code>mmap</code>系统调用并不是完全为了用于共享内存而设计的。它本身提供了不同于一般对普通文件的访问方式，进程可以像读写内存一样对普通文件的操作。而<code>Posix</code>或系统<code>V</code>的共享内存<code>IPC</code>则纯粹用于共享目的，当然<code>mmap</code>实现共享内存也是其主要应用之一。<br>&emsp;&emsp;1. <code>mmap</code>系统调用形式如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">mmap</span> <span class="params">( <span class="keyword">void</span> *addr, <span class="keyword">size_t</span> len, <span class="keyword">int</span> prot, <span class="keyword">int</span> flags, <span class="keyword">int</span> fd, <span class="keyword">off_t</span> offset )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>fd</code>为即将映射到进程空间的文件描述字，一般由<code>open</code>返回，同时<code>fd</code>可以指定为<code>-1</code>，此时须指定<code>flags</code>参数中的<code>MAP_ANON</code>，表明进行的是匿名映射(不涉及具体的文件名，避免了文件的创建及打开，很显然只能用于具有亲缘关系的进程间通信)。</p>
+<ul>
+<li><code>len</code>：映射到调用进程地址空间的字节数，它从被映射文件开头<code>offset</code>个字节开始算起。</li>
+<li><code>prot</code>：指定共享内存的访问权限。可取如下几个值，可以以进行<code>或</code>计算：<code>PROT_READ</code>(可读)、<code>PROT_WRITE</code>(可写)、<code>PROT_EXEC</code>(可执行)、<code>PROT_NONE</code>(不可访问)。</li>
+<li><code>flags</code>：由以下几个常值指定：<code>MAP_SHARED</code>、<code>MAP_PRIVATE</code>、<code>MAP_FIXED</code>，其中<code>MAP_SHARED</code>、<code>MAP_PRIVATE</code>必选其一，而<code>MAP_FIXED</code>则不推荐使用。</li>
+<li><code>offset</code>：一般设为<code>0</code>，表示从文件头开始映射。</li>
+<li><code>addr</code>：指定文件应被映射到进程空间的起始地址，一般被指定一个空指针，此时选择起始地址的任务留给内核来完成。</li>
+</ul>
+<p>函数的返回值为最后文件映射到进程空间的地址，进程可直接操作起始地址为该值的有效地址。<br>&emsp;&emsp;2. 系统调用<code>mmap</code>用于共享内存的两种方式：</p>
+<ul>
+<li>使用普通文件提供的内存映射：适用于任何进程之间；此时，需要打开或创建一个文件，然后再调用<code>mmap</code>。典型调用代码如下：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fd = open ( name, flag, mode );</span><br><span class="line">ptr = mmap ( <span class="literal">NULL</span>, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, <span class="number">0</span> );</span><br></pre></td></tr></table></figure>
+<ul>
+<li>使用特殊文件提供匿名内存映射：适用于具有亲缘关系的进程之间；由于父子进程特殊的亲缘关系，在父进程中先调用<code>mmap</code>，然后调用<code>fork</code>。那么在调用<code>fork</code>之后，子进程继承父进程匿名映射后的地址空间，同样也继承<code>mmap</code>返回的地址，这样父子进程就可以通过映射区域进行通信了。注意，这里不是一般的继承关系。一般来说，子进程单独维护从父进程继承下来的一些变量，而<code>mmap</code>返回的地址，却由父子进程共同维护。对于具有亲缘关系的进程实现共享内存，最好的方式应该是采用匿名内存映射的方式。此时，不必指定具体的文件，只要设置相应的标志即可。</li>
+</ul>
+<p>&emsp;&emsp;3. 系统调用<code>munmap</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">munmap</span> <span class="params">( <span class="keyword">void</span> *addr, <span class="keyword">size_t</span> len )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>该调用在进程地址空间中解除一个映射关系，<code>addr</code>是调用<code>mmap</code>时返回的地址，<code>len</code>是映射区的大小。当映射关系解除后，对原来映射地址的访问将导致段错误发生。<br>&emsp;&emsp;4. 系统调用<code>msync</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">msync</span> <span class="params">( <span class="keyword">void</span> *addr, <span class="keyword">size_t</span> len, <span class="keyword">int</span> flags )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>一般说来，进程在映射空间的对共享内容的改变并不直接写回到磁盘文件中，往往在调用<code>munmap</code>后才执行该操作。可以通过调用<code>msync</code>实现磁盘上文件内容与共享内存区的内容一致。</p>
+<h3 id="mmap范例"><a href="#mmap范例" class="headerlink" title="mmap范例"></a>mmap范例</h3><p>&emsp;&emsp;范例<code>1</code>为两个进程通过映射普通文件实现共享内存通信。范例<code>1</code>包含两个子程序：<code>map_normalfile1.c</code>和<code>map_normalfile2.c</code>。编译两个程序，可执行文件分别为<code>map_normalfile1</code>和<code>map_normalfile2</code>。两个程序通过命令行参数指定同一个文件来实现共享内存方式的进程间通信。<code>map_normalfile2</code>试图打开命令行参数指定的一个普通文件，把该文件映射到进程的地址空间，并对映射后的地址空间进行写操作。<code>map_normalfile1</code>把命令行参数指定的文件映射到进程地址空间，然后对映射后的地址空间执行读操作。这样，两个进程通过命令行参数指定同一个文件来实现共享内存方式的进程间通信。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* map_normalfile1.c */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"string.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> name[<span class="number">4</span>];</span><br><span class="line">    <span class="keyword">int</span> age;</span><br><span class="line">&#125; people;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> fd, i;</span><br><span class="line">    people *p_map;</span><br><span class="line">    <span class="keyword">char</span> temp;</span><br><span class="line">    fd = open ( argv[<span class="number">1</span>], O_CREAT | O_RDWR | O_TRUNC, <span class="number">00777</span> );</span><br><span class="line">    lseek ( fd, <span class="keyword">sizeof</span> ( people ) * <span class="number">5</span> - <span class="number">1</span>, SEEK_SET );</span><br><span class="line">    write ( fd, <span class="string">" "</span>, <span class="number">1</span> );</span><br><span class="line">    p_map = ( people * ) mmap ( <span class="literal">NULL</span>, <span class="keyword">sizeof</span> ( people ) * <span class="number">10</span>, \</span><br><span class="line">                                PROT_READ | PROT_WRITE, MAP_SHARED, fd, <span class="number">0</span> );</span><br><span class="line">    close ( fd );</span><br><span class="line">    temp = <span class="string">'a'</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        <span class="built_in">sprintf</span> ( ( * ( p_map + i ) ).name, <span class="string">"%c"</span>, temp );</span><br><span class="line">        ( * ( p_map + i ) ).age = <span class="number">20</span> + i;</span><br><span class="line">        temp += <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"initialize over\n"</span> );</span><br><span class="line">    sleep ( <span class="number">10</span> );</span><br><span class="line">    munmap ( p_map, <span class="keyword">sizeof</span> ( people ) * <span class="number">10</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"umap ok\n"</span> );</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/* map_normalfile2.c */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> name[<span class="number">4</span>];</span><br><span class="line">    <span class="keyword">int</span> age;</span><br><span class="line">&#125; people;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> fd, i;</span><br><span class="line">    people *p_map;</span><br><span class="line">    fd = open ( argv[<span class="number">1</span>], O_CREAT | O_RDWR, <span class="number">00777</span> );</span><br><span class="line">    p_map = ( people * ) mmap ( <span class="literal">NULL</span>, <span class="keyword">sizeof</span> ( people ) * <span class="number">10</span>, \</span><br><span class="line">                                PROT_READ | PROT_WRITE, MAP_SHARED, fd, <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"name: %s age %d;\n"</span>, ( * ( p_map + i ) ).name, ( * ( p_map + i ) ).age );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    munmap ( p_map, <span class="keyword">sizeof</span> ( people ) * <span class="number">10</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>map_normalfile1.c</code>首先定义了一个<code>people</code>数据结构，在这里采用数据结构的方式是因为，共享内存区的数据往往是有固定格式的，这由通信的各个进程决定，采用结构的方式有普遍代表性。<code>map_normfile1</code>首先打开或创建一个文件，并把文件的长度设置为<code>5</code>个<code>people</code>结构大小。然后从<code>mmap</code>的返回地址开始，设置了<code>10</code>个<code>people</code>结构。然后，进程睡眠<code>10</code>秒钟，等待其他进程映射同一个文件，最后解除映射。<code>map_normfile2.c</code>只是简单的映射一个文件，并以<code>people</code>数据结构的格式从<code>mmap</code>返回的地址处读取<code>10</code>个<code>people</code>结构，并输出读取的值，然后解除映射。<br>&emsp;&emsp;分别把两个程序编译成可执行文件<code>map_normalfile1</code>和<code>map_normalfile2</code>后，在一个终端上先运行<code>./map_normalfile1 /tmp/test_shm</code>，执行结果如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">initialize over</span><br><span class="line">umap ok</span><br></pre></td></tr></table></figure>
+<p>在<code>map_normalfile1</code>输出<code>initialize over</code>之后，输出<code>umap ok</code>之前，在另一个终端上运行<code>./map_normalfile2 /tmp/test_shm</code>，将会产生如下输出(为了节省空间，输出结果为稍作整理后的结果)：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">name: a age <span class="number">20</span>;</span><br><span class="line">name: b age <span class="number">21</span>;</span><br><span class="line">name: c age <span class="number">22</span>;</span><br><span class="line">name: d age <span class="number">23</span>;</span><br><span class="line">name: e age <span class="number">24</span>;</span><br><span class="line">name: f age <span class="number">25</span>;</span><br><span class="line">name: g age <span class="number">26</span>;</span><br><span class="line">name: h age <span class="number">27</span>;</span><br><span class="line">name: i age <span class="number">28</span>;</span><br><span class="line">name: j age <span class="number">29</span>;</span><br></pre></td></tr></table></figure>
+<p>在<code>map_normalfile1</code>输出<code>umap ok</code>后，运行<code>map_normalfile2</code>则输出如下结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">name: a age <span class="number">20</span>;</span><br><span class="line">name: b age <span class="number">21</span>;</span><br><span class="line">name: c age <span class="number">22</span>;</span><br><span class="line">name: d age <span class="number">23</span>;</span><br><span class="line">name: e age <span class="number">24</span>;</span><br><span class="line">name:  age <span class="number">0</span>;</span><br><span class="line">name:  age <span class="number">0</span>;</span><br><span class="line">name:  age <span class="number">0</span>;</span><br><span class="line">name:  age <span class="number">0</span>;</span><br><span class="line">name:  age <span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+<p>从程序的运行结果中可以得出的结论：<br>&emsp;&emsp;1. 最终被映射文件的内容的长度不会超过文件本身的初始大小，即映射不能改变文件的大小。<br>&emsp;&emsp;2. 可以用于进程通信的有效地址空间大小大体上受限于被映射文件的大小，但不完全受限于文件大小。打开文件被截短为<code>5</code>个<code>people</code>结构大小，而在<code>map_normalfile1</code>中初始化了<code>10</code>个<code>people</code>数据结构，在恰当时候(<code>map_normalfile1</code>输出<code>initialize over</code>之后，输出<code>umap ok</code>之前)调用<code>map_normalfile2</code>会发现<code>map_normalfile2</code>将输出全部<code>10</code>个<code>people</code>结构的值。<br>&emsp;&emsp;在<code>linux</code>中，内存的保护是以页为基本单位的，即使被映射文件只有一个字节大小，内核也会为映射分配一个页面大小的内存。当被映射文件小于一个页面大小时，进程可以对从<code>mmap</code>返回地址开始的一个页面大小进行访问，而不会出错；但是，如果对一个页面以外的地址空间进行访问，则导致错误发生，后面将进一步描述。因此，可用于进程间通信的有效地址空间大小不会超过文件大小及一个页面大小的和。<br>&emsp;&emsp;3. 文件一旦被映射后，调用<code>mmap</code>的进程对返回地址的访问是对某一内存区域的访问，暂时脱离了磁盘上文件的影响。所有对<code>mmap</code>返回地址空间的操作只在内存中有意义，只有在调用了<code>munmap</code>后或者<code>msync</code>时，才把内存中的相应内容写回磁盘文件，所写内容仍然不能超过文件的大小。<br>&emsp;&emsp;范例<code>2</code>为父子进程通过匿名映射实现共享内存：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdlib.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"string.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> name[<span class="number">4</span>];</span><br><span class="line">    <span class="keyword">int</span> age;</span><br><span class="line">&#125; people;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    people *p_map;</span><br><span class="line">    <span class="keyword">char</span> temp;</span><br><span class="line">    p_map = ( people * ) mmap ( <span class="literal">NULL</span>, <span class="keyword">sizeof</span> ( people ) * <span class="number">10</span>, \</span><br><span class="line">                                PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, <span class="number">-1</span>, <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( fork() == <span class="number">0</span> ) &#123;</span><br><span class="line">        sleep ( <span class="number">2</span> );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i++ ) &#123;</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">"child read: the %d people's age is %d\n"</span>, i + <span class="number">1</span>, ( * ( p_map + i ) ).age );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        ( *p_map ).age = <span class="number">100</span>;</span><br><span class="line">        munmap ( p_map, <span class="keyword">sizeof</span> ( people ) * <span class="number">10</span> ); <span class="comment">/* 实际上，进程终止时，会自动解除映射 */</span></span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    temp = <span class="string">'a'</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i++ ) &#123;</span><br><span class="line">        temp += <span class="number">1</span>;</span><br><span class="line">        <span class="built_in">memcpy</span> ( ( * ( p_map + i ) ).name, &amp;temp, <span class="number">2</span> );</span><br><span class="line">        ( * ( p_map + i ) ).age = <span class="number">20</span> + i;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    sleep ( <span class="number">5</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"parent read: the first people's age is %d\n"</span>, ( *p_map ).age );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"umap\n"</span> );</span><br><span class="line">    munmap ( p_map, <span class="keyword">sizeof</span> ( people ) * <span class="number">10</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"umap ok\n"</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>查看程序的输出结果，体会父子进程匿名共享内存：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">child read: the <span class="number">1</span> people's age is <span class="number">20</span></span><br><span class="line">child read: the <span class="number">2</span> people's age is <span class="number">21</span></span><br><span class="line">child read: the <span class="number">3</span> people's age is <span class="number">22</span></span><br><span class="line">child read: the <span class="number">4</span> people's age is <span class="number">23</span></span><br><span class="line">child read: the <span class="number">5</span> people's age is <span class="number">24</span></span><br><span class="line">parent read: the first people's age is <span class="number">100</span></span><br><span class="line">umap</span><br><span class="line">umap ok</span><br></pre></td></tr></table></figure>
+<h3 id="对mmap返回地址的访问"><a href="#对mmap返回地址的访问" class="headerlink" title="对mmap返回地址的访问"></a>对mmap返回地址的访问</h3><p>&emsp;&emsp;前面对范例运行结构的讨论中已经提到，<code>linux</code>采用的是页式管理机制。对于用<code>mmap</code>映射普通文件来说，进程会在自己的地址空间新增一块空间，空间大小由<code>mmap</code>的<code>len</code>参数指定。注意，进程并不一定能够对全部新增空间都能进行有效访问。进程能够访问的有效地址大小取决于文件被映射部分的大小。简单的说，能够容纳文件被映射部分大小的最少页面个数决定了进程从<code>mmap</code>返回的地址开始，能够有效访问的地址空间大小。超过这个空间大小，内核会根据超过的严重程度返回发送不同的信号给进程。可用如下图示说明：</p>
+<p><img src="/2019/03/13/Linux系统编程/共享内存总结/1.png"></p>
+<p>&emsp;&emsp;注意，文件被映射部分而不是整个文件决定了进程能够访问的空间大小。另外，如果指定文件的偏移部分，一定要注意为页面大小的整数倍。下面是对进程映射地址空间的访问范例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> name[<span class="number">4</span>];</span><br><span class="line">    <span class="keyword">int</span> age;</span><br><span class="line">&#125; people;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> fd, i;</span><br><span class="line">    <span class="keyword">int</span> pagesize, offset;</span><br><span class="line">    people *p_map;</span><br><span class="line">    pagesize = sysconf ( _SC_PAGESIZE );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"pagesize is %d\n"</span>, pagesize );</span><br><span class="line">    fd = open ( argv[<span class="number">1</span>], O_CREAT | O_RDWR | O_TRUNC, <span class="number">00777</span> );</span><br><span class="line">    lseek ( fd, pagesize * <span class="number">2</span> - <span class="number">100</span>, SEEK_SET );</span><br><span class="line">    write ( fd, <span class="string">" "</span>, <span class="number">1</span> );</span><br><span class="line">    offset = <span class="number">0</span>; <span class="comment">/* 此处“offset = 0”编译成版本1；“offset = pagesize”编译成版本2 */</span></span><br><span class="line">    p_map = ( people * ) mmap ( <span class="literal">NULL</span>, pagesize * <span class="number">3</span>, \</span><br><span class="line">                                PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset );</span><br><span class="line">    close ( fd );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">1</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        ( * ( p_map + pagesize / <span class="keyword">sizeof</span> ( people ) *i - <span class="number">2</span> ) ).age = <span class="number">100</span>;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"access page %d over\n"</span>, i );</span><br><span class="line">        ( * ( p_map + pagesize / <span class="keyword">sizeof</span> ( people ) *i - <span class="number">1</span> ) ).age = <span class="number">100</span>;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"access page %d edge over, now begin to access page %d\n"</span>, i, i + <span class="number">1</span> );</span><br><span class="line">        ( * ( p_map + pagesize / <span class="keyword">sizeof</span> ( people ) *i ) ).age = <span class="number">100</span>;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"access page %d over\n"</span>, i + <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    munmap ( p_map, <span class="keyword">sizeof</span> ( people ) * <span class="number">10</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;如程序中所注释的那样，把程序编译成两个版本，两个版本主要体现在文件被映射部分的大小不同。文件的大小介于一个页面与两个页面之间(大小为<code>pagesize * 2 - 99</code>)，版本<code>1</code>的被映射部分是整个文件，版本<code>2</code>的文件被映射部分是文件大小减去一个页面后的剩余部分，不到一个页面大小(大小为<code>pagesize - 99</code>)。程序中试图访问每一个页面边界，两个版本都试图在进程空间中映射<code>pagesize * 3</code>的字节数。<br>&emsp;&emsp;版本<code>1</code>的输出结果如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">pagesize is <span class="number">4096</span></span><br><span class="line">access page <span class="number">1</span> over</span><br><span class="line">access page <span class="number">1</span> edge over, now begin to access page <span class="number">2</span></span><br><span class="line">access page <span class="number">2</span> over</span><br><span class="line">access page <span class="number">2</span> over</span><br><span class="line">access page <span class="number">2</span> edge over, now begin to access page <span class="number">3</span></span><br><span class="line">Bus error <span class="comment">/* 被映射文件在进程空间中覆盖了两个页面，此时进程试图访问第三个页面 */</span></span><br></pre></td></tr></table></figure>
+<p>版本<code>2</code>的输出结果如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pagesize is <span class="number">4096</span></span><br><span class="line">access page <span class="number">1</span> over</span><br><span class="line">access page <span class="number">1</span> edge over, now begin to access page <span class="number">2</span></span><br><span class="line">Bus error <span class="comment">/* 被映射文件在进程空间中覆盖了一个页面，此时进程试图访问第二个页面 */</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;采用系统调用<code>mmap</code>实现进程间通信是很方便的，在应用层上接口非常简洁。内部实现机制区涉及到了<code>linux</code>存储管理以及文件系统等方面的内容，可以参考一下相关重要数据结构来加深理解。</p>
+<hr>
+<p>&emsp;&emsp;本部分将讨论系统<code>V</code>共享内存，并通过实验结果对比来阐述两者的异同。系统<code>V</code>共享内存指的是把所有共享数据放在共享内存区域(<code>IPC shared memory region</code>)，任何想要访问该数据的进程都必须在本进程的地址空间新增一块内存区域，用来映射存放共享数据的物理内存页面。<br>&emsp;&emsp;系统调用<code>mmap</code>通过映射一个普通文件实现共享内存，系统<code>V</code>则是通过映射特殊文件系统<code>shm</code>中的文件实现进程间的共享内存通信。也就是说，每个共享内存区域对应特殊文件系统<code>shm</code>中的一个文件(这是通过<code>shmid_kernel</code>结构联系起来的)。</p>
+<h3 id="系统V共享内存原理"><a href="#系统V共享内存原理" class="headerlink" title="系统V共享内存原理"></a>系统V共享内存原理</h3><p>&emsp;&emsp;进程间需要共享的数据被放在一个叫做<code>IPC</code>共享内存区域的地方，所有需要访问该共享区域的进程都要把该共享区域映射到本进程的地址空间中去。系统<code>V</code>共享内存通过<code>shmget</code>获得或创建一个<code>IPC</code>共享内存区域，并返回相应的标识符。内核在保证<code>shmget</code>获得或创建一个共享内存区，初始化该共享内存区相应的<code>shmid_kernel</code>结构体时，还将在特殊文件系统<code>shm</code>中创建并打开一个同名文件，并在内存中建立起该文件的相应<code>dentry</code>及<code>inode</code>结构，新打开的文件不属于任何一个进程(任何进程都可以访问该共享内存区)。所有这一切都是系统调用<code>shmget</code>完成的。<br>&emsp;&emsp;每一个共享内存区都有一个控制结构<code>struct shmid_kernel</code>，<code>shmid_kernel</code>是共享内存区域中非常重要的一个数据结构，它是存储管理和文件系统结合起来的桥梁：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">shmid_kernel</span> &#123;</span> <span class="comment">/* private to the kernel */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">kern_ipc_perm</span> <span class="title">shm_perm</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">file</span> *<span class="title">shm_file</span>;</span></span><br><span class="line">    <span class="keyword">int</span> id;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> shm_nattch;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> shm_segsz;</span><br><span class="line">    <span class="keyword">time_t</span> shm_atim;</span><br><span class="line">    <span class="keyword">time_t</span> shm_dtim;</span><br><span class="line">    <span class="keyword">time_t</span> shm_ctim;</span><br><span class="line">    <span class="keyword">pid_t</span> shm_cprid;</span><br><span class="line">    <span class="keyword">pid_t</span> shm_lprid;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>该结构中最重要的一个域应该是<code>shm_file</code>，它存储了将被映射文件的地址。每个共享内存区对象都对应特殊文件系统<code>shm</code>中的一个文件，一般情况下，特殊文件系统<code>shm</code>中的文件是不能用<code>read</code>、<code>write</code>等方法访问的，当采取共享内存的方式把其中的文件映射到进程地址空间后，可直接采用访问内存的方式对其访问。<br>&emsp;&emsp;正如消息队列和信号灯一样，内核通过数据结构<code>struct ipc_ids shm_ids</code>维护系统中的所有共享内存区域。<code>shm_ids.entries</code>变量指向一个<code>ipc_id</code>结构数组，而每个<code>ipc_id</code>结构数组中有个指向<code>kern_ipc_perm</code>结构的指针。到这里读者应该很熟悉了，对于系统<code>V</code>共享内存区来说，<code>kern_ipc_perm</code>的宿主是<code>shmid_kernel</code>结构，<code>shmid_kernel</code>是用来描述一个共享内存区域的，这样内核就能够控制系统中所有的共享区域。同时，在<code>shmid_kernel</code>结构的<code>file</code>类型指针<code>shm_file</code>指向文件系统<code>shm</code>中相应的文件，这样共享内存区域就与<code>shm</code>文件系统中的文件对应起来。<br>&emsp;&emsp;在创建了一个共享内存区域后，还要将它映射到进程地址空间，系统调用<code>shmat</code>完成此项功能。由于在调用<code>shmget</code>时，已经创建了文件系统<code>shm</code>中的一个同名文件与共享内存区域相对应，因此调用<code>shmat</code>的过程相当于映射文件系统<code>shm</code>中的同名文件过程，原理与<code>mmap</code>大同小异。</p>
+<h3 id="系统V共享内存API"><a href="#系统V共享内存API" class="headerlink" title="系统V共享内存API"></a>系统V共享内存API</h3><p>&emsp;&emsp;对于系统<code>V</code>共享内存，主要有以下几个<code>API</code>：<code>shmget</code>、<code>shmat</code>、<code>shmdt</code>及<code>shmctl</code>。<br>&emsp;&emsp;<code>shmget</code>用来获得共享内存区域的<code>ID</code>，如果不存在指定的共享区域，就创建相应的区域。<code>shmat</code>把共享内存区域映射到调用进程的地址空间中去，这样进程就可以方便地对共享区域进行访问操作。<code>shmdt</code>调用用来解除进程对共享内存区域的映射。<code>shmctl</code>实现对共享内存区域的控制操作。<br>&emsp;&emsp;<code>shmget</code>的内部实现包含了许多重要的系统<code>V</code>共享内存机制；<code>shmat</code>在把共享内存区域映射到进程空间时，并不真正改变进程的页表。当进程第一次访问内存映射区域访问时，会因为没有物理页表的分配而导致一个缺页异常，然后内核再根据相应的存储管理机制为共享内存映射区域分配相应的页表。</p>
+<h3 id="系统V共享内存限制"><a href="#系统V共享内存限制" class="headerlink" title="系统V共享内存限制"></a>系统V共享内存限制</h3><p>&emsp;&emsp;在<code>/proc/sys/kernel/</code>目录下，记录着系统<code>V</code>共享内存的一下限制，如一个共享内存区的最大字节数<code>shmmax</code>，系统范围内最大共享内存区标识符数<code>shmmni</code>等，可以手工对其调整，但不推荐这样做。<br>&emsp;&emsp;系统<code>V</code>共享内存中的数据，从来不写入到实际磁盘文件中去；而通过<code>mmap</code>映射普通文件实现的共享内存通信可以指定何时将数据写入磁盘文件中。前面讲到，系统<code>V</code>共享内存机制实际是通过映射特殊文件系统<code>shm</code>中的文件实现的，文件系统<code>shm</code>的安装点在交换分区上，系统重新引导后，所有的内容都丢失。<br>&emsp;&emsp;系统<code>V</code>共享内存是随内核持续的，即使所有访问共享内存的进程都已经正常终止，共享内存区仍然存在(除非显式删除共享内存)，在内核重新引导之前，对该共享内存区域的任何改写操作都将一直保留。<br>&emsp;&emsp;通过调用<code>mmap</code>映射普通文件进行进程间通信时，一定要注意考虑进程何时终止对通信的影响。而通过系统<code>V</code>共享内存实现通信的进程则不然。<br>&emsp;&emsp;共享内存允许两个或多个进程共享一给定的存储区，因为数据不需要来回复制，所以是最快的一种进程间通信机制。共享内存可以通过<code>mmap</code>映射普通文件(特殊情况下还可以采用匿名映射)机制实现，也可以通过系统V共享内存机制实现。应用接口和原理很简单，内部机制复杂。为了实现更安全通信，往往还与信号灯等同步机制共同使用。<br>&emsp;&emsp;共享内存涉及到了存储管理以及文件系统等方面的知识，深入理解其内部机制有一定的难度，关键还要紧紧抓住内核使用的重要数据结构。系统V共享内存是以文件的形式组织在特殊文件系统<code>shm</code>中的。通过<code>shmget</code>可以创建或获得共享内存的标识符。取得共享内存标识符后，要通过<code>shmat</code>将这个内存区映射到本进程的虚拟地址空间。</p>
+<hr>
+<h3 id="共享内存"><a href="#共享内存" class="headerlink" title="共享内存"></a>共享内存</h3><p>&emsp;&emsp;共享内存是被多个进程共享的一部分物理内存。共享内存是进程间共享数据的一种最快的方法，一个进程向共享内存区域写入了数据，共享这个内存区域的所有进程就可以立刻看到其中的内容。<br>&emsp;&emsp;由原理图可知，共享内存的地址在进程<code>A</code>中的地址可能是<code>0x5000</code>，在进程<code>B</code>中的地址可能是<code>0x7000</code>，这是因为共享内存映射到不同进程当中的不同位置。</p>
+<p><img src="/2019/03/13/Linux系统编程/共享内存总结/2.png"></p>
+<p>&emsp;&emsp;共享内存实现分为两个步骤：</p>
+<ol>
+<li>创建共享内存，使用<code>shmget</code>函数(<code>share memory get</code>)。</li>
+<li>映射共享内存，将这段创建的共享内存映射到具体的进程空间去，使用<code>shmat</code>函数。</li>
+</ol>
+<h3 id="创建共享内存"><a href="#创建共享内存" class="headerlink" title="创建共享内存"></a>创建共享内存</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">shmget</span> <span class="params">( <span class="keyword">key_t</span> key, <span class="keyword">int</span> size, <span class="keyword">int</span> shmflg )</span></span>;</span><br></pre></td></tr></table></figure>
+<p><code>key</code>标识共享内存的键值，可以取<code>0</code>或<code>IPC_PRIVATE</code>。当<code>key</code>的取值为<code>IPC_PRIVATE</code>，则函数<code>shmget</code>将创建一块新的共享内存；如果<code>key</code>的取值为<code>0</code>，而参数<code>shmflg</code>中又设置<code>IPC_PRIVATE</code>这个标志，则同样会创建一块新的共享内存。<code>size</code>是创建共享内存的大小，以字节为单位。如果函数执行成功，返回共享内存标识符；如果失败，返回<code>-1</code>。</p>
+<h3 id="共享内存映射"><a href="#共享内存映射" class="headerlink" title="共享内存映射"></a>共享内存映射</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">shmat</span> <span class="params">( <span class="keyword">int</span> shmid, <span class="keyword">char</span> *shmaddr, <span class="keyword">int</span> flag )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>shmid</code>：<code>shmget</code>函数返回的共享存储标识符。</li>
+<li><code>flag</code>：决定以什么方式来确定映射的地址(通常为<code>0</code>)。</li>
+<li><code>shmaddr</code>：我们不会向它传值，而是从它那里获取值，为<code>0</code>表示由系统来指定地址。</li>
+</ul>
+<p>如果函数执行成功，则返回共享内存映射到进程中的地址；如果失败，则返回<code>-1</code>。</p>
+<h3 id="共享内存脱离"><a href="#共享内存脱离" class="headerlink" title="共享内存脱离"></a>共享内存脱离</h3><p>&emsp;&emsp;当一个进程不再需要共享内存时，需要把它从进程地址空间中脱离，使用如下函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">shmdt</span> <span class="params">( <span class="keyword">char</span> *shmaddr )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>函数参数<code>shmaddr</code>是从<code>shmat</code>中获得的。<br>&emsp;&emsp;共享内存的使用如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* ShareMem_1.c */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/ipc.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/shm.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PERM S_IRUSR|S_IWUSR</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> shmid;</span><br><span class="line">    <span class="keyword">char</span> *p_addr, *c_addr;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( argc != <span class="number">2</span> ) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"Usage:%s\n\a"</span>, argv[<span class="number">0</span>] );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( shmid = shmget ( IPC_PRIVATE, <span class="number">1024</span>, PERM ) ) == <span class="number">-1</span> ) &#123; <span class="comment">/* 创建共享内存 */</span></span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"Create Share Memory Error:%s\n\a"</span>, strerror ( errno ) );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 创建子进程 */</span></span><br><span class="line">    <span class="keyword">if</span> ( fork() ) &#123; <span class="comment">/* 父进程写 */</span></span><br><span class="line">        p_addr = shmat ( shmid, <span class="number">0</span>, <span class="number">0</span> );</span><br><span class="line">        <span class="built_in">memset</span> ( p_addr, <span class="string">'\0'</span>, <span class="number">1024</span> );</span><br><span class="line">        <span class="built_in">strncpy</span> ( p_addr, argv[<span class="number">1</span>], <span class="number">1024</span> );</span><br><span class="line">        wait ( <span class="literal">NULL</span> ); <span class="comment">/* 释放资源，不关心终止状态 */</span></span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123; <span class="comment">/* 子进程读 */</span></span><br><span class="line">        sleep ( <span class="number">1</span> ); <span class="comment">/* 暂停1秒 */</span></span><br><span class="line">        c_addr = shmat ( shmid, <span class="number">0</span>, <span class="number">0</span> );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Client get %s\n"</span>, c_addr );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*--------------------------------------------------------------------------*/</span></span><br><span class="line"><span class="comment">/* ShareMem_2.c */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"sys/types.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"sys/ipc.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"sys/shm.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdlib.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BUFSZ 2048</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> shmid;</span><br><span class="line">    <span class="keyword">char</span> *shmadd;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( shmid = shmget ( IPC_PRIVATE, BUFSZ, <span class="number">0666</span> ) ) &lt; <span class="number">0</span> ) &#123; <span class="comment">/* 创建共享内存 */</span></span><br><span class="line">        perror ( <span class="string">"shmget"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">-1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"created shared-memeory: %d\n"</span>, shmid );</span><br><span class="line">    system ( <span class="string">"ipcs -m"</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( shmadd = ( <span class="keyword">char</span> * ) shmat ( shmid, <span class="number">0</span>, <span class="number">0</span> ) ) &lt; ( <span class="keyword">char</span> * ) <span class="number">0</span> ) &#123; <span class="comment">/* 映射共享内存 */</span></span><br><span class="line">        perror ( <span class="string">"shmat"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">-1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"attached shared-memory\n"</span> );</span><br><span class="line">    system ( <span class="string">"ipcs -m"</span> ); <span class="comment">/* 显示系统内存情况 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( shmdt ( shmadd ) &lt; <span class="number">0</span> ) &#123; <span class="comment">/* 取消共享内存映射 */</span></span><br><span class="line">        perror ( <span class="string">"shmat"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">-1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"detach shared-memory\n"</span> );</span><br><span class="line">    system ( <span class="string">"ipcs -m"</span> );</span><br><span class="line">    shmctl ( shmid, IPC_RMID, <span class="literal">NULL</span> ); <span class="comment">/* 删除共享内存对象 */</span></span><br><span class="line">    system ( <span class="string">"ipcs -m"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="共享内存使用示例"><a href="#共享内存使用示例" class="headerlink" title="共享内存使用示例"></a>共享内存使用示例</h3><p>&emsp;&emsp;<code>shm_com.h</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> TEXT_SZ 2048</span></span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">shared_use_st</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> written_by_you;</span><br><span class="line">    <span class="keyword">char</span> some_text[TEXT_SZ];</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>shm1.c</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/ipc.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/shm.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"shm_com.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> running = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">void</span> *shared_memory = ( <span class="keyword">void</span> * ) <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">shared_use_st</span> *<span class="title">shared_stuff</span>;</span></span><br><span class="line">    <span class="keyword">int</span> shmid;</span><br><span class="line">    <span class="comment">/* 创建共享内存 */</span></span><br><span class="line">    shmid = shmget ( ( <span class="keyword">key_t</span> ) <span class="number">1234</span>, <span class="keyword">sizeof</span> ( struct shared_use_st ), <span class="number">0666</span> | IPC_CREAT );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( shmid == <span class="number">-1</span> ) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"shmget failed\n"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( EXIT_FAILURE );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    shared_memory = shmat ( shmid, ( <span class="keyword">void</span> * ) <span class="number">0</span>, <span class="number">0</span> ); <span class="comment">/* 映射共享内存 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( shared_memory == ( <span class="keyword">void</span> * ) - <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"shmat failed\n"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( EXIT_FAILURE );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Memory attached at %X\n"</span>, ( <span class="keyword">int</span> ) shared_memory );</span><br><span class="line">    <span class="comment">/* 让结构体指针指向这块共享内存 */</span></span><br><span class="line">    shared_stuff = ( struct shared_use_st * ) shared_memory;</span><br><span class="line">    shared_stuff-&gt;written_by_you = <span class="number">0</span>; <span class="comment">/* 控制读写顺序 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( running ) &#123; <span class="comment">/* 循环的从共享内存中读数据，直到读到“end”为止 */</span></span><br><span class="line">        <span class="keyword">if</span> ( shared_stuff-&gt;written_by_you ) &#123;</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">"You wrote:%s"</span>, shared_stuff-&gt;some_text );</span><br><span class="line">            sleep ( <span class="number">1</span> ); <span class="comment">/* 读进程睡一秒，同时会导致写进程睡一秒，这样做到读了之后再写 */</span></span><br><span class="line">            shared_stuff-&gt;written_by_you = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( <span class="built_in">strncmp</span> ( shared_stuff-&gt;some_text, <span class="string">"end"</span>, <span class="number">3</span> ) == <span class="number">0</span> ) &#123;</span><br><span class="line">                running = <span class="number">0</span>; <span class="comment">/* 结束循环 */</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( shmdt ( shared_memory ) == <span class="number">-1</span> ) &#123; <span class="comment">/* 删除共享内存 */</span></span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"shmdt failed\n"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( EXIT_FAILURE );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">exit</span> ( EXIT_SUCCESS );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>shm2.c</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/ipc.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/shm.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"shm_com.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> running = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">void</span> *shared_memory = ( <span class="keyword">void</span> * ) <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">shared_use_st</span> *<span class="title">shared_stuff</span>;</span></span><br><span class="line">    <span class="keyword">char</span> buffer[BUFSIZ];</span><br><span class="line">    <span class="keyword">int</span> shmid;</span><br><span class="line">    <span class="comment">/* 创建共享内存 */</span></span><br><span class="line">    shmid = shmget ( ( <span class="keyword">key_t</span> ) <span class="number">1234</span>, <span class="keyword">sizeof</span> ( struct shared_use_st ), <span class="number">0666</span> | IPC_CREAT );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( shmid == <span class="number">-1</span> ) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"shmget failed\n"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( EXIT_FAILURE );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    shared_memory = shmat ( shmid, ( <span class="keyword">void</span> * ) <span class="number">0</span>, <span class="number">0</span> ); <span class="comment">/* 映射共享内存 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( shared_memory == ( <span class="keyword">void</span> * ) - <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"shmat failed\n"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( EXIT_FAILURE );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Memory attached at %X\n"</span>, ( <span class="keyword">int</span> ) shared_memory );</span><br><span class="line">    <span class="comment">/* 让结构体指针指向这块共享内存 */</span></span><br><span class="line">    shared_stuff = ( struct shared_use_st * ) shared_memory;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( running ) &#123; <span class="comment">/* 循环的向共享内存中写数据，直到写入的为“end”为止 */</span></span><br><span class="line">        <span class="keyword">while</span> ( shared_stuff-&gt;written_by_you == <span class="number">1</span> ) &#123;</span><br><span class="line">            sleep ( <span class="number">1</span> ); <span class="comment">/* 等到读进程读完之后再写 */</span></span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">"waiting for client...\n"</span> );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Ener some text:"</span> );</span><br><span class="line">        fgets ( buffer, BUFSIZ, <span class="built_in">stdin</span> );</span><br><span class="line">        <span class="built_in">strncpy</span> ( shared_stuff-&gt;some_text, buffer, TEXT_SZ );</span><br><span class="line">        shared_stuff-&gt;written_by_you = <span class="number">1</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( <span class="built_in">strncmp</span> ( buffer, <span class="string">"end"</span>, <span class="number">3</span> ) == <span class="number">0</span> ) &#123;</span><br><span class="line">            running = <span class="number">0</span>; <span class="comment">/* 结束循环 */</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( shmdt ( shared_memory ) == <span class="number">-1</span> ) &#123; <span class="comment">/*删除共享内存*/</span></span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"shmdt failed\n"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( EXIT_FAILURE );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">exit</span> ( EXIT_SUCCESS );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/13/Linux系统编程/管道/" rel="next" title="管道">
+                <i class="fa fa-chevron-left"></i> 管道
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/13/Linux系统编程/信号/" rel="prev" title="信号">
+                信号 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">付康为</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#内核怎样保证各个进程寻址到同一个共享内存区域的内存页面"><span class="nav-number">1.</span> <span class="nav-text">内核怎样保证各个进程寻址到同一个共享内存区域的内存页面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mmap及其相关系统调用"><span class="nav-number">2.</span> <span class="nav-text">mmap及其相关系统调用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mmap范例"><span class="nav-number">3.</span> <span class="nav-text">mmap范例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#对mmap返回地址的访问"><span class="nav-number">4.</span> <span class="nav-text">对mmap返回地址的访问</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#系统V共享内存原理"><span class="nav-number">5.</span> <span class="nav-text">系统V共享内存原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#系统V共享内存API"><span class="nav-number">6.</span> <span class="nav-text">系统V共享内存API</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#系统V共享内存限制"><span class="nav-number">7.</span> <span class="nav-text">系统V共享内存限制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#共享内存"><span class="nav-number">8.</span> <span class="nav-text">共享内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建共享内存"><span class="nav-number">9.</span> <span class="nav-text">创建共享内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#共享内存映射"><span class="nav-number">10.</span> <span class="nav-text">共享内存映射</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#共享内存脱离"><span class="nav-number">11.</span> <span class="nav-text">共享内存脱离</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#共享内存使用示例"><span class="nav-number">12.</span> <span class="nav-text">共享内存使用示例</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付康为</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+  
+
+
+  
+
+  
+
+</body>
+</html>
