@@ -271,6 +271,574 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/06/opencv和图像处理/Sobel算子/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/06/opencv和图像处理/Sobel算子/" itemprop="url">Sobel算子</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-06T22:39:24+08:00">
+                2019-03-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>Sobel</code>算子依然是一种过滤器，只是其是带有方向的。在<code>OpenCV</code>中，使用<code>Sobel</code>算子的函数原型如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dst = cv2.Sobel(src, ddepth, dx, dy[, dst[, ksize[, scale[, delta[, borderType]]]]])</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>src</code>：需要处理的图像；</li>
+<li><code>ddepth</code>是图像的深度，<code>-1</code>表示采用的是与原图像相同的深度，目标图像的深度必须大于等于原图像的深度；</li>
+<li><code>dx</code>和<code>dy</code>：求导的阶数，<code>0</code>表示这个方向上没有求导，一般为<code>0</code>、<code>1</code>、<code>2</code>。</li>
+<li><code>ksize</code>：<code>Sobel</code>算子的大小，必须为<code>1</code>、<code>3</code>、<code>5</code>或<code>7</code>。</li>
+<li><code>scale</code>：缩放导数的比例常数，默认情况下没有伸缩系数；</li>
+<li><code>delta</code>：一个可选的增量，将会加到<code>dst</code>中，默认情况下没有额外的值加到<code>dst</code>中。</li>
+<li><code>borderType</code>：图像边界的模式，这个参数默认值为<code>cv2.BORDER_DEFAULT</code>。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line">​</span><br><span class="line">img = cv2.imread(<span class="string">"test.jpg"</span>, <span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line">x = cv2.Sobel(img, cv2.CV_16S, <span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">y = cv2.Sobel(img, cv2.CV_16S, <span class="number">0</span>, <span class="number">1</span>)</span><br><span class="line">​</span><br><span class="line">absX = cv2.convertScaleAbs(x)</span><br><span class="line">absY = cv2.convertScaleAbs(y)</span><br><span class="line">​</span><br><span class="line">dst = cv2.addWeighted(absX, <span class="number">0.5</span>, absY, <span class="number">0.5</span>, <span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line">cv2.imshow(<span class="string">"absX"</span>, absX)</span><br><span class="line">cv2.imshow(<span class="string">"absY"</span>, absY)</span><br><span class="line">cv2.imshow(<span class="string">"Result"</span>, dst)</span><br><span class="line">​</span><br><span class="line">cv2.waitKey(<span class="number">0</span>)</span><br><span class="line">cv2.destroyAllWindows()</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/06/opencv和图像处理/Sobel算子/1.png" height="222" width="844"></p>
+<p>&emsp;&emsp;<code>Sobel</code>函数的第二个参数使用了<code>cv2.CV_16S</code>，因为<code>OpenCV</code>文档对<code>Sobel</code>算子的介绍中有这么一句：in the case of <code>8-bit</code> input images it will result in truncated derivatives，即<code>Sobel</code>函数求完导数后会有负值，还有会大于<code>255</code>的值。而原图像是<code>uint8</code>，所以<code>Sobel</code>建立的图像位数不够，会有截断。因此要使用<code>16</code>位有符号的数据类型，即<code>cv2.CV_16S</code>。<br>&emsp;&emsp;在经过处理后，不要忘记使用<code>convertScaleAbs</code>函数将其转回原来的<code>uint8</code>形式，否则将无法显示图像，而只是一个灰色的窗口。<code>convertScaleAbs</code>的函数原型如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dst = cv2.convertScaleAbs(src[, dst[, alpha[, beta]]])</span><br></pre></td></tr></table></figure>
+<p>参数<code>alpha</code>是伸缩系数，<code>beta</code>是加到结果上的一个值，该函数返回<code>uint8</code>类型的图片。由于<code>Sobel</code>算子是在两个方向计算的，最后还需要用<code>cv2.addWeighted</code>函数将其组合起来：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dst = cv2.addWeighted(src1, alpha, src2, beta, gamma[, dst[, dtype]])</span><br></pre></td></tr></table></figure>
+<p>其中<code>alpha</code>是第一幅图片中元素的权重，<code>beta</code>是第二幅图片中元素的权重，<code>gamma</code>是加到最后结果上的一个值。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/06/opencv和图像处理/Feature Matching/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/06/opencv和图像处理/Feature Matching/" itemprop="url">Feature Matching</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-06T17:47:16+08:00">
+                2019-03-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="Basics-of-Brute-Force-Matcher"><a href="#Basics-of-Brute-Force-Matcher" class="headerlink" title="Basics of Brute-Force Matcher"></a>Basics of Brute-Force Matcher</h3><p>&emsp;&emsp;<code>Brute-Force</code> matcher is simple. It takes the descriptor of one feature in first set and is matched with all other features in second set using some distance calculation. And the closest one is returned.<br>&emsp;&emsp;For <code>BF</code> matcher, first we have to create the <code>BFMatcher</code> object using <code>cv2.BFMatcher()</code>. It takes two optional params. First one is <code>normType</code>. It specifies the distance measurement to be used. By default, it is <code>cv2.NORM_L2</code>. It is good for <code>SIFT</code>, <code>SURF</code> etc (<code>cv2.NORM_L1</code> is also there). For binary string based descriptors like <code>ORB</code>, <code>BRIEF</code>, <code>BRISK</code> etc, <code>cv2.NORM_HAMMING</code> should be used, which used <code>Hamming</code> distance as measurement. If <code>ORB</code> is using <code>WTA_K == 3</code> or <code>4</code>, <code>cv2.NORM_HAMMING2</code> should be used.<br>&emsp;&emsp;Second param is <code>boolean</code> variable, <code>crossCheck</code> which is <code>false</code> by default. If it is <code>true</code>, <code>Matcher</code> returns only those matches with value <code>(i, j)</code> such that <code>i-th</code> descriptor in set <code>A</code> has <code>j-th</code> descriptor in set <code>B</code> as the best match and <code>vice-versa</code>. That is, the two features in both sets should match each other. It provides consistant result, and is a good alternative to ratio test proposed by <code>D.Lowe</code> in <code>SIFT</code> paper.<br>&emsp;&emsp;Once it is created, two important methods are <code>BFMatcher.match()</code> and <code>BFMatcher.knnMatch()</code>. First one returns the best match. Second method returns <code>k</code> best matches where <code>k</code> is specified by the user. It may be useful when we need to do additional work on that.<br>&emsp;&emsp;Like we used <code>cv2.drawKeypoints()</code> to draw keypoints, <code>cv2.drawMatches()</code> helps us to draw the matches. It stacks two images horizontally and draw lines from first image to second image showing best matches. There is also <code>cv2.drawMatchesKnn</code> which draws all the <code>k</code> best matches. If <code>k = 2</code>, it will draw two <code>match-lines</code> for each keypoint. So we have to pass a mask if we want to selectively draw it.<br>&emsp;&emsp;Let’s see one example for each of <code>SURF</code> and <code>ORB</code> (Both use different distance measurements).</p>
+<h3 id="Brute-Force-Matching-with-ORB-Descriptors"><a href="#Brute-Force-Matching-with-ORB-Descriptors" class="headerlink" title="Brute-Force Matching with ORB Descriptors"></a>Brute-Force Matching with ORB Descriptors</h3><p>&emsp;&emsp;Here, we will see a simple example on how to match features between two images. In this case, I have a <code>queryImage</code> and a <code>trainImage</code>. We will try to find the <code>queryImage</code> in <code>trainImage</code> using feature matching (The images are <code>/samples/c/box.png</code> and <code>/samples/c/box_in_scene.png</code>)<br>&emsp;&emsp;We are using <code>SIFT</code> descriptors to match features. So let’s start with loading images, finding descriptors etc.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">from</span> matplotlib <span class="keyword">import</span> pyplot <span class="keyword">as</span> plt</span><br><span class="line"></span><br><span class="line">img1 = cv2.imread(<span class="string">'box.png'</span>, <span class="number">0</span>)  <span class="comment"># queryImage</span></span><br><span class="line">img2 = cv2.imread(<span class="string">'box_in_scene.png'</span>, <span class="number">0</span>)  <span class="comment"># trainImage</span></span><br><span class="line">orb = cv2.ORB()  <span class="comment"># Initiate SIFT detector</span></span><br><span class="line"><span class="comment"># find the keypoints and descriptors with SIFT</span></span><br><span class="line">kp1, des1 = orb.detectAndCompute(img1, <span class="keyword">None</span>)</span><br><span class="line">kp2, des2 = orb.detectAndCompute(img2, <span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<p>Next we create a <code>BFMatcher</code> object with distance measurement <code>cv2.NORM_HAMMING</code> (since we are using <code>ORB</code>) and <code>crossCheck</code> is switched on for better results. Then we use <code>Matcher.match()</code> method to get the best matches in two images. We sort them in ascending order of their distances so that best matches (with low distance) come to front. Then we draw only first <code>10</code> matches (Just for sake of visibility. You can increase it as you like):</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># create BFMatcher object</span></span><br><span class="line">bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=<span class="keyword">True</span>)</span><br><span class="line"><span class="comment"># Match descriptors.</span></span><br><span class="line">matches = bf.match(des1, des2)</span><br><span class="line"><span class="comment"># Sort them in the order of their distance.</span></span><br><span class="line">matches = sorted(matches, key=<span class="keyword">lambda</span> x: x.distance)</span><br><span class="line"><span class="comment"># Draw first 10 matches.</span></span><br><span class="line">img3 = cv2.drawMatches(img1, kp1, img2, kp2, matches[:<span class="number">10</span>], flags=<span class="number">2</span>)</span><br><span class="line">plt.imshow(img3), plt.show()</span><br></pre></td></tr></table></figure>
+<p>Below is the result I got:</p>
+<p><img src="/2019/03/06/opencv和图像处理/Feature Matching/1.png" height="218" width="327"></p>
+<h3 id="What-is-this-Matcher-Object"><a href="#What-is-this-Matcher-Object" class="headerlink" title="What is this Matcher Object"></a>What is this Matcher Object</h3><p>&emsp;&emsp;The result of <code>matches = bf.match(des1, des2)</code> line is a list of <code>DMatch</code> objects. This <code>DMatch</code> object has following attributes:</p>
+<ul>
+<li><code>DMatch.distance</code>: Distance between descriptors. The lower, the better it is.</li>
+<li><code>DMatch.trainIdx</code>: Index of the descriptor in train descriptors.</li>
+<li><code>DMatch.queryIdx</code>: Index of the descriptor in query descriptors.</li>
+<li><code>DMatch.imgIdx</code>: Index of the train image.</li>
+</ul>
+<h3 id="Brute-Force-Matching-with-SIFT-Descriptors-and-Ratio-Test"><a href="#Brute-Force-Matching-with-SIFT-Descriptors-and-Ratio-Test" class="headerlink" title="Brute-Force Matching with SIFT Descriptors and Ratio Test"></a>Brute-Force Matching with SIFT Descriptors and Ratio Test</h3><p>&emsp;&emsp;This time, we will use <code>BFMatcher.knnMatch()</code> to get <code>k</code> best matches. In this example, we will take <code>k=2</code> so that we can apply ratio test explained by <code>D.Lowe</code> in his paper.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">from</span> matplotlib <span class="keyword">import</span> pyplot <span class="keyword">as</span> plt</span><br><span class="line">​</span><br><span class="line">img1 = cv2.imread(<span class="string">'box.png'</span>, <span class="number">0</span>)  <span class="comment"># queryImage</span></span><br><span class="line">img2 = cv2.imread(<span class="string">'box_in_scene.png'</span>, <span class="number">0</span>)  <span class="comment"># trainImage</span></span><br><span class="line">​</span><br><span class="line"><span class="comment"># Initiate SIFT detector</span></span><br><span class="line">sift = cv2.SIFT()</span><br><span class="line">​</span><br><span class="line"><span class="comment"># find the keypoints and descriptors with SIFT</span></span><br><span class="line">kp1, des1 = sift.detectAndCompute(img1, <span class="keyword">None</span>)</span><br><span class="line">kp2, des2 = sift.detectAndCompute(img2, <span class="keyword">None</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment"># BFMatcher with default params</span></span><br><span class="line">bf = cv2.BFMatcher()</span><br><span class="line">matches = bf.knnMatch(des1, des2, k=<span class="number">2</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment"># Apply ratio test</span></span><br><span class="line">good = []</span><br><span class="line"><span class="keyword">for</span> m, n <span class="keyword">in</span> matches:</span><br><span class="line">    <span class="keyword">if</span> m.distance &lt; <span class="number">0.75</span> * n.distance:</span><br><span class="line">        good.append([m])</span><br><span class="line">​</span><br><span class="line"><span class="comment"># cv2.drawMatchesKnn expects list of lists as matches.</span></span><br><span class="line">img3 = cv2.drawMatchesKnn(img1, kp1, img2, kp2, good, flags=<span class="number">2</span>)</span><br><span class="line">​</span><br><span class="line">plt.imshow(img3), plt.show()</span><br></pre></td></tr></table></figure>
+<p>See the result below:</p>
+<p><img src="/2019/03/06/opencv和图像处理/Feature Matching/2.png"></p>
+<h3 id="FLANN-based-Matcher"><a href="#FLANN-based-Matcher" class="headerlink" title="FLANN based Matcher"></a>FLANN based Matcher</h3><p>&emsp;&emsp;<code>FLANN</code> stands for <code>Fast Library</code> for <code>Approximate Nearest Neighbors</code>. It contains a collection of algorithms optimized for fast nearest neighbor search in large datasets and for high dimensional features. It works more faster than <code>BFMatcher</code> for large datasets. We will see the second example with <code>FLANN</code> based matcher.<br>&emsp;&emsp;For <code>FLANN</code> based matcher, we need to pass two dictionaries which specifies the algorithm to be used, its related parameters etc. First one is <code>IndexParams</code>. For various algorithms, the information to be passed is explained in <code>FLANN</code> docs. As a summary, for algorithms like <code>SIFT</code>, <code>SURF</code> etc. you can pass following:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = <span class="number">5</span>)</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;While using <code>ORB</code>, you can pass the following. The commented values are recommended as per the docs, but it didn’t provide required results in some cases. Other values worked fine.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">index_params = dict(algorithm=FLANN_INDEX_LSH,</span><br><span class="line">                    table_number=<span class="number">6</span>,  <span class="comment"># 12</span></span><br><span class="line">                    key_size=<span class="number">12</span>,  <span class="comment"># 20</span></span><br><span class="line">                    multi_probe_level=<span class="number">1</span>)  <span class="comment"># 2</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;Second dictionary is the <code>SearchParams</code>. It specifies the number of times the trees in the index should be recursively traversed. Higher values gives better precision, but also takes more time. If you want to change the value, pass <code>search_params = dict(checks=100)</code>.<br>&emsp;&emsp;With these informations, we are good to go.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">from</span> matplotlib <span class="keyword">import</span> pyplot <span class="keyword">as</span> plt</span><br><span class="line">​</span><br><span class="line">img1 = cv2.imread(<span class="string">'box.png'</span>, <span class="number">0</span>)  <span class="comment"># queryImage</span></span><br><span class="line">img2 = cv2.imread(<span class="string">'box_in_scene.png'</span>, <span class="number">0</span>)  <span class="comment"># trainImage</span></span><br><span class="line">​</span><br><span class="line"><span class="comment"># Initiate SIFT detector</span></span><br><span class="line">sift = cv2.SIFT()</span><br><span class="line">​</span><br><span class="line"><span class="comment"># find the keypoints and descriptors with SIFT</span></span><br><span class="line">kp1, des1 = sift.detectAndCompute(img1, <span class="keyword">None</span>)</span><br><span class="line">kp2, des2 = sift.detectAndCompute(img2, <span class="keyword">None</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment"># FLANN parameters</span></span><br><span class="line">FLANN_INDEX_KDTREE = <span class="number">0</span></span><br><span class="line">index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=<span class="number">5</span>)</span><br><span class="line">search_params = dict(checks=<span class="number">50</span>)  <span class="comment"># or pass empty dictionary</span></span><br><span class="line">​</span><br><span class="line">flann = cv2.FlannBasedMatcher(index_params, search_params)</span><br><span class="line">​</span><br><span class="line">matches = flann.knnMatch(des1, des2, k=<span class="number">2</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment"># Need to draw only good matches, so create a mask</span></span><br><span class="line">matchesMask = [[<span class="number">0</span>, <span class="number">0</span>] <span class="keyword">for</span> i <span class="keyword">in</span> range(len(matches))]</span><br><span class="line">​</span><br><span class="line"><span class="comment"># ratio test as per Lowe's paper</span></span><br><span class="line"><span class="keyword">for</span> i, (m, n) <span class="keyword">in</span> enumerate(matches):</span><br><span class="line">    <span class="keyword">if</span> m.distance &lt; <span class="number">0.7</span> * n.distance:</span><br><span class="line">        matchesMask[i] = [<span class="number">1</span>, <span class="number">0</span>]</span><br><span class="line">​</span><br><span class="line">draw_params = dict(matchColor=(<span class="number">0</span>, <span class="number">255</span>, <span class="number">0</span>), singlePointColor=(<span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span>), matchesMask=matchesMask, flags=<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line">img3 = cv2.drawMatchesKnn(img1, kp1, img2, kp2, matches, <span class="keyword">None</span>, **draw_params)</span><br><span class="line">​</span><br><span class="line">plt.imshow(img3, ), plt.show()</span><br></pre></td></tr></table></figure>
+<p>See the result below:</p>
+<p><img src="/2019/03/06/opencv和图像处理/Feature Matching/3.png"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/06/opencv和图像处理/cvConvertImage和cvflip函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/06/opencv和图像处理/cvConvertImage和cvflip函数/" itemprop="url">cvConvertImage和cvflip函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-06T15:05:07+08:00">
+                2019-03-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="cvflip"><a href="#cvflip" class="headerlink" title="cvflip"></a>cvflip</h3><p>&emsp;&emsp;对图像进行翻转或旋转可以使用<code>cvflip</code>函数，可以实现将一个二维矩阵沿<code>X</code>轴、<code>Y</code>轴或者同时沿<code>XY</code>轴翻转。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">flip</span> <span class="params">( InputArray src, OutputArray dst, <span class="keyword">int</span> ipCode )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>src</code>是输入矩阵，<code>dst</code>是输出矩阵，<code>flipCode</code>是旋转码，即控制函数对矩阵进行怎样的旋转：</p>
+<ul>
+<li>当<code>flipCode = 0</code>时，将对矩阵沿<code>X</code>轴方向翻转。</li>
+<li>当<code>flipCode &gt; 0</code>时，将对矩阵沿<code>Y</code>轴方向翻转。</li>
+<li>当<code>flipCode &lt; 0</code>时，将对矩阵沿<code>XY</code>轴方向翻转。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/opencv.hpp&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Mat img = imread ( <span class="string">"timg1.jpg"</span>, CV_LOAD_IMAGE_ANYCOLOR );</span><br><span class="line">    imshow ( <span class="string">"Input"</span>, img );</span><br><span class="line">    cv::flip ( img, img, <span class="number">0</span> );</span><br><span class="line">    imshow ( <span class="string">"Flip"</span>, img );</span><br><span class="line">    waitKey ( <span class="number">0</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/06/opencv和图像处理/cvConvertImage和cvflip函数/1.png" height="254" width="688"></p>
+<p>&emsp;&emsp;<code>Python</code>中<code>flip</code>函数原型如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">flip(src, flipCode, dst=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>src</code>：原图像矩阵。</li>
+<li><code>flipCode</code>：翻转方向，<code>1</code>是水平翻转，<code>0</code>是垂直翻转，<code>-1</code>是水平垂直翻转。</li>
+<li><code>dst</code>：默认即可。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line">​</span><br><span class="line">image = cv2.imread(<span class="string">"girl.jpg"</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment"># Flipped Horizontally(水平翻转)</span></span><br><span class="line">h_flip = cv2.flip(image, <span class="number">1</span>)</span><br><span class="line">cv2.imshow(<span class="string">"girl-h.jpg"</span>, h_flip)</span><br><span class="line">​</span><br><span class="line"><span class="comment"># Flipped Vertically(垂直翻转)</span></span><br><span class="line">v_flip = cv2.flip(image, <span class="number">0</span>)</span><br><span class="line">cv2.imshow(<span class="string">"girl-v.jpg"</span>, v_flip)</span><br><span class="line">​</span><br><span class="line"><span class="comment"># Flipped Horizontally &amp; Vertically(水平垂直翻转)</span></span><br><span class="line">hv_flip = cv2.flip(image, <span class="number">-1</span>)</span><br><span class="line">cv2.imshow(<span class="string">"girl-hv.jpg"</span>, hv_flip)</span><br><span class="line">cv2.waitKey(<span class="number">0</span>)</span><br><span class="line">cv2.destroyAllWindows()</span><br></pre></td></tr></table></figure>
+<h3 id="cvConvertImage"><a href="#cvConvertImage" class="headerlink" title="cvConvertImage"></a>cvConvertImage</h3><p>&emsp;&emsp;函数原型如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvConvertImage</span> <span class="params">( <span class="keyword">const</span> CvArr *src, CvArr *dst, <span class="keyword">int</span> flags = <span class="number">0</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>src</code>：源图像的<code>IplImage</code>指针，源图像可以是单个、<code>3</code>个或者<code>4</code>个通道；</li>
+<li><code>dst</code>：转换后的图像的<code>IplImage</code>指针，目标图像必须是<code>8</code>位的单通道或者<code>3</code>个通道；</li>
+<li><code>flags</code>：转换的模式，可以取<code>0</code>(没有变化)、<code>1</code>(垂直翻转，即沿<code>x</code>轴翻转)和<code>2</code>(交换红蓝信道)。有时摄像机图像格式与图像显示格式会反转，设置这个参数可以在内存中彻底旋转图像。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cv.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    IplImage *img;</span><br><span class="line">    IplImage *dst;</span><br><span class="line">    img = cvLoadImage ( <span class="string">"timg1.jpg"</span>, <span class="number">0</span> );</span><br><span class="line">    dst = cvCreateImage ( cvGetSize ( img ), IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">    cvConvertImage ( img, dst, CV_CVTIMG_FLIP );</span><br><span class="line">    cvNamedWindow ( <span class="string">"Imageshow"</span>, <span class="number">1</span> );</span><br><span class="line">    cvShowImage ( <span class="string">"Imageshow"</span>, img );</span><br><span class="line">    cvNamedWindow ( <span class="string">"Converted"</span>, <span class="number">1</span> );</span><br><span class="line">    cvShowImage ( <span class="string">"Converted"</span>, dst );</span><br><span class="line">    cvWaitKey ( <span class="number">0</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/06/opencv和图像处理/cvConvertImage和cvflip函数/2.png" height="254" width="688"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/06/opencv和图像处理/亚像素级角点/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/06/opencv和图像处理/亚像素级角点/" itemprop="url">亚像素级角点</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-06T12:28:25+08:00">
+                2019-03-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;如果我们进行图像处理的目的不是用于识别特征点而是进行稽核测量，则通常需要更高的精度。而<code>cvGoodFeatureToTrack</code>只能提供简单的像素坐标值，但有时候我们会需要实际坐标值而不是整数坐标值，例如想要确定图形中一个尖锐的峰值点的位置，但是峰值点的位置一般都不会位于一个像素点的正中心，这时就可以使用亚像素检测方法。<br>&emsp;&emsp;亚像素级角点的位置在摄像机标定、跟踪并重建摄像机的轨迹或者重建被跟踪目标的三维结构时就是一个基本的测量值。通过<code>cvGoodFeaturesToTrack</code>函数可以求得角点坐标值，接下来就要讨论如何将求得的坐标值精确到亚像素级精度。方法就是向量的点积理论：一个向量和其正交的向量的点积为<code>0</code>，角点就是两个边缘的相交，可以满足这样的情况。</p>
+<p><img src="/2019/03/06/opencv和图像处理/亚像素级角点/1.png"></p>
+<p>&emsp;&emsp;当要求的点<code>p</code>位于一个区域的内部时，点<code>p</code>边缘是平缓的，它的梯度值为<code>0</code>，此时向量<code>pq</code>的与<code>p</code>的梯度点积为<code>0</code>；当点<code>p</code>位于区域的边缘的时候，向量<code>pq</code>与区域平行，而<code>p</code>的梯度值则与边缘垂直，此时向量<code>pq</code>的与<code>p</code>的梯度点积为<code>0</code>。<br>&emsp;&emsp;这两种情况下，向量<code>pq</code>与<code>p</code>点的梯度都是正交的。先假设起始角点<code>q</code>在实际亚像素级角点<code>p</code>附近，则我们可以在要求的<code>p</code>点的周围取到很多<code>p</code>点的梯度和相关向量<code>pq</code>。令其点积为<code>0</code>，然后就可以通过求解方程组，方程组的解就是角点<code>q</code>的亚像素精度的位置，也就是精确角点的位置。<br>&emsp;&emsp;<code>cvFindCornerSubPix</code>函数原型如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvFindCornerSubPix</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *image, CvPoint2D32f *corners, <span class="keyword">int</span> count,</span></span></span><br><span class="line"><span class="function"><span class="params">    CvSize win, CvSize zero_zone, CvTermCriteria criteria )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>image</code>：输入图像。</li>
+<li><code>corners</code>：输入角点的初始坐标，也存储精确的输出坐标。</li>
+<li><code>count</code>：角点数目。</li>
+<li><code>win</code>：搜索窗口的一半尺寸。如果<code>win = (5, 5)</code>，那么使用<code>(5 * 2 + 1) x (5 * 2 + 1) = 11 x 11</code>大小的搜索窗口。</li>
+<li><code>zero_zone</code>：死区的一半尺寸，死区为不对搜索区的中央位置做求和运算的区域。它是用来避免自相关矩阵出现的某些可能的奇异性。值为<code>(-1, -1)</code>表示没有死区。</li>
+<li><code>criteria</code>：求角点的迭代过程的终止条件。即角点位置的确定，要么迭代数大于某个设定值，或者是精确度达到某个设定值。<code>criteria</code>可以是最大迭代数目，或者是设定的精确度，也可以是它们的组合。</li>
+</ul>
+<p>&emsp;&emsp;函数<code>cvFindCornerSubPix</code>通过迭代来发现具有子像素精度的角点位置，或如图所示的放射鞍点(<code>radial saddle points</code>)。当找到一个<code>q</code>的新位置时，算法会以这个新的角点作为初始点进行迭代知道满足用户定义的迭代终止条件。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cv.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cxcore.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;highgui.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    FILE *fp = fopen ( <span class="string">"result.txt"</span>, <span class="string">"w+"</span> ) ;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *filename = <span class="string">"timg1.jpg"</span> ;</span><br><span class="line">    IplImage *img = cvLoadImage ( filename, CV_LOAD_IMAGE_COLOR );</span><br><span class="line">    IplImage *img_copy = cvCloneImage ( img ) ;</span><br><span class="line">    IplImage *img_gray = cvCreateImage ( cvGetSize ( img ), IPL_DEPTH_8U, <span class="number">1</span> ) ;</span><br><span class="line">    IplImage *eig_image = cvCreateImage ( cvGetSize ( img ), IPL_DEPTH_32F, <span class="number">1</span> );</span><br><span class="line">    IplImage *temp_image = cvCloneImage ( eig_image ) ;</span><br><span class="line">    cvCvtColor ( img, img_gray, CV_BGR2GRAY );</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">int</span> MAX_CORNERS = <span class="number">1000</span> ;</span><br><span class="line">    CvPoint2D32f *corners = <span class="keyword">new</span> CvPoint2D32f[ MAX_CORNERS ];</span><br><span class="line">    <span class="keyword">int</span> corner_count = MAX_CORNERS;</span><br><span class="line">    <span class="keyword">double</span> quality_level = <span class="number">0.1</span>;</span><br><span class="line">    <span class="keyword">double</span> min_distance = <span class="number">5</span>;</span><br><span class="line">    cvGoodFeaturesToTrack (</span><br><span class="line">        img_gray, eig_image, temp_image, corners,</span><br><span class="line">        &amp;corner_count, quality_level, min_distance );</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* draw corners from cvGoodFeaturesToTrack on "img" */</span></span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span> ; i &lt; corner_count ; ++i ) &#123;</span><br><span class="line">        cvLine ( img, cvPoint ( corners[i].x, corners[i].y ), \</span><br><span class="line">                      cvPoint ( corners[i].x, corners[i].y ), \</span><br><span class="line">                      CV_RGB ( <span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span> ), <span class="number">5</span> );</span><br><span class="line">        <span class="built_in">fprintf</span> ( fp, <span class="string">"\t%f\t%f\n"</span>, corners[i].x, corners[i].y ) ;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">fprintf</span> ( fp, <span class="string">"\n\n\n\n\n"</span> ) ;</span><br><span class="line">    <span class="keyword">int</span> half_win_size = <span class="number">3</span>; <span class="comment">/* the window size will be 3+1+3 = 7 */</span></span><br><span class="line">    <span class="keyword">int</span> iteration = <span class="number">20</span>;</span><br><span class="line">    <span class="keyword">double</span> epislon = <span class="number">0.1</span>;</span><br><span class="line">    cvFindCornerSubPix (</span><br><span class="line">        img_gray, corners, corner_count,</span><br><span class="line">        cvSize ( half_win_size, half_win_size ),</span><br><span class="line">        cvSize ( <span class="number">-1</span>, <span class="number">-1</span> ), <span class="comment">/* no ignoring the neighbours of the center corner */</span></span><br><span class="line">        cvTermCriteria ( CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, iteration, epislon )</span><br><span class="line">    );</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* draw subpix corners on "img_copy" */</span></span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; corner_count; i++ ) &#123;</span><br><span class="line">        cvLine ( img_copy, cvPoint ( corners[i].x, corners[i].y ), \</span><br><span class="line">                           cvPoint ( corners[i].x, corners[i].y ), \</span><br><span class="line">                           CV_RGB ( <span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span> ), <span class="number">5</span> );</span><br><span class="line">        <span class="built_in">fprintf</span> ( fp, <span class="string">"\t%f\t%f\n"</span>, corners[i].x, corners[i].y ) ;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    cvNamedWindow ( <span class="string">"cvFindCornerSubPix"</span>, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    cvShowImage ( <span class="string">"cvFindCornerSubPix"</span>, img );</span><br><span class="line">    cvNamedWindow ( <span class="string">"cvGoodFeaturesToTrack"</span>, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    cvShowImage ( <span class="string">"cvGoodFeaturesToTrack"</span>, img_copy );</span><br><span class="line">    cvWaitKey ( <span class="number">0</span> );</span><br><span class="line">    cvReleaseImage ( &amp;img_gray );</span><br><span class="line">    cvReleaseImage ( &amp;img );</span><br><span class="line">    cvReleaseImage ( &amp;img_copy );</span><br><span class="line">    cvDestroyWindow ( <span class="string">"cvGoodFeaturesToTrack"</span> );</span><br><span class="line">    cvDestroyWindow ( <span class="string">"cvFindCornerSubPix"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/06/opencv和图像处理/亚像素级角点/2.png" height="252" width="693"></p>
+<p>&emsp;&emsp;<code>CvTermCriteria</code>是迭代算法的终止准则：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 迭代算法的终止条件 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CV_TERMCRIT_ITER   1 <span class="comment">/* 在完成最大的迭代次数之后，停止算法 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CV_TERMCRIT_NUMBER CV_TERMCRIT_ITER</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CV_TERMCRIT_EPS    2 <span class="comment">/* 当算法的精确度小于参数“double epsilon”指定的精确度时，停止算法 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">// CV_TERMCRIT_ITER + CV_TERMCRIT_EPS -- 无论是哪一个条件先达到，都停止算法</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">CvTermCriteria</span> &#123;</span></span><br><span class="line">    <span class="comment">/* the type of the termination criteria 迭代算法终止条件的类型 */</span></span><br><span class="line">    <span class="keyword">int</span> type; <span class="comment">/* may be combination of CV_TERMCRIT_ITER, CV_TERMCRIT_EPS */</span></span><br><span class="line">    <span class="keyword">int</span> max_iter; <span class="comment">/* Maximum number of iterations 最大的迭代次数 */</span></span><br><span class="line">    <span class="keyword">double</span> epsilon; <span class="comment">/* Required accuracy 所要求的精确度 */</span></span><br><span class="line">&#125; CvTermCriteria;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 下面这个函数的功能类似于构造函数，但实际上它并不是 */</span></span><br><span class="line"><span class="function">CV_INLINE CvTermCriteria <span class="title">cvTermCriteria</span> <span class="params">( <span class="keyword">int</span> type, <span class="keyword">int</span> max_iter, <span class="keyword">double</span> epsilon )</span> </span>&#123;</span><br><span class="line">    CvTermCriteria t;</span><br><span class="line">    t.type = type;</span><br><span class="line">    t.max_iter = max_iter;</span><br><span class="line">    t.epsilon = ( <span class="keyword">float</span> ) epsilon;</span><br><span class="line">    <span class="keyword">return</span> t;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Termination criteria in iterative algorithms 迭代算法中的终止条件 */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CV_EXPORTS</span> <span class="title">TermCriteria</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">enum</span> &#123;</span><br><span class="line">        COUNT = <span class="number">1</span>, <span class="comment">/* the maximum number of iterations or elements to compute */</span></span><br><span class="line">        MAX_ITER = COUNT, <span class="comment">/* ditto */</span></span><br><span class="line">        EPS = <span class="number">2</span> <span class="comment">/* the desired accuracy or change in parameters at which the iterative algorithm stops */</span></span><br><span class="line">    &#125;;</span><br><span class="line">​</span><br><span class="line">    TermCriteria(); <span class="comment">/* default constructor 默认构造函数 */</span></span><br><span class="line">    TermCriteria ( <span class="keyword">int</span> type, <span class="keyword">int</span> maxCount, <span class="keyword">double</span> epsilon ); <span class="comment">/* full constructor 完全构造函数 */</span></span><br><span class="line">    <span class="comment">/* conversion from CvTermCriteria CvTermCriteria结构体和TermCriteria类的转换构造函数 */</span></span><br><span class="line">    TermCriteria ( <span class="keyword">const</span> CvTermCriteria &amp;criteria );</span><br><span class="line">    <span class="function"><span class="keyword">operator</span> <span class="title">CvTermCriteria</span><span class="params">()</span> <span class="keyword">const</span></span>; <span class="comment">/* conversion to CvTermCriteria */</span></span><br><span class="line">    <span class="comment">/* TermCriteria类的三个数据成员 -- 终止条件的类型、最大迭代次数、所期望的精度 */</span></span><br><span class="line">    <span class="keyword">int</span> type; <span class="comment">/* the type of termination criteria: COUNT, EPS or COUNT + EPS */</span></span><br><span class="line">    <span class="keyword">int</span> maxCount; <span class="comment">/* the maximum number of iterations/elements */</span></span><br><span class="line">    <span class="keyword">double</span> epsilon; <span class="comment">/* the desired accuracy */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<hr>
+<p>&emsp;&emsp;<code>OpenCV</code>为我们提供了函数<code>cv2.cornerSubPix</code>，它可以提供亚像素级别的角点检测。首先要找到<code>Harris</code>角点，然后将角点的重心传给这个函数进行修正。<code>Harris</code>角点用红色像素标出，绿色像素是修正后的像素。在使用这个函数时，我们要定义一个迭代停止条件，当迭代次数达到或者精度条件满足后迭代就会停止。我们同样需要定义进行角点搜索的邻域大小。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line">​</span><br><span class="line">filename = <span class="string">'timg1.jpg'</span></span><br><span class="line">img = cv2.imread(filename)</span><br><span class="line">cv2.imshow(<span class="string">'img'</span>, img)</span><br><span class="line">gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)</span><br><span class="line"><span class="comment"># find Harris corners</span></span><br><span class="line">gray = np.float32(gray)</span><br><span class="line">dst = cv2.cornerHarris(gray, <span class="number">2</span>, <span class="number">3</span>, <span class="number">0.04</span>)</span><br><span class="line">dst = cv2.dilate(dst, <span class="keyword">None</span>)</span><br><span class="line">ret, dst = cv2.threshold(dst, <span class="number">0.01</span> * dst.max(), <span class="number">255</span>, <span class="number">0</span>)</span><br><span class="line">dst = np.uint8(dst)</span><br><span class="line"><span class="comment"># find centroids</span></span><br><span class="line"><span class="comment"># connectedComponentsWithStats(InputArray image, OutputArray labels, OutputArray stats,</span></span><br><span class="line"><span class="comment"># OutputArray centroids, int connectivity=8, int ltype=CV_32S)</span></span><br><span class="line">ret, labels, stats, centroids = cv2.connectedComponentsWithStats(dst)</span><br><span class="line"><span class="comment"># define the criteria to stop and refine the corners</span></span><br><span class="line">criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, <span class="number">100</span>, <span class="number">0.001</span>)</span><br><span class="line"><span class="comment"># Python: cv2.cornerSubPix(image, corners, winSize, zeroZone, criteria)</span></span><br><span class="line"><span class="comment"># zeroZone -- Half of the size of the dead region in the middle of the search zone</span></span><br><span class="line"><span class="comment"># over which the summation in the formula below is not done. It is used sometimes</span></span><br><span class="line"><span class="comment"># to avoid possible singularities of the autocorrelation matrix. The value of (-1,-1)</span></span><br><span class="line"><span class="comment"># indicates that there is no such a size.</span></span><br><span class="line"><span class="comment"># 返回值由角点坐标组成的一个数组(而非图像)</span></span><br><span class="line">corners = cv2.cornerSubPix(gray, np.float32(centroids), (<span class="number">5</span>, <span class="number">5</span>), (<span class="number">-1</span>, <span class="number">-1</span>), criteria)</span><br><span class="line"><span class="comment"># Now draw them</span></span><br><span class="line">res = np.hstack((centroids, corners))</span><br><span class="line"><span class="comment"># np.int0 可以用来省略小数点后面的数字(非四舍五入)</span></span><br><span class="line">res = np.int0(res)</span><br><span class="line">img[res[:, <span class="number">1</span>], res[:, <span class="number">0</span>]] = [<span class="number">0</span>, <span class="number">0</span>, <span class="number">255</span>]</span><br><span class="line">img[res[:, <span class="number">3</span>], res[:, <span class="number">2</span>]] = [<span class="number">0</span>, <span class="number">255</span>, <span class="number">0</span>]</span><br><span class="line">cv2.imshow(<span class="string">'target'</span>, img)</span><br><span class="line">cv2.waitKey()</span><br><span class="line">cv2.destroyAllWindows()</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/06/opencv和图像处理/亚像素级角点/2.png" height="254" width="710"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/04/外语/新版标准日本语初级词汇表_上册/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -6075,600 +6643,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/04/opencv和图像处理/GrabCut算法/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/04/opencv和图像处理/GrabCut算法/" itemprop="url">GrabCut算法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-04T16:08:04+08:00">
-                2019-03-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;在<code>opencv</code>中，<code>GrabCut</code>算法由<code>grabCut</code>函数实现：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">grabCut</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    InputArray image, InputOutputArray mask,</span></span></span><br><span class="line"><span class="function"><span class="params">    Rect rect, InputOutputArray bgdModel,</span></span></span><br><span class="line"><span class="function"><span class="params">    InputOutputArray fgdModel, <span class="keyword">int</span> iterCount, <span class="keyword">int</span> mode)</span></span>;</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>image</code>：输入<code>8</code>位<code>3</code>通道图像。</li>
-<li><code>mask</code>：输入或输出的<code>8</code>位单通道<code>mask</code>。当<code>mode</code>设为<code>GC_INIT_WITH_RECT</code>时，由函数初始化；当<code>mode</code>设为<code>GC_INIT_WITH_MASK</code>，允许用户输入自己标记的掩码。<code>mask</code>的取值为以下四种：</li>
-</ul>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Mask</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>GC_BGD</code></td>
-<td>defines an obvious background pixels.</td>
-</tr>
-<tr>
-<td><code>GC_FGD</code></td>
-<td>defines an obvious foreground (object) pixel.</td>
-</tr>
-<tr>
-<td><code>GC_PR_BGD</code></td>
-<td>defines a possible background pixel.</td>
-</tr>
-<tr>
-<td><code>GC_PR_FGD</code></td>
-<td>defines a possible foreground pixel.</td>
-</tr>
-</tbody>
-</table>
-</div>
-<ul>
-<li><code>rect</code>：包含前景的矩形。</li>
-<li><code>bgdModel</code>：背景模型。</li>
-<li><code>fgdModel</code>：前景模型。</li>
-<li><code>iterCount</code>：迭代次数。</li>
-<li><code>mode</code>：操作代码，可能为以下值：</li>
-</ul>
-<ol>
-<li><code>GC_INIT_WITH_RECT</code>：矩形框初始化函数。</li>
-<li><code>GC_INIT_WITH_MASK</code>：<code>mask</code>初始化函数。</li>
-<li><code>GC_EVAL</code>：执行分割。</li>
-</ol>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"highgui.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cv.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line">​</span><br><span class="line">Rect selection;</span><br><span class="line">Mat img, img0;</span><br><span class="line"><span class="function">Point <span class="title">prePt</span> <span class="params">( <span class="number">-1</span>, <span class="number">-1</span> )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">onMouse</span> <span class="params">( <span class="keyword">int</span> event, <span class="keyword">int</span> x, <span class="keyword">int</span> y, <span class="keyword">int</span> flags, <span class="keyword">void</span> *param )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( event == CV_EVENT_LBUTTONDOWN ) &#123;</span><br><span class="line">        prePt = Point ( x, y );</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( event == CV_EVENT_MOUSEMOVE &amp;&amp; ( flags &amp;&amp; CV_EVENT_FLAG_LBUTTON ) ) &#123;</span><br><span class="line">        img = img0.clone();</span><br><span class="line">        rectangle ( img, Rect ( prePt.x, prePt.y, <span class="built_in">abs</span> ( x - prePt.x ), <span class="built_in">abs</span> ( y - prePt.y ) ), Scalar ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">255</span> ), <span class="number">3</span> );</span><br><span class="line">        selection = Rect ( prePt.x, prePt.y, <span class="built_in">abs</span> ( x - prePt.x ), <span class="built_in">abs</span> ( y - prePt.y ) );</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( event == CV_EVENT_LBUTTONUP || ! ( flags &amp; CV_EVENT_FLAG_LBUTTON ) ) &#123;</span><br><span class="line">        prePt = Point ( <span class="number">-1</span>, <span class="number">-1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    imshow ( <span class="string">"原图"</span>, img );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    img = imread ( <span class="string">"kele.JPG"</span>, <span class="number">1</span> );</span><br><span class="line">    img0 = img.clone();</span><br><span class="line">    imshow ( <span class="string">"原图"</span>, img );</span><br><span class="line">    setMouseCallback ( <span class="string">"原图"</span>, onMouse );</span><br><span class="line">    Mat result;</span><br><span class="line">    Mat bgModel, fgModel; <span class="comment">/* 背景和前景 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        <span class="keyword">int</span> c = waitKey ( <span class="number">10</span> );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( ( <span class="keyword">char</span> ) c == <span class="string">'p'</span> ) &#123;</span><br><span class="line">            grabCut ( img0, result, selection, bgModel, fgModel, <span class="number">5</span>, GC_INIT_WITH_RECT );</span><br><span class="line">            compare ( result, GC_PR_FGD, result, CMP_EQ ); <span class="comment">/* 得到前景mask */</span></span><br><span class="line">            <span class="function">Mat <span class="title">foreground</span> <span class="params">( img.size(), CV_8UC3, Scalar::all ( <span class="number">255</span> ) )</span></span>;</span><br><span class="line">            img0.copyTo ( foreground, result );</span><br><span class="line">            imshow ( <span class="string">"grabcut"</span>, foreground );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( <span class="keyword">char</span> ( c ) == <span class="string">'q'</span> ) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/04/opencv和图像处理/GrabCut算法/1.png" height="280" width="289"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/04/opencv和图像处理/cvAbsDiff函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/04/opencv和图像处理/cvAbsDiff函数/" itemprop="url">cvAbsDiff函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-04T15:09:31+08:00">
-                2019-03-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;函数原型如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvAbsDiff</span> <span class="params">( <span class="keyword">const</span> CvArr *src1, <span class="keyword">const</span> CvArr *src2, CvArr *dst )</span></span>;</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>src1</code>: The ﬁrst source array.</li>
-<li><code>src2</code>: The second source array.</li>
-<li><code>dst</code>: The destination array.</li>
-</ul>
-<p>The function calculates absolute difference between two arrays. All the arrays must have the same data type and the same size (or <code>ROI</code> size).</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cv.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;highgui.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span> </span>&#123;</span><br><span class="line">    IplImage *img1, *img2, *img3;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( argc &lt; <span class="number">3</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Usage: main &lt;image-file-name&gt;\n\7"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    img1 = cvLoadImage ( argv[<span class="number">1</span>] );</span><br><span class="line">    img2 = cvLoadImage ( argv[<span class="number">2</span>] );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !img1 || !img2 ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Could not load image file\n"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    img3 = cvCreateImage ( cvGetSize ( img1 ), img1-&gt;depth, img1-&gt;nChannels );</span><br><span class="line">    cvAbsDiff ( img1, img2, img3 );</span><br><span class="line">    cvNamedWindow ( <span class="string">"img1"</span>, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    cvNamedWindow ( <span class="string">"img2"</span>, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    cvNamedWindow ( <span class="string">"img3"</span>, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    cvShowImage ( <span class="string">"img1"</span>, img1 );</span><br><span class="line">    cvShowImage ( <span class="string">"img2"</span>, img2 );</span><br><span class="line">    cvShowImage ( <span class="string">"img3"</span>, img3 );</span><br><span class="line">    cvWaitKey ( <span class="number">0</span> );</span><br><span class="line">    cvReleaseImage ( &amp;img1 );</span><br><span class="line">    cvReleaseImage ( &amp;img2 );</span><br><span class="line">    cvReleaseImage ( &amp;img3 );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/04/opencv和图像处理/cvAbsDiff函数/1.png" height="188" width="617"></p>
-<p>&emsp;&emsp;<code>python</code>代码如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line">​</span><br><span class="line">img1 = cv2.imread(<span class="string">'test1.jpg'</span>)</span><br><span class="line">img2 = cv2.imread(<span class="string">'test1-1.jpg'</span>)</span><br><span class="line">img = cv2.absdiff(img1, img2)</span><br><span class="line">cv2.imshow(<span class="string">'img1'</span>, img1)</span><br><span class="line">cv2.imshow(<span class="string">'img2'</span>, img2)</span><br><span class="line">cv2.imshow(<span class="string">'img原图'</span>, img)</span><br><span class="line">​</span><br><span class="line">cv2.waitKey(<span class="number">0</span>)</span><br><span class="line">cv2.destroyAllWindows()</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/04/opencv和图像处理/轮廓检测/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/04/opencv和图像处理/轮廓检测/" itemprop="url">轮廓检测</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-04T14:23:22+08:00">
-                2019-03-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;轮廓检测的原理通俗地说就是掏空内部点，比如原图中有<code>3 * 3</code>的矩形点，那么就可以将中间的那一个点去掉。在<code>opencv</code>中使用轮廓检测是非常方便的，直接使用<code>cvFindContours</code>函数就能完成对图像轮廓的检测。<br>&emsp;&emsp;<code>cvFindContours</code>函数功能是对图像进行轮廓检测，这个函数将生成一条链表以保存检测出的各个轮廓信息，并传出指向这条链表表头的指针。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cvFindContours</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    CvArr *image, CvMemStorage *storage, CvSeq **first_contour,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> header_size = <span class="keyword">sizeof</span> ( CvContour ), <span class="keyword">int</span> mode = CV_RETR_LIST,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> method = CV_CHAIN_APPROX_SIMPLE, CvPoint offset = cvPoint ( <span class="number">0</span>, <span class="number">0</span> ) )</span></span>;</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>image</code>：输入图像，必须为一个<code>8</code>位的二值图像。</li>
-<li><code>storage</code>：存储轮廓的容器，为<code>CvMemStorage</code>类型，定义在<code>OpenCV</code>的<code>core\types_c.h</code>中。</li>
-<li><code>first_contour</code>：输出参数，这个参数将指向用来存储轮廓信息的链表表头。</li>
-<li><code>header_size</code>：存储轮廓链表的表头大小，当参数<code>method</code>传入<code>CV_CHAIN_CODE</code>时，要设置成<code>sizeof(CvChain)</code>，其它情况统一设置成<code>sizeof(CvContour)</code>。</li>
-<li><code>mode</code>：轮廓检测的模式，有如下取值：</li>
-</ul>
-<ol>
-<li><code>CV_RETR_EXTERNAL</code>：只检索最外面的轮廓。</li>
-<li><code>CV_RETR_LIST</code>：检索所有的轮廓，并将其保存到一条链表当中。</li>
-<li><code>CV_RETR_CCOMP</code>：检索所有的轮廓，并将他们组织为两层：顶层是各部分的外部边界，第二层是空洞的边界。</li>
-<li><code>CV_RETR_TREE</code>：检索所有的轮廓，并重构嵌套轮廓的整个层次，可以参见下图：</li>
-</ol>
-<p><img src="/2019/03/04/opencv和图像处理/轮廓检测/1.png"></p>
-<ul>
-<li><code>method</code>：表示轮廓边缘的近似方法，常用值如下：</li>
-</ul>
-<ol>
-<li><code>CV_CHAIN_CODE</code>：以<code>Freeman</code>链码的方式输出轮廓，所有其他方法输出多边形(顶点的序列)。</li>
-<li><code>CV_CHAIN_APPROX_SIMPLE</code>：压缩水平的、垂直的和斜的部分，也就是函数只保留他们的终点部分。</li>
-</ol>
-<ul>
-<li><code>offset</code>：偏移量，比如你要从图像的<code>(100, 0)</code>开始进行轮廓检测，那么就传入<code>(100, 0)</code>。</li>
-</ul>
-<p>&emsp;&emsp;使用<code>cvFindContours</code>函数能检测出图像的轮廓，将轮廓绘制出来则需要<code>cvDrawContours</code>函数。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvDrawContours</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    CvArr *img, CvSeq *contour, CvScalar external_color, CvScalar hole_color,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> max_level, <span class="keyword">int</span> thickness = <span class="number">1</span>, <span class="keyword">int</span> line_type = <span class="number">8</span>, CvPoint offset = cvPoint ( <span class="number">0</span>, <span class="number">0</span> ) )</span></span>;</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>img</code>：输入图像，函数将在这张图像上绘制轮廓。</li>
-<li><code>contour</code>：指向轮廓链表的指针。</li>
-<li><code>external_color</code>和<code>hole_color</code>：表示颜色，绘制时会根据轮廓的层次来交替使用这二种颜色。</li>
-<li><code>max_level</code>：绘制轮廓的最大层数。如果是<code>0</code>，只绘制<code>contour</code>；如果是<code>1</code>，追加绘制和<code>contour</code>同层的所有轮廓；如果是<code>2</code>，追加绘制比<code>contour</code>低一层的轮廓，以此类推；如果值是负值，则函数并不绘制<code>contour</code>后的轮廓，但是将画出其子轮廓，一直到<code>abs(max_level) - 1</code>层。</li>
-<li><code>thickness</code>：表示轮廓线的宽度。如果为<code>CV_FILLED</code>，则会填充轮廓内部。</li>
-<li><code>line_type</code>：表示轮廓线的类型。</li>
-<li><code>offset</code>：表示偏移量，如果传入<code>(10, 20)</code>，那绘制将从图像的<code>(10, 20)</code>处开始。</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/opencv.hpp&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsSrcTitle = <span class="string">"原图"</span>;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsOutLineTitle = <span class="string">"轮廓图"</span>;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">int</span> IMAGE_WIDTH = <span class="number">400</span>;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">int</span> IMAGE_HEIGHT = <span class="number">200</span>;</span><br><span class="line">    IplImage *pSrcImage = cvCreateImage ( cvSize ( IMAGE_WIDTH, IMAGE_HEIGHT ), IPL_DEPTH_8U, <span class="number">3</span> ); <span class="comment">/* 创建图像 */</span></span><br><span class="line">    cvRectangle ( pSrcImage, cvPoint ( <span class="number">0</span>, <span class="number">0</span> ),</span><br><span class="line">        cvPoint ( pSrcImage-&gt;width, pSrcImage-&gt;height ),</span><br><span class="line">        CV_RGB ( <span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span> ), CV_FILLED ); <span class="comment">/* 填充成白色 */</span></span><br><span class="line">    CvPoint ptCircleCenter = cvPoint ( IMAGE_WIDTH / <span class="number">4</span>, IMAGE_HEIGHT / <span class="number">2</span> ); <span class="comment">/* 画圆 */</span></span><br><span class="line">    <span class="keyword">int</span> nRadius = <span class="number">80</span>;</span><br><span class="line">    cvCircle ( pSrcImage, ptCircleCenter, nRadius, CV_RGB ( <span class="number">255</span>, <span class="number">255</span>, <span class="number">0</span> ), CV_FILLED );</span><br><span class="line">    ptCircleCenter = cvPoint ( IMAGE_WIDTH / <span class="number">4</span>, IMAGE_HEIGHT / <span class="number">2</span> );</span><br><span class="line">    nRadius = <span class="number">30</span>;</span><br><span class="line">    cvCircle ( pSrcImage, ptCircleCenter, nRadius, CV_RGB ( <span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span> ), CV_FILLED );</span><br><span class="line">    <span class="comment">/* 画矩形 */</span></span><br><span class="line">    CvPoint ptLeftTop = cvPoint ( IMAGE_WIDTH / <span class="number">2</span> + <span class="number">20</span>, <span class="number">20</span> );</span><br><span class="line">    CvPoint ptRightBottom = cvPoint ( IMAGE_WIDTH - <span class="number">20</span>, IMAGE_HEIGHT - <span class="number">20</span> );</span><br><span class="line">    cvRectangle ( pSrcImage, ptLeftTop, ptRightBottom, CV_RGB ( <span class="number">0</span>, <span class="number">255</span>, <span class="number">255</span> ), CV_FILLED );</span><br><span class="line">    ptLeftTop = cvPoint ( IMAGE_WIDTH / <span class="number">2</span> + <span class="number">60</span>, <span class="number">40</span> );</span><br><span class="line">    ptRightBottom = cvPoint ( IMAGE_WIDTH - <span class="number">60</span>, IMAGE_HEIGHT - <span class="number">40</span> );</span><br><span class="line">    cvRectangle ( pSrcImage, ptLeftTop, ptRightBottom, CV_RGB ( <span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span> ), CV_FILLED );</span><br><span class="line">    <span class="comment">/* 显示原图 */</span></span><br><span class="line">    cvNamedWindow ( pstrWindowsSrcTitle, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    cvShowImage ( pstrWindowsSrcTitle, pSrcImage );</span><br><span class="line">    <span class="comment">/* 转为灰度图 */</span></span><br><span class="line">    IplImage *pGrayImage =  cvCreateImage ( cvGetSize ( pSrcImage ), IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">    cvCvtColor ( pSrcImage, pGrayImage, CV_BGR2GRAY );</span><br><span class="line">    <span class="comment">/* 转为二值图 */</span></span><br><span class="line">    IplImage *pBinaryImage = cvCreateImage ( cvGetSize ( pGrayImage ), IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">    cvThreshold ( pGrayImage, pBinaryImage, <span class="number">250</span>, <span class="number">255</span>, CV_THRESH_BINARY );</span><br><span class="line">    CvMemStorage *pcvMStorage = cvCreateMemStorage(); <span class="comment">/* 检索轮廓并返回检测到的轮廓的个数 */</span></span><br><span class="line">    CvSeq *pcvSeq = <span class="literal">NULL</span>;</span><br><span class="line">    cvFindContours (</span><br><span class="line">        pBinaryImage, pcvMStorage, &amp;pcvSeq, <span class="keyword">sizeof</span> ( CvContour ),</span><br><span class="line">        CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cvPoint ( <span class="number">0</span>, <span class="number">0</span> ) );</span><br><span class="line">    <span class="comment">/* 画轮廓图 */</span></span><br><span class="line">    IplImage *pOutlineImage = cvCreateImage ( cvGetSize ( pSrcImage ), IPL_DEPTH_8U, <span class="number">3</span> );</span><br><span class="line">    <span class="keyword">int</span> nLevels = <span class="number">5</span>;</span><br><span class="line">    <span class="comment">/* 填充成白色 */</span></span><br><span class="line">    cvRectangle ( pOutlineImage, cvPoint ( <span class="number">0</span>, <span class="number">0</span> ),</span><br><span class="line">        cvPoint ( pOutlineImage-&gt;width, pOutlineImage-&gt;height ),</span><br><span class="line">        CV_RGB ( <span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span> ), CV_FILLED );</span><br><span class="line">    cvDrawContours ( pOutlineImage, pcvSeq, CV_RGB ( <span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span> ), CV_RGB ( <span class="number">0</span>, <span class="number">255</span>, <span class="number">0</span> ), nLevels, <span class="number">2</span> );</span><br><span class="line">    <span class="comment">/* 显示轮廓图 */</span></span><br><span class="line">    cvNamedWindow ( pstrWindowsOutLineTitle, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    cvShowImage ( pstrWindowsOutLineTitle, pOutlineImage );</span><br><span class="line">    cvWaitKey ( <span class="number">0</span> );</span><br><span class="line">    cvReleaseMemStorage ( &amp;pcvMStorage );</span><br><span class="line">    cvDestroyWindow ( pstrWindowsSrcTitle );</span><br><span class="line">    cvDestroyWindow ( pstrWindowsOutLineTitle );</span><br><span class="line">    cvReleaseImage ( &amp;pSrcImage );</span><br><span class="line">    cvReleaseImage ( &amp;pGrayImage );</span><br><span class="line">    cvReleaseImage ( &amp;pBinaryImage );</span><br><span class="line">    cvReleaseImage ( &amp;pOutlineImage );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/04/opencv和图像处理/轮廓检测/2.png"></p>
-<p>由图可以看出，轮廓线已经按层次交替的绘制成功了，读者可以修改程序中的<code>cvDrawContours</code>中的<code>nLevels</code>参数，看看图形会有什么变化。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/opencv.hpp&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line">IplImage *g_pGrayImage = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsBinaryTitle = <span class="string">"二值图"</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsOutLineTitle = <span class="string">"轮廓图"</span>;</span><br><span class="line">CvSeq *g_pcvSeq = <span class="literal">NULL</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">on_trackbar</span> <span class="params">( <span class="keyword">int</span> pos )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* 转为二值图 */</span></span><br><span class="line">    IplImage *pBinaryImage = cvCreateImage ( cvGetSize ( g_pGrayImage ), IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">    cvThreshold ( g_pGrayImage, pBinaryImage, pos, <span class="number">255</span>, CV_THRESH_BINARY );</span><br><span class="line">    <span class="comment">/* 显示二值图 */</span></span><br><span class="line">    cvShowImage ( pstrWindowsBinaryTitle, pBinaryImage );</span><br><span class="line">    CvMemStorage *cvMStorage = cvCreateMemStorage();</span><br><span class="line">    <span class="comment">/* 检索轮廓并返回检测到的轮廓的个数 */</span></span><br><span class="line">    cvFindContours ( pBinaryImage, cvMStorage, &amp;g_pcvSeq );</span><br><span class="line">    IplImage *pOutlineImage = cvCreateImage ( cvGetSize ( g_pGrayImage ), IPL_DEPTH_8U, <span class="number">3</span> );</span><br><span class="line">    <span class="keyword">int</span> _levels = <span class="number">5</span>;</span><br><span class="line">    cvZero ( pOutlineImage );</span><br><span class="line">    cvDrawContours ( pOutlineImage, g_pcvSeq, CV_RGB ( <span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span> ), CV_RGB ( <span class="number">0</span>, <span class="number">255</span>, <span class="number">0</span> ), _levels );</span><br><span class="line">    cvShowImage ( pstrWindowsOutLineTitle, pOutlineImage );</span><br><span class="line">    cvReleaseMemStorage ( &amp;cvMStorage );</span><br><span class="line">    cvReleaseImage ( &amp;pBinaryImage );</span><br><span class="line">    cvReleaseImage ( &amp;pOutlineImage );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsSrcTitle = <span class="string">"原图"</span>;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsToolBarName = <span class="string">"二值化"</span>;</span><br><span class="line">    IplImage *pSrcImage = cvLoadImage ( <span class="string">"zzjb.jpg"</span>, CV_LOAD_IMAGE_UNCHANGED ); <span class="comment">/* 从文件中加载原图 */</span></span><br><span class="line">    <span class="comment">/* 显示原图 */</span></span><br><span class="line">    cvNamedWindow ( pstrWindowsSrcTitle, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    cvShowImage ( pstrWindowsSrcTitle, pSrcImage );</span><br><span class="line">    <span class="comment">/* 转为灰度图 */</span></span><br><span class="line">    g_pGrayImage =  cvCreateImage ( cvGetSize ( pSrcImage ), IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">    cvCvtColor ( pSrcImage, g_pGrayImage, CV_BGR2GRAY );</span><br><span class="line">    <span class="comment">/* 创建二值图和轮廓图窗口 */</span></span><br><span class="line">    cvNamedWindow ( pstrWindowsBinaryTitle, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    cvNamedWindow ( pstrWindowsOutLineTitle, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    <span class="comment">/* 滑动条 */</span></span><br><span class="line">    <span class="keyword">int</span> nThreshold = <span class="number">0</span>;</span><br><span class="line">    cvCreateTrackbar ( pstrWindowsToolBarName, pstrWindowsBinaryTitle, &amp;nThreshold, <span class="number">254</span>, on_trackbar );</span><br><span class="line">    on_trackbar ( <span class="number">1</span> );</span><br><span class="line">    cvWaitKey ( <span class="number">0</span> );</span><br><span class="line">    cvDestroyWindow ( pstrWindowsSrcTitle );</span><br><span class="line">    cvDestroyWindow ( pstrWindowsBinaryTitle );</span><br><span class="line">    cvDestroyWindow ( pstrWindowsOutLineTitle );</span><br><span class="line">    cvReleaseImage ( &amp;pSrcImage );</span><br><span class="line">    cvReleaseImage ( &amp;g_pGrayImage );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/04/opencv和图像处理/轮廓检测/3.png" height="253" width="812"></p>
-<p>可以明显看出，由于图像的二值化处理只是根据图像中单个像素的值来决定，因此这种最简单轮廓检测所产生的结果和人眼观测的实际感觉肯定是有比较大的区别的。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/04/opencv和图像处理/距离变换/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/04/opencv和图像处理/距离变换/" itemprop="url">距离变换</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-04T13:49:54+08:00">
-                2019-03-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>opencv</code>距离变换使用的是<code>distanceTransform</code>函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">distanceTransform</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    InputArray src, OutputArray dst, <span class="keyword">int</span> distanceType,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> maskSize, <span class="keyword">int</span> dstType = CV_32F)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">distanceTransform</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    InputArray src, OutputArray dst, OutputArray labels,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> distanceType, <span class="keyword">int</span> maskSize, intlabelType = DIST_LABEL_CCOMP)</span></span>;</span><br></pre></td></tr></table></figure>
-<p><code>Python</code>的原型如下：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cv2.distanceTransform(src, distanceType, maskSize[, dst]) -&gt; dst</span><br></pre></td></tr></table></figure>
-<p><code>distanceTransform</code>方法用于计算图像中每一个非零点距离自己最近的零点的距离，该函数的参数<code>dst</code>保存了每一个点与最近的零点的距离信息，图像上越亮的点，代表了离零点的距离越远。<br>&emsp;&emsp;细化轮廓如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cv.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;highgui.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stack&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">float</span> maxValue = <span class="number">0</span>; <span class="comment">/* 定义距离变换矩阵中的最大值 */</span></span><br><span class="line">    Mat image = imread ( argv[<span class="number">1</span>] );</span><br><span class="line">    Mat imageGray;</span><br><span class="line">    cvtColor ( image, imageGray, CV_RGB2GRAY );</span><br><span class="line">    imageGray = ~imageGray; <span class="comment">/* 取反 */</span></span><br><span class="line">    GaussianBlur ( imageGray, imageGray, Size ( <span class="number">5</span>, <span class="number">5</span> ), <span class="number">2</span> ); <span class="comment">/* 滤波 */</span></span><br><span class="line">    threshold ( imageGray, imageGray, <span class="number">20</span>, <span class="number">200</span>, CV_THRESH_BINARY ); <span class="comment">/* 阈值 */</span></span><br><span class="line">    imshow ( <span class="string">"s"</span>, imageGray );</span><br><span class="line">    <span class="function">Mat <span class="title">imageThin</span> <span class="params">( imageGray.size(), CV_32FC1 )</span></span>; <span class="comment">/* 定义保存距离变换结果的Mat矩阵 */</span></span><br><span class="line">    distanceTransform ( imageGray, imageThin, CV_DIST_L2, <span class="number">3</span> ); <span class="comment">/* 距离变换 */</span></span><br><span class="line">    Mat distShow;</span><br><span class="line">    distShow = Mat::zeros ( imageGray.size(), CV_8UC1 ); <span class="comment">/* 定义细化后的字符轮廓 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; imageThin.rows; i++ ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> j = <span class="number">0</span>; j &lt; imageThin.cols; j++ ) &#123;</span><br><span class="line">            <span class="keyword">if</span> ( imageThin.at&lt;<span class="keyword">float</span>&gt; ( i, j ) &gt; maxValue ) &#123;</span><br><span class="line">                maxValue = imageThin.at&lt;<span class="keyword">float</span>&gt; ( i, j ); <span class="comment">/* 获取距离变换的极大值 */</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; imageThin.rows; i++ ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> j = <span class="number">0</span>; j &lt; imageThin.cols; j++ ) &#123;</span><br><span class="line">            <span class="keyword">if</span> ( imageThin.at&lt;<span class="keyword">float</span>&gt; ( i, j ) &gt; maxValue / <span class="number">1.9</span> ) &#123;</span><br><span class="line">                distShow.at&lt;uchar&gt; ( i, j ) = <span class="number">255</span>; <span class="comment">/* 符合距离大于最大值一定比例条件的点设为255 */</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    imshow ( <span class="string">"Source Image"</span>, image );</span><br><span class="line">    imshow ( <span class="string">"Thin Image"</span>, distShow );</span><br><span class="line">    waitKey();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/04/opencv和图像处理/距离变换/1.png" height="231" width="782"></p>
-<p>&emsp;&emsp;查找物体的质心：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cv.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;highgui.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stack&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">float</span> maxValue = <span class="number">0</span>; <span class="comment">/* 定义距离变换矩阵中的最大值 */</span></span><br><span class="line">    <span class="function">Point <span class="title">Pt</span> <span class="params">( <span class="number">0</span>, <span class="number">0</span> )</span></span>;</span><br><span class="line">    Mat image = imread ( argv[<span class="number">1</span>] );</span><br><span class="line">    Mat imageGray;</span><br><span class="line">    cvtColor ( image, imageGray, CV_RGB2GRAY );</span><br><span class="line">    imageGray = ~imageGray; <span class="comment">/* 取反 */</span></span><br><span class="line">    GaussianBlur ( imageGray, imageGray, Size ( <span class="number">5</span>, <span class="number">5</span> ), <span class="number">2</span> ); <span class="comment">/* 滤波 */</span></span><br><span class="line">    threshold ( imageGray, imageGray, <span class="number">20</span>, <span class="number">200</span>, CV_THRESH_BINARY ); <span class="comment">/* 阈值化 */</span></span><br><span class="line">    <span class="function">Mat <span class="title">imageThin</span> <span class="params">( imageGray.size(), CV_32FC1 )</span></span>; <span class="comment">/* 定义保存距离变换结果的Mat矩阵 */</span></span><br><span class="line">    distanceTransform ( imageGray, imageThin, CV_DIST_L2, <span class="number">3</span> ); <span class="comment">/* 距离变换 */</span></span><br><span class="line">    Mat distShow;</span><br><span class="line">    distShow = Mat::zeros ( imageGray.size(), CV_8UC1 ); <span class="comment">/* 定义细化后的字符轮廓 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; imageThin.rows; i++ ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> j = <span class="number">0</span>; j &lt; imageThin.cols; j++ ) &#123;</span><br><span class="line">            distShow.at&lt;uchar&gt; ( i, j ) = imageThin.at&lt;<span class="keyword">float</span>&gt; ( i, j );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( imageThin.at&lt;<span class="keyword">float</span>&gt; ( i, j ) &gt; maxValue ) &#123;</span><br><span class="line">                maxValue = imageThin.at&lt;<span class="keyword">float</span>&gt; ( i, j ); <span class="comment">/* 获取距离变换的极大值 */</span></span><br><span class="line">                Pt = Point ( j, i ); <span class="comment">/* 坐标 */</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    normalize ( distShow, distShow, <span class="number">0</span>, <span class="number">255</span>, CV_MINMAX ); <span class="comment">/* 为了显示清晰，做了0至255归一化 */</span></span><br><span class="line">    circle ( image, Pt, maxValue, Scalar ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">255</span> ), <span class="number">3</span> );</span><br><span class="line">    circle ( image, Pt, <span class="number">3</span>, Scalar ( <span class="number">0</span>, <span class="number">255</span>, <span class="number">0</span> ), <span class="number">3</span> );</span><br><span class="line">    imshow ( <span class="string">"Source Image"</span>, image );</span><br><span class="line">    imshow ( <span class="string">"Center"</span>, distShow );</span><br><span class="line">    waitKey();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/04/opencv和图像处理/距离变换/2.png"></p>
-<p>可以看到中心处最亮，说明了中心点距离零点的距离最远，而最远处就可以作为物体的质心。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/7/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span><a class="page-number" href="/page/9/">9</a><span class="space">&hellip;</span><a class="page-number" href="/page/93/">93</a><a class="extend next" rel="next" href="/page/9/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/7/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span><a class="page-number" href="/page/9/">9</a><span class="space">&hellip;</span><a class="page-number" href="/page/94/">94</a><a class="extend next" rel="next" href="/page/9/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -6714,7 +6693,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-count">934</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -6725,7 +6704,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>

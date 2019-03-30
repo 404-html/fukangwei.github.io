@@ -271,6 +271,571 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/ucos互斥信号量/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/ucos和ucgui/ucos互斥信号量/" itemprop="url">ucos互斥信号量</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T13:42:29+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;在<code>ucos</code>信号量使用过程中，经常会用到二值信号量。而在二值信号量中，最常用的情况就是互斥信号量。互斥信号是本身是一种二进制信号，具有超出<code>ucos</code>提供的一般信号机制的特性。由于其特殊性，<code>ucos</code>的作者组织了一套关于互斥信号量管理的函数。互斥信号量具有以下特点：解决优先级反转问题、实现对资源的独占式访问(二值信号量)。<br>&emsp;&emsp;在应用程序中，使用互斥信号是为了减少优先级翻转问题。当一个高优先级的任务需要的资源被一个低优先级的任务使用时，就会发生优先级翻转。为了解决该问题，内核可以提升低优先级任务的优先级，先于高优先级的任务运行，释放占用的资源。<br>&emsp;&emsp;例如有三个任务可以使用共同的资源，为了访问这个资源，每个任务必须在互斥信号<code>ResourceMutex上</code>等待(<code>pend</code>)。任务<code>1</code>有最高优先级<code>10</code>，任务<code>2</code>优先级为<code>15</code>，任务<code>3</code>优先级为<code>20</code>。一个没有使用的正好在最高优先级之上的优先级<code>9</code>用来作为优先级继承优先级。如main所示，代码<code>(1)</code>中进行<code>ucos</code>初始化，并通过调用<code>OSMutexCreate</code>在代码<code>(2)</code>中创建了一个互斥信号。需要注意的是，<code>OSMutexCreate</code>函数使用<code>PIP</code>作为参数。然后在代码<code>(3)</code>中创建三个任务，在代码<code>(4)</code>中启动<code>ucos</code>。<br>&emsp;&emsp;假设任务运行了一段时间，在某个时间点，任务<code>3</code>最先访问了共同的资源，并得到了互斥信号。任务<code>3</code>运行了一段时间后被任务<code>1</code>抢占，任务<code>1</code>需要使用这个资源，并通过调用<code>OSMutexPend</code>企图获得互斥信号。这种情况下，<code>OSMutexPend</code>会发现一个高优先级的任务需要这个资源，就会把任务<code>3</code>的优先级提高到<code>9</code>，同时强迫进行上下文切换退回到任务<code>3</code>执行。任务<code>3</code>可以继续执行，然后释放占用的共同资源。任务<code>3</code>通过调用<code>OSMutexPost</code>释放占用的<code>mutex</code>信号，<code>OSMutexPost</code>会发现<code>mutex</code>被一个优先级提升的低优先级任务占有，就会把任务<code>3</code>的优先级返回到<code>20</code>。然后把资源释放给任务<code>1</code>使用，执行上下文切换到任务<code>1</code>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">OS_EVENT *ResourceMutex;</span><br><span class="line">OS_STK TaskPrio10Stk[<span class="number">1000</span>];</span><br><span class="line">OS_STK TaskPrio15Stk[<span class="number">1000</span>];</span><br><span class="line">OS_STK TaskPrio20Stk[<span class="number">1000</span>];</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    INT8U err;</span><br><span class="line">    OSInit(); <span class="comment">/*(1)*/</span></span><br><span class="line">    <span class="comment">/* 应用程序初始化 */</span></span><br><span class="line">    ResourceMutex = OSMutexCreate ( <span class="number">9</span>, &amp;err ); <span class="comment">/* (2) */</span></span><br><span class="line">    OSTaskCreate ( TaskPrio10, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;TaskPrio10Stk[<span class="number">999</span>], <span class="number">10</span> ); <span class="comment">/* (3) */</span></span><br><span class="line">    OSTaskCreate ( TaskPrio15, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;TaskPrio15Stk[<span class="number">999</span>], <span class="number">15</span> );</span><br><span class="line">    OSTaskCreate ( TaskPrio20, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;TaskPrio20Stk[<span class="number">999</span>], <span class="number">20</span> );</span><br><span class="line">    <span class="comment">/* Application Initialization */</span></span><br><span class="line">    OSStart(); <span class="comment">/* (4) */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TaskPrio10</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line">    INT8U err;</span><br><span class="line">    pdata = pdata;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">        OSMutexPend ( ResourceMutex, <span class="number">0</span>, &amp;err );</span><br><span class="line">        <span class="comment">/* 访问共享资源 */</span></span><br><span class="line">        OSMutexPost ( ResourceMutex );</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TaskPrio15</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line">    INT8U err;</span><br><span class="line">    pdata = pdata;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">        OSMutexPend ( ResourceMutex, <span class="number">0</span>, &amp;err );</span><br><span class="line">        <span class="comment">/* 访问共享资源 */</span></span><br><span class="line">        OSMutexPost ( ResourceMutex );</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TaskPrio20</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line">    INT8U err;</span><br><span class="line">    pdata = pdata;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">        OSMutexPend ( ResourceMutex, <span class="number">0</span>, &amp;err );</span><br><span class="line">        <span class="comment">/* 访问共享资源 */</span></span><br><span class="line">        OSMutexPost ( ResourceMutex );</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>ucos</code>互斥信号包含三个元素，<code>flag</code>表示当前<code>mutex</code>是否能够获得(<code>0</code>或<code>1</code>)；<code>priority</code>表示使用这个<code>mutex</code>的任务，以防止一个高优先级的任务需要访问<code>mutex</code>；还包括一个等待这个<code>mutex</code>的任务列表。为了启动<code>ucos</code>的<code>mutex</code>服务，应该在<code>OS_CFG.H</code>中设置<code>OS_MUTEX_EN</code>为<code>1</code>。在使用一个互斥信号之前应该创建它，创建一个<code>mutex</code>信号通过调用<code>OSMutexCreate</code>完成，<code>mutex</code>的初始值总是设置为<code>1</code>，表示资源可以获得。<br>&emsp;&emsp;<code>ucos</code>提供了六种访问互斥信号量的操作：<code>OSMutexCreate</code>、<code>OSMutexDel</code>、<code>OSMutexPend</code>、<code>OSMutexPost</code>、<code>OSMutexAccept</code>和<code>OSMutexQuery</code>，这些函数展示了任务和互斥信号量的关系。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/ucos系统使用原则/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/ucos和ucgui/ucos系统使用原则/" itemprop="url">ucos系统使用原则</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T12:47:46+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ol>
+<li>任务的独立性表现为逻辑上的<code>平等性</code>和信息传输的<code>异步性</code>。</li>
+<li>所有任务在逻辑上是平等的。</li>
+<li>可剥夺型内核意味着<code>已经就绪的高优先级任务可以剥夺另一个正在运行的低优先级任务的运行权而进入运行状态</code>。</li>
+<li>输入/输出设备与<code>CPU</code>速度的差别是并发运行的前提和基础，也是一个通常都满足的事实。以<code>CPU</code>为中心，将与各种输入/输出设备(或端口)相关的功能分别划分为独立的任务。</li>
+<li><code>关键性</code>是指某种功能在应用系统中的重要性，如果这种功能不能正常实现，则将造成重大影响，甚至引发灾难性的后果。包含关键功能的任务称为<code>关键任务</code>，关键任务必须得到运行机会，即使遗漏执行一次也不行。对于关键任务，必须尽可能和其他功能剥离，独立成为一个任务，通过通信方式在触发其他任务，完成后续操作。</li>
+<li><code>紧迫性</code>是指某种功能必须在规定的时间内得到运行权(及时运行)，并在规定的时间前执行完毕(按时完成)，可见这类功能有严格的实时性要求。大多数紧迫任务是由异步事件触发的，这些异步事件一般能够引发某种中断。在这种情况下，将紧迫任务安排在相应的<code>ISR</code>中是最有效的方法。如果紧迫任务不能安排在<code>ISR</code>中，那么为它安排在尽可能高的优先级是解决<code>及时性</code>有效方法。要达到按时完成的目的，必须使紧迫任务需要的执行时间尽可能短。办法是对紧迫任务进行瘦身，尽可能剥离不太紧迫的操作，只剩下必须立刻做的操作，将被剥离的不太紧迫的操作另外封装为一个任务。</li>
+<li>用户应用程序中消耗时机最多的是各种数据处理程序单元，这种单元通常不止一个，它们分别为不同的功能服务。应该将这些单元划分出来，分别包装成为不同的任务。由于这类任务需要消耗较多时机，它们的优先级必须安排得比较低，只使用其他任务剩余的时机来进行数据处理。</li>
+<li>将关系密切的若干个功能组合成为一个任务，达到功能聚合的效果。</li>
+<li>如果若干功能由相同的事件触发，则可以将这些功能组合成为一个任务，从而免除将事件分发给多个任务的工作量。符合本类任务的触发条件通常是内部事件。</li>
+<li>将周期相同的功能组合在一起封装为一个任务，就可以避免一个时间事件触发几个任务，省去事件分发操作和它们之间的通信。</li>
+<li>将若干按固定顺序执行的功能组合为一个任务，从而免除同步接力通信的麻烦。</li>
+<li>在用户任务函数中，必须包含至少一次对操作系统服务函数的调用，否则比其优先级低的任务将无法得到运行机会，这是用户任务函数与普通函数的明显区别。</li>
+<li>采用<code>创建任务</code>的方式来启动任务，可以省去用通信手段触发任务的麻烦，还可以通过<code>(* pdata)</code>来传递原始参数，使得每次启动任务时可以有不同的工作状态。</li>
+<li>适合采用<code>创建任务</code>的方式来启动的任务，通常是孤立任务，它们不和其他任务进行通信(<code>ISR</code>除外)，只使用共享资源来获取信息和输出信息。</li>
+<li>事件触发执行的任务：此类任务在创建后，虽然可以获得运行权，但任务实体代码的执行需要等待某种事件的发生。相关事件发生一次，该任务实体代码就执行一次。</li>
+<li>当某个信息的生产者和消费者都是同一个任务(和其他任务无关)时，保存这个信息的数据结构应该在该任务函数的内部定义；当某个信息的生产者和消费者不是同一个任务(包括<code>ISR</code>)时，保存这个信息的数据结构应该在任务函数的外部定义，使它成为共享资源，如全局变量。</li>
+<li>将公共函数设计为<code>可重入函数</code>的关键是不使用全局资源；如果<code>可重入函数</code>调用了其它函数在，则这些被调用的函数也必须是<code>可重入函数</code>。</li>
+<li>一个任务的代码设计过程是从上到下的过程，先分析系统总体任务关联图，明确每个任务在系统整体中的位置和角色，再将任务一个一个地进行详细关联分析，然后画出任务的程序流程图，最后按程序流程图编写程序代码。</li>
+<li>一个任务的运行过程需要和其它任务的运行配合，才能得到预定的效果。任务之间的这种动作配合和协调关系称为<code>行为同步</code>。</li>
+<li><code>二值信号量</code>的使用范围是：被控制方总能及时响应控制方发出的信号，完成相应处理任务，并在下一次信号来到之前进入等待状态。</li>
+<li><code>计数信号量</code>的使用范围是：被控制方不能保证在下次信号来到之前处理完本次控制方发出的信号，但总体上可以响应所有信号。</li>
+<li><code>事件标志组</code>可以实现多个任务(包括<code>ISR</code>)协同控制一个任务，当各个相关任务(包括<code>ISR</code>)先后发出自己的信号后(使事件标志组对应标志有效)，预定的逻辑运算有效，触发被控制的任务(使其进入就绪状态)。</li>
+<li>由于<code>消息邮箱</code>只能存放一条消息，在使用消息邮箱进行同步控制时，必须满足一个前提：任何时候消息的生产速度都比消息的消费速度慢，即被控制任务总是在等待消息，这和二值信号量类似。</li>
+<li><code>消息队列</code>可以存放多个消息能够有效解决消息的堆积问题。和计数信号量的情况类似，消息队列的使用仍需要满足一个条件：消息的平均生产时间比消息的平均消费时间长(即生产速度慢，消费速度快)；否则，再长的消息队列也会溢出。</li>
+<li>可以通过协调生产者和消费者的关系来建立一个产销平衡的理想状态。通信的双方相互制约，生产者通过提供消息来同步消费者，消费者通过回复消息来同步生产者，即生产者必须得到消费者的回复后才能进行下一个消息的生产。这种运行方式称为<code>双向同步</code>，它可以达到产销平衡的理想状态。双向同步主要功能为确认每次通信均成功，没有遗漏。</li>
+<li>事件标志组的<code>逻辑与</code>控制功能具有安全控制的特点，它可用来保障一个重要任务必须在万事俱备的前提下才执行；<code>逻辑或</code>控制功能具有补充控制的特点，它可用来在一个基本控制方式下增加若干补充控制，以满足某些特殊情况的需要。</li>
+<li>多个任务相互同步可以将若干相关任务的运行频度保持一致(每一轮运行的先后、快慢可以动态变化)。<code>多任务互相同步</code>保证在任何情况下各个任务的有效执行次数都相同，而且等于运行速度最低的任务执行次数。这种同步方式具有团队作战的特点，它可以在一个需要多任务配合进行的循环作业中。</li>
+<li>任务对共享资源进行访问的代码段落成为关键段落，各个任务访问同一共享资源的关键段落必须互斥，才能保障共享资源信息的可靠性和完整性。这种使得不同任务访问共享资源时能够确保共享资源信息可靠和完整的措施称为<code>资源同步</code>。</li>
+<li>当参与访问共享资源的并发程序单元包含<code>ISR</code>时，任务级程序单元只能用<code>关中断</code>的措施来访问共享资源。关中断的优点是简单，缺点是影响任务的实时性。为了减轻对系统实时性的不利影响，访问共享资源的代码必须尽量简短，绝对不允许在关键代码段落中包含有可能使自己挂起的系统服务函数，否则将使系统死机。关中断常用于对全局变量和小规模全局数据结构的访问。</li>
+<li><code>关调度</code>的缺点是：使与该共享资源无关的任务受到牵连，即使它们的优先级足够高并被<code>ISR</code>触发到就绪状态也无法运行，而这类与<code>ISR</code>关联的任务通常有比较高的实时性要求。因此，尽可能不使用关调度的方式。</li>
+<li><code>互斥信号</code>量具有处理优先级反转的功能，特别适合对共享资源的互斥访问。使用互斥信号量来进行共享资源访问对系统实时性影响最小。</li>
+<li><code>全局变量</code>(包括全局数组和全局结构体)可以充当一种共享资源，用来在任务之间传输数据。全局变量虽然可以实现数据传输，但不能实现行为同步。在没有行为同步要求的前提下，当数据的传输量不大时，采用全局变量并搭配关中断的资源同步措施是一种经济有效的方法。</li>
+<li><code>消息邮箱</code>就是具有行为同步功能的通信手段，当双方的执行频度相同时，<code>消息邮箱</code>是合适的通信工具。如果用<code>ISR</code>的局部变量来保存消息，接收消息的一方就不能获得真正的消息。原因是接收消息的一方在获得消息指针时<code>ISR</code>已经结束，它的局部变量也一同消失。<code>ISR</code>可靠发送消息的方法有三种：将消息保存在全局变量中；将消息保存在<code>ISR</code>的静态局部变量中；将消息的内容冒充指针进行发送。冒充指针进行发送的方法如下所示：对发送方，如果消息指针的格式改为<code>(void *)Temp</code>，则将变量<code>Temp</code>的数值(而不是地址)作为消息指针执行传输；对接收方，当指针消息为短消息时，不再把它当做指针看待，而应该通过强制类型转换(<code>u32</code>)，直接当做一个<code>4</code>字节的整数使用。</li>
+<li><code>消息队列</code>适用于以下场合：通信双方至少有一方没有稳定的执行周期；通信双方的执行周期不同。要使用消息队列，需要准备两个数组：一个是消息指针数组，供实时操作系统用来排队使用；另一个是消息内容数组，供用户使用。使用消息队列的最简单方法是利用实时操作系统的动态内存管理功能来管理消息内容数组。如果发往消息队列的消息全都是内容比较简短(不超过<code>4</code>字节)的短消息，就可以省略消息内容数组，这给我们带来不少方便。</li>
+<li>时间管理函数只能用在对时间精度要求不高的场合，或者时间间隔较长的场合。</li>
+<li>查询过程是一个无限循环的过程，只有当希望的状态出现以后才能退出这个无限循环，这种情况在实时操作系统中是不允许的，它将剥夺低优先级任务的运行机会。解决这个问题的办法是<code>用定时查询代替连续查询</code>，即在查询的过程中插入系统延时函数，不断地将<code>CPU</code>交出来，供其他任务使用。</li>
+<li>调用<code>有超时限制的等待信号量(或消息)</code>的系统函数可以实现双重目的：在没有按时获取信号量(或消息)时，其超时效果起到了控制运行周期的作用(与系统延时函数相同)；当成功获得信号量(或消息)时，可以及时退出循环，终止周期性任务。</li>
+<li>当采样对象是一个低频信号时，采样频率可以设置得比较低，即采样周期比系统节拍周期长得多，将采样周期设置为系统节拍的整数倍，就可以用系统提供的延时函数来控制采样周期。这样，采样功能就可以由一个独立的采样任务来完成，而不需要<code>ISR</code>配合；当采样周期与系统节拍在同一数量级时，可以另外使用一个定时器，由定时器中断产生稳定的采样周期。</li>
+<li>当某种功能的运行周期与系统节拍相同时，使用系统节拍函数的钩子函数来完成此项功能是非常有利的。<code>系统节拍钩子函数</code>是系统节拍函数的一部分，具有<code>ISR</code>的性质，应当尽可能简洁，不允许调用任何可能使自己挂起来的系统服务函数。</li>
+<li>由外部信号启动采样过程的方式称为<code>被动采样</code>。在被动采样中，启动采样的时刻是随机的，故没有采样周期的概念。</li>
+<li>对于串行通信任务设计，有两种情况会使接收过程出现差错：</li>
+</ol>
+<ul>
+<li>系统关中断的最长时间大于相邻两次串行接收中断的间隔时间，这时有可能遗漏一次中断，造成数据丢失。</li>
+<li>有一个比串口中断优先级更高的<code>ISR</code>，其运行期间即时将中断打开，串口中断也不能响应；如果高优先级<code>ISR</code>的运行时间比相邻两次串行接收中断的间隔时间长，同样有可能遗漏一次中断，造成数据丢失。</li>
+</ul>
+<p>要想可靠地接收数据，需要满足以下条件：</p>
+<ul>
+<li>相邻两次串行接收中断的间隔时间必须大于系统死区时间。</li>
+<li>接收缓存区的空闲时间必须足够存放在死区时间内接收到的新数据。</li>
+</ul>
+<p>数据发送为主动任务，没有什么风险。当一帧数据需要分若干次发送时，由于实时操作系统的介入，串行发送任务不宜采用查询的方法完成发送任务，以免浪费宝贵的<code>CPU</code>资源，最好由<code>ISR</code>和串行发送任务配合完成。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/ucos系统基本用法/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/ucos和ucgui/ucos系统基本用法/" itemprop="url">ucos系统基本用法</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T12:39:06+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;在任务中创建任务：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> STARTUP_TASK_PRIO     8</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> STARTUP_TASK_STK_SIZE 80</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SysTick_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_Config ( SystemCoreClock / OS_TICKS_PER_SEC );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testled[STARTUP_TASK_STK_SIZE];</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testluart[STARTUP_TASK_STK_SIZE];</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestUart</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"hello\r\n"</span> );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestLed</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    OSTaskCreate ( TestUart, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testluart[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        LED0 = !LED0;</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_init();</span><br><span class="line">    LED_Init();</span><br><span class="line">    uart_init ( <span class="number">9600</span> );</span><br><span class="line">    OSInit();</span><br><span class="line">    OSTaskCreate ( TestLed, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testled[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO - <span class="number">1</span> );</span><br><span class="line">    OSStart();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;创建单次任务：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> STARTUP_TASK_PRIO     8</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> STARTUP_TASK_STK_SIZE 80</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SysTick_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_Config ( SystemCoreClock / OS_TICKS_PER_SEC );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testled[STARTUP_TASK_STK_SIZE];</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testluart[STARTUP_TASK_STK_SIZE];</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestUart</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"hello\r\n"</span> );</span><br><span class="line">    OSTaskDel ( OS_PRIO_SELF );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestLed</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    OSTaskCreate ( TestUart, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testluart[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        LED0 = !LED0;</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_init();</span><br><span class="line">    LED_Init();</span><br><span class="line">    uart_init ( <span class="number">9600</span> );</span><br><span class="line">    OSInit();</span><br><span class="line">    OSTaskCreate ( TestLed, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testled[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO - <span class="number">1</span> );</span><br><span class="line">    OSStart();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;在创建任务时传递参数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestUart</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"I get %d\r\n"</span>, * ( u8 * ) p_arg );</span><br><span class="line">    OSTaskDel ( OS_PRIO_SELF );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestLed</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    u8 i = <span class="number">100</span>;</span><br><span class="line">    OSTaskCreate ( TestUart, ( <span class="keyword">void</span> * ) &amp;i, &amp;task_testluart[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        LED0 = !LED0;</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_init();</span><br><span class="line">    LED_Init();</span><br><span class="line">    uart_init ( <span class="number">9600</span> );</span><br><span class="line">    OSInit();</span><br><span class="line">    OSTaskCreate ( TestLed, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testled[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO - <span class="number">1</span> );</span><br><span class="line">    OSStart();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;使用信号量触发任务：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> OS_STK task_testled[STARTUP_TASK_STK_SIZE];</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testluart[STARTUP_TASK_STK_SIZE];</span><br><span class="line">​</span><br><span class="line">OS_EVENT *Sem = <span class="literal">NULL</span>; <span class="comment">/* 定义信号量指针 */</span></span><br><span class="line">u8 err = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestUart</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        OSSemPend ( Sem, <span class="number">0</span>, &amp;err ); <span class="comment">/* 等待信号量 */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"hello\r\n"</span> );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestLed</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        LED0 = !LED0;</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">        OSSemPost ( Sem ); <span class="comment">/* 向串口发送任务发出信号量 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_init();</span><br><span class="line">    LED_Init();</span><br><span class="line">    uart_init ( <span class="number">9600</span> );</span><br><span class="line">    Sem = OSSemCreate ( <span class="number">1</span> );</span><br><span class="line">    OSInit();</span><br><span class="line">    OSTaskCreate ( TestLed, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testled[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO - <span class="number">1</span> );</span><br><span class="line">    OSTaskCreate ( TestUart, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testluart[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO );</span><br><span class="line">    OSStart();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;消息邮箱的基本使用：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">OS_EVENT *Mybox = <span class="literal">NULL</span>; <span class="comment">/* 定义邮箱指针 */</span></span><br><span class="line">u8 err = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestUart</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    u8 get_Num;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        get_Num = * ( u8 * ) OSMboxPend ( Mybox, <span class="number">0</span>, &amp;err );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"I get %d\r\n"</span>, get_Num );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestLed</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    u8 send = <span class="number">100</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        LED0 = !LED0;</span><br><span class="line">        OSMboxPost ( Mybox, ( <span class="keyword">void</span> * ) &amp;send );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_init();</span><br><span class="line">    LED_Init();</span><br><span class="line">    uart_init ( <span class="number">9600</span> );</span><br><span class="line">    OSInit();</span><br><span class="line">    Mybox = OSMboxCreate ( <span class="literal">NULL</span> );</span><br><span class="line">    OSTaskCreate ( TestLed, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testled[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO - <span class="number">1</span> );</span><br><span class="line">    OSTaskCreate ( TestUart, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testluart[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO );</span><br><span class="line">    OSStart();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;邮箱广播机制：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> OS_STK task_testled[STARTUP_TASK_STK_SIZE];</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testluart1[STARTUP_TASK_STK_SIZE];</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testluart2[STARTUP_TASK_STK_SIZE];</span><br><span class="line">​</span><br><span class="line">OS_EVENT *Mybox = <span class="literal">NULL</span>; <span class="comment">/* 定义邮箱指针 */</span></span><br><span class="line">u8 err = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestUart1</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    u8 get_Num;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        get_Num = * ( u8 * ) OSMboxPend ( Mybox, <span class="number">0</span>, &amp;err );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Task 1 -- I get %d\r\n"</span>, get_Num );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestUart2</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    u8 get_Num;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        get_Num = * ( u8 * ) OSMboxPend ( Mybox, <span class="number">0</span>, &amp;err );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Task 2 -- I get %d\r\n"</span>, get_Num );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestLed</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    u8 send = <span class="number">100</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        LED0 = !LED0;</span><br><span class="line">        OSMboxPostOpt ( Mybox, ( <span class="keyword">void</span> * ) &amp;send, OS_POST_OPT_BROADCAST ); <span class="comment">/* 向所有任务广播消息 */</span></span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_init();</span><br><span class="line">    LED_Init();</span><br><span class="line">    uart_init ( <span class="number">9600</span> );</span><br><span class="line">    OSInit();</span><br><span class="line">    Mybox = OSMboxCreate ( <span class="literal">NULL</span> );</span><br><span class="line">    OSTaskCreate ( TestLed, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testled[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO - <span class="number">1</span> );</span><br><span class="line">    OSTaskCreate ( TestUart1, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testluart1[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO );</span><br><span class="line">    OSTaskCreate ( TestUart2, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testluart2[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO + <span class="number">1</span> );</span><br><span class="line">    OSStart();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;事件标志组(信号量集)的使用：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> OS_STK task_testled[STARTUP_TASK_STK_SIZE];</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testluart1[STARTUP_TASK_STK_SIZE];</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testluart2[STARTUP_TASK_STK_SIZE];</span><br><span class="line">​</span><br><span class="line">OS_FLAG_GRP *Sem_F = <span class="literal">NULL</span>; <span class="comment">/* 定义一个信号量集指针 */</span></span><br><span class="line">u8 err = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestUart1</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        OSFlagPost ( Sem_F, ( OS_FLAGS ) <span class="number">2</span>, OS_FLAG_SET, &amp;err ); <span class="comment">/* 向信号量集发信号 */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Uart 1 is running\r\n"</span> );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestUart2</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        OSFlagPost ( Sem_F, ( OS_FLAGS ) <span class="number">1</span>, OS_FLAG_SET, &amp;err ); <span class="comment">/* 向信号量集发信号 */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Uart 2 is running\r\n"</span> );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestLed</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        OSFlagPend ( Sem_F, ( OS_FLAGS ) <span class="number">3</span>, OS_FLAG_WAIT_SET_ALL, <span class="number">0</span>, &amp;err ); <span class="comment">/* 请求信号量集 */</span></span><br><span class="line">        LED0 = !LED0;</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_init();</span><br><span class="line">    LED_Init();</span><br><span class="line">    uart_init ( <span class="number">9600</span> );</span><br><span class="line">    OSInit();</span><br><span class="line">    Sem_F = OSFlagCreate ( <span class="number">0</span>, &amp;err );</span><br><span class="line">    OSTaskCreate ( TestLed, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testled[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO - <span class="number">1</span> );</span><br><span class="line">    OSTaskCreate ( TestUart1, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testluart1[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO );</span><br><span class="line">    OSTaskCreate ( TestUart2, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testluart2[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO + <span class="number">1</span> );</span><br><span class="line">    OSStart();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;消息队列的使用：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> OS_STK task_testled[STARTUP_TASK_STK_SIZE];</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testluart1[STARTUP_TASK_STK_SIZE];</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testluart2[STARTUP_TASK_STK_SIZE];</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N_MESSAGES    128</span></span><br><span class="line"><span class="keyword">void</span> *MsgGrp[N_MESSAGES]; <span class="comment">/* 定义消息指针数组 */</span></span><br><span class="line">OS_EVENT *Str_Q;</span><br><span class="line">u8 err = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestUart1</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *recv = <span class="literal">NULL</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        recv = OSQPend ( Str_Q, <span class="number">0</span>, &amp;err );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Uart1 get %s\r\n"</span>, recv );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestUart2</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *recv = <span class="literal">NULL</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        recv = OSQPend ( Str_Q, <span class="number">0</span>, &amp;err );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Uart2 get %s\r\n"</span>, recv );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestLed</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *send1 = <span class="string">"send_1"</span>;</span><br><span class="line">    <span class="keyword">char</span> *send2 = <span class="string">"send_2"</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        OSQPostFront ( Str_Q, send1 );</span><br><span class="line">        OSQPostFront ( Str_Q, send2 );</span><br><span class="line">        LED0 = !LED0;</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_init();</span><br><span class="line">    LED_Init();</span><br><span class="line">    uart_init ( <span class="number">9600</span> );</span><br><span class="line">    OSInit();</span><br><span class="line">    Str_Q = OSQCreate ( &amp;MsgGrp[<span class="number">0</span>], N_MESSAGES ); <span class="comment">/* 创建消息队列 */</span></span><br><span class="line">    OSTaskCreate ( TestLed, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testled[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO - <span class="number">1</span> );</span><br><span class="line">    OSTaskCreate ( TestUart1, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testluart1[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO );</span><br><span class="line">    OSTaskCreate ( TestUart2, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testluart2[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO + <span class="number">1</span> );</span><br><span class="line">    OSStart();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/ucos系统注意事项/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/ucos和ucgui/ucos系统注意事项/" itemprop="url">ucos系统注意事项</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T11:56:29+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <ol>
+<li><code>ucos</code>系统的底层一定要移植好，否则会出现信号量、消息邮箱失效等现象，甚至死机。移植好的系统要经过信号量、消息邮箱等测试，才能放心使用。</li>
+<li>消息邮箱的创建函数一定要放在<code>ucos</code>系统初始化函数的后面，否则邮箱机制失效。</li>
+<li>使用信号量、消息邮箱等机制时，一定要注意任务的优先级。</li>
+<li>移植<code>ucos</code>系统后，要将设备驱动的延时函数用<code>ucos</code>的延时函数进行替代，设备的初始化函数放在任务中，否则会出现死机现象。</li>
+<li>使用<code>ucos</code>系统时，如果出现死机现象，可以考虑调整任务的优先级。</li>
+<li>如果芯片的内存足够的话，尽量把函数中的局部数组改为静态局部数组(加上<code>static</code>关键字)，这样可以避免堆栈溢出，尤其是在使用<code>ucos</code>操作系统的时候。</li>
+<li>使用<code>ucos</code>系统时，如果系统中有包含<code>delay</code>的函数(例如<code>W5500</code>的硬重启函数)和<code>ucos</code>的系统时钟初始化函数，先使用包含<code>delay</code>的函数，因为<code>stm32</code>的<code>delay</code>函数也是使用了系统时钟。如果不注意顺序，会产生冲突。</li>
+<li>注意，<code>ucos</code>的延时函数不要在非任务(即不是<code>Task</code>)的部分中运行。</li>
+<li>在<code>ucos</code>的非任务(即不是<code>Task</code>)部分不要使用<code>printf</code>函数。在任务部分可以使用<code>printf</code>函数，但要注意<code>8</code>字节对齐。</li>
+<li>在<code>ucos</code>的每一个任务(<code>Task</code>)中，必须要有一个类似于<code>OSTimeDlyHMSM</code>的函数，并且该函数必须要在任务的每一次轮询中产生作用。</li>
+<li>在使用<code>ucos</code>时，不要将任务的优先级安排得太紧密，中间留一些间隔比较好。</li>
+<li><code>ucos</code>系统在<code>STM32</code>上打印浮点数的时候会出现错误，最好让每一个任务的堆栈都以<code>8</code>字节对齐。</li>
+<li>如果需要使用<code>ucos</code>的邮箱向多个任务发送信息，可以使用<code>OSMboxPostOpt</code>函数。</li>
+</ol>
+<h3 id="UCOS的printf浮点数问题"><a href="#UCOS的printf浮点数问题" class="headerlink" title="UCOS的printf浮点数问题"></a>UCOS的printf浮点数问题</h3><p>&emsp;&emsp;当使用<code>ucos</code>时，<code>printf</code>、<code>sprintf</code>打印浮点数会出现问题，但当类型是<code>int</code>或<code>short</code>时没有问题。根据网上资料，将任务堆栈设置为<code>8</code>字节对齐就可以了。当没有操作系统时，系统堆栈是<code>8</code>字节对齐的；但是当使用<code>ucos</code>时，用户任务不一定是<code>8</code>字节对齐。<br>&emsp;&emsp;如果是<code>IAR</code>编译器，通过<code>#pragma data_alignment</code>指定对齐字节数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> data_alignment=8</span></span><br><span class="line">OS_STK Task1_LED1_Stk[Task1_LED1_Stk_Size];</span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> data_alignment=8</span></span><br><span class="line">OS_STK Task2_backlight_Stk[Task2_backlight_Stk_Size];</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;如果使用<code>MDK</code>编译器，请在系统任务堆栈前面进行数据对齐声明：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">__align ( <span class="number">8</span> ) <span class="keyword">static</span> OS_STK TaskStartStk[TASK_START_STK_SIZE];</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/ucos信号量集/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -994,503 +1559,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Python应用代码/分割文件/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/Python应用代码/分割文件/" itemprop="url">分割文件</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T09:01:54+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;将文件(<code>record.txt</code>)中的数据进行分割并按照以下规律保存起来：</p>
-<ul>
-<li><code>fool</code>的对话单独保存为<code>fool_*.txt</code>(去掉<code>fool:</code>)。</li>
-<li><code>xinz</code>的对话单独保存为<code>xinz_*.txt</code>(去掉<code>xinz:</code>)。</li>
-<li>文件中共有三段对话，分别保存为<code>fool_1.txt</code>、<code>xinz_1.txt</code>、<code>fool_2.txt</code>、<code>xinz_2.txt</code>、<code>fool_3.txt</code>、<code>xinz_3.txt</code>共<code>6</code>个文件(文件中不同的对话间已经使用<code>============</code>分割)。</li>
-</ul>
-<p>&emsp;&emsp;<code>record.txt</code>文件如下所示：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">fool:1111111111</span><br><span class="line">xinz:2222222222</span><br><span class="line">fool:3333333333</span><br><span class="line">==================================</span><br><span class="line">fool:4444444444</span><br><span class="line">xinz:5555555555</span><br><span class="line">fool:6666666666</span><br><span class="line">xinz:7777777777</span><br><span class="line">==================================</span><br><span class="line">fool:8888888888</span><br><span class="line">xinz:9999999999</span><br><span class="line">fool:0000000000</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">save_file</span><span class="params">(boy, girl, count)</span>:</span></span><br><span class="line">    file_name_boy = <span class="string">"fool_"</span> + str(count) + <span class="string">".txt"</span></span><br><span class="line">    file_name_girl = <span class="string">"xinz_"</span> + str(count) + <span class="string">".txt"</span></span><br><span class="line">    boy_file = open(file_name_boy, <span class="string">"w"</span>)</span><br><span class="line">    girl_file = open(file_name_girl, <span class="string">"w"</span>)</span><br><span class="line">    boy_file.writelines(boy)</span><br><span class="line">    girl_file.writelines(girl)</span><br><span class="line">    boy_file.close()</span><br><span class="line">    girl_file.close()</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">split_file</span><span class="params">(file_name)</span>:</span></span><br><span class="line">    f = open(file_name)</span><br><span class="line">    boy = []</span><br><span class="line">    girl = []</span><br><span class="line">    count = <span class="number">1</span></span><br><span class="line">    <span class="keyword">for</span> each_line <span class="keyword">in</span> f:</span><br><span class="line">        <span class="keyword">if</span> each_line[:<span class="number">6</span>] != <span class="string">"======"</span>:</span><br><span class="line">            (role, line_spoken) = each_line.split(<span class="string">":"</span>, <span class="number">1</span>)</span><br><span class="line">            <span class="keyword">if</span> role == <span class="string">"fool"</span>:</span><br><span class="line">                boy.append(line_spoken)</span><br><span class="line">            <span class="keyword">if</span> role == <span class="string">"xinz"</span>:</span><br><span class="line">                girl.append(line_spoken)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            save_file(boy, girl, count)</span><br><span class="line">            boy = []</span><br><span class="line">            girl = []</span><br><span class="line">            count += <span class="number">1</span></span><br><span class="line">    save_file(boy, girl, count)</span><br><span class="line">    f.close()</span><br><span class="line">​</span><br><span class="line">split_file(<span class="string">"record.txt"</span>)</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Python应用代码/视频传输系统/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/Python应用代码/视频传输系统/" itemprop="url">视频传输系统</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T08:05:09+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>client.py</code>如下所示：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line">​</span><br><span class="line">client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)</span><br><span class="line">host = <span class="string">"192.168.1.108"</span>  <span class="comment"># 服务器地址</span></span><br><span class="line">port = <span class="number">9999</span>  <span class="comment"># 服务器端口</span></span><br><span class="line">addc = (host, port)</span><br><span class="line">​</span><br><span class="line">cap = cv2.VideoCapture(<span class="number">0</span>)</span><br><span class="line">quality = <span class="number">95</span>  <span class="comment"># 图像的质量</span></span><br><span class="line">encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), quality]</span><br><span class="line">​</span><br><span class="line"><span class="keyword">while</span> (cap.isOpened()):</span><br><span class="line">    ret, frame = cap.read()</span><br><span class="line">    <span class="keyword">if</span> ret == <span class="keyword">True</span>:</span><br><span class="line">        img_encode = cv2.imencode(<span class="string">".jpg"</span>, frame, encode_param)[<span class="number">1</span>]</span><br><span class="line">        data_encode = np.array(img_encode)</span><br><span class="line">        str_encode = data_encode.tostring()</span><br><span class="line">        print(len(str_encode))</span><br><span class="line">        client_socket.sendto(str_encode, addc)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">​</span><br><span class="line">client_socket.close()</span><br></pre></td></tr></table></figure>
-<p><code>server.py</code>如下所示：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line">​</span><br><span class="line">serversocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)</span><br><span class="line">host = <span class="string">"192.168.1.108"</span>  <span class="comment"># 服务器地址</span></span><br><span class="line">port = <span class="number">9999</span>  <span class="comment"># 服务器端口</span></span><br><span class="line">serversocket.bind((host, port))</span><br><span class="line">​</span><br><span class="line"><span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">    bufSize = <span class="number">1024</span> * <span class="number">1024</span></span><br><span class="line">    image_buf, _ = serversocket.recvfrom(bufSize)</span><br><span class="line">    print(len(image_buf))</span><br><span class="line">    data = np.fromstring(image_buf, np.uint8)</span><br><span class="line">    img_decode = cv2.imdecode(data, cv2.IMREAD_COLOR)</span><br><span class="line">    cv2.imshow(<span class="string">'SERVER'</span>, img_decode)</span><br><span class="line">    <span class="keyword">if</span> cv2.waitKey(<span class="number">1</span>) &amp; <span class="number">0xFF</span> == ord(<span class="string">'q'</span>):</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">​</span><br><span class="line">serversocket.close()</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Python应用代码/sftp下载器/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/Python应用代码/sftp下载器/" itemprop="url">sftp下载器</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T08:00:34+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> tkinter <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">import</span> paramiko</span><br><span class="line">​</span><br><span class="line">current_dir = <span class="string">"/home/user4"</span>  <span class="comment"># 当前的目录</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">enter_dir</span><span class="params">(event)</span>:</span>  <span class="comment"># 双击进入下一个目录</span></span><br><span class="line">    <span class="keyword">global</span> current_dir</span><br><span class="line">    <span class="keyword">if</span> dict[theLB.get(theLB.curselection())] == <span class="string">"dir"</span>:</span><br><span class="line">        print(<span class="string">"这是一个目录"</span>)</span><br><span class="line">        dir_name = theLB.get(theLB.curselection())</span><br><span class="line">        current_dir = current_dir + <span class="string">"/"</span> + dir_name</span><br><span class="line">    <span class="keyword">elif</span> dict[theLB.get(theLB.curselection())] == <span class="string">"file"</span>:</span><br><span class="line">        print(<span class="string">"这是一个文件"</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    show_current_list()</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">dir_return</span><span class="params">()</span>:</span>  <span class="comment"># 显示当前的目录</span></span><br><span class="line">    <span class="keyword">global</span> current_dir</span><br><span class="line">    current_dir = current_dir[<span class="number">0</span>:current_dir.rindex(<span class="string">"/"</span>)]</span><br><span class="line">    show_current_list()</span><br><span class="line">​</span><br><span class="line">dict = &#123;&#125;  <span class="comment"># 创建文件空字典</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">show_current_list</span><span class="params">()</span>:</span>  <span class="comment"># 显示当前的目录</span></span><br><span class="line">    <span class="keyword">global</span> dict</span><br><span class="line">    dict.clear()  <span class="comment"># 清空字典</span></span><br><span class="line">    stdin, stdout, stderr = ssh.exec_command(<span class="string">"cd "</span> + current_dir + <span class="string">";ls -al"</span>)</span><br><span class="line">    file_list = stdout.readlines()</span><br><span class="line">    theLB.delete(<span class="number">0</span>, END)  <span class="comment"># 删除原来的所有项目</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> file_list:</span><br><span class="line">        <span class="keyword">if</span> i.rstrip()[<span class="number">0</span>] == <span class="string">'d'</span>:  <span class="comment"># 如果是目录</span></span><br><span class="line">            dict[i.rstrip().split(<span class="string">" "</span>)[<span class="number">-1</span>]] = <span class="string">"dir"</span></span><br><span class="line">        <span class="keyword">elif</span> i.rstrip()[<span class="number">0</span>] == <span class="string">'-'</span>:  <span class="comment"># 如果是文件</span></span><br><span class="line">            dict[i.rstrip().split(<span class="string">" "</span>)[<span class="number">-1</span>]] = <span class="string">"file"</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> dict.keys():  <span class="comment"># 将目录和文件的名称插入到listbox中</span></span><br><span class="line">        theLB.insert(END, i)</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">download</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">global</span> current_dir</span><br><span class="line">    <span class="keyword">if</span> dict[theLB.get(theLB.curselection())] == <span class="string">"dir"</span>:  <span class="comment"># 如果当前选定的是目录</span></span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    <span class="keyword">elif</span> dict[theLB.get(theLB.curselection())] == <span class="string">"file"</span>:  <span class="comment"># 如果当前选定的是文件</span></span><br><span class="line">        file_name = current_dir + <span class="string">"/"</span> + theLB.get(theLB.curselection())</span><br><span class="line">        print(file_name)</span><br><span class="line">​</span><br><span class="line">    remotepath = file_name  <span class="comment"># 获取远程访问的文件名</span></span><br><span class="line">    localpath = theLB.get(theLB.curselection())  <span class="comment"># 保存至本地的文件名</span></span><br><span class="line">    sftp.get(remotepath, localpath)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    trans = paramiko.Transport((<span class="string">"58.193.165.12"</span>, <span class="number">22</span>))</span><br><span class="line">    trans.connect(username=<span class="string">"user4"</span>, password=<span class="string">"444444"</span>)</span><br><span class="line">    sftp = paramiko.SFTPClient.from_transport(trans)</span><br><span class="line">    ssh = paramiko.SSHClient()</span><br><span class="line">    ssh._transport = trans</span><br><span class="line">    root = Tk()</span><br><span class="line">    Label(root, text=<span class="string">"下载文件路径："</span>).grid(row=<span class="number">0</span>, column=<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line">    e1 = Entry(root)</span><br><span class="line">    Button(root, text=<span class="string">"下载文件"</span>, width=<span class="number">10</span>, command=download).grid(row=<span class="number">2</span>, column=<span class="number">0</span>, sticky=W, padx=<span class="number">10</span>, pady=<span class="number">5</span>)</span><br><span class="line">    Button(root, text=<span class="string">"返回上一个目录"</span>, width=<span class="number">10</span>, command=dir_return).grid(row=<span class="number">3</span>, column=<span class="number">0</span>, sticky=W, padx=<span class="number">10</span>, pady=<span class="number">5</span>)</span><br><span class="line">​</span><br><span class="line">    theLB = Listbox(root, selectmode=BROWSE)  <span class="comment"># 创建一个空列表</span></span><br><span class="line">    theLB.grid(row=<span class="number">1</span>, column=<span class="number">0</span>)</span><br><span class="line">    theLB.bind(<span class="string">'&lt;Double-Button-1&gt;'</span>, enter_dir)  <span class="comment"># 创建双击列表中元素的事件，即进入该目录</span></span><br><span class="line">    show_current_list()</span><br><span class="line">​</span><br><span class="line">    mainloop()</span><br><span class="line">    trans.close()</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/28/Qt应用示例/Qt之启动进程/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/28/Qt应用示例/Qt之启动进程/" itemprop="url">Qt之启动进程</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-28T16:32:19+08:00">
-                2018-12-28
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>mainwindow.h</code>如下所示：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MAINWINDOW_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAINWINDOW_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QMainWindow&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QProcess&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">namespace</span> Ui &#123;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">MainWindow</span>;</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MainWindow</span> :</span> <span class="keyword">public</span> QMainWindow &#123;</span><br><span class="line">    Q_OBJECT</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">MainWindow</span> <span class="params">( QWidget *parent = <span class="number">0</span> )</span></span>;</span><br><span class="line">    ~MainWindow();</span><br><span class="line"><span class="keyword">private</span> slots:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">on_pushButton_clicked</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">showResult</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">showState</span> <span class="params">( QProcess::ProcessState )</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">showError</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">showFinished</span> <span class="params">( <span class="keyword">int</span>, QProcess::ExitStatus )</span></span>;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    Ui::MainWindow *ui;</span><br><span class="line">    QProcess myProcess;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">// MAINWINDOW_H</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>mainwindow.cpp</code>如下所示：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"mainwindow.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ui_mainwindow.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QDebug&gt;</span></span></span><br><span class="line">​</span><br><span class="line">MainWindow::MainWindow ( QWidget *parent ) : QMainWindow ( parent ), ui ( <span class="keyword">new</span> Ui::MainWindow ) &#123;</span><br><span class="line">    ui-&gt;setupUi ( <span class="keyword">this</span> );</span><br><span class="line">    connect ( &amp;myProcess, SIGNAL ( readyRead() ), <span class="keyword">this</span>, SLOT ( showResult() ) );</span><br><span class="line">    connect ( &amp;myProcess, SIGNAL ( stateChanged ( QProcess::ProcessState ) ),</span><br><span class="line">              <span class="keyword">this</span>, SLOT ( showState ( QProcess::ProcessState ) ) );</span><br><span class="line">    connect ( &amp;myProcess, SIGNAL ( error ( QProcess::ProcessError ) ), <span class="keyword">this</span>, SLOT ( showError() ) );</span><br><span class="line">    connect ( &amp;myProcess, SIGNAL ( finished ( <span class="keyword">int</span>, QProcess::ExitStatus ) ),</span><br><span class="line">              <span class="keyword">this</span>, SLOT ( showFinished ( <span class="keyword">int</span>, QProcess::ExitStatus ) ) );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">MainWindow::~MainWindow() &#123;</span><br><span class="line">    <span class="keyword">delete</span> ui;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::on_pushButton_clicked() &#123; <span class="comment">/* 启动进程按钮 */</span></span><br><span class="line">    QString program = <span class="string">"cmd.exe"</span>;</span><br><span class="line">    QStringList arguments;</span><br><span class="line">    arguments &lt;&lt; <span class="string">"/c dir&amp;pause"</span>;</span><br><span class="line">    myProcess.start ( program, arguments );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::showResult() &#123; <span class="comment">/* 显示运行结果 */</span></span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"showResult: "</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; QString ( myProcess.readAll() );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::showState ( QProcess::ProcessState state ) &#123; <span class="comment">/* 显示状态变化 */</span></span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"showState: "</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( state == QProcess::NotRunning ) &#123;</span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"Not Running"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> ( state == QProcess::Starting ) &#123;</span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"Starting"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"Running"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::showError() &#123; <span class="comment">/* 显示错误 */</span></span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"showError: "</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; myProcess.errorString();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::showFinished ( <span class="keyword">int</span> exitCode, QProcess::ExitStatus exitStatus ) &#123; <span class="comment">/* 显示结束信息 */</span></span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"showFinished: "</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; exitCode &lt;&lt; exitStatus;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/70/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/70/">70</a><span class="page-number current">71</span><a class="page-number" href="/page/72/">72</a><span class="space">&hellip;</span><a class="page-number" href="/page/93/">93</a><a class="extend next" rel="next" href="/page/72/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/70/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/70/">70</a><span class="page-number current">71</span><a class="page-number" href="/page/72/">72</a><span class="space">&hellip;</span><a class="page-number" href="/page/94/">94</a><a class="extend next" rel="next" href="/page/72/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1536,7 +1609,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-count">934</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1547,7 +1620,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>

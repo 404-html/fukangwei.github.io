@@ -271,6 +271,839 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/OSAL层API函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/05/CC2530和zigbee笔记/OSAL层API函数/" itemprop="url">OSAL层API函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T14:35:04+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>OSAL</code>层提供了很多的<code>API</code>来对整个的协议栈进行管理。主要有下面的几类：信息管理、任务同步、时间管理、中断管理、任务管理、内存管理、电源管理以及非易失存储管理。</p>
+<h3 id="信息管理API"><a href="#信息管理API" class="headerlink" title="信息管理API"></a>信息管理API</h3><p>&emsp;&emsp;信息管理为任务间的信息交换或者外部处理事件(例如中断服务程序或一个控制循环内的函数调用)提供一种管理机制。包括允许任务分配或不分配信息缓存、发送命令信息到其他任务、接受应答信息等<code>API</code>函数。</p>
+<h4 id="osal-msg-allocate"><a href="#osal-msg-allocate" class="headerlink" title="osal_msg_allocate"></a>osal_msg_allocate</h4><p>&emsp;&emsp;为信息分配缓存空间、任务调用或函数被调用的时候，该空间被信息填充或调用发送信息函数<code>osal_msg_send</code>发送缓存空间的信息到其他任务。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte *<span class="title">osal_msg_allocate</span> <span class="params">( uint16 len )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>len</code>为消息的长度。返回值为指向消息缓冲区的指针，当分配失败时返回<code>NULL</code>。注意，不能与函数<code>osal_mem_alloc</code>混淆，<code>osal_mem_alloc</code>函数被用于为在任务间发送信息分配缓冲区，用该函数也可以分配一个存储区。</p>
+<h4 id="osal-msg-deallocate"><a href="#osal-msg-deallocate" class="headerlink" title="osal_msg_deallocate"></a>osal_msg_deallocate</h4><p>&emsp;&emsp;用于收回缓冲区。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_msg_deallocate</span> <span class="params">( byte *msg_ptr )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>Msg_ptr</code>为指向将要收回的缓冲区的指针。返回值如下：</p>
+<ul>
+<li><code>ZSUCCESS</code>：回收成功。</li>
+<li><code>INVALID_MSG_POINTER</code>：错误的指针。</li>
+<li><code>MSG_BUFFER_NOT_AVAIL</code>：缓冲区在队列中。</li>
+</ul>
+<h4 id="osal-msg-send"><a href="#osal-msg-send" class="headerlink" title="osal_msg_send"></a>osal_msg_send</h4><p>&emsp;&emsp;任务调用这个函数以实现发送指令或数据给另一个任务或处理单元。目标任务的标识必须是一个有效的系统任务，当调用<code>osal_create_task</code>启动一个任务时，将会分配任务标识。<code>osal_msg_send</code>也将在目标任务的事件列表中设置<code>SYS_EVENT_MSG</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_msg_send</span> <span class="params">( byte destination_task, byte *msg_ptr )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>destination_task</code>：目标任务的标识。</li>
+<li><code>msg_ptr</code>：指向消息缓冲区的指针，必须是<code>osal_msg_allocate</code>函数分配的有效的数据缓存。</li>
+</ul>
+<p>该函数返回一个字节，指示操作的结果：</p>
+<ul>
+<li><code>ZSUCCESS</code>：消息发送成功。</li>
+<li><code>INVALID_MSG_POINTER</code>：无效指针。</li>
+<li><code>INVALID_TASK</code>：目标任务无效。</li>
+</ul>
+<h4 id="osal-msg-receive"><a href="#osal-msg-receive" class="headerlink" title="osal_msg_receive"></a>osal_msg_receive</h4><p>&emsp;&emsp;任务调用这个函数来接收消息。消息处理完毕后，发送消息的任务必须调用<code>osal_msg_deallocate</code>收回缓冲区。一个任务接收一个命令信息时，调用该函数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte *<span class="title">osal_msg_receive</span> <span class="params">( byte task_id )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>task_id</code>为消息发送者的任务标识。返回值为指向消息所存放的缓冲区指针，如果没有收到消息将返回<code>NULL</code>。</p>
+<h3 id="同步任务API"><a href="#同步任务API" class="headerlink" title="同步任务API"></a>同步任务API</h3><p>&emsp;&emsp;这个<code>API</code>使能一个任务等待一个事件的发生和返回控制，而不是一直等待。在这个<code>API</code>中的函数可以用来为任务设置事件，立刻通知任务有事件被设置。</p>
+<h4 id="osal-set-event"><a href="#osal-set-event" class="headerlink" title="osal_set_event"></a>osal_set_event</h4><p>&emsp;&emsp;函数用来设置一个任务的事件标志。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_set_event</span> <span class="params">( byte task_id, UINT16 event_flag )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>task_id</code>：任务标识。</li>
+<li><code>event_flag</code>：<code>2</code>个字节的位图，每个位特指一个事件。只有一个系统事件(<code>SYS_EVENT_MSG</code>)，其他事件在接收任务中定义。</li>
+</ul>
+<p>返回值如下：</p>
+<ul>
+<li><code>ZSUCCESS</code>：成功设置。</li>
+<li><code>INVALID_TASK</code>：无效任务。</li>
+</ul>
+<h3 id="时间管理API"><a href="#时间管理API" class="headerlink" title="时间管理API"></a>时间管理API</h3><p>&emsp;&emsp;这个<code>API</code>允许内部任务(<code>Z-Stack</code>)以及应用层任务使用定时器。函数提供了启动和停止定时器的功能，定时器最小增量为<code>1ms</code>。</p>
+<h4 id="osal-start-timer"><a href="#osal-start-timer" class="headerlink" title="osal_start_timer"></a>osal_start_timer</h4><p>&emsp;&emsp;启动一个定时器，当定时器终止时，指定的事件标志位被设置。通过在任务中调用<code>osal_start_timer</code>函数设置时间标志位。如果指明任务<code>ID</code>，则可以用<code>osal_start_timerEx</code>函数替代<code>osal_start_timer</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_start_timer</span> <span class="params">( UINT16 event_id, UINT16 timeout_value )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>event_id</code>：用户定义的事件标志位<code>event bit</code>，当定时器到点时，事件将通知任务。</li>
+<li><code>timeout_value</code>：定时值(<code>ms</code>)。</li>
+</ul>
+<p>返回值如下：</p>
+<ul>
+<li><code>ZSUCCESS</code>：<code>Timer</code>成功开启。</li>
+<li><code>NO_TIMER_AVAILABLE</code>：无法开启。</li>
+</ul>
+<h4 id="osal-start-timerEx"><a href="#osal-start-timerEx" class="headerlink" title="osal_start_timerEx"></a>osal_start_timerEx</h4><p>&emsp;&emsp;功能与<code>osal_start_timer</code>相近，只不过参数多了一个任务<code>ID</code>，这个函数允许调用者为另一个任务启动定时器。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_start_timerEx</span> <span class="params">( byte taskID, UINT16 event_id, UINT16 timeout_value )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>taskID</code>：当定时器终止时，得到该事件的任务<code>ID</code>。</li>
+<li><code>event_id</code>：用户定义的事件位，当定时器终止时，正在调用的任务将被通报。</li>
+<li><code>timeout_value</code>：定时器事件被设置之前时间的计数。</li>
+</ul>
+<p>返回值如下：</p>
+<ul>
+<li><code>ZSUCCESS</code>：<code>Timer</code>成功开启。</li>
+<li><code>NO_TIMER_AVAILABLE</code>：无法开启。</li>
+</ul>
+<h4 id="osal-stop-timer"><a href="#osal-stop-timer" class="headerlink" title="osal_stop_timer"></a>osal_stop_timer</h4><p>&emsp;&emsp;停止正在运行的定时器，停止外部事件调用<code>osal_stop_timerEx</code>，可以停止不同任务的定时器。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_stop_timer</span> <span class="params">( UINT16 event_id )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>event_id</code>为将要结束的目标事件(该事件是启动定时器的事件)定时器的标识符。返回值如下：</p>
+<ul>
+<li><code>ZSUCCESS</code>：<code>Timer</code>成功停止。</li>
+<li><code>INVALID_EVENT_ID</code>：无效事件。</li>
+</ul>
+<h4 id="osal-stop-timerEx"><a href="#osal-stop-timerEx" class="headerlink" title="osal_stop_timerEx"></a>osal_stop_timerEx</h4><p>&emsp;&emsp;结束外部事件的定时器，指明了任务的<code>ID</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_stop_timerEx</span> <span class="params">( byte task_id, UINT16 event_id )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>task_id</code>：停止定时器所在的任务<code>ID</code>。</li>
+<li><code>event_id</code>：被停止定时器的标识符。</li>
+</ul>
+<p>返回值如下：</p>
+<ul>
+<li><code>ZSUCCESS</code>：<code>Timer</code>成功停止。</li>
+<li><code>INVALID_EVENT_ID</code>：无效事件。</li>
+</ul>
+<h4 id="osal-GetSystemClock"><a href="#osal-GetSystemClock" class="headerlink" title="osal_GetSystemClock"></a>osal_GetSystemClock</h4><p>&emsp;&emsp;读取系统时间。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">uint32 <span class="title">osal_GetSystemClock</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>返回值为系统时间(<code>ms</code>)。</p>
+<h4 id="osal-start-reload-timer"><a href="#osal-start-reload-timer" class="headerlink" title="osal_start_reload_timer"></a>osal_start_reload_timer</h4><p>&emsp;&emsp;设置定时器，与<code>osal_stop_timerEx</code>不同的是该函数设置的定时器超时后被重新装载。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">uint8 <span class="title">osal_start_reload_timer</span> <span class="params">( uint8 taskID, uint16 event_id, uint16 timeout_value )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>返回值如下：</p>
+<ul>
+<li><code>ZSUCCESS</code>：<code>Timer</code>成功开启。</li>
+<li><code>NO_TIMER_AVAILABLE</code>：无法开启。</li>
+</ul>
+<h3 id="中断管理API"><a href="#中断管理API" class="headerlink" title="中断管理API"></a>中断管理API</h3><p>&emsp;&emsp;这些<code>API</code>实现任务与外部中断的接口，函数允许一个任务关联每一个具体的中断程序程序，可以开关中断。在中断服务程序内，其他任务可以设置事件。</p>
+<h4 id="osal-int-enable"><a href="#osal-int-enable" class="headerlink" title="osal_int_enable"></a>osal_int_enable</h4><p>&emsp;&emsp;函数用于使能中断。一旦允许，中断发生时将引起中断分配的服务程序运行。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_int_enable</span> <span class="params">( byte interrupt_id )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>interrupt_id</code>为被允许的中断的标识符。返回值如下：</p>
+<ul>
+<li><code>ZSUCCESS</code>：<code>Interrupt</code>成功使能。</li>
+<li><code>INVALID_INTERRUPT_ID</code>：无效中断。</li>
+</ul>
+<h4 id="osal-int-disable"><a href="#osal-int-disable" class="headerlink" title="osal_int_disable"></a>osal_int_disable</h4><p>&emsp;&emsp;关闭中断。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_int_disable</span> <span class="params">( byte interrupt_id )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>interrupt_id</code>为被禁止中断的标识符。返回值如下：</p>
+<ul>
+<li><code>ZSUCCESS</code>：<code>Interrupt</code>成功关闭。</li>
+<li><code>INVALID_INTERRUPT_ID</code>：无效中断。</li>
+</ul>
+<h3 id="任务管理API"><a href="#任务管理API" class="headerlink" title="任务管理API"></a>任务管理API</h3><p>&emsp;&emsp;该<code>API</code>用在添加和管理<code>OSAL</code>中的任务。每一个任务由任务初始化函数和时间处理函数组成。</p>
+<h4 id="osal-init-system"><a href="#osal-init-system" class="headerlink" title="osal_init_system"></a>osal_init_system</h4><p>&emsp;&emsp;该函数初始化<code>OSAL</code>系统。该函数必须在启动任何一个<code>OSAL</code>函数之前被调用。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_init_system</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>返回值若为<code>ZSUCCESS</code>表示成功。</p>
+<h4 id="osal-start-system"><a href="#osal-start-system" class="headerlink" title="osal_start_system"></a>osal_start_system</h4><p>&emsp;&emsp;这个函数是系统任务的主循环函数，在循环里面将遍历所有的任务事件，为触发事件的任务调用任务事件处理函数。如果一个特定任务有事件发送，那么该函数就将调用该任务的事件处理函数。当事件处理完之后，将返回主循环，继续查找其他的任务事件。如果没有事件，函数将把处理器转到睡眠模式。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">osal_start_system</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<h4 id="osal-self"><a href="#osal-self" class="headerlink" title="osal_self"></a>osal_self</h4><p>&emsp;&emsp;这个函数返回正在被调用任务的任务标识符。如果在一个中断服务子程序中调用该函数，将返回一个错误结果。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_self</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>返回值为当前活动的任务的任务标识符。</p>
+<h4 id="osalTaskAdd"><a href="#osalTaskAdd" class="headerlink" title="osalTaskAdd"></a>osalTaskAdd</h4><p>&emsp;&emsp;这个函数添加一个任务到任务系统中，一个任务由两个函数组成，即初始化函数与信息处理函数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 任务初始化函数原型 */</span></span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">void</span> <span class="params">( *pTaskInitFn )</span> <span class="params">( <span class="keyword">unsigned</span> <span class="keyword">char</span> task_id )</span></span>;</span><br><span class="line"><span class="comment">/* 事件句柄函数原型 */</span></span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="title">short</span> <span class="params">( *pTaskEventHandlerFn )</span> <span class="params">( <span class="keyword">unsigned</span> <span class="keyword">char</span> task_id, <span class="keyword">unsigned</span> <span class="keyword">short</span> event )</span></span>;</span><br><span class="line"><span class="comment">/* 添加任务函数原型 */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">osalTaskAdd</span> <span class="params">( <span class="keyword">const</span> pTaskInitFn pfnInit, <span class="keyword">const</span> pTaskEventHandlerFn, \</span></span></span><br><span class="line"><span class="function"><span class="params">                   pfnEventProcessor, <span class="keyword">const</span> byte taskPriority )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>pfnInit</code>：指向任务初始化函数的指针。</li>
+<li><code>pfnEventProcessor</code>：指向任务事件处理器函数的指针。</li>
+<li><code>taskPriority</code>：任务的优先级，值为<code>0</code>至<code>255</code>，常用选项如下：</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OSAL_TASK_PRIORITY_LOW</code></td>
+<td><code>50</code></td>
+</tr>
+<tr>
+<td><code>OSAL_TASK_PRIORITY_MED</code></td>
+<td><code>130</code></td>
+</tr>
+<tr>
+<td><code>OSAL_TASK_PRIORITY_HIGH</code></td>
+<td><code>230</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="内存管理API"><a href="#内存管理API" class="headerlink" title="内存管理API"></a>内存管理API</h3><p>&emsp;&emsp;该<code>API</code>呈现一个简单的内存分配系统，这些函数允许动态内存分配。</p>
+<h4 id="osal-mem-alloc"><a href="#osal-mem-alloc" class="headerlink" title="osal_mem_alloc"></a>osal_mem_alloc</h4><p>&emsp;&emsp;这个函数是一个简单内存分配函数，如果成功则返回一个缓冲区的指针。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">osal_mem_alloc</span> <span class="params">( uint16 size )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>size</code>为缓冲区的大小。该函数返回一个<code>void</code>指针指向新分配的缓冲区，如果没有足够的内存来分配，则返回<code>NULL</code>。</p>
+<h4 id="osal-mem-free"><a href="#osal-mem-free" class="headerlink" title="osal_mem_free"></a>osal_mem_free</h4><p>&emsp;&emsp;这个函数释放已分配的内存来重新使用。只有当内存已使用<code>osal_mem_alloc</code>分配过才可以工作。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">osal_mem_free</span> <span class="params">( <span class="keyword">void</span> *ptr )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>ptr</code>是指向将被释放的缓冲区的指针，这个缓冲区必须之前被<code>osal_mem_alloc</code>分配过。</p>
+<h3 id="电源管理API"><a href="#电源管理API" class="headerlink" title="电源管理API"></a>电源管理API</h3><p>&emsp;&emsp;这里的函数描述了<code>OSAL</code>的电源管理系统，当<code>OSAL</code>安全地关闭接收器与外部硬件，并使处理器进入休眠模式时，该系统提供向应用或任务通报该事件的方法。</p>
+<h4 id="osal-pwrmgr-task-state"><a href="#osal-pwrmgr-task-state" class="headerlink" title="osal_pwrmgr_task_state"></a>osal_pwrmgr_task_state</h4><p>&emsp;&emsp;该函数被每个任务调用，声明该任务是否需要节能。任务被创建时，默认是节能模式。如果任务总是需要节能，那么就不需要调用该函数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_pwrmgr_task_state</span> <span class="params">( byte task_id, <span class="keyword">pwrmgr_state_t</span> state )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>state</code>可以改变任务的电源状态：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PWRMGR_CONSERVE</code></td>
+<td>打开节能模式，所有任务都须一致，为任务初始化的缺省模式</td>
+</tr>
+<tr>
+<td><code>PWRMGR_HOLD</code></td>
+<td>关闭节能模式</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>返回值显示操作的结果：</p>
+<ul>
+<li><code>ZSUCCESS</code>：成功。</li>
+<li><code>INVALID_TASK</code>：无效任务。</li>
+</ul>
+<h4 id="osal-pwrmgr-device"><a href="#osal-pwrmgr-device" class="headerlink" title="osal_pwrmgr_device"></a>osal_pwrmgr_device</h4><p>&emsp;&emsp;该函数在上电或电源需求变更时调用(例如电源支持协调器)。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">osal_pwrmgr_state</span> <span class="params">( byte pwrmgr_device )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>pwrmgr_device</code>用于更改或设置节电模式：</p>
+<ul>
+<li><code>PWRMGR_ALWAYS_ON</code>：无节电。</li>
+<li><code>PWRMGR_BATTERY</code>：开节电。</li>
+</ul>
+<h3 id="非易失性-NV-存储管理"><a href="#非易失性-NV-存储管理" class="headerlink" title="非易失性(NV)存储管理"></a>非易失性(NV)存储管理</h3><p>&emsp;&emsp;这部分讲述<code>OSAL</code>的<code>NV</code>非易失性(<code>NV</code>)存储系统，该系统提供了一种方式来为应用永久存放信息到设备内存中。它也可以用于某些堆栈条目的固定存储，这些<code>NV</code>函数被设计用来读取/写入用户定义的由任何数据类型组成的(如结构与数组)项目。用户可以通过设定适当的偏移量与长度读取或写入一个完整的项目或项目中的一个单元。该<code>API</code>为<code>NV</code>存储介质独有，与存储体本身没有关系。可以被<code>flash</code>或<code>eeprom</code>使用。<br>&emsp;&emsp;每个<code>NV</code>项目都有一个惟一的标识符，每个应用都有特定的<code>ID</code>值范围。如果你的应用创建了自己的<code>NV</code>项目，则必须从应用值范围内选一个<code>ID</code>：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x0000</code></td>
+<td><code>Reserved</code></td>
+</tr>
+<tr>
+<td><code>0x0001 - 0x0020</code></td>
+<td><code>OSAL</code></td>
+</tr>
+<tr>
+<td><code>0x0021 - 0x0040</code></td>
+<td><code>NWK</code></td>
+</tr>
+<tr>
+<td><code>0x0041 - 0x0060</code></td>
+<td><code>APS</code></td>
+</tr>
+<tr>
+<td><code>0x0061 - 0x0080</code></td>
+<td><code>Security</code></td>
+</tr>
+<tr>
+<td><code>0x0081 - 0x00A0</code></td>
+<td><code>ZDO</code></td>
+</tr>
+<tr>
+<td><code>0x00A1 - 0x0200</code></td>
+<td><code>Reserved</code></td>
+</tr>
+<tr>
+<td><code>0x0201 - 0x0FFF</code></td>
+<td><code>Application</code></td>
+</tr>
+<tr>
+<td><code>0x1000 - 0xFFFF</code></td>
+<td><code>Reserved</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="osal-nv-item-init"><a href="#osal-nv-item-init" class="headerlink" title="osal_nv_item_init"></a>osal_nv_item_init</h4><p>&emsp;&emsp;初始化<code>NV</code>中的一条项目。这个函数检测<code>NV</code>项目的存在与否，如果不存在，则创建一个<code>NV</code>项目。在调用<code>osal_nv_read</code>或<code>osal_nv_write</code>前，每一个项目必须先调用该函数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_nv_item_init</span> <span class="params">( uint16 id, uint16 len, <span class="keyword">void</span> *buf )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>id</code>：用户定义项目标识符。</li>
+<li><code>len</code>：项目长度(字节)。</li>
+<li><code>buf</code>：项目初始化数据指针，如果没有初始化数据，则设为<code>NULL</code>。</li>
+</ul>
+<p>返回值显示操作的结果：</p>
+<ul>
+<li><code>ZSUCCESS</code>：成功。</li>
+<li><code>NV_ITEM_UNINIT</code>：成功但项目不存在。</li>
+</ul>
+<h4 id="osal-nv-read"><a href="#osal-nv-read" class="headerlink" title="osal_nv_read"></a>osal_nv_read</h4><p>&emsp;&emsp;读取<code>NV</code>数据，这个函数被用来读取整个<code>NV</code>项目或其中一个项目，读取的数据被复制到<code>buf</code>中。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_nv_read</span> <span class="params">( uint16 id, uint16 offset, uint16 len, <span class="keyword">void</span> *buf )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>id</code>：用户定义项目标识符。</li>
+<li><code>offset</code>：项目的内存偏移量(字节)。</li>
+<li><code>len</code>：项目长度(字节)。</li>
+<li><code>buf</code>：数据读取到该缓冲区。</li>
+</ul>
+<p>返回值显示操作的结果：</p>
+<ul>
+<li><code>ZSUCCESS</code>：成功。</li>
+<li><code>NV_ITEM_UNINIT</code>：项目没有初始化。</li>
+<li><code>NV_OPER_FAILED</code>：操作失败。</li>
+</ul>
+<h4 id="nv-osal-write"><a href="#nv-osal-write" class="headerlink" title="nv_osal_write"></a>nv_osal_write</h4><p>&emsp;&emsp;写入数据到<code>NV</code>中，这个函数被用来写入整个<code>NV</code>项目或一个项目中的单元(通过一个偏移量来索引该项目)。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">byte <span class="title">osal_nv_write</span> <span class="params">( uint16 id, uint16 offset, uint16 len, <span class="keyword">void</span> *buf )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>id</code>：用户定义项目标识符。</li>
+<li><code>offset</code>：项目的内存偏移量(字节)。</li>
+<li><code>len</code>：项目长度(字节)。</li>
+<li><code>buf</code>：要写入的数据。</li>
+</ul>
+<p>返回值显示操作的结果：</p>
+<ul>
+<li><code>ZSUCCESS</code>：成功。</li>
+<li><code>NV_ITEM_UNINIT</code>：项目没有初始化。</li>
+<li><code>NV_OPER_FAILED</code>：操作失败。</li>
+</ul>
+<h4 id="osal-offsetof"><a href="#osal-offsetof" class="headerlink" title="osal_offsetof"></a>osal_offsetof</h4><p>&emsp;&emsp;该宏在一个结构中按字节计算一个单元的内存偏移量，它被<code>NV</code>的<code>API</code>函数用来计算偏移量。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> osal_offsetof(type, member) ((uint16) &amp;(((type *) 0)-&gt;member))</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>type</code>：结构类型。</li>
+<li><code>member</code>：结构成员。</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/AF_DataRequest函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/05/CC2530和zigbee笔记/AF_DataRequest函数/" itemprop="url">AF_DataRequest函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T14:21:35+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>Zigbee</code>协议栈进行数据发送是调用<code>AF_DataRequest</code>这个函数，该函数会调用协议栈里面与硬件相关的函数最终将数据通过天线发送出去。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">afStatus_t <span class="title">AF_DataRequest</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    afAddrType_t *dstAddr, <span class="comment">/* 目的地址指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    endPointDesc_t *srcEP, <span class="comment">/* 发送节点的端点描述符指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint16 cID, <span class="comment">/* ClusID 簇ID号 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint16 len, <span class="comment">/* 发送数据的长度 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 *buf, <span class="comment">/* 指向存放发送数据的缓冲区指针 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 *transID, <span class="comment">/* 传输序列号，该序列号随着信息的发送而增加 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 options, <span class="comment">/* 发送选项 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 radius <span class="comment">/* 最大传输半径(发送的跳数) */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>dstAddr</code>参数包含了目的节点的网络地址、端点号及数据传送的模式，如单播、广播或多播等。<code>afAddrType_t</code>是个结构体：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">union</span> &#123;</span><br><span class="line">        uint16 shortAddr; <span class="comment">/* 用于标识该节点网络地址的变量 */</span></span><br><span class="line">    &#125; addr;</span><br><span class="line">    afAddrMode_t addrMode; <span class="comment">/* 用于指定数据传送模式，单播、多播还是广播 */</span></span><br><span class="line">    byte endPoint; <span class="comment">/* 指定的端口号，端口号241至254是保留端口 */</span></span><br><span class="line">&#125; afAddrType_t; <span class="comment">/* 其定义在AF.h中 */</span></span><br></pre></td></tr></table></figure>
+<p>因为在<code>Zigbee</code>中，数据包可以单点传送(<code>unicast</code>)、多点传送(<code>multicast</code>)或者广播传送，所以必须有地址模式参数。一个单点传送数据包只发送给一个设备，多点传送数据包则要传送给一组设备，而广播数据包则要发送给整个网络的所有节点。因此上述结构体中的<code>addrMode</code>就是用于指定数据传送模式，它是个枚举类型，可以设置为以下几个值：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> &#123;</span><br><span class="line">    afAddrNotPresent = AddrNotPresent, <span class="comment">/* 表示通过绑定关系指定目的地址 */</span></span><br><span class="line">    afAddr16Bit = Addr16Bit, <span class="comment">/* 单播发送 */</span></span><br><span class="line">    afAddrGroup = AddrGroup, <span class="comment">/* 组播 */</span></span><br><span class="line">    afAddrBroadcast = AddrBroadcast <span class="comment">/* 广播 */</span></span><br><span class="line">&#125; afAddrMode_t;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">enum</span> &#123;</span><br><span class="line">    AddrNotPresent = <span class="number">0</span>,</span><br><span class="line">    AddrGroup = <span class="number">1</span>,</span><br><span class="line">    Addr16Bit = <span class="number">2</span>,</span><br><span class="line">    Addr64Bit = <span class="number">3</span>, <span class="comment">/* 指定IEEE地址进行单播传输 */</span></span><br><span class="line">    AddrBroadcast = <span class="number">15</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>注意，<code>ZigBee</code>设备有两种类型的地址：一种是<code>64</code>位<code>IEEE</code>地址(物理)，即<code>MAC</code>地址；另一种是<code>16</code>位网络地址。<code>64</code>位地址使全球唯一的地址，设备将在它的生命周期中一直拥有它。它通常由制造商或者被安装时设置，这些地址由<code>IEEE</code>来维护和分配。<code>16</code>位网络地址是当设备加入网络后由协调器或路由器分配的，它在网络中是唯一的，用来在网络中鉴别设备和发送数据。<br>&emsp;&emsp;<code>srcEP</code>是发送节点的端点描述符指针，在<code>Zigbee</code>网络中，可以通过网络地址找到某个具体的节点，但是具体到某个节点，还有不同的端口(每个节点上最多可支持<code>240</code>个端口)，不同节点的端口间可以相互通信。例如节点<code>1</code>的端口<code>1</code>可以给节点<code>2</code>的控制端口<code>1</code>发<code>led</code>控制命令，也可以给节点<code>2</code>的端口<code>2</code>发采集命令。但是同一个节点上的端口的网络地址是相同的，所以仅仅通过网络地址无法区分节点<code>1</code>的端口<code>1</code>是与节点<code>2</code>的哪个端口进行通信，因此在发送数据时不但要指定网络地址，还要指点端口号。因此得出结论：使用网络地址来区分不同的节点，使用端口号区分同一节点上的端口。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    byte endPoint; <span class="comment">/* 端点号 */</span></span><br><span class="line">    byte *task_id; <span class="comment">/* 哪一个任务的端点号(调用任务的ID) */</span></span><br><span class="line">    SimpleDescriptionFormat_t *simpleDesc; <span class="comment">/* 描述一个Zigbee设备节点，称为简单设备描述符 */</span></span><br><span class="line">    afNetworkLatencyReq_t latencyReq; <span class="comment">/* 枚举结构，这个字段必须为nolatencyreqs */</span></span><br><span class="line">&#125; endPointDesc_t; <span class="comment">/* 其定义在AF.h中 */</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    byte EndPoint; <span class="comment">/* EP */</span></span><br><span class="line">    uint16 AppProfId; <span class="comment">/* 应用规范ID */</span></span><br><span class="line">    uint16 AppDeviceId; <span class="comment">/* 特定规范ID的设备类型 */</span></span><br><span class="line">    byte AppDevVer: <span class="number">4</span>; <span class="comment">/* 特定规范ID的设备的版本 */</span></span><br><span class="line">    byte Reserved: <span class="number">4</span>; <span class="comment">/* AF_V1_SUPPORT uses for AppFlags:4 */</span></span><br><span class="line">    byte AppNumInClusters; <span class="comment">/* 输入簇ID的个数 */</span></span><br><span class="line">    cId_t *pAppInClusterList; <span class="comment">/* 输入簇ID的列表 */</span></span><br><span class="line">    byte AppNumOutClusters; <span class="comment">/* 输出簇ID的个数 */</span></span><br><span class="line">    cId_t *pAppOutClusterList; <span class="comment">/* 输出簇ID的列表 */</span></span><br><span class="line">&#125; SimpleDescriptionFormat_t; <span class="comment">/* 其定义在AF.h中 */</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> &#123;</span><br><span class="line">    noLatencyReqs,</span><br><span class="line">    fastBeacons,</span><br><span class="line">    slowBeacons</span><br><span class="line">&#125; afNetworkLatencyReq_t;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>cID</code>是簇<code>ID</code>号，一个<code>Zigbee</code>节点有很多属性，一个簇实际上是一些相关命令和属性的集合。在整个网络中，每个簇都有唯一的簇<code>ID</code>，也就是用来标识不同的控制操作。</li>
+<li><code>len</code>是送数据的长度，<code>buf</code>指向发送数据缓冲的指针。</li>
+<li><code>transID</code>该参数是指向发送序号的指针，每发送一个数据包，该发送序号会自动加1，因此在接收端可以查看接收数据包的序号来计算丢包率。</li>
+<li><code>options</code>是发送选项，有如下选项：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AF_FRAGMENTED   0x01</span></span><br><span class="line"><span class="comment">/* 要求APS应答，这是应用层的应答，只在直接发送(单播)时使用 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AF_ACK_REQUEST  0x10</span></span><br><span class="line"><span class="comment">/* 总要包含这个选项 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AF_DISCV_ROUTE  0x20</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AF_EN_SECURITY  0x40</span></span><br><span class="line"><span class="comment">/* 设置这个选项将导致设备跳过路由而直接发送消息。</span></span><br><span class="line"><span class="comment">   终点设备将不向其父亲发送消息。在直接发送(单播)和广播消息时很好用 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AF_SKIP_ROUTING 0x80</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>radius</code>是最大的跳数，取默认值<code>AF_DEFAULT_RADIUS</code>。</li>
+</ul>
+<p>&emsp;&emsp;返回值是<code>afStatus_t</code>类型，它是枚举型：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> &#123;</span><br><span class="line">    afStatus_SUCCESS,</span><br><span class="line">    afStatus_FAILED = <span class="number">0x80</span>,</span><br><span class="line">    afStatus_MEM_FAIL,</span><br><span class="line">    afStatus_INVALID_PARAMETER</span><br><span class="line">&#125; afStatus_t;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;下面是这个函数完整的源代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">afStatus_t <span class="title">AF_DataRequest</span> <span class="params">( afAddrType_t *dstAddr, endPointDesc_t *srcEP,</span></span></span><br><span class="line"><span class="function"><span class="params">                            uint16 cID, uint16 len, uint8 *buf, uint8 *transID,</span></span></span><br><span class="line"><span class="function"><span class="params">                            uint8 options, uint8 radius )</span> </span>&#123;</span><br><span class="line">    pDescCB pfnDescCB;</span><br><span class="line">    ZStatus_t stat;</span><br><span class="line">    APSDE_DataReq_t req;</span><br><span class="line">    afDataReqMTU_t mtu;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( srcEP == <span class="literal">NULL</span> ) &#123; <span class="comment">/* Verify source end point 判断源节点是否为空 */</span></span><br><span class="line">        <span class="keyword">return</span> afStatus_INVALID_PARAMETER;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> !defined( REFLECTOR )</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( dstAddr-&gt;addrMode == afAddrNotPresent ) &#123;</span><br><span class="line">        <span class="keyword">return</span> afStatus_INVALID_PARAMETER;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="comment">/* Verify destination address 判断目的地址 */</span></span><br><span class="line">    req.dstAddr.addr.shortAddr = dstAddr-&gt;addr.shortAddr;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* Validate broadcasting 判断地址的模式 */</span></span><br><span class="line">    <span class="keyword">if</span> ( ( dstAddr-&gt;addrMode == afAddr16Bit ) || ( dstAddr-&gt;addrMode == afAddrBroadcast ) ) &#123;</span><br><span class="line">        <span class="comment">/* Check for valid broadcast values 核对有效的广播值 */</span></span><br><span class="line">        <span class="keyword">if</span> ( ADDR_NOT_BCAST != NLME_IsAddressBroadcast ( dstAddr-&gt;addr.shortAddr ) ) &#123;</span><br><span class="line">            <span class="comment">/* Force mode to broadcast 强制转换成广播模式 */</span></span><br><span class="line">            dstAddr-&gt;addrMode = afAddrBroadcast;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">/* Address is not a valid broadcast type 地址不是一个有效的广播地址类型 */</span></span><br><span class="line">            <span class="keyword">if</span> ( dstAddr-&gt;addrMode == afAddrBroadcast ) &#123;</span><br><span class="line">                <span class="keyword">return</span> afStatus_INVALID_PARAMETER;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( dstAddr-&gt;addrMode != afAddrGroup &amp;&amp;</span><br><span class="line">                dstAddr-&gt;addrMode != afAddrNotPresent ) &#123;</span><br><span class="line">        <span class="keyword">return</span> afStatus_INVALID_PARAMETER;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    req.dstAddr.addrMode = dstAddr-&gt;addrMode;</span><br><span class="line">    req.profileID = ZDO_PROFILE_ID;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( pfnDescCB = afGetDescCB ( srcEP ) ) ) &#123;</span><br><span class="line">        uint16 *pID = ( uint16 * ) ( pfnDescCB ( AF_DESCRIPTOR_PROFILE_ID, srcEP-&gt;endPoint ) );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( pID ) &#123;</span><br><span class="line">            req.profileID = *pID;</span><br><span class="line">            osal_mem_free ( pID );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( srcEP-&gt;simpleDesc ) &#123;</span><br><span class="line">        req.profileID = srcEP-&gt;simpleDesc-&gt;AppProfId;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    req.txOptions = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( options &amp; AF_ACK_REQUEST ) &amp;&amp;</span><br><span class="line">         ( req.dstAddr.addrMode != AddrBroadcast ) &amp;&amp;</span><br><span class="line">         ( req.dstAddr.addrMode != AddrGroup ) ) &#123;</span><br><span class="line">        req.txOptions |= APS_TX_OPTIONS_ACK;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( options &amp; AF_SKIP_ROUTING ) &#123;</span><br><span class="line">        req.txOptions |= APS_TX_OPTIONS_SKIP_ROUTING;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( options &amp; AF_EN_SECURITY ) &#123;</span><br><span class="line">        req.txOptions |= APS_TX_OPTIONS_SECURITY_ENABLE;</span><br><span class="line">        mtu.aps.secure = TRUE;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        mtu.aps.secure = FALSE;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    mtu.kvp = FALSE;</span><br><span class="line">    req.transID = *transID;</span><br><span class="line">    req.srcEP = srcEP-&gt;endPoint;</span><br><span class="line">    req.dstEP = dstAddr-&gt;endPoint;</span><br><span class="line">    req.clusterID = cID;</span><br><span class="line">    req.asduLen = len;</span><br><span class="line">    req.asdu = buf;</span><br><span class="line">    req.discoverRoute = TRUE; <span class="comment">// (uint8)((options &amp; AF_DISCV_ROUTE) ? 1 : 0);</span></span><br><span class="line">    req.radiusCounter = radius;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( len &gt; afDataReqMTU ( &amp;mtu ) ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( apsfSendFragmented ) &#123;</span><br><span class="line">            req.txOptions |= AF_FRAGMENTED | APS_TX_OPTIONS_ACK;</span><br><span class="line">            stat = ( *apsfSendFragmented ) ( &amp;req );</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            stat = afStatus_INVALID_PARAMETER;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        stat = APSDE_DataReq ( &amp;req );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * If this is an EndPoint-to-EndPoint message on the same device, it will not</span></span><br><span class="line"><span class="comment">     * get added to the NWK databufs. So it will not Go OTA and it will not get</span></span><br><span class="line"><span class="comment">     * a MACCB_DATA_CONFIRM_CMD callback. Thus it is necessary to generate the</span></span><br><span class="line"><span class="comment">     * AF_DATA_CONFIRM_CMD here. Note that APSDE_DataConfirm() only generates one</span></span><br><span class="line"><span class="comment">     * message with the first in line TransSeqNumber, even on a multi message.</span></span><br><span class="line"><span class="comment">     * Also note that a reflected msg will not have its confirmation generated</span></span><br><span class="line"><span class="comment">     * here.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> ( ( req.dstAddr.addrMode == Addr16Bit ) &amp;&amp;</span><br><span class="line">         ( req.dstAddr.addr.shortAddr == NLME_GetShortAddr() ) ) &#123;</span><br><span class="line">        afDataConfirm ( srcEP-&gt;endPoint, *transID, stat );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( stat == afStatus_SUCCESS ) &#123;</span><br><span class="line">        ( *transID )++;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ( afStatus_t ) stat;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/Profile、Cluster和Attribute的关系/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/05/CC2530和zigbee笔记/Profile、Cluster和Attribute的关系/" itemprop="url">Profile、Cluster和Attribute的关系</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T14:05:14+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>zigbee</code>规范引入了<code>profile</code>、<code>cluster</code>的概念。具体说来，假设规范一个<code>profile</code>(可以理解成一套规定)，这个<code>profile</code>用来规范智能家居领域的相关产品都要满足那些要求，那么<code>home automation public profile</code>就规定了智能家居都要做什么。当然你可以自己规范一个<code>profile</code>，称为<code>private profile</code>。而<code>zigbee</code>联盟则已经规范了一些<code>profile</code>，比如<code>home automation</code>、<code>smart energy</code>和<code>building automation</code>等。一个<code>public profile</code>也规定了<code>profile</code>的<code>ID</code>，比如智能家居就规定是<code>0x104</code>。协议栈本身也有一个<code>profile</code>，就是<code>Zigbee Device Profile</code>，也就是<code>ZDP</code>，这里规范了一个<code>zigbee</code>节点都要具备的功能，比如路由能力、网络发现能力、各个协议层需要做什么工作等。<br>&emsp;&emsp;在一个<code>profile</code>的规范下，又提出了<code>cluster</code>的概念。<code>cluster</code>要理解成一个大方向下的一个特定对象，比如智能家居下的一个调光器，操作这个调光器就需要一些命令，比如变亮、变暗、关灯、开灯这些操作。另外这个调光器也会有一个<code>attribute</code>(属性)，比如当前的亮度，由亮变暗的过程经历多长时间(一下子变亮视觉感觉没有渐变效果好)。<code>home automation</code>的<code>public profile</code>已经规定了调光器应该有哪些<code>cluster</code>，例如<code>Color Control Cluster</code>、<code>Ballast Configuration Cluster</code>等。然后，<code>profile</code>也规范了<code>color control cluster</code>的<code>ID</code>，这个就是<code>clusterID</code>了。<br>&emsp;&emsp;如果学过面向对象编程的思想，那就更好理解了：其实<code>profile</code>就相当于面向对象编程中的类，而<code>cluster</code>就是面向对象编程中的对象。至于<code>command</code>，你可以理解为每个类中的方法，而<code>attribute</code>则是每个对象的属性。比如你定义了一个智能家居的类(<code>profile = 0x104</code>)，那么是不是需要包括很多设备呀？比如具体的灯、开关什么的。所以在类的基础上需要去实例化一个对象调光器。这个调光器是不是需要一些方法呢？例如控制灯开关什么的，这个就相当于<code>command</code>。而每个设备对象本身都应该有一些自己的属性来描述这个设备，所以需要一个<code>attribute</code>。<br>&emsp;&emsp;在这个<code>cluster</code>下面，要有以下命令：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND_LIGHTING_MOVE_TO_HUE                0x00</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND_LIGHTING_MOVE_HUE                   0x01</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND_LIGHTING_STEP_HUE                   0x02</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND_LIGHTING_MOVE_TO_SATURATION         0x03</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND_LIGHTING_MOVE_SATURATION            0x04</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND_LIGHTING_STEP_SATURATION            0x05</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND_LIGHTING_MOVE_TO_HUE_AND_SATURATION 0x06</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND_LIGHTING_MOVE_TO_COLOR              0x07</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND_LIGHTING_MOVE_COLOR                 0x08</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND_LIGHTING_STEP_COLOR                 0x09</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND_LIGHTING_MOVE_TO_COLOR_TEMPERATURE  0x0a</span></span><br></pre></td></tr></table></figure>
+<p><code>Ballast Configuration Cluster</code>下面则没有定义命令。<br>&emsp;&emsp;除了命令之外，每一个<code>cluster</code>还会定义一些属性，例如<code>colorcontrol cluster</code>下有：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_COLOR_CONTROL_CURRENT_HUE        0x0000</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_COLOR_CONTROL_CURRENT_SATURATION 0x0001</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_COLOR_CONTROL_REMAINING_TIME     0x0002</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_COLOR_CONTROL_CURRENT_X          0x0003</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_COLOR_CONTROL_CURRENT_Y          0x0004</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_COLOR_CONTROL_DRIFT_COMPENSATION 0x0005</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_COLOR_CONTROL_COMPENSATION_TEXT  0x0006</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_COLOR_CONTROL_COLOR_TEMPERATURE  0x0007</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_COLOR_CONTROL_COLOR_MODE         0x0008</span></span><br></pre></td></tr></table></figure>
+<p>而<code>Ballast Configuration Cluster</code>则有：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Ballast Information attribute set */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_BALLAST_CONFIG_PHYSICAL_MIN_LEVEL 0x0000</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_BALLAST_CONFIG_PHYSICAL_MAX_LEVEL 0x0001</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATTRID_LIGHTING_BALLAST_BALLAST_STATUS            0x0002</span></span><br></pre></td></tr></table></figure>
+<p>这些属性反映了这个<code>cluster</code>下设备的状态，可以通过读写这些属性来改变其值。<br>&emsp;&emsp;总结说来，<code>Profile</code>规范了应该包括哪些<code>cluster</code>，一个<code>cluster</code>会有一个<code>ID</code>，而在一个<code>cluster</code>下又会有很多<code>command</code>，也会有很多<code>attibute</code>；在一个<code>cluster</code>下面，<code>command</code>和<code>attribute</code>的<code>ID</code>要唯一，不同的<code>cluster</code>下可以重复。在不同的<code>profile</code>下面，<code>clusterID</code>也可以重复。<br>&emsp;&emsp;再延伸一些，<code>zigbee</code>联盟在协议栈之外又增加了一部分操作cluster的函数，那就是<code>zigbee cluster library</code>(<code>ZCL</code>)，这里已经以源代码的形式提供了操作联盟规范的那些<code>public profile</code>下的函数，主要功能包括一些<code>command</code>的<code>transmit</code>、<code>response</code>、<code>indicate</code>以及<code>confirm</code>等，还有读写<code>attribute</code>的一些操作函数。所以在理解了<code>ZCL</code>的工作机制基础上，通过调用<code>ZCL</code>的函数实际上会让应用程序设计变得简单。<br>&emsp;&emsp;假设我们要控制一个<code>LED</code>，有一个远程节点(发命令控制<code>led</code>)和一个本地节点(接收命令并让<code>led</code>亮起来)，那么如果引入<code>ZCL</code>的概念，你可以设置操作<code>led</code>的事情是一个<code>cluster</code>，其下包含三个命令，即<code>open</code>、<code>close</code>和<code>read attribute</code>。灯还有一个<code>attribute</code>，那就是当前的<code>status</code>，远程节点可以用<code>ZCL</code>的函数发<code>open</code>和<code>close</code>命令，也可以随时发一个<code>read attibute</code>命令读取本地节点<code>led</code>的状态。这么做的好处是不需要再设计一个规定(比如一个数据包的第几个字节表示什么内容)，而是直接调用<code>ZCL</code>。这对于<code>command</code>和<code>attribute</code>数量很少的应用不见得有多大好处，但是当<code>command</code>和<code>attribute</code>数量很多的时候，引入<code>ZCL</code>会让事情变得简单。</p>
+<hr>
+<p>&emsp;&emsp;<code>ZigBee</code>网络进行数据传输都是建立在应用规范(<code>profile</code>)的基础上。<code>profile</code>可以理解成一套规定，每个应用对应一个<code>profile ID</code>，每个<code>profile ID</code>可以应用于某项具体的应用，例如自动家居、楼宇自动化等。。<br>&emsp;&emsp;<code>ZigBee</code>联盟已经规定了<code>profile</code>的使用，整个应用规范可以分为公共规范(<code>Public profile</code>)和制造商规范(<code>Manufacturer Specific profile</code>)。公共规范的<code>ID</code>号为<code>0x0000</code>至<code>0x7FFF</code>，制造商的为<code>0xBF00</code>至<code>0xFFFF</code>。其中公共规范已经规定了常见的各种应用，以下是摘录的部分公共规范：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Profile ID</th>
+<th>Profile Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0101</code></td>
+<td><code>Industial Plant Monitoring</code>(<code>IPM</code>)</td>
+</tr>
+<tr>
+<td><code>0104</code></td>
+<td><code>Home Automation</code>(<code>HA</code>)</td>
+</tr>
+<tr>
+<td><code>0105</code></td>
+<td><code>Commercial Building Automation</code>(<code>CBA</code>)</td>
+</tr>
+<tr>
+<td><code>0107</code></td>
+<td><code>Telecom Applications</code>(<code>TA</code>)</td>
+</tr>
+<tr>
+<td><code>0108</code></td>
+<td><code>Personal Home&amp;hospital Care</code>(<code>PHHC</code>)</td>
+</tr>
+<tr>
+<td><code>0109</code></td>
+<td><code>Advanced Metering Initiative</code>(<code>AMI</code>)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>&emsp;&emsp;<code>cluster</code>的代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SAMPLEAPP_MAX_CLUSTERS       2</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SAMPLEAPP_PERIODIC_CLUSTERID 1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SAMPLEAPP_FLASH_CLUSTERID    2</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* This list should be filled with Application specific Cluster IDs */</span></span><br><span class="line"><span class="keyword">const</span> cId_t SampleApp_ClusterList[SAMPLEAPP_MAX_CLUSTERS] = &#123;</span><br><span class="line">    SAMPLEAPP_PERIODIC_CLUSTERID,</span><br><span class="line">    SAMPLEAPP_FLASH_CLUSTERID</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>如何描述节点上一个具体的端口，这在规范中也有定义，使用简单描述符来描述一个端口：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* These constants are only for example and should be changed to the device's needs */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SAMPLEAPP_ENDPOINT       20</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SAMPLEAPP_PROFID         0x0F08</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SAMPLEAPP_DEVICEID       0x0001</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SAMPLEAPP_DEVICE_VERSION 0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SAMPLEAPP_FLAGS          0</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">const</span> SimpleDescriptionFormat_t SampleApp_SimpleDesc = &#123;</span><br><span class="line">    SAMPLEAPP_ENDPOINT,                <span class="comment">/* int Endpoint; */</span></span><br><span class="line">    SAMPLEAPP_PROFID,                  <span class="comment">/* uint16 AppProfId[2]; */</span></span><br><span class="line">    SAMPLEAPP_DEVICEID,                <span class="comment">/* uint16 AppDeviceId[2]; */</span></span><br><span class="line">    SAMPLEAPP_DEVICE_VERSION,          <span class="comment">/* int AppDevVer:4; */</span></span><br><span class="line">    SAMPLEAPP_FLAGS,                   <span class="comment">/* int AppFlags:4; */</span></span><br><span class="line">    SAMPLEAPP_MAX_CLUSTERS,            <span class="comment">/* uint8 AppNumInClusters; */</span></span><br><span class="line">    ( cId_t * ) SampleApp_ClusterList, <span class="comment">/* uint8 *pAppInClusterList; */</span></span><br><span class="line">    SAMPLEAPP_MAX_CLUSTERS,            <span class="comment">/* uint8 AppNumInClusters; */</span></span><br><span class="line">    ( cId_t * ) SampleApp_ClusterList  <span class="comment">/* uint8 *pAppInClusterList; */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这就描述了一个节点的端口<code>20</code>。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/CC2530从睡眠到主动模式/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/05/CC2530和zigbee笔记/CC2530从睡眠到主动模式/" itemprop="url">CC2530从睡眠到主动模式</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T13:58:02+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;从<code>PM1</code>、<code>PM2</code>到切换到<code>PM0</code>，可以使用睡眠定时器，因为睡眠定时器计时时间到后，<code>MCU</code>会产生睡眠定时器中断，电源模式会自动从<code>PM1/PM2</code>切换到<code>PM0</code>。在<code>PM3</code>下，睡眠定时器不起作用，因为<code>32K</code>的晶振都关闭了，故从<code>PM3</code>切换到<code>PM0</code>用的是外部<code>IO</code>中断。<br>&emsp;&emsp;<code>设置睡眠定时器的定时间隔</code>这一步一定要在<code>设置电源模式</code>之前，因为进入睡眠后系统就不会继续执行程序了。读取睡眠定时器的当前计数值，顺序必须遵循<code>读ST0 -&gt; 读ST1 -&gt; 读ST2</code>的顺序；写入睡眠定时器的比较值，顺序必须遵循<code>写ST2 -&gt; 写ST1 -&gt; 写ST0</code>的顺序。<code>ST</code>的计数时钟是<code>32.768K</code>，向上计数，当定时器的计数值等于比较值时，产生中断。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iocc2530.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint unsigned int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uchar unsigned char</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint8 unsigned char</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> uint32 unsigned long</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED_ON  0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED_OFF 1</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> gled    P1_0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> rled    P1_1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> crystal 0 <span class="comment">/* 石英晶振 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> rc      1 <span class="comment">/* RC晶振 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> s1      P0_1</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">delay</span> <span class="params">( uint n )</span> </span>&#123;</span><br><span class="line">    uint i, j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">50</span>; i++ )</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; n; j++ );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">initKey</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P0SEL &amp;= ~<span class="number">0X02</span>;</span><br><span class="line">    P0DIR &amp;= ~<span class="number">0X02</span>;</span><br><span class="line">    P0IEN |= <span class="number">0X02</span>;</span><br><span class="line">    IEN1 |= <span class="number">0X20</span>;</span><br><span class="line">    EA = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">initled</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1SEL &amp;= ~<span class="number">0X03</span>;</span><br><span class="line">    P1DIR |= <span class="number">0X03</span>;  </span><br><span class="line">    rled = <span class="number">1</span>;</span><br><span class="line">    gled = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">set_main_clock</span> <span class="params">( <span class="keyword">int</span> source )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( source ) &#123;</span><br><span class="line">        CLKCONCMD |= <span class="number">0X40</span>; <span class="comment">/* 选择16MHz的RCOSC为系统时钟源 */</span></span><br><span class="line">        <span class="keyword">while</span> ( ! ( CLKCONSTA &amp; <span class="number">0X40</span> ) ); <span class="comment">/* 等待时钟稳定 */</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        CLKCONCMD &amp;= ~<span class="number">0X40</span>; <span class="comment">/* 选择32MHz的XOSC为系统时钟源 */</span></span><br><span class="line">        <span class="keyword">while</span> ( CLKCONSTA &amp; <span class="number">0X40</span> ); <span class="comment">/* 等待时钟稳定 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">set_low_clock</span> <span class="params">( <span class="keyword">int</span> source )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( source ) &#123;</span><br><span class="line">        CLKCONCMD |= <span class="number">0X80</span>; <span class="comment">/* 选择32KHz的RCOSC为低速时钟源 */</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        CLKCONCMD &amp;= ~<span class="number">0X80</span>; <span class="comment">/* 选择32KHz的XOSC为低速时钟源 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init_sleep_timer</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    ST2 = <span class="number">0X00</span>;</span><br><span class="line">    ST1 = <span class="number">0X00</span>;</span><br><span class="line">    ST0 = <span class="number">0X00</span>;</span><br><span class="line">    EA = <span class="number">1</span>;</span><br><span class="line">    STIE = <span class="number">1</span>; <span class="comment">/* 使能睡眠定时器中断 */</span></span><br><span class="line">    STIF = <span class="number">0</span>; <span class="comment">/* 清除睡眠定时器中断标志 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">blink_led</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    gled = <span class="number">1</span>;</span><br><span class="line">    uchar jj = <span class="number">10</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( jj-- ) &#123;</span><br><span class="line">        rled = !rled;</span><br><span class="line">        delay ( <span class="number">10000</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    rled = <span class="number">1</span>;</span><br><span class="line">    gled = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">set_st_period</span> <span class="params">( uint sec )</span> </span>&#123; <span class="comment">/* 设置睡眠时间 */</span></span><br><span class="line">    uint32 sleeptimer = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">/* 把ST2:ST1:ST0赋值给sleeptimer */</span></span><br><span class="line">    sleeptimer |= ( uint32 ) ST0;</span><br><span class="line">    sleeptimer |= ( ( uint32 ) ST1 &lt;&lt; <span class="number">8</span> );</span><br><span class="line">    sleeptimer |= ( ( uint32 ) ST2 &lt;&lt; <span class="number">16</span> );</span><br><span class="line">    <span class="comment">/* 低速频率为32.768KHz，故每秒定时器计数32768次 */</span></span><br><span class="line">    sleeptimer += ( ( uint32 ) sec * ( uint32 ) <span class="number">32768</span> );</span><br><span class="line">    <span class="comment">/* 把加上N秒后的的计数值赋给ST2:ST1:ST0 */</span></span><br><span class="line">    ST2 = ( uint8 ) ( sleeptimer &gt;&gt; <span class="number">16</span> );</span><br><span class="line">    ST1 = ( uint8 ) ( sleeptimer &gt;&gt; <span class="number">8</span> );</span><br><span class="line">    ST0 = ( uint8 ) sleeptimer;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">set_powermode</span> <span class="params">( uchar mode )</span> </span>&#123;</span><br><span class="line">    uchar i;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( mode &lt; <span class="number">4</span> ) &#123;</span><br><span class="line">        SLEEPCMD &amp;= ~<span class="number">0X03</span>;</span><br><span class="line">        SLEEPCMD |= mode;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">4</span>; i++ );</span><br><span class="line">​</span><br><span class="line">        PCON = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        PCON = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    set_main_clock ( crystal );</span><br><span class="line">    set_low_clock ( crystal );</span><br><span class="line">    initled();</span><br><span class="line">    init_sleep_timer();</span><br><span class="line">    gled = LED_ON;</span><br><span class="line">    delay ( <span class="number">50000</span> );</span><br><span class="line">    <span class="comment">/* 进入PM1模式 */</span></span><br><span class="line">    gled = LED_OFF;</span><br><span class="line">    set_st_period ( <span class="number">5</span> );</span><br><span class="line">    set_powermode ( <span class="number">1</span> );</span><br><span class="line">    rled = LED_ON;</span><br><span class="line">    delay ( <span class="number">50000</span> );</span><br><span class="line">    <span class="comment">/* 进入PM2模式 */</span></span><br><span class="line">    rled = LED_OFF;</span><br><span class="line">    set_st_period ( <span class="number">5</span> );</span><br><span class="line">    set_powermode ( <span class="number">2</span> );</span><br><span class="line">    gled = LED_ON;</span><br><span class="line">    delay ( <span class="number">50000</span> );</span><br><span class="line">    gled = LED_OFF;</span><br><span class="line">    initKey(); <span class="comment">/* 初始化按键 */</span></span><br><span class="line">    set_powermode ( <span class="number">3</span> );</span><br><span class="line">    rled = LED_ON;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 睡眠定时器中断函数 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> vector = ST_VECTOR</span></span><br><span class="line">__<span class="function">interrupt <span class="keyword">void</span> <span class="title">ST_ISR</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    EA = <span class="number">0</span>;</span><br><span class="line">    STIF = <span class="number">0</span>; <span class="comment">/* 标志清除 */</span></span><br><span class="line">    EA = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* P0中断函数 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> vector = P0INT_VECTOR</span></span><br><span class="line">__<span class="function">interrupt <span class="keyword">void</span> <span class="title">P0_ISR</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    EA = <span class="number">0</span>;</span><br><span class="line">    P0IF = <span class="number">0</span>;</span><br><span class="line">    P0IFG &amp;= ~<span class="number">0X02</span>;</span><br><span class="line">    <span class="comment">/* 只要响应了IO中断，就会从PM1/PM2/PM3恢复到PM0，故本句也可以取消 */</span></span><br><span class="line">    set_powermode ( <span class="number">4</span> );</span><br><span class="line">    EA = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/协议栈移植DHT11/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1032,626 +1865,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/协议栈NV操作/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/05/CC2530和zigbee笔记/协议栈NV操作/" itemprop="url">协议栈NV操作</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T13:11:58+08:00">
-                2019-02-05
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;1. 配置串口：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">UartInit</span> <span class="params">( halUARTCBack_t SerialCallBack )</span> </span>&#123;</span><br><span class="line">    halUARTCfg_t uartConfig;</span><br><span class="line">    <span class="comment">/* configure UART */</span></span><br><span class="line">    uartConfig.configured           = TRUE;</span><br><span class="line">    uartConfig.baudRate             = HAL_UART_BR_115200;</span><br><span class="line">    uartConfig.flowControl          = FALSE;</span><br><span class="line">    uartConfig.flowControlThreshold = <span class="number">128</span>;</span><br><span class="line">    uartConfig.rx.maxBufSize        = <span class="number">128</span>;</span><br><span class="line">    uartConfig.tx.maxBufSize        = <span class="number">28</span>;</span><br><span class="line">    uartConfig.idleTimeout          = <span class="number">6</span>;</span><br><span class="line">    uartConfig.intEnable            = TRUE;</span><br><span class="line">    uartConfig.callBackFunc         = SerialCallBack;</span><br><span class="line">    <span class="comment">/* Note: Assumes no issue opening UART port. */</span></span><br><span class="line">    ( <span class="keyword">void</span> ) HalUARTOpen ( <span class="number">0</span>, &amp;uartConfig );</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;2. 设置<code>NV</code>条目的<code>ID</code>号：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> TEST_NV 0x0201</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;3. 设置串口的回调函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SerialCallback</span> <span class="params">( uint8 port, uint8 events )</span> </span>&#123;</span><br><span class="line">    uint8 value_read;</span><br><span class="line">    uint8 value = <span class="number">18</span>;</span><br><span class="line">    uint8 uart_buf[<span class="number">2</span>];</span><br><span class="line">    uint8 cmd[<span class="number">6</span>];</span><br><span class="line">    HalUARTRead ( <span class="number">0</span>, cmd, <span class="number">6</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( osal_memcmp ( cmd, <span class="string">"nvread"</span>, <span class="number">6</span> ) ) &#123;</span><br><span class="line">        osal_nv_item_init ( TEST_NV, <span class="number">1</span>, <span class="literal">NULL</span> );</span><br><span class="line">        osal_nv_write ( TEST_NV, <span class="number">0</span>, <span class="number">1</span>, &amp;value );</span><br><span class="line">        osal_nv_read ( TEST_NV, <span class="number">0</span>, <span class="number">1</span>, &amp;value_read );</span><br><span class="line">        uart_buf[<span class="number">0</span>] = value_read / <span class="number">10</span> + <span class="string">'0'</span>;</span><br><span class="line">        uart_buf[<span class="number">1</span>] = value_read % <span class="number">10</span> + <span class="string">'0'</span>;</span><br><span class="line">        HalUARTWrite ( <span class="number">0</span>, uart_buf, <span class="number">2</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;4. 在<code>SampleApp_Init</code>函数中对串口进行设置：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">UartInit ( SerialCallback );</span><br></pre></td></tr></table></figure>
-<p>不要忘记添加头文件<code>OSAL_Nv.h</code>。<br>&emsp;&emsp;最后下载代码，对其进行测试：连接串口，通过串口输入字符串<code>nvread</code>，串口就会回复<code>18</code>，测试成功。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/对ZDO的初步理解/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/05/CC2530和zigbee笔记/对ZDO的初步理解/" itemprop="url">对ZDO的初步理解</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T13:01:29+08:00">
-                2019-02-05
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>ZDO</code>其实是<code>ZigBee</code>协议栈中的一个协议，负责所有设备的管理和安全方案。<code>ZDO</code>就好像是一个驻留在所有<code>ZigBee</code>节点中特殊应用对象，是应用层其他端点与应用子层管理实体交互的中间件。<code>ZDO</code>占用每个节点(<code>node</code>)的端口<code>0</code>(<code>Endpoint0</code>)。<br>&emsp;&emsp;<code>ZDO</code>的配置叫做<code>ZDP</code>(<code>ZigBee Device Profile</code>，<code>ZigBee</code>设备配置)，<code>ZDP</code>可以被应用终端(<code>application end points</code>)和<code>ZigBee</code>节点访问。<br>&emsp;&emsp;<code>ZDO</code>是一个特殊的应用层的端口(<code>Endpoint</code>)，它是应用层其他端点与应用子层管理实体交互的中间件。它主要提供的功能如下：</p>
-<ul>
-<li>初始化应用支持子层、网络层。</li>
-<li>发现节点和节点功能。在无信标的网络中，加入的节点只对其父节点可见。而其他节点可以通过<code>ZDO</code>的功能来确定网络的整体拓扑结构，以及节点所能提供的功能。</li>
-<li>安全加密管理：主要包括安全<code>key</code>的建立和发送，以及安全授权。</li>
-<li>网络的维护功能。</li>
-<li>绑定管理：绑定的功能由应用支持子层提供，但是绑定功能的管理却是由<code>ZDO</code>提供，它确定了绑定表的大小、绑定的发起和绑定的解除等功能。</li>
-<li>节点管理：对于网络协调器和路由器，<code>ZDO</code>提供网络监测、获取路由和绑定信息、发起脱离网络过程等一系列节点管理功能。</li>
-</ul>
-<p>&emsp;&emsp;<code>ZDO</code>实际上是介于应用层端点和应用支持子层中间的端点，其主要功能集中在网络管理和维护上。应用层的端点可以通过<code>ZDO</code>提供的功能来获取网络或是其他节点的信息，包括网络的拓扑结构、其它节点的网络地址和状态以及其他节点的类型和提供的服务等信息。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/Contiki和uip/STM32移植uip/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/05/Contiki和uip/STM32移植uip/" itemprop="url">STM32移植uip</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T12:31:16+08:00">
-                2019-02-05
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>uIP</code>由瑞典计算机科学学院的<code>Adam Dunkels</code>(<code>http://dunkels.com/adam/uip/</code>)开发，其源代码由<code>C</code>语言编写，并完全公开。有了这个<code>TCP/IP</code>协议栈，让嵌入式可以实现的功能更为丰富。可以作为<code>WebClient</code>向指定网站提交数据，也可以作为<code>WebServer</code>作为网页服务器，提供一个小型的动态页面访问功能。由于是开源的免费协议栈，据说<code>Uip</code>没有考虑协议安全的问题。<br>&emsp;&emsp;首先介绍下移植的环境：<code>stm32</code>开发板和<code>ENC28J60</code>网络模块。<code>ENC28J60</code>是带<code>SPI</code>接口的独立以太网控制器，可以用<code>mcu</code>控制<code>spi</code>来实现<code>tcp/ip</code>数据流的收发，所以要先完成<code>ENC28J60</code>的驱动程序，再整合<code>Uip</code>。<code>Uip</code>是用标准的<code>C</code>语言实现，所以移植<code>Uip</code>在<code>51</code>单片机和<code>stm32</code>上类似。<br>&emsp;&emsp;经过几天的琢磨，已经将<code>Uip</code>的几个示例稳定运行。<code>Uip</code>中<code>apps</code>下的例子相互之间存在冲突，源程序中也有一些<code>Error</code>要修改，我将<code>Uip</code>的文件结构做了一些调整。</p>
-<h3 id="Uip文件结构"><a href="#Uip文件结构" class="headerlink" title="Uip文件结构"></a>Uip文件结构</h3><p>&emsp;&emsp;先介绍一下<code>Uip</code>各个目录文件的功能：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">├-apps  <span class="meta"># apps目录下为uip提供的一些应用示例</span></span><br><span class="line">│├-dhcpc</span><br><span class="line">│├-hello-world</span><br><span class="line">│├-resolv</span><br><span class="line">│├-smtp</span><br><span class="line">│├-telnetd</span><br><span class="line">│├-webclient</span><br><span class="line">│└-webserver</span><br><span class="line">│   └-httpd-fs</span><br><span class="line">├-doc  <span class="meta"># doc下放置的为说明文档，程序中用不上</span></span><br><span class="line">│ └-html</span><br><span class="line">├-lib  <span class="meta"># lib下为内存块管理函数源码</span></span><br><span class="line">├-uip  <span class="meta"># uip下为uip和核心实现源码</span></span><br><span class="line">└-unix  <span class="meta"># unix环境里的uip应用例子，可以参照这个例子实现应用</span></span><br></pre></td></tr></table></figure>
-<h3 id="Uip移植"><a href="#Uip移植" class="headerlink" title="Uip移植"></a>Uip移植</h3><p>&emsp;&emsp;<code>Uip</code>的移植可以参考<code>uip</code>的<code>unix</code>的文件结构。<code>Uip</code>的数据通过网卡<code>Enc28j60</code>从物理层剥离，所以需要先配置<code>Uip</code>和<code>Enc28j60</code>的数据交互。这个部分在<code>tapdev.c</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"uip.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ENC28J60.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">tapdev_init</span> <span class="params">( <span class="keyword">unsigned</span> <span class="keyword">char</span> *my_mac )</span> </span>&#123;</span><br><span class="line">    enc28j60Init ( my_mac );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="title">tapdev_read</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> enc28j60PacketReceive ( UIP_CONF_BUFFER_SIZE, uip_buf );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">tapdev_send</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    enc28j60PacketSend ( uip_len, uip_buf );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>网卡驱动程序与具体硬件相关，这一步比较费点时间，不过好在大部分网卡芯片的驱动程序都有代码借鉴或移植。驱动需要提供三个函数，以<code>Enc28j60</code>驱动为例：</p>
-<ul>
-<li><code>tapdev_init</code>：网卡初始化函数，初始化网卡的工作模式。</li>
-<li><code>tapdev_read</code>：读包函数。将网卡收到的数据放入全局缓存区<code>uip_buf</code>中，返回包的长度，赋给<code>uip_len</code>。</li>
-<li><code>tapdev_send</code>：发包函数。将全局缓存区<code>uip_buf</code>里的数据(长度放在<code>uip_len</code>中)发送出去。</li>
-</ul>
-<p>&emsp;&emsp;由于<code>uIP</code>协议栈需要使用时钟，为<code>TCP</code>和<code>ARP</code>的定时器服务。因此使用单片机的定时器或是<code>stm32</code>的滴答定时器用作时钟，每<code>20ms</code>让计数<code>tick_cnt</code>加<code>1</code>。这样，<code>25</code>次计数(<code>0.5s</code>)满了后可以调用<code>TCP</code>的定时处理程序，<code>10s</code>后可以调用<code>ARP</code>老化程序。<code>uIP1.0</code>版本增加了<code>timer.c</code>和<code>timer.h</code>，专门用来管理时钟。修改<code>clock-arch.c</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"clock-arch.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stm32f10x.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">extern</span> __IO <span class="keyword">int32_t</span> g_RunTime;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">clock_time_t</span> clock_time ( <span class="keyword">void</span> ) &#123;</span><br><span class="line">    <span class="keyword">return</span> g_RunTime;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>使用<code>stm32</code>滴答定时器中断代码(<code>User/stm32f10x_it.c</code>)：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">__IO <span class="keyword">int32_t</span> g_RunTime = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SysTick_Handler</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">uint8_t</span> s_count = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ++s_count &gt;= <span class="number">10</span> ) &#123;</span><br><span class="line">        s_count = <span class="number">0</span>;</span><br><span class="line">        g_RunTime++; <span class="comment">/* 全局运行时间每10ms增1 */</span></span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( g_RunTime == <span class="number">0x80000000</span> ) &#123;</span><br><span class="line">            g_RunTime = <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>uipopt.h</code>和<code>uip-conf.h</code>是配置文件，用来设置本地的<code>IP</code>地址、网关地址、<code>MAC</code>地址、全局缓冲区的大小、支持的最大连接数、侦听数、<code>ARP</code>表大小等，可以根据需要进行配置。</p>
-<ul>
-<li><code>#define UIP_FIXEDADDR 1</code>：决定<code>uIP</code>是否使用一个固定的<code>IP</code>地址。如果<code>uIP</code>使用一个固定的<code>IP</code>地址，应该置位(<code>set</code>)这些<code>uipopt.h</code>中的选项。如果不的话，则应该使用宏<code>uip_sethostaddr</code>、<code>uip_setdraddr</code>和<code>uip_setnetmask</code>。</li>
-<li><code>#define UIP_PINGADDRCONF 0</code>：<code>Ping</code>的<code>IP</code>地址赋值。</li>
-<li><code>#define UIP_FIXEDETHADDR 0</code>：指明<code>uIP</code>的<code>ARP</code>模块是否在编译时使用一个固定的以太网<code>MAC</code>地址。</li>
-<li><code>#define UIP_TTL 255</code>：<code>uIP</code>发送的<code>IP packets</code>的<code>IP</code>的<code>TTL</code>(<code>time to live</code>)。</li>
-<li><code>#define UIP_REASSEMBLY 0</code>：<code>uIP</code>支持<code>IP packets</code>的分片和重组。</li>
-<li><code>#define UIP_REASS_MAXAGE 40</code>：一个<code>IP fragment</code>在被丢弃之前可以在重组缓冲区中存在的最大时间。</li>
-<li><code>#define UIP_UDP 0</code>：是否编译<code>UDP</code>。</li>
-<li><code>#define UIP_ACTIVE_OPEN 1</code>：决定是否支持<code>uIP</code>打开一个连接。</li>
-<li><code>#define UIP_CONNS 10</code>：同时可以打开的<code>TCP</code>连接的最大数目。由于<code>TCP</code>连接是静态分配的，减小这个数目将占用更少的<code>RAM</code>。每一个<code>TCP</code>连接需要大约<code>30</code>字节的内存。</li>
-<li><code>#define UIP_LISTENPORTS 10</code>：同时监听的<code>TCP</code>端口的最大数目，每一个<code>TCP</code>监听端口需要<code>2</code>个字节的内存。</li>
-<li><code>#define UIP_RECEIVE_WINDOW 32768</code>：建议的接收窗口的大小。如果应用程序处理到来的数据比较慢，那么应该设置的小一点(相对于<code>uip_buf</code>缓冲区的大小来说)。相反，如果应用程序处理数据很快，可以设置的大一点(<code>32768</code>字节)。</li>
-<li><code>#define UIP_URGDATA 1</code>：决定是否支持<code>TCP urgent data notification</code>。</li>
-<li><code>#define UIP_RTO 3</code>：<code>The initial retransmission timeout counted in timer pulses</code>，不要改变。</li>
-<li><code>#define UIP_MAXRTX 8</code>：在中止连接之前，应该重发一个段的最大次数，不要改变。</li>
-<li><code>#define UIP_TCP_MSS (UIP_BUFSIZE - UIP_LLH_LEN - 40)</code>：<code>TCP</code>段的最大长度。它不能大于<code>UIP_BUFSIZE - UIP_LLH_LEN - 40</code>。</li>
-<li><code>#define UIP_TIME_WAIT_TIMEOUT 120</code>：一个连接应该在<code>TIME_WAIT</code>状态等待多长，不要改变。</li>
-<li><code>#define UIP_ARPTAB_SIZE 8</code>：<code>ARP</code>表的大小。如果本地网络中有许多到这个<code>uIP</code>节点的连接，那么这个选项应该设置为一个比较大的值。</li>
-<li><code>#define UIP_BUFSIZE 1500</code>：<code>uIP packet</code>缓冲区不能小于<code>60</code>字节，但也不能大于<code>1500</code>字节。</li>
-<li><code>#define UIP_STATISTICS 1</code>：决定是否支持统计数字。统计数字对调试很有帮助，并展示给用户。</li>
-<li><code>#define UIP_LOGGING 0</code>：输出<code>uIP</code>登陆信息。</li>
-<li><code>#define UIP_LLH_LEN 14</code>：链接层头部长度。对于<code>SLIP</code>，应该设置成<code>0</code>。</li>
-</ul>
-<p>&emsp;&emsp;<code>uip-conf.h</code>中增加几个主要结构体定义，不<code>include</code>任何应用：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UIP_CONF_LOGGING 0 <span class="comment">/* logging off */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">int</span> <span class="keyword">uip_tcp_appstate_t</span>; <span class="comment">/* 出错可注释 */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">int</span> <span class="keyword">uip_udp_appstate_t</span>; <span class="comment">/* 出错可注释 */</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* #include "smtp.h" */</span></span><br><span class="line"><span class="comment">/* #include "hello-world.h" */</span></span><br><span class="line"><span class="comment">/* #include "telnetd.h" */</span></span><br><span class="line"><span class="comment">/* #include "webserver.h" */</span></span><br><span class="line"><span class="comment">/* #include "dhcpc.h" */</span></span><br><span class="line"><span class="comment">/* #include "resolv.h" */</span></span><br><span class="line"><span class="comment">/* #include "webclient.h" */</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"app_call.h"</span> <span class="comment">/* 加入一个Uip的数据接口文件 */</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>uIP</code>在接受到底层传来的数据包后，调用<code>UIP_APPCALL</code>，将数据送到上层应用程序处理(<code>User/app_call.c</code>)：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stm32f10x.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> UIP_APPCALL</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> UIP_APPCALL Uip_Appcall</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> UIP_UDP_APPCALL</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> UIP_UDP_APPCALL Udp_Appcall</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Uip_Appcall</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Udp_Appcall</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Uip_Appcall</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* User Code */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Udp_Appcall</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* User Code */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;加入<code>uIP</code>的的主循环代码架构(<code>User/main.c</code>)：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stm32f10x.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"string.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"uip.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"uip_arp.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"tapdev.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"timer.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ENC28J60.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"SPI.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRINTF_ON 1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BUF ((struct uip_eth_hdr *)&amp;uip_buf[0])</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> NULL</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> NULL (void *)0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* NULL */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">unsigned</span> <span class="keyword">char</span> mymac[<span class="number">6</span>] = &#123;<span class="number">0x04</span>, <span class="number">0x02</span>, <span class="number">0x35</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x01</span>&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">RCC_Configuration</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GPIO_Configuration</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">USART_Configuration</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">uip_ipaddr_t</span> ipaddr;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timer</span> <span class="title">periodic_timer</span>, <span class="title">arp_timer</span>;</span></span><br><span class="line">    RCC_Configuration();</span><br><span class="line">    GPIO_Configuration();</span><br><span class="line">    USART_Configuration();</span><br><span class="line">    SPInet_Init();</span><br><span class="line">    timer_set ( &amp;periodic_timer, CLOCK_SECOND / <span class="number">2</span> );</span><br><span class="line">    timer_set ( &amp;arp_timer, CLOCK_SECOND * <span class="number">10</span> );</span><br><span class="line">    SysTick_Config ( <span class="number">72000</span> ); <span class="comment">/* 配置滴答计时器 */</span></span><br><span class="line">    tapdev_init ( mymac ); <span class="comment">/* 以太网控制器驱动初始化 */</span></span><br><span class="line">    uip_init(); <span class="comment">/* Uip协议栈初始化 */</span></span><br><span class="line">    uip_ipaddr ( ipaddr, <span class="number">192</span>, <span class="number">168</span>, <span class="number">1</span>, <span class="number">15</span> ); <span class="comment">/* 配置Ip */</span></span><br><span class="line">    uip_sethostaddr ( ipaddr );</span><br><span class="line">    uip_ipaddr ( ipaddr, <span class="number">192</span>, <span class="number">168</span>, <span class="number">1</span>, <span class="number">1</span> ); <span class="comment">/* 配置网关 */</span></span><br><span class="line">    uip_setdraddr ( ipaddr );</span><br><span class="line">    uip_ipaddr ( ipaddr, <span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>, <span class="number">0</span> ); <span class="comment">/* 配置子网掩码 */</span></span><br><span class="line">    uip_setnetmask ( ipaddr );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        uip_len = tapdev_read(); <span class="comment">/* 从网卡读取数据 */</span></span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( uip_len &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">            <span class="comment">/* 如果数据存在则按协议处理 */</span></span><br><span class="line">            <span class="keyword">if</span> ( BUF-&gt;type == htons ( UIP_ETHTYPE_IP ) ) &#123; <span class="comment">/* 如果收到的是IP数据，调用uip_input处理 */</span></span><br><span class="line">                uip_arp_ipin();</span><br><span class="line">                uip_input();</span><br><span class="line">​</span><br><span class="line">                <span class="comment">/* If the above function invocation resulted in data that should be</span></span><br><span class="line"><span class="comment">                   sent out on the network, the global variable uip_len is set to a value &gt; 0. */</span></span><br><span class="line">​</span><br><span class="line">                <span class="keyword">if</span> ( uip_len &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">                    uip_arp_out();</span><br><span class="line">                    tapdev_send();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> ( BUF-&gt;type == htons ( UIP_ETHTYPE_ARP ) ) &#123; <span class="comment">/* 如果收到的是ARP数据，调用uip_arp_arpin处理 */</span></span><br><span class="line">                uip_arp_arpin();</span><br><span class="line">​</span><br><span class="line">                <span class="comment">/* If the above function invocation resulted in data that should be sent</span></span><br><span class="line"><span class="comment">                   out on the network, the global variable uip_len is set to a value &gt; 0. */</span></span><br><span class="line">​</span><br><span class="line">                <span class="keyword">if</span> ( uip_len &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">                    tapdev_send();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> ( timer_expired ( &amp;periodic_timer ) ) &#123; <span class="comment">/* 查看0.5s是否到了，调用uip_periodic处理TCP超时程序 */</span></span><br><span class="line">            timer_reset ( &amp;periodic_timer );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; UIP_CONNS; i++ ) &#123;</span><br><span class="line">                uip_periodic ( i );</span><br><span class="line">​</span><br><span class="line">                <span class="comment">/* If the above function invocation resulted in data that should be sent</span></span><br><span class="line"><span class="comment">                   out on the network, the global variable uip_len is set to a value &gt; 0. */</span></span><br><span class="line">​</span><br><span class="line">                <span class="keyword">if</span> ( uip_len &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">                    uip_arp_out();</span><br><span class="line">                    tapdev_send();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; UIP_UDP_CONNS; i++ ) &#123;</span><br><span class="line">                uip_udp_periodic ( i ); <span class="comment">/* 处理udp超时程序 */</span></span><br><span class="line">​</span><br><span class="line">                <span class="comment">/* If the above function invocation resulted in data that should be sent</span></span><br><span class="line"><span class="comment">                   out on the network, the global variable uip_len is set to a value &gt; 0. */</span></span><br><span class="line">​</span><br><span class="line">                <span class="keyword">if</span> ( uip_len &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">                    uip_arp_out();</span><br><span class="line">                    tapdev_send();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="comment">/* Call the ARP timer function every 10 seconds -- 10s到了就处理ARP */</span></span><br><span class="line">            <span class="keyword">if</span> ( timer_expired ( &amp;arp_timer ) ) &#123;</span><br><span class="line">                timer_reset ( &amp;arp_timer );</span><br><span class="line">                uip_arp_timer();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GPIO_Configuration</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    GPIO_InitTypeDef GPIO_InitStructure;</span><br><span class="line">    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;</span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;</span><br><span class="line">    GPIO_Init ( GPIOA , &amp;GPIO_InitStructure );</span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;</span><br><span class="line">    GPIO_Init ( GPIOA , &amp;GPIO_InitStructure );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">RCC_Configuration</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    ErrorStatus HSEStartUpStatus; <span class="comment">/* 定义枚举类型变量HSEStartUpStatus */</span></span><br><span class="line">    RCC_DeInit(); <span class="comment">/* 复位系统时钟设置 */</span></span><br><span class="line">    RCC_HSEConfig ( RCC_HSE_ON ); <span class="comment">/* 开启HSE */</span></span><br><span class="line">    HSEStartUpStatus = RCC_WaitForHSEStartUp(); <span class="comment">/* 等待HSE起振并稳定 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( HSEStartUpStatus == SUCCESS ) &#123; <span class="comment">/* 判断HSE起是否振成功，是则进入if内部 */</span></span><br><span class="line">        RCC_HCLKConfig ( RCC_SYSCLK_Div1 ); <span class="comment">/* 选择HCLK(AHB)时钟源为SYSCLK，分频系数1分频 */</span></span><br><span class="line">        RCC_PCLK2Config ( RCC_HCLK_Div1 ); <span class="comment">/* 选择PCLK2时钟源为HCLK(AHB)，分频系数1分频 */</span></span><br><span class="line">        RCC_PCLK1Config ( RCC_HCLK_Div2 ); <span class="comment">/* 选择PCLK1时钟源为HCLK(AHB)，分频系数2分频 */</span></span><br><span class="line">        FLASH_SetLatency ( FLASH_Latency_2 ); <span class="comment">/* 设置FLASH延时周期数为2 */</span></span><br><span class="line">        FLASH_PrefetchBufferCmd ( FLASH_PrefetchBuffer_Enable ); <span class="comment">/* 使能FLASH预取缓存 */</span></span><br><span class="line">        <span class="comment">/* 选择锁相环(PLL)时钟源为HSE，分频系数1分频，倍频数为9，则PLL输出频率为“8MHz * 9 = 72MHz” */</span></span><br><span class="line">        RCC_PLLConfig ( RCC_PLLSource_HSE_Div1, RCC_PLLMul_9 );</span><br><span class="line">        RCC_PLLCmd ( ENABLE ); <span class="comment">/* 使能PLL */</span></span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( RCC_GetFlagStatus ( RCC_FLAG_PLLRDY ) == RESET ); <span class="comment">/* 等待PLL输出稳定 */</span></span><br><span class="line">​</span><br><span class="line">        RCC_SYSCLKConfig ( RCC_SYSCLKSource_PLLCLK ); <span class="comment">/* 选择SYSCLK时钟源为PLL */</span></span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( RCC_GetSYSCLKSource() != <span class="number">0x08</span> ); <span class="comment">/* 等待PLL成为SYSCLK时钟源 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 打开APB2总线上的GPIOA时钟 */</span></span><br><span class="line">    RCC_APB2PeriphClockCmd ( RCC_APB2Periph_GPIOA | RCC_APB2Periph_USART1, ENABLE );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">USART_Configuration</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    USART_InitTypeDef USART_InitStructure;</span><br><span class="line">    USART_ClockInitTypeDef USART_ClockInitStructure;</span><br><span class="line">    USART_ClockInitStructure.USART_Clock = USART_Clock_Disable;</span><br><span class="line">    USART_ClockInitStructure.USART_CPOL = USART_CPOL_Low;</span><br><span class="line">    USART_ClockInitStructure.USART_CPHA = USART_CPHA_2Edge;</span><br><span class="line">    USART_ClockInitStructure.USART_LastBit = USART_LastBit_Disable;</span><br><span class="line">    USART_ClockInit ( USART1 , &amp;USART_ClockInitStructure );</span><br><span class="line">    USART_InitStructure.USART_BaudRate = <span class="number">9600</span>;</span><br><span class="line">    USART_InitStructure.USART_WordLength = USART_WordLength_8b;</span><br><span class="line">    USART_InitStructure.USART_StopBits = USART_StopBits_1;</span><br><span class="line">    USART_InitStructure.USART_Parity = USART_Parity_No;</span><br><span class="line">    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;</span><br><span class="line">    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;</span><br><span class="line">    USART_Init ( USART1, &amp;USART_InitStructure );</span><br><span class="line">    USART_Cmd ( USART1, ENABLE );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span>  PRINTF_ON</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fputc</span> <span class="params">( <span class="keyword">int</span> ch, FILE *f )</span> </span>&#123;</span><br><span class="line">    USART_SendData ( USART1, ( u8 ) ch );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( USART_GetFlagStatus ( USART1, USART_FLAG_TC ) == RESET );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ch;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;解决编译过程中的错误，归纳如下：</p>
-<ul>
-<li><code>Uip/uip-split.c</code>：注释所有的<code>tcpip_output</code>函数，消除<code>uip_fw_output</code>函数的注释。</li>
-<li><code>Uip/memb.c</code>：<code>memb_free</code>函数的返回值<code>return -1</code>改为<code>return 1</code>。</li>
-<li><code>Apps/resolv.c</code>：<code>resolv_conf</code>函数中，把<code>resolv_conn = uip_udp_new(dnsserver, HTONS(53));</code>改为<code>resolv_conn = uip_udp_new((uip_ipaddr_t*)dnsserver, HTONS(53));</code>。</li>
-</ul>
-<p>解决完所有问题后，编译成功后下载到<code>stm32</code>，进行<code>ping</code>测试。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/Contiki和uip/uip之protothreads/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/05/Contiki和uip/uip之protothreads/" itemprop="url">uip之protothreads</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T11:17:27+08:00">
-                2019-02-05
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;通常我们等待一个事件时有阻塞和非阻塞两种方式，<code>uip</code>不支持多线程操作，也不依靠中断来通知事件，所以要使用阻塞的方式。但阻塞这种方式又会白白浪费<code>cpu</code>时间，阻塞在那里等待事件发生，因而<code>uip</code>使用了一种<code>protothreads</code>方式，暂称其为<code>协程</code>。<br>&emsp;&emsp;下面是官方文档的一些简介：协程是一种无堆栈的轻量级线程，它被设计用在服务一些简单有限的内存体系上，如一些嵌入式系统等。协程为事件驱动的线性代码执行，提供<code>C</code>的实现。协程可以被用在有或无<code>RTOS</code>(<code>实时操作系统</code>)的结构上。协程是一个非常轻量级、无堆栈线程，提供了事件驱动系统顶层的阻塞上下文的功能，而不需要每个线程的堆栈。协程的目的是实现连续流程的控制，而不需要状态机或者完整的多线程机制支持。在<code>C</code>函数中协程提供条件阻塞。<br>&emsp;&emsp;我们从<code>uip</code>的一个应用实例<code>dhcpc</code>中看一下协程是如何使用及其原理，在<code>dhcpc</code>初始化函数中调用了<code>PT_INIT(&amp;s.pt);</code>。下面是<code>dhcpc</code>的应用主函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="title">PT_THREAD</span> <span class="params">( handle_dhcp ( <span class="keyword">void</span> ) )</span> </span>&#123;</span><br><span class="line">    PT_BEGIN ( &amp;s.pt );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        send_discover(); <span class="comment">/* 发送dhcpc探求包 */</span></span><br><span class="line">        timer_set ( &amp;s.timer, s.ticks );</span><br><span class="line">        PT_WAIT_UNTIL ( &amp;s.pt, uip_newdata() || timer_expired ( &amp;s.timer ) );</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* do something */</span></span><br><span class="line">        <span class="keyword">if</span> ( s.ticks &lt; CLOCK_SECOND * <span class="number">60</span> ) &#123;</span><br><span class="line">            s.ticks *= <span class="number">2</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> ( s.state != STATE_OFFER_RECEIVED );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        send_request(); <span class="comment">/* 发送dhcpc接受包 */</span></span><br><span class="line">        timer_set ( &amp;s.timer, s.ticks );</span><br><span class="line">        PT_WAIT_UNTIL ( &amp;s.pt, uip_newdata() || timer_expired ( &amp;s.timer ) );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( s.ticks &lt;= CLOCK_SECOND * <span class="number">10</span> ) &#123;</span><br><span class="line">            s.ticks += CLOCK_SECOND;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            PT_RESTART ( &amp;s.pt );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> ( s.state != STATE_CONFIG_RECEIVED );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        PT_YIELD ( &amp;s.pt );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PT_END ( &amp;s.pt );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;我们分别看下这几个宏的实现：</p>
-<ul>
-<li>PT_INIT：初始化协程宏，必须在执行相应的协程函数前执行此宏：</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_INIT(pt) LC_INIT((pt)-&gt;lc)</span></span><br></pre></td></tr></table></figure>
-<p>我们看到这里又有一个新的宏<code>LC_INIT</code>(这是<code>Local continuations</code>部分)，其实就是初始化状态：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LC_INIT(s) s = 0;</span></span><br></pre></td></tr></table></figure>
-<p>下面是结构pt的定义：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pt</span> &#123;</span></span><br><span class="line">    <span class="keyword">lc_t</span> lc;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>所以<code>PT_INIT(&amp;s.pt);</code>这个宏展开就是：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">s.pt-&gt;lc = <span class="number">0</span>;</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>PT_THREAD</code>：定义协程函数的宏，凡是要使用协程的函数都要被此宏定义：</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_THREAD(name_args) char name_args</span></span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>PT_BEGIN</code>：协程开始宏：</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_BEGIN(pt) &#123; char PT_YIELD_FLAG = 1; LC_RESUME((pt)-&gt;lc)</span></span><br></pre></td></tr></table></figure>
-<p>其中<code>LC_RESUME</code>宏：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LC_RESUME(s) switch(s) &#123; case 0:</span></span><br></pre></td></tr></table></figure>
-<p>所以<code>PT_BEGIN(&amp;s.pt);</code>宏展开如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> PT_YIELD_FLAG = <span class="number">1</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">switch</span> ( s.pt-&gt;lc ) &#123;</span><br><span class="line"><span class="keyword">case</span> <span class="number">0</span>:</span><br></pre></td></tr></table></figure>
-<p>可以看出这个宏就是定义了一个<code>switch</code>的头。</p>
-<ul>
-<li><code>PT_WAIT_UNTIL</code>：等待条件成立宏，此宏将<code>阻塞</code>在这个条件下：</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_WAIT_UNTIL(pt, condition) \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                             \</span><br><span class="line">        LC_SET((pt)-&gt;lc);            \</span><br><span class="line">        <span class="keyword">if</span>(!(condition)) &#123;           \</span><br><span class="line">            <span class="keyword">return</span> PT_WAITING;       \</span><br><span class="line">        &#125;                            \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
-<p>其中<code>LC_SET</code>宏为：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LC_SET(s) s = __LINE__; case __LINE__:</span></span><br></pre></td></tr></table></figure>
-<p><code>__LINE__</code>是编译器内部产生的变量，它表示当前程序的行数。所以将宏展开为：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    s = __LINE__; <span class="keyword">case</span> __LINE__;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ! ( condition ) ) &#123;</span><br><span class="line">        <span class="keyword">return</span> PT_WAITING;</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">while</span> ( <span class="number">0</span> )</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>PT_RESTART</code>：重启协程宏：</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_RESTART(pt)     \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                   \</span><br><span class="line">        PT_INIT(pt);       \ <span class="comment">/* 关键，将条件归0 */</span></span><br><span class="line">        <span class="keyword">return</span> PT_WAITING; \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>PT_YIELD</code>：放弃执行宏，此宏功能是放弃此次执行函数返回：</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_YIELD(pt)             \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                         \</span><br><span class="line">        PT_YIELD_FLAG = <span class="number">0</span>;       \</span><br><span class="line">        LC_SET((pt)-&gt;lc);        \</span><br><span class="line">        <span class="keyword">if</span>(PT_YIELD_FLAG == <span class="number">0</span>) &#123; \</span><br><span class="line">            <span class="keyword">return</span> PT_YIELDED;   \</span><br><span class="line">        &#125;                        \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>PT_END</code>：协程结束宏：</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_END(pt) LC_END((pt)-&gt;lc); PT_YIELD_FLAG = 0; \</span></span><br><span class="line">    PT_INIT(pt); <span class="keyword">return</span> PT_ENDED; &#125;</span><br></pre></td></tr></table></figure>
-<p>其中<code>LC_END</code>宏定义为：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LC_END(s) &#125;</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;我们将上面那个函数展开：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">char</span> <span class="title">handle_dhcp</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> PT_YIELD_FLAG = <span class="number">1</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">switch</span> ( s.pt-&gt;lc ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">do</span> &#123;</span><br><span class="line">                send_discover(); <span class="comment">/* 发送dhcpc探求包 */</span></span><br><span class="line">                timer_set ( &amp;s.timer, s.ticks );</span><br><span class="line">​</span><br><span class="line">                <span class="keyword">do</span> &#123;</span><br><span class="line">                    s.pt-&gt;lc = __LINE__; <span class="keyword">case</span> __LINE__;</span><br><span class="line">​</span><br><span class="line">                    <span class="keyword">if</span> ( ! ( uip_newdata() ) ) &#123;</span><br><span class="line">                        <span class="keyword">return</span> PT_WAITING;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br><span class="line">            &#125; <span class="keyword">while</span> ( s.state != STATE_OFFER_RECEIVED );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">do</span> &#123;</span><br><span class="line">                send_request(); <span class="comment">/* 发送dhcpc接受包 */</span></span><br><span class="line">                timer_set ( &amp;s.timer, s.ticks );</span><br><span class="line">​</span><br><span class="line">                <span class="keyword">do</span> &#123;</span><br><span class="line">                    s.pt-&gt;lc = __LINE__; <span class="keyword">case</span> __LINE__;</span><br><span class="line">​</span><br><span class="line">                    <span class="keyword">if</span> ( ! ( uip_newdata() ) ) &#123;</span><br><span class="line">                        <span class="keyword">return</span> PT_WAITING;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">                <span class="keyword">if</span> ( s.ticks &lt;= CLOCK_SECOND * <span class="number">10</span> ) &#123;</span><br><span class="line">                    s.ticks += CLOCK_SECOND;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">do</span> &#123;</span><br><span class="line">                        s.pt-&gt;lc = <span class="number">0</span>;</span><br><span class="line">                        <span class="keyword">return</span> PT_WAITING;</span><br><span class="line">                    &#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">while</span> ( s.state != STATE_CONFIG_RECEIVED );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">while</span> ( <span class="number">1</span> ) &#123; <span class="comment">/* 这个死循环是应用中的需求，dhcp后这个程序不要再执行了 */</span></span><br><span class="line">                <span class="keyword">do</span> &#123;</span><br><span class="line">                    PT_YIELD_FLAG = <span class="number">0</span>;</span><br><span class="line">                    s.pt-&gt;lc = __LINE__; <span class="keyword">case</span> __LINE__:</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> ( PT_YIELD_FLAG == <span class="number">0</span> ) &#123;</span><br><span class="line">                        <span class="keyword">return</span> PT_YIELDED;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PT_YIELD_FLAG = <span class="number">0</span>;</span><br><span class="line">    s.pt-&gt;lc = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">return</span> PT_ENDED;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<hr>
-<p>&emsp;&emsp;<code>protothread</code>是专为资源有限的系统设计的一种耗费资源特别少并且不使用堆栈的线程模型，相比于嵌入式操作系统，其有如下优点：</p>
-<ul>
-<li>以纯<code>C</code>语言实现，无硬件依靠性，因此不存在移植的困难。</li>
-<li>极少的资源需求，每个<code>Protothread</code>仅需要<code>2</code>个额外的字节。</li>
-<li>支持阻塞操纵且没有栈的切换。</li>
-</ul>
-<p>&emsp;&emsp;它的缺陷在于：</p>
-<ul>
-<li>函数中不具备可重入型，不能使用局部变量。</li>
-<li>按顺序判断各任务条件是否满足，因此无优先级抢占。</li>
-<li>任务中的各条件也是按顺序判断的，因此要求任务中的条件必须是依次出现的。</li>
-</ul>
-<p>&emsp;&emsp;<code>protothread</code>的阻塞机制：在每个条件判断前，先将当前地址保存到某个变量中，再判断条件是否成立，若条件成立，则往下运行；若条件不成立，则返回。<code>protothread</code>基本源码及注释：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> PC_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PC_H</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> INT16U;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pt</span> &#123;</span></span><br><span class="line">    INT16U lc;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_THREAD_WAITING 0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_THREAD_EXITED  1</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_INIT(pt) (pt)-&gt;lc = 0 <span class="comment">/* 初始化任务变量，只在初始化函数中执行一次就行 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_BEGIN(pt) switch((pt)-&gt;lc) &#123; case 0: <span class="comment">/* 启动任务处理，放在函数开始处 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 等待某个条件成立，若条件不成立则直接退出本函数，下一次进入本函数就直接跳到这个地方判断。</span></span><br><span class="line"><span class="comment">   “__LINE__”是编译器内置宏，代表当前行号，比如：若当前行号为8，</span></span><br><span class="line"><span class="comment">   则“s = __LINE__; case __LINE__:”展开为“s = 8; case 8:” */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_WAIT_UNTIL(pt, condition) (pt)-&gt;lc = __LINE__; case __LINE__: \</span></span><br><span class="line">    <span class="keyword">if</span>(!(condition))  <span class="keyword">return</span></span><br><span class="line">​</span><br><span class="line">#define PT_END(pt) &#125; <span class="comment">/* 结束任务，放在函数的最后 */</span></span><br><span class="line">#define PT_WAIT_WHILE(pt, cond) PT_WAIT_UNTIL((pt), !(cond)) <span class="comment">/* 等待某个条件不成立 */</span></span><br><span class="line">#define PT_WAIT_THREAD(pt, thread) PT_WAIT_UNTIL((pt), (thread)) <span class="comment">/* 等待某个子任务执行完成 */</span></span><br><span class="line">#define PT_SPAWN(pt,thread) \ <span class="comment">/* 新建一个子任务，并等待其执行完退出 */</span></span><br><span class="line">    PT_INIT ( ( pt ) ); \</span><br><span class="line">    PT_WAIT_THREAD ( ( pt ), ( thread ) )</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_RESTART(pt) PT_INIT(pt); return <span class="comment">/* 重新启动某任务执行 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PT_EXIT(pt)    (pt)-&gt;lc = PT_THREAD_EXITED; return <span class="comment">/* 任务后面的部分不执行，直接退出 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;应用示例如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">pt</span> <span class="title">pt1</span>, <span class="title">pt2</span>;</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> protothread1_flag, protothread2_flag;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">protothread1</span> <span class="params">( struct pt *pt )</span> </span>&#123; <span class="comment">/* 线程1 */</span></span><br><span class="line">    PT_BEGIN ( pt ); <span class="comment">/* 开始时调用 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        protothread1_flag = <span class="number">1</span>;</span><br><span class="line">        <span class="comment">/* 等待protothread2_flag标志置位 */</span></span><br><span class="line">        PT_WAIT_UNTIL ( pt, protothread2_flag != <span class="number">0</span> );</span><br><span class="line">        protothread2_flag = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PT_END ( pt ); <span class="comment">/* 结束时调用 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">protothread2</span> <span class="params">( struct pt *pt )</span> </span>&#123; <span class="comment">/* 线程2 */</span></span><br><span class="line">    PT_BEGIN ( pt );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        protothread2_flag = <span class="number">1</span>;</span><br><span class="line">        PT_WAIT_UNTIL ( pt, protothread1_flag != <span class="number">0</span> );</span><br><span class="line">        protothread1_flag = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PT_END ( pt );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    PT_INIT ( &amp;pt1 ); <span class="comment">/* 初始化 */</span></span><br><span class="line">    PT_INIT ( &amp;pt2 );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        protothread1 ( &amp;pt1 );</span><br><span class="line">        protothread2 ( &amp;pt2 );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>线程<code>1</code>和线程`2的展开式如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">protothread1</span> <span class="params">( struct pt *pt )</span> </span>&#123; <span class="comment">/* 线程1 */</span></span><br><span class="line">    <span class="keyword">switch</span> ( pt-&gt;lc ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">            ;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">                protothread1_flag = <span class="number">1</span>;</span><br><span class="line">                pt-&gt;lc = <span class="number">26</span>; <span class="keyword">case</span> <span class="number">26</span>: <span class="comment">/* 假定当前为26行 */</span></span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> ( protothread2_flag == <span class="number">0</span> ) &#123;</span><br><span class="line">                    <span class="keyword">return</span>; <span class="comment">/* 若protothread2_flag未发生，则返回 */</span></span><br><span class="line">                &#125;</span><br><span class="line">​</span><br><span class="line">                protothread2_flag = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">protothread2</span> <span class="params">( struct pt *pt )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">switch</span> ( pt-&gt;lc ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">            ;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">                protothread2_flag = <span class="number">1</span>;</span><br><span class="line">                pt-&gt;lc = <span class="number">44</span>; <span class="keyword">case</span> <span class="number">44</span>:</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> ( protothread1_flag == <span class="number">0</span> ) &#123;</span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line">​</span><br><span class="line">                myFunc2();</span><br><span class="line">                protothread1_flag = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/38/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/38/">38</a><span class="page-number current">39</span><a class="page-number" href="/page/40/">40</a><span class="space">&hellip;</span><a class="page-number" href="/page/93/">93</a><a class="extend next" rel="next" href="/page/40/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/38/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/38/">38</a><span class="page-number current">39</span><a class="page-number" href="/page/40/">40</a><span class="space">&hellip;</span><a class="page-number" href="/page/94/">94</a><a class="extend next" rel="next" href="/page/40/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1697,7 +1915,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-count">934</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1708,7 +1926,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>

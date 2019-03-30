@@ -271,6 +271,496 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/单片机/STM32的ADC多通道采样/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/单片机/STM32的ADC多通道采样/" itemprop="url">STM32的ADC多通道采样</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T18:22:01+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;用<code>ADC</code>连续采集<code>11</code>路模拟信号，并由<code>DMA</code>传输到内存。<code>ADC</code>配置为扫描并且连续转换模式，<code>ADC</code>的时钟配置为<code>12MHz</code>。在每次转换结束后，由DMA循环将转换的数据传输到内存中。<code>ADC</code>可以连续采集<code>N</code>次并求平均值，最后通过串口传输出最后转换的结果。程序如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stm32f10x.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"eval.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"SysTickDelay.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"UART_INTERFACE.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 50 <span class="comment">/* 每通道采50次 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> M 12 <span class="comment">/* 为12个通道 */</span></span></span><br><span class="line">​</span><br><span class="line">vu16 AD_Value[N][M]; <span class="comment">/* 用来存放ADC转换结果，也是DMA的目标地址 */</span></span><br><span class="line">vu16 After_filter[M]; <span class="comment">/* 用来存放求平均值之后的结果 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GPIO_Configuration</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    GPIO_InitTypeDef GPIO_InitStructure;</span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;</span><br><span class="line">    <span class="comment">/* 因为USART1管脚是以复用的形式接到GPIO口上的，所以使用复用推挽式输出 */</span></span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;</span><br><span class="line">    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;</span><br><span class="line">    GPIO_Init ( GPIOA, &amp;GPIO_InitStructure );</span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;</span><br><span class="line">    GPIO_Init ( GPIOA, &amp;GPIO_InitStructure );</span><br><span class="line">    <span class="comment">/* PA0/1/2 作为模拟通道输入引脚 */</span></span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN; <span class="comment">/* 模拟输入引脚 */</span></span><br><span class="line">    GPIO_Init ( GPIOA, &amp;GPIO_InitStructure );</span><br><span class="line">    <span class="comment">/* PB0/1 作为模拟通道输入引脚 */</span></span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN; <span class="comment">/* 模拟输入引脚 */</span></span><br><span class="line">    GPIO_Init ( GPIOB, &amp;GPIO_InitStructure );</span><br><span class="line">    <span class="comment">/* PC0/1/2/3/4/5 作为模拟通道输入引脚 */</span></span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 |</span><br><span class="line">                                  GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN; <span class="comment">/* 模拟输入引脚 */</span></span><br><span class="line">    GPIO_Init ( GPIOC, &amp;GPIO_InitStructure );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">RCC_Configuration</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    ErrorStatus HSEStartUpStatus;</span><br><span class="line">    RCC_DeInit(); <span class="comment">/* RCC系统复位 */</span></span><br><span class="line">    RCC_HSEConfig ( RCC_HSE_ON ); <span class="comment">/* 开启HSE */</span></span><br><span class="line">    HSEStartUpStatus = RCC_WaitForHSEStartUp(); <span class="comment">/* 等待HSE准备好 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( HSEStartUpStatus == SUCCESS ) &#123;</span><br><span class="line">        FLASH_PrefetchBufferCmd ( FLASH_PrefetchBuffer_Enable ); <span class="comment">/* Enable Prefetch Buffer */</span></span><br><span class="line">        FLASH_SetLatency ( FLASH_Latency_2 ); <span class="comment">/* Set 2 Latency cycles */</span></span><br><span class="line">        RCC_HCLKConfig ( RCC_SYSCLK_Div1 ); <span class="comment">/* AHB clock = SYSCLK */</span></span><br><span class="line">        RCC_PCLK2Config ( RCC_HCLK_Div1 ); <span class="comment">/* APB2 clock = HCLK */</span></span><br><span class="line">        RCC_PCLK1Config ( RCC_HCLK_Div2 ); <span class="comment">/* APB1 clock = HCLK/2 */</span></span><br><span class="line">        RCC_PLLConfig ( RCC_PLLSource_HSE_Div1, RCC_PLLMul_6 ); <span class="comment">/* PLLCLK = 12MHz * 6 = 72 MHz */</span></span><br><span class="line">        RCC_PLLCmd ( ENABLE ); <span class="comment">/* Enable PLL */</span></span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( RCC_GetFlagStatus ( RCC_FLAG_PLLRDY ) == RESET ); <span class="comment">/* Wait till PLL is ready */</span></span><br><span class="line">​</span><br><span class="line">        RCC_SYSCLKConfig ( RCC_SYSCLKSource_PLLCLK ); <span class="comment">/* Select PLL as system clock source */</span></span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( RCC_GetSYSCLKSource() != <span class="number">0x08</span> ); <span class="comment">/* Wait till PLL is used as system clock source */</span></span><br><span class="line">​        <span class="comment">/* 使能ADC1通道时钟，各个管脚时钟 */</span></span><br><span class="line">        RCC_APB2PeriphClockCmd ( RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB</span><br><span class="line">                                 | RCC_APB2Periph_GPIOC | RCC_APB2Periph_ADC1</span><br><span class="line">                                 | RCC_APB2Periph_AFIO | RCC_APB2Periph_USART1, ENABLE );</span><br><span class="line">        RCC_ADCCLKConfig ( RCC_PCLK2_Div6 ); <span class="comment">/* 72M/6 = 12，ADC最大时间不能超过14M */</span></span><br><span class="line">        RCC_AHBPeriphClockCmd ( RCC_AHBPeriph_DMA1, ENABLE ); <span class="comment">/* 使能DMA传输 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ADC1_Configuration</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    ADC_InitTypeDef ADC_InitStructure;</span><br><span class="line">    ADC_DeInit ( ADC1 ); <span class="comment">/* 将外设ADC1的全部寄存器重设为缺省值 */</span></span><br><span class="line">    ADC_InitStructure.ADC_Mode = ADC_Mode_Independent; <span class="comment">/* ADC工作模式：ADC1和ADC2工作在独立模式 */</span></span><br><span class="line">    ADC_InitStructure.ADC_ScanConvMode = ENABLE; <span class="comment">/* 模数转换工作在扫描模式 */</span></span><br><span class="line">    ADC_InitStructure.ADC_ContinuousConvMode = ENABLE; <span class="comment">/* 模数转换工作在连续转换模式 */</span></span><br><span class="line">    ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None; <span class="comment">/* 外部触发转换关闭 */</span></span><br><span class="line">    ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right; <span class="comment">/* ADC数据右对齐 */</span></span><br><span class="line">    ADC_InitStructure.ADC_NbrOfChannel = M; <span class="comment">/* 顺序进行规则转换的ADC通道的数目 */</span></span><br><span class="line">    ADC_Init ( ADC1, &amp;ADC_InitStructure ); <span class="comment">/* 根据ADC_InitStruct中指定的参数初始化外设ADCx的寄存器 */</span></span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_0, <span class="number">1</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_1, <span class="number">2</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_2, <span class="number">3</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_3, <span class="number">4</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_8, <span class="number">5</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_9, <span class="number">6</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_10, <span class="number">7</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_11, <span class="number">8</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_12, <span class="number">9</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_13, <span class="number">10</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_14, <span class="number">11</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_15, <span class="number">12</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_DMACmd ( ADC1, ENABLE ); <span class="comment">/* 开启ADC的DMA支持(要实现DMA功能，还需独立配置DMA通道等参数) */</span></span><br><span class="line">    ADC_Cmd ( ADC1, ENABLE ); <span class="comment">/* 使能指定的ADC1 */</span></span><br><span class="line">    ADC_ResetCalibration ( ADC1 ); <span class="comment">/* 复位指定的ADC1的校准寄存器 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( ADC_GetResetCalibrationStatus ( ADC1 ) ); <span class="comment">/* 获取ADC1复位校准寄存器的状态,设置状态则等待 */</span></span><br><span class="line">​</span><br><span class="line">    ADC_StartCalibration ( ADC1 ); <span class="comment">/* 开始指定ADC1的校准状态 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( ADC_GetCalibrationStatus ( ADC1 ) ); <span class="comment">/* 获取指定ADC1的校准程序，设置状态则等待 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">DMA_Configuration</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    DMA_InitTypeDef DMA_InitStructure;</span><br><span class="line">    DMA_DeInit ( DMA1_Channel1 ); <span class="comment">/* 将DMA的通道1寄存器重设为缺省值 */</span></span><br><span class="line">    DMA_InitStructure.DMA_PeripheralBaseAddr = ( u32 ) &amp;ADC1-&gt;DR; <span class="comment">/* DMA外设ADC基地址 */</span></span><br><span class="line">    DMA_InitStructure.DMA_MemoryBaseAddr = ( u32 ) &amp;AD_Value; <span class="comment">/* DMA内存基地址 */</span></span><br><span class="line">    DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC; <span class="comment">/* 内存作为数据传输的目的地 */</span></span><br><span class="line">    DMA_InitStructure.DMA_BufferSize = N * M; <span class="comment">/* DMA通道的DMA缓存的大小 */</span></span><br><span class="line">    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable; <span class="comment">/* 外设地址寄存器不变 */</span></span><br><span class="line">    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable; <span class="comment">/* 内存地址寄存器递增 */</span></span><br><span class="line">    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord; <span class="comment">/* 数据宽度为16位 */</span></span><br><span class="line">    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord; <span class="comment">/* 数据宽度为16位 */</span></span><br><span class="line">    DMA_InitStructure.DMA_Mode = DMA_Mode_Circular; <span class="comment">/* 工作在循环缓存模式 */</span></span><br><span class="line">    DMA_InitStructure.DMA_Priority = DMA_Priority_High; <span class="comment">/* DMA通道x拥有高优先级 */</span></span><br><span class="line">    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable; <span class="comment">/* DMA通道x没有设置为内存到内存传输 */</span></span><br><span class="line">    <span class="comment">/* 根据DMA_InitStruct中指定的参数，初始化DMA的通道 */</span></span><br><span class="line">    DMA_Init ( DMA1_Channel1, &amp;DMA_InitStructure );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Init_All_Periph</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 配置所有外设 */</span></span><br><span class="line">    RCC_Configuration();</span><br><span class="line">    GPIO_Configuration();</span><br><span class="line">    ADC1_Configuration();</span><br><span class="line">    DMA_Configuration();</span><br><span class="line">    USART_Configuration ( <span class="number">9600</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function">u16 <span class="title">GetVolt</span> <span class="params">( u16 advalue )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> ( u16 ) ( advalue * <span class="number">330</span> / <span class="number">4096</span> ); <span class="comment">/* 将求出的结果扩大了100倍，方便下面求出小数 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">filter</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">    u8 count;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">12</span>; i++ ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( count = <span class="number">0</span>; count &lt; N; count++ ) &#123;</span><br><span class="line">            sum += AD_Value[count][i];</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        After_filter[i] = sum / N;</span><br><span class="line">        sum = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    u16 value[M];</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    init_All_Periph();</span><br><span class="line">    SysTick_Initaize();</span><br><span class="line">    ADC_SoftwareStartConvCmd ( ADC1, ENABLE );</span><br><span class="line">    DMA_Cmd ( DMA1_Channel1, ENABLE ); <span class="comment">/* 启动DMA通道 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="comment">/* 等待传输完成，否则第一位数据容易丢失 */</span></span><br><span class="line">        <span class="keyword">while</span> ( USART_GetFlagStatus ( USART1, USART_FLAG_TXE ) == RESET );</span><br><span class="line">​</span><br><span class="line">        filter();</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">12</span>; i++ ) &#123;</span><br><span class="line">            value[i] = GetVolt ( After_filter[i] );</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">"value[%d]:\t%d.%dv\n"</span>, i, value[i] / <span class="number">100</span>, value[i]<span class="number">0</span> );</span><br><span class="line">            delay_ms ( <span class="number">100</span> );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;该程序中的两个宏定义<code>M</code>和<code>N</code>，分别代表通道数、每个通道转换次数。将转换值由二进制转换为十进制时，要先扩大<code>100</code>倍，方便显示小数。在串口输出时，在<code>printf</code>语句之前加这句代码，防止输出的第一位数据丢失：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> ( USART_GetFlagStatus ( USART1, USART_FLAG_TXE ) == RESET );</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/单片机/STM32的C++开发/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/单片机/STM32的C++开发/" itemprop="url">STM32的C++开发</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T18:17:31+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>Options for ...</code> -&gt; <code>C/C++</code> -&gt; <code>Misc Control</code>, input <code>--cpp</code>.<br>&emsp;&emsp;<code>led.h</code>如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> LED_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"delay.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stm32f10x.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Led</span> &#123;</span></span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    Led() &#123;</span><br><span class="line">        ledInit();</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">led_On</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">led_Off</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">led_Delay</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">ledInit</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line">    GPIO_InitTypeDef GPIO_InitStruct;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> Led::ledInit ( <span class="keyword">void</span> ) &#123;</span><br><span class="line">    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_4;</span><br><span class="line">    RCC_APB2PeriphClockCmd ( RCC_APB2Periph_GPIOC, ENABLE );</span><br><span class="line">    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;</span><br><span class="line">    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;</span><br><span class="line">    GPIO_Init ( GPIOC, &amp;GPIO_InitStruct );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> Led::led_Off() &#123;</span><br><span class="line">    GPIO_SetBits ( GPIOC, GPIO_Pin_4 );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> Led::led_On() &#123;</span><br><span class="line">    GPIO_ResetBits ( GPIOC, GPIO_Pin_4 );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> Led::led_Delay() &#123;</span><br><span class="line">    delay_ms ( <span class="number">500</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>main.c</code>(或<code>main.cpp</code>)如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"led.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"delay.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"sys.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SystemInit();</span><br><span class="line">    delay_init ( <span class="number">72</span> );</span><br><span class="line">    NVIC_Configuration();</span><br><span class="line">    Led led;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        led.led_On();</span><br><span class="line">        led.led_Delay();</span><br><span class="line">        led.led_Off();</span><br><span class="line">        led.led_Delay();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/单片机/STM32的ADC和DMA联合使用/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/单片机/STM32的ADC和DMA联合使用/" itemprop="url">STM32的ADC和DMA联合使用</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T18:06:16+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该程序使用<code>DMA</code>来传输<code>ADC</code>转换值，调高了读取速度：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ADC1_DR_Address ((u32)0x4001244C)</span></span><br><span class="line">​</span><br><span class="line">u16 ADC_ConvertedValue = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">DMA_Config</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    DMA_InitTypeDef DMA_InitStructure; <span class="comment">/* 定义DMA初始化结构体 */</span></span><br><span class="line">    RCC_AHBPeriphClockCmd ( RCC_AHBPeriph_DMA1, ENABLE );</span><br><span class="line">    DMA_DeInit ( DMA1_Channel1 ); <span class="comment">/* 复位DMA通道1 */</span></span><br><span class="line">    <span class="comment">/* 定义DMA通道外设基地址(ADC1_DR_Address) */</span></span><br><span class="line">    DMA_InitStructure.DMA_PeripheralBaseAddr = ADC1_DR_Address;</span><br><span class="line">    DMA_InitStructure.DMA_MemoryBaseAddr = ( u32 ) &amp;ADC_ConvertedValue; <span class="comment">/* 定义DMA通道存储器地址 */</span></span><br><span class="line">    DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC; <span class="comment">/* 指定外设为源地址 */</span></span><br><span class="line">    DMA_InitStructure.DMA_BufferSize = <span class="number">1</span>; <span class="comment">/* 定义DMA缓冲区大小1 */</span></span><br><span class="line">    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable; <span class="comment">/* 当前外设寄存器地址不变 */</span></span><br><span class="line">    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Disable; <span class="comment">/* 当前存储器地址不变 */</span></span><br><span class="line">    <span class="comment">/* 定义外设数据宽度16位 */</span></span><br><span class="line">    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord;</span><br><span class="line">    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord; <span class="comment">/* 定义存储器数据宽度16位 */</span></span><br><span class="line">    DMA_InitStructure.DMA_Mode = DMA_Mode_Circular; <span class="comment">/* DMA通道操作模式位环形缓冲模式 */</span></span><br><span class="line">    DMA_InitStructure.DMA_Priority = DMA_Priority_High; <span class="comment">/* DMA通道优先级高 */</span></span><br><span class="line">    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable; <span class="comment">/* 禁止DMA通道存储器到存储器传输 */</span></span><br><span class="line">    DMA_Init ( DMA1_Channel1, &amp;DMA_InitStructure ); <span class="comment">/* 初始化DMA通道1 */</span></span><br><span class="line">    DMA_Cmd ( DMA1_Channel1, ENABLE ); <span class="comment">/* 使能DMA通道1 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Adc_Init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    ADC_InitTypeDef ADC_InitStructure;</span><br><span class="line">    GPIO_InitTypeDef GPIO_InitStructure;</span><br><span class="line">    <span class="comment">/* 使能ADC1通道时钟 */</span></span><br><span class="line">    RCC_APB2PeriphClockCmd ( RCC_APB2Periph_GPIOA | RCC_APB2Periph_ADC1, ENABLE );</span><br><span class="line">    RCC_ADCCLKConfig ( RCC_PCLK2_Div6 ); <span class="comment">/* “72M/6 = 12M”，ADC最大时间不能超过14M */</span></span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN; <span class="comment">/* 模拟输入引脚 */</span></span><br><span class="line">    GPIO_Init ( GPIOA, &amp;GPIO_InitStructure );</span><br><span class="line">    ADC_DeInit ( ADC1 ); <span class="comment">/* 将外设ADC1的全部寄存器重设为缺省值 */</span></span><br><span class="line">    ADC_InitStructure.ADC_Mode = ADC_Mode_Independent; <span class="comment">/* ADC1和ADC2工作在独立模式 */</span></span><br><span class="line">    ADC_InitStructure.ADC_ScanConvMode = ENABLE; <span class="comment">/* 使能扫描 */</span></span><br><span class="line">    ADC_InitStructure.ADC_ContinuousConvMode = ENABLE; <span class="comment">/* ADC转换工作在连续模式 */</span></span><br><span class="line">    ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None; <span class="comment">/* 有软件控制转换 */</span></span><br><span class="line">    ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right; <span class="comment">/* 转换数据右对齐 */</span></span><br><span class="line">    ADC_InitStructure.ADC_NbrOfChannel = <span class="number">1</span>; <span class="comment">/* 转换通道为通道1 */</span></span><br><span class="line">    ADC_Init ( ADC1, &amp;ADC_InitStructure ); <span class="comment">/* 初始化ADC */</span></span><br><span class="line">    <span class="comment">/* ADC1选择信道1，音序器等级1，采样时间239.5个周期 */</span></span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel_1, <span class="number">1</span>, ADC_SampleTime_239Cycles5 );</span><br><span class="line">    ADC_DMACmd ( ADC1, ENABLE ); <span class="comment">/* 使能ADC1模块DMA */</span></span><br><span class="line">    ADC_Cmd ( ADC1, ENABLE ); <span class="comment">/* 使能ADC1 */</span></span><br><span class="line">    ADC_ResetCalibration ( ADC1 ); <span class="comment">/* 重置ADC1校准寄存器 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( ADC_GetResetCalibrationStatus ( ADC1 ) ); <span class="comment">/* 等待ADC1校准重置完成 */</span></span><br><span class="line">​</span><br><span class="line">    ADC_StartCalibration ( ADC1 ); <span class="comment">/* 开始ADC1校准 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( ADC_GetCalibrationStatus ( ADC1 ) ); <span class="comment">/* 等待ADC1校准完成 */</span></span><br><span class="line">​</span><br><span class="line">    ADC_SoftwareStartConvCmd ( ADC1, ENABLE ); <span class="comment">/* 使能ADC1软件开始转换 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    DMA_Config();</span><br><span class="line">    Adc_Init();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"ADC = %X Volt = %d mv\r\n"</span>, ADC_ConvertedValue, ADC_ConvertedValue * <span class="number">3300</span> / <span class="number">4096</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意，一定不要忘记使能<code>ADC</code>和<code>DMA</code>的时钟。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/单片机/LPC1114外部中断程序/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/单片机/LPC1114外部中断程序/" itemprop="url">LPC1114外部中断程序</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T18:02:30+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>main.c</code>如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"LPC11XX.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"gpio.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"timer16.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"main.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Key.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"LCD.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delay_Sec</span> <span class="params">( <span class="keyword">unsigned</span> <span class="keyword">char</span> Time )</span> </span>&#123; <span class="comment">/* “1s * Time”延时函数 */</span></span><br><span class="line">    u16 i;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( Time ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">3000000</span>; i++ );</span><br><span class="line">​</span><br><span class="line">        Time--;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delay_Ms</span> <span class="params">( <span class="keyword">unsigned</span> <span class="keyword">int</span> Time )</span> </span>&#123; <span class="comment">/* “1ms * Time”延时函数 */</span></span><br><span class="line">    u16 i;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( Time ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">3000</span>; i++ );</span><br><span class="line">​</span><br><span class="line">        Time--;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Delay_Us</span> <span class="params">( <span class="keyword">unsigned</span> <span class="keyword">int</span> Time )</span> </span>&#123; <span class="comment">/* “1us * Time”延时函数 */</span></span><br><span class="line">    u8 i;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( Time ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++ );</span><br><span class="line">​</span><br><span class="line">        Time--;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="comment">// SystemInit(); /* 系统初始化，主要是设置主时钟 */</span></span><br><span class="line">    <span class="comment">// GPIOInit(); /* IO口初始化，主要是开启GPIO时钟 */</span></span><br><span class="line">    <span class="comment">// GPIOSetDir( 0, 3, 1 ); /* 设置P0.3为输出(LPC1114单片机输出需设置为1，输入需设置为0) */</span></span><br><span class="line">    LPC_GPIO0-&gt;DIR |= ( <span class="number">0x1</span> &lt;&lt; <span class="number">3</span> ); <span class="comment">/* 设置P0.3为输出 */</span></span><br><span class="line">    LPC_GPIO2-&gt;DIR |= ( <span class="number">0x1</span> &lt;&lt; <span class="number">9</span> );</span><br><span class="line">    Key_GPIO_Init();</span><br><span class="line">    Key_Intrrupt_Init();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="comment">// GPIOSetValue( 0, 3, 0 ); /* 给P0.3位写0 */</span></span><br><span class="line">        <span class="comment">// LPC_GPIO0-&gt;DATA &amp;= ~(0x1 &lt;&lt; 3); /* 给P0.3位写0 */</span></span><br><span class="line">        LCD_RW_High;</span><br><span class="line">        Delay_Ms ( <span class="number">100</span> ); </span><br><span class="line">        LCD_RW_Low;</span><br><span class="line">        Delay_Ms ( <span class="number">100</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>key.c</code>如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"LPC11XX.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"gpio.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"main.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Key.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Key_GPIO_Init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    LPC_GPIO1-&gt;DIR &amp;= ~ ( <span class="number">0x1</span> &lt;&lt; <span class="number">8</span> ); <span class="comment">/* 设置P1.8为输入 */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Key_Intrrupt_Init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 配置中断 */</span></span><br><span class="line">    GPIOSetInterrupt ( <span class="number">1</span>, <span class="number">8</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span> ); <span class="comment">/* P1.8低电平触发中断 */</span></span><br><span class="line">    GPIOIntEnable ( <span class="number">1</span>, <span class="number">8</span> ); <span class="comment">/* 使能中断 */</span></span><br><span class="line">    NVIC_EnableIRQ ( EINT1_IRQn );  <span class="comment">/* 使能中断入口 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>gpio.c</code>如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"LPC11xx.h"</span> <span class="comment">/* LPC11xx Peripheral Registers */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"gpio.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">PIOINT1_IRQHandler</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">uint32_t</span> regVal;</span><br><span class="line">    gpio1_counter++;</span><br><span class="line">    regVal = GPIOIntStatus ( <span class="number">1</span>, <span class="number">8</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( regVal ) &#123;</span><br><span class="line">        LPC_GPIO0-&gt;MASKED_ACCESS[ ( <span class="number">1</span> &lt;&lt; <span class="number">3</span> )] = ( <span class="number">0</span> &lt;&lt; <span class="number">3</span> );</span><br><span class="line">        Delay_Ms ( <span class="number">2000</span> );</span><br><span class="line">        LPC_GPIO0-&gt;MASKED_ACCESS[ ( <span class="number">1</span> &lt;&lt; <span class="number">3</span> )] = ( <span class="number">1</span> &lt;&lt; <span class="number">3</span> );</span><br><span class="line">        Delay_Ms ( <span class="number">2000</span> );</span><br><span class="line">        LPC_GPIO0-&gt;MASKED_ACCESS[ ( <span class="number">1</span> &lt;&lt; <span class="number">3</span> )] = ( <span class="number">0</span> &lt;&lt; <span class="number">3</span> );</span><br><span class="line">        Delay_Ms ( <span class="number">2000</span> );</span><br><span class="line">        LPC_GPIO0-&gt;MASKED_ACCESS[ ( <span class="number">1</span> &lt;&lt; <span class="number">3</span> )] = ( <span class="number">1</span> &lt;&lt; <span class="number">3</span> );</span><br><span class="line">        Delay_Ms ( <span class="number">2000</span> );</span><br><span class="line">        GPIOIntClear ( <span class="number">1</span>, <span class="number">8</span> ); <span class="comment">/* 清除中断标志位 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/单片机/STC12C5A60S2串口1与串口2设置/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1026,522 +1516,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Linux系统编程/kbhit函数实现/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/Linux系统编程/kbhit函数实现/" itemprop="url">kbhit函数实现</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T16:41:19+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;编写过<code>MS-DOS</code>程序的人通常都会查找<code>Linux</code>下等同于<code>kbhit</code>的函数，这个函数会检测一个按键是否被按下而并不实际的读取。不幸的是他们并没有找到这样的函数，因为并没有直接等同的函数。<code>Unix</code>程序员并不会注意到这个遗漏，因为<code>Unix</code>的编程方式通常为程序应准备好等待事件的发生。当我们要移植<code>MS-DOS</code>程序时，通常需要模拟<code>kbhit</code>，此时我们可以用非正规输入模式来实现。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;termios.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;term.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;curses.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">termios</span> <span class="title">initial_settings</span>, <span class="title">new_settings</span>;</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> peek_character = <span class="number">-1</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init_keyboard</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">close_keyboard</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">kbhit</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">readch</span><span class="params">()</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> ch = <span class="number">0</span>;</span><br><span class="line">    init_keyboard();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( ch != <span class="string">'q'</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"looping\n"</span> );</span><br><span class="line">        sleep ( <span class="number">1</span> );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( kbhit() ) &#123;</span><br><span class="line">            ch = readch();</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">"you hit %c\n"</span>, ch );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    close_keyboard();</span><br><span class="line">    <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init_keyboard</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    tcgetattr ( <span class="number">0</span>, &amp;initial_settings );</span><br><span class="line">    new_settings = initial_settings;</span><br><span class="line">    new_settings.c_lflag &amp;= ~ICANON;</span><br><span class="line">    new_settings.c_lflag &amp;= ~ECHO;</span><br><span class="line">    new_settings.c_lflag &amp;= ~ISIG;</span><br><span class="line">    new_settings.c_cc[VMIN] = <span class="number">1</span>;</span><br><span class="line">    new_settings.c_cc[VTIME] = <span class="number">0</span>;</span><br><span class="line">    tcsetattr ( <span class="number">0</span>, TCSANOW, &amp;new_settings );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">close_keyboard</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    tcsetattr ( <span class="number">0</span>, TCSANOW, &amp;initial_settings );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">readch</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> ch;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( peek_character != <span class="number">-1</span> ) &#123;</span><br><span class="line">        ch = peek_character;</span><br><span class="line">        peek_character = <span class="number">-1</span>;</span><br><span class="line">        <span class="keyword">return</span> ch;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    read ( <span class="number">0</span>, &amp;ch, <span class="number">1</span> );</span><br><span class="line">    <span class="keyword">return</span> ch;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">kbhit</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> ch;</span><br><span class="line">    <span class="keyword">int</span> nread;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( peek_character != <span class="number">-1</span> ) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    new_settings.c_cc[VMIN] = <span class="number">0</span>;</span><br><span class="line">    tcsetattr ( <span class="number">0</span>, TCSANOW, &amp;new_settings );</span><br><span class="line">    nread = read ( <span class="number">0</span>, &amp;ch, <span class="number">1</span> );</span><br><span class="line">    new_settings.c_cc[VMIN] = <span class="number">1</span>;</span><br><span class="line">    tcsetattr ( <span class="number">0</span>, TCSANOW, &amp;new_settings );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( nread == <span class="number">1</span> ) &#123;</span><br><span class="line">        peek_character = ch;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在<code>init_keyboard</code>中，配置终端在返回之前(<code>MIN = 1</code>，<code>TIME = 0</code>)读取一个字符，<code>kbhit</code>将其改变为检测输入并且立即返回(<code>MIN = 0</code>，<code>TIME = 0</code>)，然后在程序退出前恢复原始设置。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Linux系统编程/getuid和getpwuid函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/Linux系统编程/getuid和getpwuid函数/" itemprop="url">getuid和getpwuid函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T16:34:02+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>getuid</code>函数原型如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="keyword">uid_t</span> getuid ( <span class="keyword">void</span> );</span><br></pre></td></tr></table></figure>
-<p><code>uid_t</code>定义在头文件<code>sys/types.h</code>中，它通常是一个<code>int</code>类型。函数返回一个调用程序的真实用户<code>ID</code>，一般来说这个函数都是会调用成功的。<br>&emsp;&emsp;<code>getpwuid</code>函数原型如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pwd.h&gt;</span></span></span><br><span class="line"><span class="function">struct passwd *<span class="title">getpwuid</span> <span class="params">( <span class="keyword">uid_t</span> uid )</span></span>;</span><br></pre></td></tr></table></figure>
-<p><code>getpwuid</code>函数是通过用户的<code>uid</code>查找用户的<code>passwd</code>数据。如果出错，它们都返回一个空指针，并设置<code>errno</code>的值，用户可以根据<code>perror</code>函数查看出错的信息。<br>&emsp;&emsp;<code>passwd</code>结构体定义在头文件<code>pwd.h</code>中，如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">passwd</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> *pw_name; <span class="comment">/* 用户名登录 */</span></span><br><span class="line">    <span class="keyword">char</span> *pw_passwd; <span class="comment">/* 用户密码 */</span></span><br><span class="line">    <span class="keyword">uid_t</span> pw_uid; <span class="comment">/* 用户id */</span></span><br><span class="line">    <span class="keyword">gid_t</span> pw_gid; <span class="comment">/* 组id */</span></span><br><span class="line">    <span class="keyword">char</span> *pw_gecos; <span class="comment">/* 用户全名 */</span></span><br><span class="line">    <span class="keyword">char</span> *pw_dir; <span class="comment">/* 用户家目录 */</span></span><br><span class="line">    <span class="keyword">char</span> *pw_shell; <span class="comment">/* 用户默认shell */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>代码示例如下：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pwd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">uid_t</span> uid;</span><br><span class="line">    uid = getuid();</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"User IDs: uid=%d\n"</span>, uid );</span><br><span class="line">    <span class="keyword">uid_t</span> my_uid;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">passwd</span> *<span class="title">my_info</span>;</span></span><br><span class="line">    my_info = getpwuid ( getuid() );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"my name = [%s]\n"</span>, my_info-&gt;pw_name );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"my passwd = [%s]\n"</span>, my_info-&gt;pw_passwd );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"my uid = [%d]\n"</span>, my_info-&gt;pw_uid );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"my gid = [%d]\n"</span>, my_info-&gt;pw_gid );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"my gecos = [%s]\n"</span>, my_info-&gt;pw_gecos );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"my dir = [%s]\n"</span>, my_info-&gt;pw_dir );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"my shell = [%s]\n"</span>, my_info-&gt;pw_shell );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">User IDs: uid=1000</span><br><span class="line">my name = [fuxinzi]</span><br><span class="line">my passwd = [x]</span><br><span class="line">my uid = [1000]</span><br><span class="line">my gid = [1000]</span><br><span class="line">my gecos = [fuxinzi,,,]</span><br><span class="line">my dir = [/home/fuxinzi]</span><br><span class="line">my shell = [/bin/bash]</span><br></pre></td></tr></table></figure>
-<p>可以看到先用<code>getuid</code>获取到用户<code>id</code>号，然后使用<code>getpwuid</code>获取到了用户的相关信息。这个函数的实现机制其实和<code>/etc/passwd</code>文件相关，内容如下所示：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">rtkit:x:119:127:RealtimeKit,,,:/proc:/bin/<span class="literal">false</span></span><br><span class="line">saned:x:120:128::/var/lib/saned:/bin/<span class="literal">false</span></span><br><span class="line">usbmux:x:121:46:usbmux daemon,,,:/var/lib/usbmux:/bin/<span class="literal">false</span></span><br><span class="line">fuxinzi:x:1000:1000:fuxinzi,,,:/home/fuxinzi:/bin/bash</span><br><span class="line">sshd:x:122:65534::/var/run/sshd:/usr/sbin/nologin</span><br></pre></td></tr></table></figure>
-<p>结构体<code>passwd</code>和这个文件中是一一对应的，实际上这个函数实现的就是获取<code>passwd</code>文件中的信息。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Linux系统编程/Linux下创建临时文件/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/Linux系统编程/Linux下创建临时文件/" itemprop="url">Linux下创建临时文件</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T16:24:08+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;临时文件是一个暂时用来存储数据的文件。如果使用建立普通文件的方法来创建文件，则可能遇到文件是否存在、是否有文件读写权限的问题。<code>Linux</code>系统下提供的建立唯一的临时文件的方法如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">char</span> *<span class="title">tmpnam</span> <span class="params">( <span class="keyword">char</span> *s )</span></span>;</span><br><span class="line"><span class="function">FILE *<span class="title">tmpfile</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;函数<code>tmpnam</code>产生一个唯一的文件名，如果参数为<code>NULL</code>，则在一个内部使用的缓冲区内产生文件名，当下一次调用该函数的时候，则可能覆盖该文件名；如果参数不是为<code>NULL</code>，则名字拷贝到字符串中，并把它作为函数值返回，字符串的长度至少为<code>L_tmpnam</code>，它定义在<code>stdio.h</code>中。如果创建不成功，则函数返回<code>NULL</code>。注意在执行的过程中，最多只能确保生成<code>TMP_MAX</code>个不同的名字，<code>tmpnam</code>只是用于创建一个名字，而不是创建一个文件。<br>&emsp;&emsp;函数<code>tmpfile</code>则返回一个临时文件的描述符，文件的打开属性是读和写，相当于使用<code>fopen</code>以<code>wb+</code>方式打开。如果创建不成功，则返回<code>NULL</code>。创建的临时文件将在被关闭或程序正常结束时将被自动删除。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdlib.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> tmpname[L_tmpnam];</span><br><span class="line">    <span class="keyword">char</span> *filename;</span><br><span class="line">    FILE *tmpfp;</span><br><span class="line">    filename = tmpnam ( tmpname );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Temp file name = %s\n"</span>, filename );</span><br><span class="line">    tmpfp = tmpfile();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( tmpfp ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Open a temporary file OK!\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        perror ( <span class="string">"tmpfile\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;此外还有两个函数也可以创建临时文件：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">char</span> *<span class="title">mktemp</span> <span class="params">( <span class="keyword">char</span> *<span class="keyword">template</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mkstemp</span> <span class="params">( <span class="keyword">char</span> *<span class="keyword">template</span> )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>函数<code>mktemp</code>从给定的模块<code>template</code>中创建唯一的临时文件名。模版可以是文件路径的前缀，模版的最后<code>6</code>个字符必须是<code>XXXXXX</code>：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> <span class="keyword">template</span>[L_tmpnam];</span><br><span class="line"><span class="keyword">char</span> *filename;</span><br><span class="line"><span class="built_in">strcpy</span> ( <span class="keyword">template</span>, <span class="string">"/temp/wypXXXXXX"</span> );</span><br><span class="line">filename = mktemp ( <span class="keyword">template</span> );</span><br><span class="line"><span class="built_in">printf</span> ( <span class="string">"Temporary file name is %s\n"</span>, filename );</span><br></pre></td></tr></table></figure>
-<p>函数<code>mkstemp</code>类似于<code>tmpfile</code>，但是打开的文件相当于使用提供底层的文件操作函数<code>open</code>打开文件。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Linux系统编程/gethostbyaddr函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/Linux系统编程/gethostbyaddr函数/" itemprop="url">gethostbyaddr函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T15:04:18+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;函数<code>gethostbyaddr</code>取一个二进制的<code>IP</code>地址并试图找到对应于此地址的主机名，与<code>gethostbyname</code>的行为恰好相反。其原型如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netdb.h&gt;</span></span></span><br><span class="line"><span class="function">struct hostent *<span class="title">gethostbyaddr</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">char</span> *addr, <span class="keyword">size_t</span> len , <span class="keyword">int</span> family )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数<code>addr</code>不是简单的<code>char *</code>类型，而是一个真正指向含有<code>IPv4</code>或<code>IPv6</code>地址的结构<code>in_addr</code>或<code>in6_addr</code>的指针；<code>len</code>是此结构的大小，对于<code>IPv4</code>地址为<code>4</code>，对于<code>IPv6</code>地址为<code>16</code>；参数<code>family</code>为<code>AF_INET</code>或<code>AF_INET6</code>。<br>&emsp;&emsp;<code>gethostbyaddr</code>支持<code>IPv6</code>，但是当参数是<code>IPv6</code>地址时，仍有一些差别：</p>
-<ul>
-<li>如果<code>family</code>是<code>AF_INET6</code>，<code>len</code>是<code>16</code>，且地址是<code>IPv4</code>映射的<code>IPv6</code>地址，则在域<code>in_addr.arpa</code>中查找地址的低<code>32</code>位(<code>IPv4</code>地址部分)。</li>
-<li>如果<code>family</code>是<code>AF_INET6</code>，<code>len</code>是<code>16</code>，且地址是<code>IPv4</code>兼容的<code>IPv6</code>地址，则在域<code>in_addr.arpa</code>中查找地址的低<code>32</code>位(<code>IPv4</code>地址部分)。</li>
-</ul>
-<p>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netinet/in.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netdb.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> <span class="title">addr</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">hostent</span> *<span class="title">phost</span>;</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( inet_pton ( AF_INET, argv[<span class="number">1</span>], &amp;addr ) &lt;= <span class="number">0</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"inet_pton error:%s\n"</span>, strerror ( errno ) );</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    phost = gethostbyaddr ( ( <span class="keyword">const</span> <span class="keyword">char</span> * ) &amp;addr, <span class="keyword">sizeof</span> ( addr ), AF_INET );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( phost == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"gethostbyaddr error:%s\n"</span>, strerror ( h_errno ) );</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"host name:%s\n"</span>, phost-&gt;h_name );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ./main 127.0.0.1</span><br><span class="line">host name:localhost</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/68/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/68/">68</a><span class="page-number current">69</span><a class="page-number" href="/page/70/">70</a><span class="space">&hellip;</span><a class="page-number" href="/page/93/">93</a><a class="extend next" rel="next" href="/page/70/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/68/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/68/">68</a><span class="page-number current">69</span><a class="page-number" href="/page/70/">70</a><span class="space">&hellip;</span><a class="page-number" href="/page/94/">94</a><a class="extend next" rel="next" href="/page/70/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1587,7 +1566,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-count">934</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1598,7 +1577,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>

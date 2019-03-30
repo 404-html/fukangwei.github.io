@@ -271,6 +271,660 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/10/C语言语法详解/Linux下C语言结构体初始化/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/10/C语言语法详解/Linux下C语言结构体初始化/" itemprop="url">Linux下C语言结构体初始化</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-10T09:57:15+08:00">
+                2018-12-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://www.cnblogs.com/Anker/p/3545146.html" target="_blank" rel="noopener">Linux下C结构体初始化</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;今天看到一段代码，初始化一个struct用的是乱序格式，如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">data_t</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> a;</span><br><span class="line">    <span class="keyword">int</span> b;</span><br><span class="line">&#125; <span class="keyword">data_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">data_t</span> data = &#123;</span><br><span class="line">    .a = <span class="number">10</span>,</span><br><span class="line">    .b = <span class="number">20</span>,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>通常情况下，初始化一个结构体的方式是按序初始化，例如<code>data_t data = {10, 20};</code>。在网上查找资料，发现Linux的struct初始化可以采用顺序和乱序两种方式，而乱序又有两种不同的形式。本文总结一下struct两种初始化方式的优缺点，并给出完整的测试程序。</p>
+<h3 id="顺序初始化"><a href="#顺序初始化" class="headerlink" title="顺序初始化"></a>顺序初始化</h3><p>&emsp;&emsp;教科书上讲C语言结构体初始化是按照顺序方式来讲的，没有涉及到乱序的方式。顺序初始化struct必须要按照成员的顺序进行，缺一不可。如果结构体比较大，很容易出现错误，而且表现形式不直观，不能一眼看出各个struct各个数据成员的值。</p>
+<h3 id="乱序初始化"><a href="#乱序初始化" class="headerlink" title="乱序初始化"></a>乱序初始化</h3><p>&emsp;&emsp;乱序初始化是C99标准新加的，比较直观的一种初始化方式。相对于顺序初始化而言，乱序初始化的结构体成员可以不按照顺序初始化，而且可以只初始化部分成员，扩展性较好。Linux内核中采用这种方式初始化struct。<br>&emsp;&emsp;乱序初始化有两种方式，一种是用点<code>.</code>符号，一种是用冒号<code>:</code>。方式1是C99标准，方式2是GCC的扩展，强烈建议使用第一种方式。示例代码如下所示(这段代码在Linux下可以用gcc直接进行编译)：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">int</span> <span class="params">( *caculate_cb )</span> <span class="params">( <span class="keyword">int</span> a, <span class="keyword">int</span> b )</span></span>; <span class="comment">/* 函数指针 */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">oper</span> &#123;</span> <span class="comment">/* 结构体定义 */</span></span><br><span class="line">    <span class="keyword">int</span> a;</span><br><span class="line">    <span class="keyword">int</span> b;</span><br><span class="line">    caculate_cb cal_func;</span><br><span class="line">&#125; oper;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">add</span> <span class="params">( <span class="keyword">int</span> a, <span class="keyword">int</span> b )</span> </span>&#123; <span class="comment">/* 加法函数定义 */</span></span><br><span class="line">    <span class="keyword">return</span> ( a + b );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    oper oper_one = &#123;<span class="number">10</span>, <span class="number">20</span>, add&#125;; <span class="comment">/* 顺序初始化结构体 */</span></span><br><span class="line"></span><br><span class="line">    oper oper_two = &#123; <span class="comment">/* 乱序初始化结构体 */</span></span><br><span class="line">        .b = <span class="number">30</span>,</span><br><span class="line">        .a = <span class="number">20</span>,</span><br><span class="line">        .cal_func = &amp;add,</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    oper oper_three = &#123; <span class="comment">/* 乱序初始化结构体 */</span></span><br><span class="line">        cal_func: &amp;add,</span><br><span class="line">        a: <span class="number">40</span>,</span><br><span class="line">        b: <span class="number">20</span>,</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    ret = oper_one.cal_func ( oper_one.a, oper_one.b );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"oper_one caculate: ret = %d\n"</span>, ret );</span><br><span class="line">    ret = oper_two.cal_func ( oper_two.a, oper_two.b );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"oper_two caculate: ret = %d\n"</span>, ret );</span><br><span class="line">    ret = oper_three.cal_func ( oper_three.a, oper_three.b );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"oper_three caculate: ret = %d\n"</span>, ret );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">oper_one caculate: ret = 30</span><br><span class="line">oper_two caculate: ret = 50</span><br><span class="line">oper_three caculate: ret = 60</span><br></pre></td></tr></table></figure>
+<hr>
+<p>&emsp;&emsp;在阅读GNU/Linux内核代码时，我们会遇到一种特殊的结构初始化方式。该方式是某些C教材(如<code>K&amp;R</code>第二版)中没有介绍过的，称为指定初始化(designated initializer)。下面看一个例子，<code>Linux-2.6.x/drivers/usb/storage/usb.c</code>中有这样一个结构体初始化代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">usb_driver</span> <span class="title">usb_storage_driver</span> = &#123;</span></span><br><span class="line">    .owner = THIS_MODULE,</span><br><span class="line">    .name = <span class="string">"usb-storage"</span>,</span><br><span class="line">    .probe = storage_probe,</span><br><span class="line">    .disconnect = storage_disconnect,</span><br><span class="line">    .id_table = storage_usb_ids,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这就是前面所说的指定初始化在Linux设备驱动程序中的一个应用，它源自C99标准。以下我摘录了<code>C Primer Plus</code>第五版中相关章节的内容，从而就可以很好的理解<code>2.6</code>版内核采用这种方式的优势就在于由此初始化不必严格按照定义时的顺序。<br>&emsp;&emsp;已知一个结构，定义如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">book</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> title[MAXTITL];</span><br><span class="line">    <span class="keyword">char</span> author[MAXAUTL];</span><br><span class="line">    <span class="keyword">float</span> value;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>C99支持结构的指定初始化项目，其语法与数组的指定初始化项目近似，只是结构的指定初始化项目使用点运算符和成员名(而不是方括号和索引值)来标识具体的元素。例如只初始化book结构的成员value，可以这样做：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">book</span> <span class="title">surprise</span> = &#123;</span></span><br><span class="line">    .value = <span class="number">10.99</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>可以按照任意的顺序使用指定初始化项目：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">book</span> <span class="title">gift</span> = &#123;</span></span><br><span class="line">    .value = <span class="number">25.99</span>,</span><br><span class="line">    .author = <span class="string">"James Broadfool"</span>,</span><br><span class="line">    .title = <span class="string">"Rue for the Toad"</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>正像数组一样，跟在一个指定初始化项目之后的常规初始化项目为跟在指定成员后的成员提供了初始值。另外，对特定成员的最后一次赋值是它实际获得的值。例如考虑下列声明：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">book</span> <span class="title">gift</span> = &#123;</span></span><br><span class="line">    .value = <span class="number">18.90</span>,</span><br><span class="line">    .author = <span class="string">"Philionna pestle"</span>,</span><br><span class="line">    <span class="number">0.25</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这将把值<code>0.25</code>赋给成员value，因为它在结构声明中紧跟在author成员之后。新的值<code>0.25</code>代替了早先的赋值<code>18.90</code>。有关<code>designated initializer</code>的进一步信息可以参考c99标准的<code>6.7.8</code>节Ininialization。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/10/C语言语法详解/va函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/10/C语言语法详解/va函数/" itemprop="url">va函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-10T09:08:20+08:00">
+                2018-12-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://www.cnblogs.com/justinzhang/archive/2011/09/29/2195969.html" target="_blank" rel="noopener">va_list/va_start/va_arg/va_end深入分析</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;<code>va_list</code>、<code>va_start</code>、<code>va_arg</code>和<code>va_end</code>这几个宏都是用于函数的可变参数的。在vs2008中，它们的定义如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* stdarg.h */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> va_start _crt_va_start</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> va_arg _crt_va_arg</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> va_end _crt_va_end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* vadefs.h */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _ADDRESSOF(v)        ( &amp;reinterpret_cast<span class="meta-string">&lt;const char &amp;&gt;(v) )</span></span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">char</span>* va_list;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _INTSIZEOF(n)        ( (sizeof(n) + sizeof(int) - 1) &amp; ~(sizeof(int) - 1) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _crt_va_start(ap, v) ( ap = (va_list)_ADDRESSOF(v) + _INTSIZEOF(v) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _crt_va_arg(ap, t)   ( *(t *)((ap += _INTSIZEOF(t)) - _INTSIZEOF(t)) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _crt_va_end(ap)      ( ap = (va_list)0 )</span></span><br></pre></td></tr></table></figure>
+<p>各个宏的功能如下所示：</p>
+<ul>
+<li><code>va_list</code>用于声明一个变量，我们知道函数的可变参数列表其实就是一个字符串，所以<code>va_list</code>才被声明为字符型指针，这个类型用于声明一个指向参数列表的字符型指针变量，例如<code>va_list ap; /* ap: arguement pointer */</code>。</li>
+<li><code>va_start(ap,v)</code>的第一个参数是指向可变参数字符串的变量，第二个参数是可变参数函数的第一个参数，通常用于指定可变参数列表中参数的个数。</li>
+<li><code>va_arg(ap,t)</code>的第一个参数指向可变参数字符串的变量，第二个参数是可变参数的类型。</li>
+<li><code>va_end(ap)</code>用于将存放可变参数字符串的变量清空(赋值为NULL)。</li>
+</ul>
+<p>&emsp;&emsp;我们看一段用可变参数列表的函数来求数组和的代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">* 功能：宏va_arg用于给函数传递可变长度的参数列表。</span></span><br><span class="line"><span class="comment">* 首先，必须调用va_start传递有效的参数列表va_list和函数强制的第一个参数。第一个参数代表将要传递的参数的个数。</span></span><br><span class="line"><span class="comment">* 其次，调用va_arg传递参数列表va_list和将被返回的参数的类型。va_arg的返回值是当前的参数。</span></span><br><span class="line"><span class="comment">* 再次，对所有的参数重复调用va_arg。</span></span><br><span class="line"><span class="comment">* 最后，调用va_end传递va_list对完成后的清除是必须的。</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdarg.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sum</span> <span class="params">( <span class="keyword">int</span> number, ... )</span> </span>&#123; <span class="comment">/* 第一个参数指定了参数的个数 */</span></span><br><span class="line">    va_list vaptr;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">    va_start ( vaptr, number );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; number; i++ ) &#123;</span><br><span class="line">        sum += va_arg ( vaptr, <span class="keyword">int</span> );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    va_end ( vaptr );</span><br><span class="line">    <span class="keyword">return</span> sum;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, sum ( <span class="number">4</span>, <span class="number">4</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span> ) );</span><br><span class="line">    system ( <span class="string">"pause"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;va_start的功能是要把ap指针指向可变参数的第一个参数位置处：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _crt_va_start(ap, v) ( ap = (va_list)_ADDRESSOF(v) + _INTSIZEOF(v) )</span></span><br></pre></td></tr></table></figure>
+<p>先取第一个参数的地址，在sum函数中就是取number的地址并且将其转化为<code>char *</code>的(因为<code>char *</code>的指针进行加减运算后，偏移的字节数才与加的数字相同。如果为<code>int *p</code>，那么<code>p + 1</code>实际上将p移动了4个字节)，然后加上4(计算过程是<code>__INITSIZEOF(number) = (4 + 3) &amp; ~3</code>)，这样就将ap指向了可变参数字符串的第一个参数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _INTSIZEOF(n) ( (sizeof(n) + sizeof(int) - 1) &amp; ~(sizeof(int) - 1) )</span></span><br></pre></td></tr></table></figure>
+<p>以int所占的字节为标准进行对其操作。如果int占四字节，则以四字节对齐为标准读取数据。<br>&emsp;&emsp;va_arg是要从ap中取下一个参数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _crt_va_arg(ap, t) ( *(t *)((ap += _INTSIZEOF(t)) - _INTSIZEOF(t)) )</span></span><br></pre></td></tr></table></figure>
+<p>首先是<code>ap = ap + __INTSIZEOF(t)</code>，此时ap已经被改变了，它已经指向了下一个参数。我们令<code>x = ap + __INTSIZEOF(t);</code>，那么括号内就变成了<code>(x - __INTSIZEOF(t))</code>，但是这里没有赋值运算符，所以ap的值没有发生变化，此时ap仍然指向的是当前参数的下一个参数的位置，也就是说ap指向的位置比当前正在处理的位置超前了一个位置。其实写成下面的形式就简单明了了：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> va_arg(ap, t) ( *(t *)((ap += _INTSIZEOF(t)), ap - _INTSIZEOF(t)) )</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;为什么要将ap指向当前处理参数的下一个参数了？经过上面的分析，我们知道<code>va_start(ap,v)</code>已经将ap指向了可变参数列表的第一个参数了，以后我们每一步操作都需要将ap移动到下一个参数的位置，由于每次使用可变参数的顺序是<code>va_start(ap,v) -&gt; va_arg(ap,t)</code>，这样我们在第一次去参数的时候，其实ap已经指向了第二个参数开始的位置，所以我们用表达式的方式获得一个指向第一个参数的临时指针，就可以采用这种一致的方式来处理可变参数列表。<br>&emsp;&emsp;<code>va_end(ap)</code>将声明的ap指针置为空，因为指针使用后最后设置为空。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/09/C语言语法详解/C语言内存对齐详解/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/09/C语言语法详解/C语言内存对齐详解/" itemprop="url">C语言内存对齐详解</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-09T19:55:55+08:00">
+                2018-12-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/wanglang1000/article/details/17711863" target="_blank" rel="noopener">C语言内存对齐详解</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;C语言对结构的存储的特殊处理确实提高CPU存储变量的速度，但是有时候也带来了一些麻烦，我们也屏蔽掉变量默认的对齐方式，自己可以设定变量的对齐方式。VC中提供了<code>#pragma pack(n)</code>来设定变量以n字节对齐方式。n字节对齐就是说变量存放的起始地址的偏移量有两种情况：</p>
+<ul>
+<li>如果n大于等于该变量所占用的字节数，那么偏移量必须满足默认的对齐方式。</li>
+<li>如果n小于该变量的类型所占用的字节数，那么偏移量为n的倍数，不用满足默认的对齐方式。</li>
+</ul>
+<p>&emsp;&emsp;结构的总大小也有个约束条件，分下面两种情况：如果n大于所有成员变量类型所占用的字节数，那么结构的总大小必须为占用空间最大的变量占用的空间数的倍数；否则必须为n的倍数。下面举例说明其用法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> pack(push) <span class="comment">/* 保存对齐状态 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> pack(4) <span class="comment">/* 设定为4字节对齐 */</span>​</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">test</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> m1;</span><br><span class="line">    <span class="keyword">double</span> m4;</span><br><span class="line">    <span class="keyword">int</span> m3;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> pack(pop) <span class="comment">/* 恢复对齐状态 */</span></span></span><br></pre></td></tr></table></figure>
+<p>以上结构的大小为16。下面分析其存储情况，首先为m1分配空间，其偏移量为0，满足我们自己设定的对齐方式(4字节对齐)，m1占用1个字节。接着开始为m4分配空间，这时其偏移量为1，需要补足3个字节，这样使偏移量满足为<code>n = 4</code>的倍数(因为<code>sizeof(double)</code>大于n)，m4占用8个字节。接着为m3分配空间，这时其偏移量为12，满足为4的倍数，m3占用4个字节。这时已经为所有成员变量分配了空间，共分配了<code>4 + 8 + 4 = 16</code>个字节，满足为n的倍数。如果把上面的<code>#pragma pack(4)</code>改为<code>#pragma pack(16)</code>，那么结构的大小为24。再看下面这个例子：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> pack(8)</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">S1</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> a;</span><br><span class="line">    <span class="keyword">long</span> b;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">S2</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> c;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">S1</span> <span class="title">d</span>;</span></span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> e;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> pack()</span></span><br></pre></td></tr></table></figure>
+<p>成员对齐有一个重要的条件，即每个成员分别对齐，即每个成员按自己的方式对齐。<br>&emsp;&emsp;也就是说上面虽然指定了按8字节对齐，但并不是所有的成员都是以8字节对齐。其对齐的规则是，每个成员按其类型的对齐参数(通常是这个类型的大小)和指定对齐参数(这里是8字节)中较小的一个对齐。并且结构的长度必须为所用过的所有对齐参数的整数倍，不够就补空字节。<br>&emsp;&emsp;S1中，成员a是1字节默认按1字节对齐，指定对齐参数为8，这两个值中取1，a按1字节对齐；成员b是4个字节，默认是按4字节对齐，这时就按4字节对齐，所以<code>sizeof(S1)</code>应该为8。<br>&emsp;&emsp;S2中，c和S1中的a一样，按1字节对齐，而d是个结构，它是8个字节，它按什么对齐呢？对于结构来说，默认对齐方式就是它的所有成员使用的对齐参数中最大的一个，S1的就是4。所以，成员d就是按4字节对齐。成员e是8个字节，它是默认按8字节对齐，和指定的一样，所以它对到8字节的边界上，这时已经使用了12个字节了，所以又添加了4个字节的空，从第16个字节开始放置成员e。这时长度为24，已经可以被8(成员e按8字节对齐)整除，这样<code>sizeof(S2)</code>为24个字节。<br>&emsp;&emsp;这里有三点很重要：</p>
+<ul>
+<li>每个成员分别按自己的方式对齐，并能最小化长度。</li>
+<li>复杂类型(例如结构)的默认对齐方式是它最长的成员的对齐方式，这样在成员是复杂类型时，可以最小化长度。</li>
+<li>对齐后的长度必须是成员中最大的对齐参数的整数倍，这样在处理数组时可以保证每一项都边界对齐。</li>
+</ul>
+<p>&emsp;&emsp;在minix的<code>stdarg.h</code>文件中，定义了如下一个宏：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Amount of space required in an argument list for an arg of type TYPE.</span></span><br><span class="line"><span class="comment">   TYPE may alternatively be an expression whose type is used. */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __va_rounded_size(TYPE) ( ( ( sizeof ( TYPE ) + sizeof ( int ) - 1 ) / sizeof ( int ) ) * sizeof ( int ) )</span></span><br></pre></td></tr></table></figure>
+<p>从注释以及宏的名字可以看出是有关内存对齐方面的作用。根据C语言内存对齐方面的理论可知，n字节对齐就是说变量存放的起始地址的偏移量有两种情况：</p>
+<ul>
+<li>如果n大于等于该变量所占用的字节数，那么偏移量必须满足默认的对齐方式(各成员变量存放的起始地址相对于结构的起始地址的偏移量必须为该变量的类型所占用的字节数的倍数)。</li>
+<li>如果n小于该变量的类型所占用的字节数，那么偏移量为n的倍数，不用满足默认的对齐方式。</li>
+</ul>
+<p>&emsp;&emsp;假设此时<code>n = 4</code>，对于<code>sizeof(TYPE)</code>一定为自然数，<code>sizeof(int) - 1 = 3</code>。<code>sizeof(TYPE)</code>只可能出现如下两种情况：</p>
+<ul>
+<li>当<code>sizeof(TYPE) &gt;= 4</code>，偏移量为<code>(sizeof(TYPE) / 4) * 4</code>。</li>
+<li>当<code>sizeof(TYPE) &lt; 4</code>，偏移量为4，此时<code>sizeof(TYPE) = 1 or 2 or 3</code>，而<code>((sizeof(TYPE) + 3) / 4) * 4 = 4</code>。</li>
+</ul>
+<p>为了将上述两种情况统一，偏移量为<code>((sizeof(TYPE) + 3) / 4) * 4</code>。<br>&emsp;&emsp;在有的源代码中，将内存对齐宏<code>__va_rounded_size</code>通过位操作来实现，代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __va_rounded_size(TYPE) ( ( sizeof ( TYPE ) + sizeof ( int ) - 1 ) &amp; ~ ( sizeof ( int ) - 1 ) )</span></span><br></pre></td></tr></table></figure>
+<p>由于<code>~(sizeof(int) - 1) = ~(4 - 1) = ~(00000011B) = 11111100B</code>，<code>(sizeof(TYPE) + sizeof(int) - 1)</code>就是将大于<code>4m</code>但小于等于<code>4(m + 1)</code>的数提高到大于等于<code>4(m + 1)</code>但小于<code>4(m + 2)</code>，这样再<code>&amp;~(sizeof(int) - 1)</code>后就正好将原长度补齐到4的倍数了。</p>
+<hr>
+<h3 id="“-pragma-pack-1-”的意义"><a href="#“-pragma-pack-1-”的意义" class="headerlink" title="“#pragma pack(1)”的意义"></a>“#pragma pack(1)”的意义</h3><p>&emsp;&emsp;<code>#pragma pack(1)</code>使结构体按1字节方式对齐。例如：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sample</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> a;</span><br><span class="line">    <span class="keyword">double</span> b;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;若不用<code>#pragma pack(1)</code>，则sample按编译器默认方式对齐(成员中size最大的那个)，即按8字节(double)对齐，则<code>sizeof(sample)</code>为16，成员<code>char a</code>占了8个字节(其中7个是空字节)。<br>&emsp;&emsp;若用<code>#pragma pack(1)</code>，则sample按1字节方式对齐，即<code>sizeof(sample)</code>为9(无空字节)。这种做法比较节省空间，有些场合还可使结构体更易于控制。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/09/C语言语法详解/堆和栈/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/09/C语言语法详解/堆和栈/" itemprop="url">堆和栈</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-09T18:18:09+08:00">
+                2018-12-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="预备知识-程序的内存分配"><a href="#预备知识-程序的内存分配" class="headerlink" title="预备知识(程序的内存分配)"></a>预备知识(程序的内存分配)</h3><p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/a4454541115/article/details/52092295" target="_blank" rel="noopener">编译的程序占用的内存分为一下几个部分</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;一个由C/C++编译的程序占用的内存分为以下几个部分：</p>
+<ul>
+<li><code>栈区(stack)</code>：由编译器自动分配释放、存放函数的参数值、局部变量的值等。其操作方式类似于数据结构中的栈。</li>
+<li><code>堆区(heap)</code>：一般由程序员分配释放，若程序员不释放，程序结束时可能由OS回收。注意它与数据结构中的堆是两回事，其分配方式倒是类似于链表。</li>
+<li><code>全局区(静态区static)</code>：全局变量和静态变量的存储是放在一块的，初始化的全局变量和静态变量在一块区域，未初始化的全局变量和未初始化的静态变量在相邻的另一块区域。程序结束后由系统释放。</li>
+<li><code>文字常量区</code>：常量字符串就是放在这里的。程序结束后由系统释放。</li>
+<li><code>程序代码区</code>：存放函数体的二进制代码。</li>
+</ul>
+<p>&emsp;&emsp;看看下面的例子程序：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">0</span>; <span class="comment">/* 全局初始化区 */</span></span><br><span class="line"><span class="keyword">char</span>* p1; <span class="comment">/* 全局未初始化区 */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> b; <span class="comment">/* 栈 */</span></span><br><span class="line">    <span class="keyword">char</span> s[] = <span class="string">"abc"</span>; <span class="comment">/* 栈 */</span></span><br><span class="line">    <span class="keyword">char</span>* p2; <span class="comment">/* 栈 */</span></span><br><span class="line">    <span class="keyword">char</span>* p3 = <span class="string">"123456"</span>; <span class="comment">/* “123456\0”在常量区，p3在栈上 */</span></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> c = <span class="number">0</span>; <span class="comment">/* 全局(静态)初始化区 */</span></span><br><span class="line">    p1 = ( <span class="keyword">char</span>* ) <span class="built_in">malloc</span> ( <span class="number">10</span> );</span><br><span class="line">    p2 = ( <span class="keyword">char</span>* ) <span class="built_in">malloc</span> ( <span class="number">20</span> ); <span class="comment">/* 分配得来的10和20字节的区域就在堆区 */</span></span><br><span class="line">    <span class="built_in">strcpy</span> ( p1, <span class="string">"123456"</span> ); <span class="comment">/* “123456\0”放在常量区，编译器可能会将它与p3所指向的“123456”优化成同一个地方 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="堆和栈的理论知识"><a href="#堆和栈的理论知识" class="headerlink" title="堆和栈的理论知识"></a>堆和栈的理论知识</h3><h4 id="申请方式"><a href="#申请方式" class="headerlink" title="申请方式"></a>申请方式</h4><p>&emsp;&emsp;<code>stack</code>：由系统自动分配，例如在函数中声明一个局部变量<code>int b</code>，系统自动在栈中为b开辟空间。<br>&emsp;&emsp;<code>heap</code>：需要程序员自己申请，并指明大小，在C语言中用malloc函数，例如<code>p1 = (char *)malloc(10);</code>，在C++中用new运算符，例如<code>p2 = (char *)malloc(10);</code>。但是注意p1、p2本身是在栈中的。</p>
+<h4 id="申请后系统的响应"><a href="#申请后系统的响应" class="headerlink" title="申请后系统的响应"></a>申请后系统的响应</h4><p>&emsp;&emsp;<code>stack</code>：只要栈的剩余空间大于所申请空间，系统将为程序提供内存，否则将报错提示栈溢出。<br>&emsp;&emsp;<code>heap</code>：首先应该知道操作系统有一个记录空闲内存地址的链表，当系统收到程序的申请时，会遍历该链表，寻找第一个空间大于所申请空间的堆结点，然后将该结点从空闲结点链表中删除，并将该结点的空间分配给程序。另外，对于大多数系统，会在这块内存空间中的首地址处记录本次分配的大小。这样，代码中的delete语句才能正确的释放本内存空间。另外，由于找到的堆结点的大小不一定正好等于申请的大小，系统会自动的将多余的那部分重新放入空闲链表中。</p>
+<h4 id="申请大小的限制"><a href="#申请大小的限制" class="headerlink" title="申请大小的限制"></a>申请大小的限制</h4><p>&emsp;&emsp;<code>stack</code>：在Windows下，栈是向低地址扩展的数据结构，是一块连续的内存的区域。这句话的意思是栈顶的地址和栈的最大容量是系统预先规定好的。在Windows下，栈的大小是2M，如果申请的空间超过栈的剩余空间时，将提示overflow。<br>&emsp;&emsp;<code>heap</code>：堆是向高地址扩展的数据结构，是不连续的内存区域。这是由于系统是用链表来存储的空闲内存地址的，自然是不连续的，而链表的遍历方向是由低地址向高地址。堆的大小受限于计算机系统中有效的虚拟内存。由此可见，堆获得的空间比较灵活，也比较大。</p>
+<h4 id="申请效率的比较"><a href="#申请效率的比较" class="headerlink" title="申请效率的比较"></a>申请效率的比较</h4><p><code>stack</code>：由系统自动分配，速度较快。但程序员是无法控制的。<br><code>heap</code>：由new分配的内存，一般速度比较慢，而且容易产生内存碎片，不过用起来最方便。另外，在Windows下，最好的方式是用VirtualAlloc分配内存，它不是在堆，也不是在栈，是直接在进程的地址空间中保留一块内存。虽然用起来不方便，但是速度快，也最灵活。</p>
+<h4 id="堆和栈中的存储内容"><a href="#堆和栈中的存储内容" class="headerlink" title="堆和栈中的存储内容"></a>堆和栈中的存储内容</h4><p>&emsp;&emsp;<code>stack</code>：在函数调用时，第一个进栈的是主函数中后的下一条指令(函数调用语句的下一条可执行语句)的地址，然后是函数的各个参数。在大多数的C编译器中，参数是由右往左入栈的，然后是函数中的局部变量。注意静态变量是不入栈的。当本次函数调用结束后，局部变量先出栈，然后是参数，最后栈顶指针指向最开始存的地址，也就是主函数中的下一条指令，程序由该点继续运行。<br>&emsp;&emsp;<code>heap</code>：一般是在堆的头部用一个字节存放堆的大小。堆中的具体内容有程序员安排。</p>
+<h4 id="存取效率的比较"><a href="#存取效率的比较" class="headerlink" title="存取效率的比较"></a>存取效率的比较</h4><p>&emsp;&emsp;对于<code>char s1[] = &quot;aaaa&quot;;</code>和<code>char *s2 = &quot;bbbb&quot;;</code>，<code>aaaa</code>是在运行时刻赋值的，而<code>bbbb</code>是在编译时就确定的。但是，在以后的存取中，在栈上的数组比指针所指向的字符串(堆)快。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/09/C语言语法详解/头文件cplusplus的解释/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1467,661 +2121,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/08/C语言语法详解/可重入和不可重入函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/08/C语言语法详解/可重入和不可重入函数/" itemprop="url">可重入和不可重入函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-08T13:38:20+08:00">
-                2018-12-08
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/einsteinlike/article/details/45538493" target="_blank" rel="noopener">printf为什么有重入和性能上的问题？</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;不可重入函数不可以在它还没有返回就再次被调用，例如printf、malloc、free等都是不可重入函数。因为中断可能在任何时候发生，例如在printf执行过程中，因此不能在中断处理函数里调用printf，否则printf将会被重入。<br>&emsp;&emsp;不可重入函数指的是该函数在被调用还没有结束以前，再次被调用可能会产生错误。可重入函数不存在这样的问题。<br>&emsp;&emsp;函数不可重入大多数是因为在函数中引用了全局变量。例如printf会引用全局变量stdout，malloc、free会引用全局的内存分配表。常见的不可重入函数有：</p>
-<ul>
-<li>printf：引用全局变量stdout。</li>
-<li>malloc：全局内存分配表。</li>
-<li>free：全局内存分配表。</li>
-</ul>
-<p>&emsp;&emsp;在unix里面通常都有加上<code>_r</code>后缀的同名可重入函数版本。如果实在没有，不妨在可预见的发生错误的地方尝试加上保护锁等同步机制。下面引用一段别人的解释：<br>&emsp;&emsp;这主要在多任务环境中使用，一个可重入的函数简单来说，就是<code>可以被中断的函数</code>。你可以在这个函数执行的任何时候中断它的运行，在OS的调度下去执行另外一段代码而不会出现什么错误。而不可重入的函数由于使用了一些系统资源，比如全局变量区、中断向量表等，所以它如果被中断，可能出现问题，所以这类函数是不能运行在多任务环境下的。<br>&emsp;&emsp;把一个不可重入函数变成可重入的唯一方法是用可重入规则来重写它。其实很简单，只要遵守了几条很容易理解的规则，那么写出来的函数就是可重入的。</p>
-<ul>
-<li>不要使用全局变量，因为别的代码很可能覆盖这些变量值。</li>
-<li>在和硬件发生交互的时候，切记执行类似disinterrupt之类的操作，就是关闭硬件中断。完成交互记得打开中断，在有些系列上，这叫做<code>进入/退出核心</code>，或者用<code>OS_ENTER_KERNAL</code>和<code>OS_EXIT_KERNAL</code>来描述。</li>
-<li>不能调用任何不可重入的函数。</li>
-<li>谨慎使用堆栈，最好先在使用前先<code>OS_ENTER_KERNAL</code>。</li>
-</ul>
-<p>&emsp;&emsp;可重入函数的示例：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">strcpy</span> <span class="params">( <span class="keyword">char</span>* lpszDest, <span class="keyword">char</span>* lpszSrc )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> ( *lpszDest++ = *lpszSrc++ );</span><br><span class="line">    ​*dest = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;非可重入函数示例1：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> cTemp; <span class="comment">/* 全局变量 */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SwapChar1</span> <span class="params">( <span class="keyword">char</span>* lpcX, <span class="keyword">char</span>* lpcY )</span> </span>&#123;</span><br><span class="line">    cTemp = *lpcX;</span><br><span class="line">    *lpcX = *lpcY;</span><br><span class="line">    lpcY = cTemp; <span class="comment">/* 访问了全局变量，在分享内存的多个线程中可能造成问题 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;非可重入函数示例2：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SwapChar2</span> <span class="params">( <span class="keyword">char</span>* lpcX, <span class="keyword">char</span>* lpcY )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">char</span> cTemp; <span class="comment">/* 静态局部变量 */</span></span><br><span class="line">    cTemp = *lpcX;</span><br><span class="line">    *lpcX = *lpcY;</span><br><span class="line">    lpcY = cTemp; <span class="comment">/* 使用了静态局部变量，在分享内存的多个线程中可能造成问题 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;如何写出可重入的函数？在函数体内不访问那些全局变量，不使用静态局部变量，坚持只使用局部变量，写出的函数就将是可重入的。如果必须访问全局变量，记住利用互斥信号量来保护全局变量。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/08/C语言语法详解/柔性数组/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/08/C语言语法详解/柔性数组/" itemprop="url">柔性数组</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-08T12:58:58+08:00">
-                2018-12-08
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/weibo1230123/article/details/77842133" target="_blank" rel="noopener">C/C++中的0长数组(柔性数组)</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;在标准C和C++中，零长度的数组如<code>charArray[0]</code>是不允许使用的，因为这从语义逻辑上看是完全没有意义的。但是GUN中却允许使用，而且很多时候应用在了变长结构体中，例如：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Packet</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> state;</span><br><span class="line">    <span class="keyword">int</span> len;</span><br><span class="line">    <span class="keyword">char</span> cData[<span class="number">0</span>];</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;首先对零长度数组做一个解释：长度为零的数组的主要用途是为了满足需要变动长度的结构体，在一个结构体的最后声明一个长度为0的数组，就可以使得这个结构体是可变长的。对于编译器来说，此时长度为0的数组并不占用空间，因为数组名本身不占空间，它只是一个偏移量，数组名这个符号本身代表了一个不可修改的地址常量(注意，数组名永远都不会是指针)，但对于这个数组的大小，我们可以进行动态分配。<br>&emsp;&emsp;对于零长度数组的这个特点，很容易构造出变长结构体，如缓冲区、数据包等，如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Buffer</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> len;</span><br><span class="line">    <span class="keyword">char</span> cData[<span class="number">0</span>];</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>这样的变长数组常用于网络通信中构造不定长数据包，不会浪费空间和网络流量。例如我要发送1024字节的数据，如果使用定长数据包，假设定长数据包的长度为2048，就会浪费1024个字节的空间，造成不必要的流量浪费，如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">packet</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> data[<span class="number">2048</span>];</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line">packet p;</span><br><span class="line"><span class="built_in">memcpy</span> ( p.data, <span class="string">"1024 datas........."</span>, <span class="number">1024</span> )</span><br><span class="line">send ( socket, ( <span class="keyword">char</span>* ) &amp;p, <span class="keyword">sizeof</span> ( p ) );</span><br></pre></td></tr></table></figure>
-<p>由于考虑到数据的溢出，变长数据包中的data数组长度一般会设置得足够长足以容纳最大的数据，因此packet中的data数组很多情况下都没有填满数据，因此造成了浪费。而如果我们用变长数组来进行封包的话，就不会造成浪费(最多会造成4个字节的浪费，包头的int型的len不属于数据，因此算是浪费)。例如前面的Buffer结构体，假如要发送1024个字节，该如何构造这个数据包呢？如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span>* tmp = ( <span class="keyword">char</span>* ) <span class="built_in">malloc</span> ( <span class="keyword">sizeof</span> ( Buffer ) + <span class="number">1024</span> );</span><br></pre></td></tr></table></figure>
-<p>这句代码的作用是申请一块连续的内存空间，这块内存空间的长度是Buffer的大小加上1024数据的大小。如果仔细观察的话，会发现这种申请方法比第一种多了一段<code>sizeof(Buffer)</code>大小的空间，原因何在？如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Buffer *p = ( Buffer * ) tmp;</span><br><span class="line">p-&gt;len = <span class="number">1024</span>;</span><br><span class="line"><span class="built_in">memcpy</span> ( p.cData, <span class="string">"1024 datas............"</span>, <span class="number">1024</span> );</span><br></pre></td></tr></table></figure>
-<p>上面的三行代码首先做一个强制类型转换，Buffer类型的指针指向内存的起始位置。这段内存要分为两部分使用，前部分4个字节<code>p-&gt;len</code>作为包头(就是多出来的那部分)，这个包头是用来描述紧接着包头后面的数据部分的长度，这里是1024，所以前四个字节赋值为1024(既然我们要构造不定长数据包，那么这个包到底有多长呢？因此我们就必须通过一个变量来表明这个数据包的长度，这就是len的作用)，而紧接其后的内存是真正的数据部分，通过<code>p-&gt;cData</code>定位到该部分的起始地址，最后进行一个memcpy内存拷贝，把要发送的数据填入到这段内存当中。最后使用如下命令发送数据：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">send ( socket, p, <span class="keyword">sizeof</span> ( Buffer ) + <span class="number">1024</span> );</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;柔性数组的具体用法如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;malloc.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">soft_array</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> len;</span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">array</span>[];</span><br><span class="line">&#125; SoftArray;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    SoftArray* sa = ( SoftArray* ) <span class="built_in">malloc</span> ( <span class="keyword">sizeof</span> ( SoftArray ) + <span class="keyword">sizeof</span> ( <span class="keyword">int</span> ) * <span class="number">10</span> );</span><br><span class="line">    sa-&gt;len = <span class="number">10</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; sa-&gt;len; i++ ) &#123;</span><br><span class="line">        sa-&gt;<span class="built_in">array</span>[i] = i + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; sa-&gt;len; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, sa-&gt;<span class="built_in">array</span>[i] );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">free</span> ( sa );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;使用柔性数组计算裴波那契数字：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;malloc.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">soft_array</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> len;</span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">array</span>[];</span><br><span class="line">&#125; SoftArray;</span><br><span class="line"></span><br><span class="line"><span class="function">SoftArray* <span class="title">create_soft_array</span> <span class="params">( <span class="keyword">int</span> size )</span> </span>&#123;</span><br><span class="line">    SoftArray* ret = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( size &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">        ret = ( SoftArray* ) <span class="built_in">malloc</span> ( <span class="keyword">sizeof</span> ( *ret ) + <span class="keyword">sizeof</span> ( * ( ret-&gt;<span class="built_in">array</span> ) ) * size );</span><br><span class="line">        ret-&gt;len = size;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">fac</span> <span class="params">( SoftArray* sa )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> != sa ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( <span class="number">1</span> == sa-&gt;len ) &#123;</span><br><span class="line">            sa-&gt;<span class="built_in">array</span>[<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            sa-&gt;<span class="built_in">array</span>[<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">            sa-&gt;<span class="built_in">array</span>[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> ( i = <span class="number">2</span>; i &lt; sa-&gt;len; i++ ) &#123;</span><br><span class="line">                sa-&gt;<span class="built_in">array</span>[i] = sa-&gt;<span class="built_in">array</span>[i - <span class="number">1</span>] + sa-&gt;<span class="built_in">array</span>[i - <span class="number">2</span>];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">delete_soft_array</span> <span class="params">( SoftArray* sa )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">free</span> ( sa );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    SoftArray* sa = create_soft_array ( <span class="number">10</span> );</span><br><span class="line">    fac ( sa );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; sa-&gt;len; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, sa-&gt;<span class="built_in">array</span>[i] );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    delete_soft_array ( sa );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/08/C语言语法详解/宏与单井号和双井号/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/08/C语言语法详解/宏与单井号和双井号/" itemprop="url">宏与单井号和双井号</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-08T11:06:47+08:00">
-                2018-12-08
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/dotphoenix/article/details/4345174" target="_blank" rel="noopener">C语言宏定义##连接符和#符的使用</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;在C语言的宏中，<code>#</code>的功能是将其后面的宏参数进行字符串化操作，简单说就是在对它所引用的宏变量通过替换后在其左右各加上一个双引号。比如下面代码中的宏：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> WARN_IF(EXP) \</span></span><br><span class="line">    <span class="keyword">do</span> &#123; \</span><br><span class="line">        <span class="keyword">if</span> ( EXP ) \</span><br><span class="line">            <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"Warning: "</span> #EXP <span class="string">"\n"</span>); \</span><br><span class="line">    &#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br></pre></td></tr></table></figure>
-<p>那么实际使用中会出现下面所示的替换过程：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WARN_IF ( divider == <span class="number">0</span> );</span><br></pre></td></tr></table></figure>
-<p>被替换为：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> ( divider == <span class="number">0</span> )</span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"Warning"</span> <span class="string">"divider == 0"</span> <span class="string">"\n"</span> );</span><br><span class="line">&#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br></pre></td></tr></table></figure>
-<p>这样，每次divider(除数)为0的时候便会在标准错误流上输出一个提示信息。<br>&emsp;&emsp;而<code>##</code>被称为连接符(concatenator)，用来将两个Token连接为一个Token。注意这里连接的对象是Token就行，而不一定是宏的变量。比如你要做一个菜单项命令名和函数指针组成的结构体的数组，并且希望在函数名和菜单项命令名之间有直观的、名字上的关系，那么下面的代码就非常实用：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">command</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span>* name;</span><br><span class="line">    <span class="keyword">void</span> ( *function ) ( <span class="keyword">void</span> );</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND(NAME) &#123; NAME, NAME##_command &#125;</span></span><br></pre></td></tr></table></figure>
-<p>然后你就用一些预先定义好的命令来方便的初始化一个command结构的数组了：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">command</span> <span class="title">commands</span>[] = &#123;</span></span><br><span class="line">    COMMAND ( quit ),</span><br><span class="line">    COMMAND ( help ),</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>COMMAND宏在这里充当一个代码生成器的作用，这样可以在一定程度上减少代码密度，也可以减少不留心所造成的错误。我们还可以用n个<code>##</code>符号连接<code>n + 1</code>个Token，这个特性也是<code>#</code>符号所不具备的：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LINK_MULTIPLE(a,b,c,d) a##_##b##_##c##_##d</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">record_type</span> <span class="title">LINK_MULTIPLE</span> ( <span class="title">name</span>, <span class="title">company</span>, <span class="title">position</span>, <span class="title">salary</span> );</span></span><br></pre></td></tr></table></figure>
-<p>这个语句将展开为：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">record_type</span> <span class="title">name_company_position_salary</span>;</span></span><br></pre></td></tr></table></figure>
-<hr>
-<p>&emsp;&emsp;<code>##</code>连接符号由两个井号组成，其功能是在带参数的宏定义中将两个子串(token)联接起来，从而形成一个新的子串。但它不可以是第一个或者最后一个子串。所谓的子串，就是指编译器能够识别的最小语法单元。<code>#</code>符是把传递过来的参数当成字符串进行替代。下面来看看它们是怎样工作的，这是MSDN上的一个例子。假设程序中已经定义了这样一个带参数的宏：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> paster( n ) printf( <span class="meta-string">"token"</span> #n <span class="meta-string">" = %d"</span>, token##n )</span></span><br></pre></td></tr></table></figure>
-<p>同时又定义了一个整形变量<code>int token9 = 9;</code>，现在在主程序中以下面的方式调用这个宏：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">paster( <span class="number">9</span> );</span><br></pre></td></tr></table></figure>
-<p>那么在编译时，上面的这句话被扩展为：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span> ( <span class="string">"token"</span> <span class="string">"9"</span> <span class="string">" = %d"</span>, token9 );</span><br></pre></td></tr></table></figure>
-<p>注意到在这个例子中，<code>paster(9);</code>中的这个<code>9</code>被原封不动的当成了一个字符串，与<code>token</code>连接在了一起，从而成为了<code>token9</code>。而<code>#n</code>也被<code>9</code>所替代。可想而知，上面程序运行的结果就是在屏幕上打印出<code>token9 = 9</code>。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/06/C语言语法详解/scanf与fscanf/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/06/C语言语法详解/scanf与fscanf/" itemprop="url">scanf与fscanf</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-06T20:05:34+08:00">
-                2018-12-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="scanf与fscanf"><a href="#scanf与fscanf" class="headerlink" title="scanf与fscanf"></a>scanf与fscanf</h3><p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/wesweeky/article/details/6439777" target="_blank" rel="noopener">scanf/fscanf 的%[]和%n使用方法</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;scanf和fscanf均从第一个非空格的可显示字符开始读起。scanf具有相对较多的转换说明符，它常常作为入门级函数出现在各种教材中。但奇怪的是，<code>[]</code>和<code>n</code>这两种都为C89/C99所规定的标准说明符却鲜少在大多数教材中出现。虽然<code>[]</code>和<code>n</code>说明符的使用频率不及其它说明符，但两者在程序设计中的作用仍然不可小视。<br>&emsp;&emsp;scanf以空白字符为定界符，但如果输入的字符串是以其它字符为定界符的，那怎么办？<code>[]</code>就是专门处理这个问题的转换说明符，<code>[]</code>转换说明符可以通过两种方式产生结果字符集，如果第一个<code>[</code>字符右边没有抑扬符<code>^</code>，那么处于<code>[]</code>之间的字符就是结果字符集，不在其中的可输入字符都作为定界符；如果左边<code>[</code>符号紧靠一个抑扬符<code>^</code>，那么意义相反，<code>^</code>和<code>]</code>之间的字符是定界符，其余可输入字符是结果字符集。<br>&emsp;&emsp;在使用<code>[]</code>说明符之前，得先明白两个概念：一是扫描列表。扫描列表(scanlist)指的是包含在<code>[</code>和<code>]</code>两个字符之间除紧靠左边<code>[</code>字符的抑扬符<code>^</code>之外的字符，例如<code>scanf(&quot;%[abcd]&quot;, ptr);</code>中abcd组成扫描列表。二是扫描字符集(scanset)。扫描字符集指的是结果字符集，例如上面的例子，结果字符集就是abcd。如果输入一个字符串<code>cbadkjf</code>，那么ptr得到的字符串是<code>cbad</code>，<code>kjf</code>三个字符都属于定界符，输入到k字符时输入字符串被截断，<code>kjf</code>三个字符被留在stdin里面。如果带有抑扬符，例如在<code>scanf(&quot;%[^abcd]&quot;, ptr);</code>中，扫描列表仍然是abcd，但扫描字符集是除abcd外的可输入字符。如果输入字符串<code>jksferakjjdf</code>，ptr得到的字符串是<code>jksfer</code>。如果想限制输入字符串的字符数量，在<code>[]</code>前面使用位域，例如<code>scanf(&quot;%10[^abcd]&quot;, ptr);</code>，这样结果字符串最多只能包含10个字符(除<code>\0</code>字符外)。<br>&emsp;&emsp;<code>[</code>符号可以作为扫描列表中的一个成员，但<code>]</code>字符除紧贴最左边的<code>[</code>字符或抑扬符<code>^</code>两种情况外，其余情况下都不会被看作扫描列表的成员。例如<code>%[]abcd]</code>或者“<code>%[^]abcd]</code>，上述两种情况下<code>]</code>字符属于扫描列表的成员，但如果是<code>%[ab]cd]</code>，中间的<code>]</code>字符不会被看作扫描列表的成员，而且输入输出的结果会是乱七八糟的。<br>&emsp;&emsp;对于减号<code>-</code>，只有在紧贴<code>[</code>字符或抑扬字符<code>^</code>以及作为扫描列表最后一个成员时，<code>-</code>字符才会被视为扫描列表的成员。C标准把其余情况规定为编译器相关的。大多数编译器把这种情况的减号定义为连字符，例如<code>scanf(&quot;%[a-zA-Z]&quot;, ptr);</code>，那么扫描列表由大小写各26个字母组成。少数编译器仍旧把这种情况下的减号视为扫描列表成员。<br>&emsp;&emsp;对于<code>fscanf(fd, &quot;%*[^\n]\n&quot;);</code>，<code>%*</code>是虚读，没有存，只是让指针跳过了这个变量。对于<code>scanf(&quot;%*[^\n]&quot;);</code>，可以把输入缓冲区中下一个回车符之前的所有内容清理掉。对于<code>scanf(&quot;%*c&quot;);</code>，可以把输入缓冲区中的下一个回车符清理掉。<br>&emsp;&emsp;<code>%n</code>说明符输出有效字符数量，<code>%n</code>在scanf和printf中都可使用。与<code>%n</code>相对应的形参是一个int类型的指针，<code>%n</code>不影响scanf和printf的返回值。例如对于<code>scanf(&quot;%d %d%n&quot;, &amp;i, &amp;j, &amp;k);</code>，如果输入<code>434 6434</code>，则k等于8，而scanf的返回值仍然为2。又如<code>scanf(&quot;%c%n&quot;, &amp;ch, &amp;k);</code>，输入<code>sbcdefdg</code>后，k等于1，而不是8，因为<code>%c</code>只取一个字符，<code>%n</code>输出的是有效字符数量。<br>&emsp;&emsp;<code>%n</code>用在printf函数里，表示输出的字符数量，例如<code>printf(&quot;i = %d, j = %d\n%n&quot;, i, j, &amp;k);</code>在<code>i = 343</code>、<code>j = 123</code>的情况下，<code>k = 12</code>，同时<code>%n</code>不影响printf的返回值，其返回值仍然为12，而不是14。</p>
-<hr>
-<p>&emsp;&emsp;这个用法是在参考<code>H264 jm82</code>代码上看到的，用来从解码器参数配置文件中读取配置参数，代码如下：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* read the decoder configuration file */</span></span><br><span class="line"><span class="keyword">if</span> ( ( fd = fopen ( config_filename, <span class="string">"r"</span> ) ) == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">    <span class="built_in">snprintf</span> ( errortext, ET_SIZE, <span class="string">"Error: Control file %s not found\n"</span>, config_filename );</span><br><span class="line">    error ( errortext, <span class="number">300</span> );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%s"</span>, inp-&gt;infile ); <span class="comment">/* H.26L compressed input bitsream */</span></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%*[^\n]"</span> );</span><br><span class="line"></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%s"</span>, inp-&gt;outfile ); <span class="comment">/* YUV 4:2:2 input format */</span></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%*[^\n]"</span> );</span><br><span class="line"></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%s"</span>, inp-&gt;reffile ); <span class="comment">/* reference file */</span></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%*[^\n]"</span> );</span><br></pre></td></tr></table></figure>
-<p>对应的配置文件内容如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">test.264     -- H.26L coded bitstream</span><br><span class="line">test_dec.yuv -- Output file, YUV 4:2:0 format</span><br><span class="line">test_rec.yuv -- Ref sequence (<span class="keyword">for</span> SNR)</span><br></pre></td></tr></table></figure>
-<p>通过这种方式，可以得到：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">inp-&gt;infile = <span class="string">"test.264"</span>;</span><br><span class="line">inp-&gt;outfile = <span class="string">"test_dec.yuv"</span>;</span><br><span class="line">inp-&gt;reffile = <span class="string">"test_rec.yuv"</span>;</span><br></pre></td></tr></table></figure>
-<p>而相应的配置文件中的一些注释则不会被读入，这是相当简便的用法，比起通过严格约定注释符并进行一个字符一个字符来解析，这种方式简单了许多，值得借鉴！</p>
-<hr>
-<h3 id="scanf的用法"><a href="#scanf的用法" class="headerlink" title="scanf的用法"></a>scanf的用法</h3><p>&emsp;&emsp;语法如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">scanf</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* format, ... )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>类似的函数有：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">scanf</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* format, ... )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fscanf</span> <span class="params">( FILE* stream, <span class="keyword">const</span> <span class="keyword">char</span>* format, ... )</span></span>; <span class="comment">/* 指定输入流 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sscanf</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* str, <span class="keyword">const</span> <span class="keyword">char</span>* format, ... )</span></span>; <span class="comment">/* 指定缓存区 */</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;scanf函数根据由format(格式)指定的格式从stdin(标准输入)读取，并保存数据到其它参数。它和printf有点类似，format(格式)字符串由控制字符、空白字符和非空白字符组成，控制字符以一个<code>%</code>符号开始。</p>
-<ul>
-<li>scanf读取匹配format(格式)字符串的输入，当读取到一个控制字符，它把值放置到下一个变量，空白(tabs、空格等等)会跳过。非空白字符和输入匹配，然后丢弃。如果是一个在<code>%</code>符号和控制符间的数量，那么只有指定数量的字符转换到变量中。如果scanf遇到一个字符集(用<code>%[]</code>控制字符表示)，那么在括号中的任意字符都会读取到变量中。scanf的返回值是成功赋值的变量数量，发生错误时返回EOF。</li>
-<li>scanf的格式控制的一般形式为<code>%[*][宽度][F|N][h|l]类型字符</code>，<code>[]</code>中的控制字符为可选项，<code>*</code>表示该输入项读入后不赋予任何变量，即跳过该输入值。<code>宽度</code>表示输入读入字符的长度，对于整型表示截取相应宽度的数字赋给后面列表中的相应变量；对于字符型表示读入相应长度的字符后把第一个字符赋给相应的变量，其余的自动舍弃。例如<code>scanf(&quot;%2d%3d&quot;,&amp;a, &amp;b);</code>，如果输入为<code>12345</code>，则将<code>12</code>赋给a，将<code>45</code>赋给b；对于<code>scanf(&quot;%2c%3c&quot;,&amp;a, &amp;b);</code>，如果输入为12345，则将<code>1</code>赋给a，将<code>3</code>赋给b。</li>
-<li><code>%s</code>将整个输入作为一个串,并设置末尾的<code>\0</code>。</li>
-<li><code>%ns</code>，n为整数，读入的串最长不超过n，然后在末尾补<code>\0</code>。</li>
-<li><code>%nf</code>，读入的浮点数最多有n位整数，如果位数多于n，则会截断。</li>
-<li><code>%n[a-z]</code>，读入最多n个字符，如果遇到非a至z的字符，则停止。</li>
-<li><code>%[^=]</code>，读入任意多的字符，直到遇到<code>=</code>停止。</li>
-<li><code>%n[^=]</code>，读入<code>=</code>号前的至多n个字符。</li>
-<li>F、N、h、l分别表示远指针、近指针、短整和长整型。</li>
-</ul>
-<p>&emsp;&emsp;对于输入字符串还有一些比较有用的控制。例如经常需要读入一行字符串，而这串字符里面可能有空格、制表符等空白字符。如果直接用<code>%s</code>是不可以的，于是有些人就想到用gets，当然这也是一种选择，但是懂C语言的人基本上都知道gets是一个很危险的函数，而且很难控制，特别是与scanf交替使用时前者的劣势更是一览无余，所以gets一般是不推荐用的。其实用<code>%[^\n]</code>就可以很好的解决这个问题了，<code>^</code>表示<code>非</code>，即读入其后面的字符就结束读入。这样想读入一行字符串直接用<code>scanf(&quot;%[^\n]%*c&quot;,str);</code>就可以了，<code>%*c</code>的作用是读入<code>\n</code>，否则后面读入的将一直是<code>\n</code>。<br>&emsp;&emsp;所有对<code>%s</code>起作用的控制都可以用<code>%[]</code>，比如<code>%[0-9]</code>表示只读入<code>0</code>到<code>9</code>之间的字符，<code>%[a-zA-Z]</code>表示只读入字母。<code>-</code>是范围连接符，当然也可以直接列出你需要读入的字符。<br>&emsp;&emsp;如果你只需要读<code>abc</code>里面的字符就可以用<code>%[abc]</code>，或者<code>%[cab]</code>、<code>%[acb]</code>、<code>%[a-c]</code>、<code>%[c-a]</code>。如果想读入某个范围之外的字符串，就在前面加一个<code>^</code>，如<code>%[^a-z]</code>就表示读入小写字母之外的字符。例如从键盘输入的<code>1235ab86</code>中读取1235、86给n，有如下方法：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdbool.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">skip</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">scanf</span> ( <span class="string">"%*[^0-9]"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( skip() &amp;&amp; <span class="built_in">scanf</span> ( <span class="string">"%d"</span>, &amp;n ) != EOF ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, n );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1235</span><br><span class="line">86</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/90/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/90/">90</a><span class="page-number current">91</span><a class="page-number" href="/page/92/">92</a><a class="page-number" href="/page/93/">93</a><a class="extend next" rel="next" href="/page/92/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/90/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/90/">90</a><span class="page-number current">91</span><a class="page-number" href="/page/92/">92</a><span class="space">&hellip;</span><a class="page-number" href="/page/94/">94</a><a class="extend next" rel="next" href="/page/92/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2167,7 +2171,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-count">934</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -2178,7 +2182,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>

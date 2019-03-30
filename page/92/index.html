@@ -271,6 +271,656 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/08/C语言语法详解/可重入和不可重入函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/08/C语言语法详解/可重入和不可重入函数/" itemprop="url">可重入和不可重入函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-08T13:38:20+08:00">
+                2018-12-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/einsteinlike/article/details/45538493" target="_blank" rel="noopener">printf为什么有重入和性能上的问题？</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;不可重入函数不可以在它还没有返回就再次被调用，例如printf、malloc、free等都是不可重入函数。因为中断可能在任何时候发生，例如在printf执行过程中，因此不能在中断处理函数里调用printf，否则printf将会被重入。<br>&emsp;&emsp;不可重入函数指的是该函数在被调用还没有结束以前，再次被调用可能会产生错误。可重入函数不存在这样的问题。<br>&emsp;&emsp;函数不可重入大多数是因为在函数中引用了全局变量。例如printf会引用全局变量stdout，malloc、free会引用全局的内存分配表。常见的不可重入函数有：</p>
+<ul>
+<li>printf：引用全局变量stdout。</li>
+<li>malloc：全局内存分配表。</li>
+<li>free：全局内存分配表。</li>
+</ul>
+<p>&emsp;&emsp;在unix里面通常都有加上<code>_r</code>后缀的同名可重入函数版本。如果实在没有，不妨在可预见的发生错误的地方尝试加上保护锁等同步机制。下面引用一段别人的解释：<br>&emsp;&emsp;这主要在多任务环境中使用，一个可重入的函数简单来说，就是<code>可以被中断的函数</code>。你可以在这个函数执行的任何时候中断它的运行，在OS的调度下去执行另外一段代码而不会出现什么错误。而不可重入的函数由于使用了一些系统资源，比如全局变量区、中断向量表等，所以它如果被中断，可能出现问题，所以这类函数是不能运行在多任务环境下的。<br>&emsp;&emsp;把一个不可重入函数变成可重入的唯一方法是用可重入规则来重写它。其实很简单，只要遵守了几条很容易理解的规则，那么写出来的函数就是可重入的。</p>
+<ul>
+<li>不要使用全局变量，因为别的代码很可能覆盖这些变量值。</li>
+<li>在和硬件发生交互的时候，切记执行类似disinterrupt之类的操作，就是关闭硬件中断。完成交互记得打开中断，在有些系列上，这叫做<code>进入/退出核心</code>，或者用<code>OS_ENTER_KERNAL</code>和<code>OS_EXIT_KERNAL</code>来描述。</li>
+<li>不能调用任何不可重入的函数。</li>
+<li>谨慎使用堆栈，最好先在使用前先<code>OS_ENTER_KERNAL</code>。</li>
+</ul>
+<p>&emsp;&emsp;可重入函数的示例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">strcpy</span> <span class="params">( <span class="keyword">char</span>* lpszDest, <span class="keyword">char</span>* lpszSrc )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> ( *lpszDest++ = *lpszSrc++ );</span><br><span class="line">    ​*dest = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;非可重入函数示例1：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> cTemp; <span class="comment">/* 全局变量 */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SwapChar1</span> <span class="params">( <span class="keyword">char</span>* lpcX, <span class="keyword">char</span>* lpcY )</span> </span>&#123;</span><br><span class="line">    cTemp = *lpcX;</span><br><span class="line">    *lpcX = *lpcY;</span><br><span class="line">    lpcY = cTemp; <span class="comment">/* 访问了全局变量，在分享内存的多个线程中可能造成问题 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;非可重入函数示例2：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SwapChar2</span> <span class="params">( <span class="keyword">char</span>* lpcX, <span class="keyword">char</span>* lpcY )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">char</span> cTemp; <span class="comment">/* 静态局部变量 */</span></span><br><span class="line">    cTemp = *lpcX;</span><br><span class="line">    *lpcX = *lpcY;</span><br><span class="line">    lpcY = cTemp; <span class="comment">/* 使用了静态局部变量，在分享内存的多个线程中可能造成问题 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;如何写出可重入的函数？在函数体内不访问那些全局变量，不使用静态局部变量，坚持只使用局部变量，写出的函数就将是可重入的。如果必须访问全局变量，记住利用互斥信号量来保护全局变量。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/08/C语言语法详解/柔性数组/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/08/C语言语法详解/柔性数组/" itemprop="url">柔性数组</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-08T12:58:58+08:00">
+                2018-12-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/weibo1230123/article/details/77842133" target="_blank" rel="noopener">C/C++中的0长数组(柔性数组)</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;在标准C和C++中，零长度的数组如<code>charArray[0]</code>是不允许使用的，因为这从语义逻辑上看是完全没有意义的。但是GUN中却允许使用，而且很多时候应用在了变长结构体中，例如：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Packet</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> state;</span><br><span class="line">    <span class="keyword">int</span> len;</span><br><span class="line">    <span class="keyword">char</span> cData[<span class="number">0</span>];</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;首先对零长度数组做一个解释：长度为零的数组的主要用途是为了满足需要变动长度的结构体，在一个结构体的最后声明一个长度为0的数组，就可以使得这个结构体是可变长的。对于编译器来说，此时长度为0的数组并不占用空间，因为数组名本身不占空间，它只是一个偏移量，数组名这个符号本身代表了一个不可修改的地址常量(注意，数组名永远都不会是指针)，但对于这个数组的大小，我们可以进行动态分配。<br>&emsp;&emsp;对于零长度数组的这个特点，很容易构造出变长结构体，如缓冲区、数据包等，如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Buffer</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> len;</span><br><span class="line">    <span class="keyword">char</span> cData[<span class="number">0</span>];</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>这样的变长数组常用于网络通信中构造不定长数据包，不会浪费空间和网络流量。例如我要发送1024字节的数据，如果使用定长数据包，假设定长数据包的长度为2048，就会浪费1024个字节的空间，造成不必要的流量浪费，如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">packet</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> data[<span class="number">2048</span>];</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line">packet p;</span><br><span class="line"><span class="built_in">memcpy</span> ( p.data, <span class="string">"1024 datas........."</span>, <span class="number">1024</span> )</span><br><span class="line">send ( socket, ( <span class="keyword">char</span>* ) &amp;p, <span class="keyword">sizeof</span> ( p ) );</span><br></pre></td></tr></table></figure>
+<p>由于考虑到数据的溢出，变长数据包中的data数组长度一般会设置得足够长足以容纳最大的数据，因此packet中的data数组很多情况下都没有填满数据，因此造成了浪费。而如果我们用变长数组来进行封包的话，就不会造成浪费(最多会造成4个字节的浪费，包头的int型的len不属于数据，因此算是浪费)。例如前面的Buffer结构体，假如要发送1024个字节，该如何构造这个数据包呢？如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span>* tmp = ( <span class="keyword">char</span>* ) <span class="built_in">malloc</span> ( <span class="keyword">sizeof</span> ( Buffer ) + <span class="number">1024</span> );</span><br></pre></td></tr></table></figure>
+<p>这句代码的作用是申请一块连续的内存空间，这块内存空间的长度是Buffer的大小加上1024数据的大小。如果仔细观察的话，会发现这种申请方法比第一种多了一段<code>sizeof(Buffer)</code>大小的空间，原因何在？如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Buffer *p = ( Buffer * ) tmp;</span><br><span class="line">p-&gt;len = <span class="number">1024</span>;</span><br><span class="line"><span class="built_in">memcpy</span> ( p.cData, <span class="string">"1024 datas............"</span>, <span class="number">1024</span> );</span><br></pre></td></tr></table></figure>
+<p>上面的三行代码首先做一个强制类型转换，Buffer类型的指针指向内存的起始位置。这段内存要分为两部分使用，前部分4个字节<code>p-&gt;len</code>作为包头(就是多出来的那部分)，这个包头是用来描述紧接着包头后面的数据部分的长度，这里是1024，所以前四个字节赋值为1024(既然我们要构造不定长数据包，那么这个包到底有多长呢？因此我们就必须通过一个变量来表明这个数据包的长度，这就是len的作用)，而紧接其后的内存是真正的数据部分，通过<code>p-&gt;cData</code>定位到该部分的起始地址，最后进行一个memcpy内存拷贝，把要发送的数据填入到这段内存当中。最后使用如下命令发送数据：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">send ( socket, p, <span class="keyword">sizeof</span> ( Buffer ) + <span class="number">1024</span> );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;柔性数组的具体用法如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;malloc.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">soft_array</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> len;</span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">array</span>[];</span><br><span class="line">&#125; SoftArray;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    SoftArray* sa = ( SoftArray* ) <span class="built_in">malloc</span> ( <span class="keyword">sizeof</span> ( SoftArray ) + <span class="keyword">sizeof</span> ( <span class="keyword">int</span> ) * <span class="number">10</span> );</span><br><span class="line">    sa-&gt;len = <span class="number">10</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; sa-&gt;len; i++ ) &#123;</span><br><span class="line">        sa-&gt;<span class="built_in">array</span>[i] = i + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; sa-&gt;len; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, sa-&gt;<span class="built_in">array</span>[i] );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">free</span> ( sa );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;使用柔性数组计算裴波那契数字：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;malloc.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">soft_array</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> len;</span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">array</span>[];</span><br><span class="line">&#125; SoftArray;</span><br><span class="line"></span><br><span class="line"><span class="function">SoftArray* <span class="title">create_soft_array</span> <span class="params">( <span class="keyword">int</span> size )</span> </span>&#123;</span><br><span class="line">    SoftArray* ret = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( size &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">        ret = ( SoftArray* ) <span class="built_in">malloc</span> ( <span class="keyword">sizeof</span> ( *ret ) + <span class="keyword">sizeof</span> ( * ( ret-&gt;<span class="built_in">array</span> ) ) * size );</span><br><span class="line">        ret-&gt;len = size;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">fac</span> <span class="params">( SoftArray* sa )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> != sa ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( <span class="number">1</span> == sa-&gt;len ) &#123;</span><br><span class="line">            sa-&gt;<span class="built_in">array</span>[<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            sa-&gt;<span class="built_in">array</span>[<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">            sa-&gt;<span class="built_in">array</span>[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> ( i = <span class="number">2</span>; i &lt; sa-&gt;len; i++ ) &#123;</span><br><span class="line">                sa-&gt;<span class="built_in">array</span>[i] = sa-&gt;<span class="built_in">array</span>[i - <span class="number">1</span>] + sa-&gt;<span class="built_in">array</span>[i - <span class="number">2</span>];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">delete_soft_array</span> <span class="params">( SoftArray* sa )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">free</span> ( sa );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    SoftArray* sa = create_soft_array ( <span class="number">10</span> );</span><br><span class="line">    fac ( sa );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; sa-&gt;len; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, sa-&gt;<span class="built_in">array</span>[i] );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    delete_soft_array ( sa );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/08/C语言语法详解/宏与单井号和双井号/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/08/C语言语法详解/宏与单井号和双井号/" itemprop="url">宏与单井号和双井号</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-08T11:06:47+08:00">
+                2018-12-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/dotphoenix/article/details/4345174" target="_blank" rel="noopener">C语言宏定义##连接符和#符的使用</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;在C语言的宏中，<code>#</code>的功能是将其后面的宏参数进行字符串化操作，简单说就是在对它所引用的宏变量通过替换后在其左右各加上一个双引号。比如下面代码中的宏：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> WARN_IF(EXP) \</span></span><br><span class="line">    <span class="keyword">do</span> &#123; \</span><br><span class="line">        <span class="keyword">if</span> ( EXP ) \</span><br><span class="line">            <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"Warning: "</span> #EXP <span class="string">"\n"</span>); \</span><br><span class="line">    &#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br></pre></td></tr></table></figure>
+<p>那么实际使用中会出现下面所示的替换过程：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WARN_IF ( divider == <span class="number">0</span> );</span><br></pre></td></tr></table></figure>
+<p>被替换为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> ( divider == <span class="number">0</span> )</span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"Warning"</span> <span class="string">"divider == 0"</span> <span class="string">"\n"</span> );</span><br><span class="line">&#125; <span class="keyword">while</span> ( <span class="number">0</span> );</span><br></pre></td></tr></table></figure>
+<p>这样，每次divider(除数)为0的时候便会在标准错误流上输出一个提示信息。<br>&emsp;&emsp;而<code>##</code>被称为连接符(concatenator)，用来将两个Token连接为一个Token。注意这里连接的对象是Token就行，而不一定是宏的变量。比如你要做一个菜单项命令名和函数指针组成的结构体的数组，并且希望在函数名和菜单项命令名之间有直观的、名字上的关系，那么下面的代码就非常实用：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">command</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span>* name;</span><br><span class="line">    <span class="keyword">void</span> ( *function ) ( <span class="keyword">void</span> );</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMMAND(NAME) &#123; NAME, NAME##_command &#125;</span></span><br></pre></td></tr></table></figure>
+<p>然后你就用一些预先定义好的命令来方便的初始化一个command结构的数组了：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">command</span> <span class="title">commands</span>[] = &#123;</span></span><br><span class="line">    COMMAND ( quit ),</span><br><span class="line">    COMMAND ( help ),</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>COMMAND宏在这里充当一个代码生成器的作用，这样可以在一定程度上减少代码密度，也可以减少不留心所造成的错误。我们还可以用n个<code>##</code>符号连接<code>n + 1</code>个Token，这个特性也是<code>#</code>符号所不具备的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LINK_MULTIPLE(a,b,c,d) a##_##b##_##c##_##d</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">record_type</span> <span class="title">LINK_MULTIPLE</span> ( <span class="title">name</span>, <span class="title">company</span>, <span class="title">position</span>, <span class="title">salary</span> );</span></span><br></pre></td></tr></table></figure>
+<p>这个语句将展开为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">record_type</span> <span class="title">name_company_position_salary</span>;</span></span><br></pre></td></tr></table></figure>
+<hr>
+<p>&emsp;&emsp;<code>##</code>连接符号由两个井号组成，其功能是在带参数的宏定义中将两个子串(token)联接起来，从而形成一个新的子串。但它不可以是第一个或者最后一个子串。所谓的子串，就是指编译器能够识别的最小语法单元。<code>#</code>符是把传递过来的参数当成字符串进行替代。下面来看看它们是怎样工作的，这是MSDN上的一个例子。假设程序中已经定义了这样一个带参数的宏：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> paster( n ) printf( <span class="meta-string">"token"</span> #n <span class="meta-string">" = %d"</span>, token##n )</span></span><br></pre></td></tr></table></figure>
+<p>同时又定义了一个整形变量<code>int token9 = 9;</code>，现在在主程序中以下面的方式调用这个宏：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">paster( <span class="number">9</span> );</span><br></pre></td></tr></table></figure>
+<p>那么在编译时，上面的这句话被扩展为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span> ( <span class="string">"token"</span> <span class="string">"9"</span> <span class="string">" = %d"</span>, token9 );</span><br></pre></td></tr></table></figure>
+<p>注意到在这个例子中，<code>paster(9);</code>中的这个<code>9</code>被原封不动的当成了一个字符串，与<code>token</code>连接在了一起，从而成为了<code>token9</code>。而<code>#n</code>也被<code>9</code>所替代。可想而知，上面程序运行的结果就是在屏幕上打印出<code>token9 = 9</code>。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/06/C语言语法详解/scanf与fscanf/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/06/C语言语法详解/scanf与fscanf/" itemprop="url">scanf与fscanf</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-06T20:05:34+08:00">
+                2018-12-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="scanf与fscanf"><a href="#scanf与fscanf" class="headerlink" title="scanf与fscanf"></a>scanf与fscanf</h3><p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/wesweeky/article/details/6439777" target="_blank" rel="noopener">scanf/fscanf 的%[]和%n使用方法</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;scanf和fscanf均从第一个非空格的可显示字符开始读起。scanf具有相对较多的转换说明符，它常常作为入门级函数出现在各种教材中。但奇怪的是，<code>[]</code>和<code>n</code>这两种都为C89/C99所规定的标准说明符却鲜少在大多数教材中出现。虽然<code>[]</code>和<code>n</code>说明符的使用频率不及其它说明符，但两者在程序设计中的作用仍然不可小视。<br>&emsp;&emsp;scanf以空白字符为定界符，但如果输入的字符串是以其它字符为定界符的，那怎么办？<code>[]</code>就是专门处理这个问题的转换说明符，<code>[]</code>转换说明符可以通过两种方式产生结果字符集，如果第一个<code>[</code>字符右边没有抑扬符<code>^</code>，那么处于<code>[]</code>之间的字符就是结果字符集，不在其中的可输入字符都作为定界符；如果左边<code>[</code>符号紧靠一个抑扬符<code>^</code>，那么意义相反，<code>^</code>和<code>]</code>之间的字符是定界符，其余可输入字符是结果字符集。<br>&emsp;&emsp;在使用<code>[]</code>说明符之前，得先明白两个概念：一是扫描列表。扫描列表(scanlist)指的是包含在<code>[</code>和<code>]</code>两个字符之间除紧靠左边<code>[</code>字符的抑扬符<code>^</code>之外的字符，例如<code>scanf(&quot;%[abcd]&quot;, ptr);</code>中abcd组成扫描列表。二是扫描字符集(scanset)。扫描字符集指的是结果字符集，例如上面的例子，结果字符集就是abcd。如果输入一个字符串<code>cbadkjf</code>，那么ptr得到的字符串是<code>cbad</code>，<code>kjf</code>三个字符都属于定界符，输入到k字符时输入字符串被截断，<code>kjf</code>三个字符被留在stdin里面。如果带有抑扬符，例如在<code>scanf(&quot;%[^abcd]&quot;, ptr);</code>中，扫描列表仍然是abcd，但扫描字符集是除abcd外的可输入字符。如果输入字符串<code>jksferakjjdf</code>，ptr得到的字符串是<code>jksfer</code>。如果想限制输入字符串的字符数量，在<code>[]</code>前面使用位域，例如<code>scanf(&quot;%10[^abcd]&quot;, ptr);</code>，这样结果字符串最多只能包含10个字符(除<code>\0</code>字符外)。<br>&emsp;&emsp;<code>[</code>符号可以作为扫描列表中的一个成员，但<code>]</code>字符除紧贴最左边的<code>[</code>字符或抑扬符<code>^</code>两种情况外，其余情况下都不会被看作扫描列表的成员。例如<code>%[]abcd]</code>或者“<code>%[^]abcd]</code>，上述两种情况下<code>]</code>字符属于扫描列表的成员，但如果是<code>%[ab]cd]</code>，中间的<code>]</code>字符不会被看作扫描列表的成员，而且输入输出的结果会是乱七八糟的。<br>&emsp;&emsp;对于减号<code>-</code>，只有在紧贴<code>[</code>字符或抑扬字符<code>^</code>以及作为扫描列表最后一个成员时，<code>-</code>字符才会被视为扫描列表的成员。C标准把其余情况规定为编译器相关的。大多数编译器把这种情况的减号定义为连字符，例如<code>scanf(&quot;%[a-zA-Z]&quot;, ptr);</code>，那么扫描列表由大小写各26个字母组成。少数编译器仍旧把这种情况下的减号视为扫描列表成员。<br>&emsp;&emsp;对于<code>fscanf(fd, &quot;%*[^\n]\n&quot;);</code>，<code>%*</code>是虚读，没有存，只是让指针跳过了这个变量。对于<code>scanf(&quot;%*[^\n]&quot;);</code>，可以把输入缓冲区中下一个回车符之前的所有内容清理掉。对于<code>scanf(&quot;%*c&quot;);</code>，可以把输入缓冲区中的下一个回车符清理掉。<br>&emsp;&emsp;<code>%n</code>说明符输出有效字符数量，<code>%n</code>在scanf和printf中都可使用。与<code>%n</code>相对应的形参是一个int类型的指针，<code>%n</code>不影响scanf和printf的返回值。例如对于<code>scanf(&quot;%d %d%n&quot;, &amp;i, &amp;j, &amp;k);</code>，如果输入<code>434 6434</code>，则k等于8，而scanf的返回值仍然为2。又如<code>scanf(&quot;%c%n&quot;, &amp;ch, &amp;k);</code>，输入<code>sbcdefdg</code>后，k等于1，而不是8，因为<code>%c</code>只取一个字符，<code>%n</code>输出的是有效字符数量。<br>&emsp;&emsp;<code>%n</code>用在printf函数里，表示输出的字符数量，例如<code>printf(&quot;i = %d, j = %d\n%n&quot;, i, j, &amp;k);</code>在<code>i = 343</code>、<code>j = 123</code>的情况下，<code>k = 12</code>，同时<code>%n</code>不影响printf的返回值，其返回值仍然为12，而不是14。</p>
+<hr>
+<p>&emsp;&emsp;这个用法是在参考<code>H264 jm82</code>代码上看到的，用来从解码器参数配置文件中读取配置参数，代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* read the decoder configuration file */</span></span><br><span class="line"><span class="keyword">if</span> ( ( fd = fopen ( config_filename, <span class="string">"r"</span> ) ) == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">    <span class="built_in">snprintf</span> ( errortext, ET_SIZE, <span class="string">"Error: Control file %s not found\n"</span>, config_filename );</span><br><span class="line">    error ( errortext, <span class="number">300</span> );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%s"</span>, inp-&gt;infile ); <span class="comment">/* H.26L compressed input bitsream */</span></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%*[^\n]"</span> );</span><br><span class="line"></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%s"</span>, inp-&gt;outfile ); <span class="comment">/* YUV 4:2:2 input format */</span></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%*[^\n]"</span> );</span><br><span class="line"></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%s"</span>, inp-&gt;reffile ); <span class="comment">/* reference file */</span></span><br><span class="line"><span class="built_in">fscanf</span> ( fd, <span class="string">"%*[^\n]"</span> );</span><br></pre></td></tr></table></figure>
+<p>对应的配置文件内容如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">test.264     -- H.26L coded bitstream</span><br><span class="line">test_dec.yuv -- Output file, YUV 4:2:0 format</span><br><span class="line">test_rec.yuv -- Ref sequence (<span class="keyword">for</span> SNR)</span><br></pre></td></tr></table></figure>
+<p>通过这种方式，可以得到：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">inp-&gt;infile = <span class="string">"test.264"</span>;</span><br><span class="line">inp-&gt;outfile = <span class="string">"test_dec.yuv"</span>;</span><br><span class="line">inp-&gt;reffile = <span class="string">"test_rec.yuv"</span>;</span><br></pre></td></tr></table></figure>
+<p>而相应的配置文件中的一些注释则不会被读入，这是相当简便的用法，比起通过严格约定注释符并进行一个字符一个字符来解析，这种方式简单了许多，值得借鉴！</p>
+<hr>
+<h3 id="scanf的用法"><a href="#scanf的用法" class="headerlink" title="scanf的用法"></a>scanf的用法</h3><p>&emsp;&emsp;语法如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">scanf</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* format, ... )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>类似的函数有：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">scanf</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* format, ... )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fscanf</span> <span class="params">( FILE* stream, <span class="keyword">const</span> <span class="keyword">char</span>* format, ... )</span></span>; <span class="comment">/* 指定输入流 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sscanf</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* str, <span class="keyword">const</span> <span class="keyword">char</span>* format, ... )</span></span>; <span class="comment">/* 指定缓存区 */</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;scanf函数根据由format(格式)指定的格式从stdin(标准输入)读取，并保存数据到其它参数。它和printf有点类似，format(格式)字符串由控制字符、空白字符和非空白字符组成，控制字符以一个<code>%</code>符号开始。</p>
+<ul>
+<li>scanf读取匹配format(格式)字符串的输入，当读取到一个控制字符，它把值放置到下一个变量，空白(tabs、空格等等)会跳过。非空白字符和输入匹配，然后丢弃。如果是一个在<code>%</code>符号和控制符间的数量，那么只有指定数量的字符转换到变量中。如果scanf遇到一个字符集(用<code>%[]</code>控制字符表示)，那么在括号中的任意字符都会读取到变量中。scanf的返回值是成功赋值的变量数量，发生错误时返回EOF。</li>
+<li>scanf的格式控制的一般形式为<code>%[*][宽度][F|N][h|l]类型字符</code>，<code>[]</code>中的控制字符为可选项，<code>*</code>表示该输入项读入后不赋予任何变量，即跳过该输入值。<code>宽度</code>表示输入读入字符的长度，对于整型表示截取相应宽度的数字赋给后面列表中的相应变量；对于字符型表示读入相应长度的字符后把第一个字符赋给相应的变量，其余的自动舍弃。例如<code>scanf(&quot;%2d%3d&quot;,&amp;a, &amp;b);</code>，如果输入为<code>12345</code>，则将<code>12</code>赋给a，将<code>45</code>赋给b；对于<code>scanf(&quot;%2c%3c&quot;,&amp;a, &amp;b);</code>，如果输入为12345，则将<code>1</code>赋给a，将<code>3</code>赋给b。</li>
+<li><code>%s</code>将整个输入作为一个串,并设置末尾的<code>\0</code>。</li>
+<li><code>%ns</code>，n为整数，读入的串最长不超过n，然后在末尾补<code>\0</code>。</li>
+<li><code>%nf</code>，读入的浮点数最多有n位整数，如果位数多于n，则会截断。</li>
+<li><code>%n[a-z]</code>，读入最多n个字符，如果遇到非a至z的字符，则停止。</li>
+<li><code>%[^=]</code>，读入任意多的字符，直到遇到<code>=</code>停止。</li>
+<li><code>%n[^=]</code>，读入<code>=</code>号前的至多n个字符。</li>
+<li>F、N、h、l分别表示远指针、近指针、短整和长整型。</li>
+</ul>
+<p>&emsp;&emsp;对于输入字符串还有一些比较有用的控制。例如经常需要读入一行字符串，而这串字符里面可能有空格、制表符等空白字符。如果直接用<code>%s</code>是不可以的，于是有些人就想到用gets，当然这也是一种选择，但是懂C语言的人基本上都知道gets是一个很危险的函数，而且很难控制，特别是与scanf交替使用时前者的劣势更是一览无余，所以gets一般是不推荐用的。其实用<code>%[^\n]</code>就可以很好的解决这个问题了，<code>^</code>表示<code>非</code>，即读入其后面的字符就结束读入。这样想读入一行字符串直接用<code>scanf(&quot;%[^\n]%*c&quot;,str);</code>就可以了，<code>%*c</code>的作用是读入<code>\n</code>，否则后面读入的将一直是<code>\n</code>。<br>&emsp;&emsp;所有对<code>%s</code>起作用的控制都可以用<code>%[]</code>，比如<code>%[0-9]</code>表示只读入<code>0</code>到<code>9</code>之间的字符，<code>%[a-zA-Z]</code>表示只读入字母。<code>-</code>是范围连接符，当然也可以直接列出你需要读入的字符。<br>&emsp;&emsp;如果你只需要读<code>abc</code>里面的字符就可以用<code>%[abc]</code>，或者<code>%[cab]</code>、<code>%[acb]</code>、<code>%[a-c]</code>、<code>%[c-a]</code>。如果想读入某个范围之外的字符串，就在前面加一个<code>^</code>，如<code>%[^a-z]</code>就表示读入小写字母之外的字符。例如从键盘输入的<code>1235ab86</code>中读取1235、86给n，有如下方法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdbool.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">skip</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">scanf</span> ( <span class="string">"%*[^0-9]"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( skip() &amp;&amp; <span class="built_in">scanf</span> ( <span class="string">"%d"</span>, &amp;n ) != EOF ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, n );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1235</span><br><span class="line">86</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/06/C语言语法详解/asprintf、snprintf和sprintf/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1183,850 +1833,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/06/C语言语法详解/goto语句/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/06/C语言语法详解/goto语句/" itemprop="url">goto语句</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-06T12:42:02+08:00">
-                2018-12-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="http://c.biancheng.net/cpp/html/42.html" target="_blank" rel="noopener">C语言goto语句以及用goto语句构成循环</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;goto语句是一种无条件转移语句，其使用格式为：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">goto</span> 语句标号;</span><br></pre></td></tr></table></figure>
-<p>其中，标号是一个有效的标识符，这个标识符加上一个<code>:</code>一起出现在函数内某处。执行goto语句后，程序将跳转到该标号处并执行其后的语句。<br>&emsp;&emsp;注意，标号必须与goto语句同处于一个函数中，goto不能跳到函数体外的函数，即goto有局部作用域，需要在同一个栈内。通常goto语句与if条件语句连用，当满足某一条件时，程序跳到标号处运行。goto语句可以往后跳，也可以往前跳。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i, sum = <span class="number">0</span>;</span><br><span class="line">    i = <span class="number">1</span>;</span><br><span class="line">loop:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( i &lt;= <span class="number">100</span> ) &#123;</span><br><span class="line">        sum = sum + i;</span><br><span class="line">        i++;</span><br><span class="line">        <span class="keyword">goto</span> loop;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, sum );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;goto语句不经常使用，主要因为它将使程序层次不清且不易读，但在多层嵌套退出时，用goto语句则比较合理。在错误处理方面，goto语句要好于结构化的语句，如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 结构化的语句 */</span></span><br><span class="line"><span class="keyword">if</span> (do_something() != ERR) &#123;</span><br><span class="line">    <span class="keyword">if</span> (do_something2() != ERR) &#123;</span><br><span class="line">        <span class="keyword">if</span> (do_something3() != ERR) &#123;</span><br><span class="line">            <span class="keyword">if</span> (do_something4() != ERR) &#123;</span><br><span class="line">                ...</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 换成goto语句 */</span></span><br><span class="line"><span class="keyword">if</span> (do_something() == ERR)  <span class="comment">// 一行</span></span><br><span class="line">    <span class="keyword">goto</span> error;             <span class="comment">// |</span></span><br><span class="line"><span class="keyword">if</span> (do_something2() == ERR) <span class="comment">// |</span></span><br><span class="line">    <span class="keyword">goto</span> error;             <span class="comment">// |</span></span><br><span class="line"><span class="keyword">if</span> (do_something3() == ERR) <span class="comment">// |</span></span><br><span class="line">    <span class="keyword">goto</span> error;             <span class="comment">// V</span></span><br><span class="line"><span class="keyword">if</span> (do_something4() == ERR) <span class="comment">// 使用普通的平铺形式</span></span><br><span class="line">    <span class="keyword">goto</span> error;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/06/C语言语法详解/C语言编程注意事项/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/06/C语言语法详解/C语言编程注意事项/" itemprop="url">C语言编程注意事项</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-06T12:33:00+08:00">
-                2018-12-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ol>
-<li>连续写两个常量字符串，等于连接起来(具体来说，如果两个字符串字面值位置紧邻且仅由空格、缩进和换行符分隔，则它们实际上是一个整体)。这个方法可以解决字符串换行问题。</li>
-<li>函数名与对函数名进行取地址是一样的，都表示函数的地址。</li>
-<li>当需要输入double类型的数据时，使用<code>scanf(&quot;%lf&quot;, &amp;变量);</code>进行输入操作。</li>
-<li>在<code>C/S</code>模式下，客户端发给服务器端的字符串尽量要加上换行符和回车符(服务器接收字符串时也要加上回车换行符)，否则服务器端可能无法printf字符串。</li>
-<li>在网络编程中，网速也是一个需要考虑的因素。如果网速不尽人意的话，可以在计算机上进行环回测试。</li>
-<li>在C语言编程中，要考虑所有可能出现的情况，例如客户端可能发来空字符。</li>
-<li>对于HTTP请求数据报和应答数据报的发送，可以采取先发送头部信息，再发送报体内容的策略。其中，报体内容可以分批次进行发送，而报文头部的<code>Content-Length</code>的大小一定为数据报内容的字节数。</li>
-<li>在打印<code>unsigned long</code>数据类型时，使用的格式为<code>%ld</code>；打印<code>unsigned long long</code>时，使用的格式是<code>%lld</code>。</li>
-<li>对于Makefile，目标文件target就是后面带着依赖文件的标志，例如<code>all:……</code>，要使用<code>make</code>命令执行；对于伪目标，就是后面没有依赖文件的标志，例如<code>.PHONY:(换行)clean:</code>，使用命令<code>make clean</code>；变量的后面往往带着<code>=</code>标志，例如<code>object = ……</code>，使用<code>$(object)</code>进行访问。</li>
-<li>typedef用来定义一个变量类型的别名；static不是变量类型，它定义存放方式。因此，<code>typedef static u8 STATIC</code>是错误的，编译器会报错<code>more than one storage class specified</code>。</li>
-<li>C语言标准并没有明确定义应该使用哪种类型的右移。对于无符号数据，右移必须是逻辑的(即右移空出的部分填0)；对于有符号数据，算术右移(即右移空出的部分填最高位)和逻辑右移都可以。实际上，几乎所有的编译器/机器组合都对有符号数据使用算术右移。</li>
-<li>关键字long的大小(sizeof)表示机器的字节长度，如32位机器为4个字节，64位机器为8个字节。</li>
-<li>C语言标准并没有要求用补码形式来表示有符号整数，但是几乎所有机器都是这么做的。</li>
-<li>在进行除法运算时，一定要注意结果的正确性！例如，<code>-7/2</code>的结果为<code>-3</code>，而不是<code>-4</code>。对于除于2的幂，无符号和补码分别使用逻辑移位和算术移位来达到目的。</li>
-<li>使用sprintf或printf格式化数据时，格式化字符串的形式要和格式化的变量一一对应，例如使用<code>%d</code>对char型变量进行格式会造成误差，解决方法是将char型变量强制转换为int型。</li>
-<li>在代码中最好声明变量的类型是<code>signed</code>型还是<code>unsigned</code>型，尤其是当<code>signed</code>型变量的位数扩充时(例如从8位强制转换为32位)，如果变量为负数，则扩充的位全为1。</li>
-<li>尽量使用snprintf函数代替sprintf函数，其他类似的函数也尽量替换掉，这样可以最大限度避免编程错误。</li>
-<li>把C语言代码放在多个文件中的编译速度要比只放在一个文件上要快。</li>
-<li>位操作不能用于浮点型、空值或其他复杂类型。</li>
-<li>运行代码有时候不能立即出现结果，其原因有可能是算法的效率很低，需要对算法进行改进。</li>
-<li>对于无定义的特性，要么应该将其从程序中消去，要么应该利用断言验证其不会被用到。根据ANSI标准，请求malloc分配长度为零的内存块时，其结果无定义。</li>
-<li>暴露代码错误的关键是消除错误发生的随机性。查看应用中的子系统，以确定其引起随机错误的设计之处。一旦发现了这些地方，就要通过改变设计的方法把它们排除。</li>
-<li>关心局部效率是不值得的，如果你很注重效率的话，请集中于全局效率和算法的效率上，这样你才会看到努力的效果。</li>
-<li>可以使用sizeof来查看数据类型的大小，例如<code>sizeof(int)</code>，这为代码在不同硬件上的移植是很有帮助的。</li>
-<li>在多重循环中，应将最忙的循环放在最内层，这样可以减少CPU切入循环层的次数，提高运行效率。</li>
-<li>尽量用乘法或其它方法代替除法，特别是浮点运算中的除法，因为浮点运算除法要占用较多CPU资源。</li>
-<li>if语句尽量加上else分支，对没有else分支的语句要小心对待；switch语句必须有default分支，要考虑代码运行时可能会出现的所有情况。</li>
-<li>时刻注意表达式是否会上溢或下溢，例如这样的代码<code>for(char i = 7;i &gt;= 0; i--)</code>。</li>
-<li>C语言比较字符串时要使用strcmp函数，而C++则采用<code>==</code>符号；C语言复制拷贝字符串要使用strcpy函数，而C++则采用<code>=</code>符号。</li>
-<li>在编译器中设置全局宏定义要比在代码配置文件中设置好用的多，参考Contiki中uip6的配置。</li>
-<li><code>程序必须为阅读它的人而编写，只是顺便用于机器执行</code>，来自<code>Harold Abelson</code>和<code>Gerald Jay Sussman</code>。</li>
-<li>一个函数应该仅完成一个功能，实现多个功能将会给开发、使用以及维护都带来很大困难。realloc是一个典型的不良设计，在代码中少用甚至不用类似的函数。</li>
-<li>求余操作符<code>%</code>的运算量只能是整数，一定要注意。</li>
-<li>对于<code>~0</code>，这和0的数据类型有关：对char类型，<code>0 = 0x00</code>，<code>~0 = 0xFF</code>；对short类型，<code>0 = 0x0000</code>，<code>~0 = 0xFFFF</code>，对32位int类型，<code>0 = 0x00000000</code>，<code>~0 = 0xFFFFFFFF</code>。</li>
-<li>argv数组的最后一个元素为NULL，因此可以用NULL来判断是否读到最后一个元素。</li>
-<li>使用free或delete释放内存后，必须要将该指针设置为NULL，避免产生野指针。</li>
-<li>可以利用传递结构体指针的方式来编写有多个返回值的C语言函数。</li>
-<li>使用strcpy函数将一个字符串复制到一个数组后，不要忘记将数组中字符串的后面加上<code>\0</code>，否则会在程序中埋下栈溢出的隐患。</li>
-<li>如果两个指针指向同一个数组，它们就可以相减，其结果为两个指针之间的元素数目(这个结果可以和整形数据进行运算)。指针的减法运算在处理字符串时十分有用。</li>
-<li>strncpy在复制含有转义字符<code>\&quot;</code>的字符串时，有可能会出现错误，最好使用strcpy函数。</li>
-<li>对于C语言的科学计数法，<code>12.3E12</code>表示<code>12.3 * 10^12</code>，注意<code>E</code>和左右两边的数字之间不要有间隔。</li>
-<li>对于使用过strcat填充的字符串，下一次填充时，需要用memset函数进行清空，否则后续的字符串会在原来的字符串后面填充。</li>
-<li>C语言也可以返回枚举类型的数值，这对返回有限结果的函数是非常有用的。</li>
-<li><code>volatile const</code>这种类型是允许的，它表示其后面定义的变量是只读的，比如用它来定义一个只读的状态寄存器。定义为volatile是因为它的值可能会被硬件意想不到地改变，而定义为const是因为程序不应该试图去修改它的值。</li>
-<li>输入输出流有缓冲流和非缓冲流之分，对于非缓冲流，一旦数据送到缓冲区，立即处理；对于缓冲流，仅当缓冲区满或当前送入的数据为新的一行字符时，系统才对流中的数据进行处理(称为刷新)。通常使用缓冲流，仅在特殊场合，才使用非缓冲流。</li>
-<li>对于向main函数传参数的代码，如果没有传入正确个数或者格式的参数，代码也会报出段错误。</li>
-<li>fclose函数隐含执行了一次fflush操作，所以不必在调用fclose之前调用fflush。</li>
-<li>含有double成员的结构体对齐的问题：GCC编译时加<code>-malign-double</code>选项，则double按8字节对齐；编译时不加<code>-malign-double</code>，则double按4字节对齐。</li>
-<li>在使用指针前，一定要考虑该指针是否指向了合适的内存空间。</li>
-<li>使用const定义常量从汇编的角度来看，只是给出了对应的内存地址，而不是像<code>#define</code>一样给出的是立即数。所以const定义的常量在程序运行过程中只有一份拷贝，而<code>#define</code>定义的常量在内存中有若干个拷贝。</li>
-<li>注意，可执行文件一定不要和目录使用同一个名字。</li>
-<li>即便函数没有参数，最好也要加上void关键字，否则编译器会报出<code>function declaration isn&#39;t a prototype</code>的警告。</li>
-<li>注意C语言字符串的初始化方法，例如<code>char str[] = &quot;hello&quot;;</code>。</li>
-</ol>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/04/硬件电路笔记/MPU6050计算角度/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/04/硬件电路笔记/MPU6050计算角度/" itemprop="url">MPU6050计算角度</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-04T13:55:59+08:00">
-                2018-12-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/硬件电路笔记/" itemprop="url" rel="index">
-                    <span itemprop="name">硬件电路笔记</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客从网上整理了MPU6050计算角度有关的内容，感谢分享资料的人们！<br>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 参数x、y、z分别是x、y、z方向的重力加速度分量(不需要单位，直接输入数值即可)；dir是要</span></span><br><span class="line"><span class="comment">   获得的角度，0是与Z轴的角度，1是与X轴的角度，2是与Y轴的角度。返回值是角度值，单位是0.1° */</span></span><br><span class="line"><span class="function"><span class="keyword">short</span> <span class="title">MPU6050_Get_Angle</span> <span class="params">( <span class="keyword">float</span> x, <span class="keyword">float</span> y, <span class="keyword">float</span> z, u8 dir )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">float</span> temp;</span><br><span class="line">    <span class="keyword">float</span> res = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> ( dir ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>: <span class="comment">/* 与自然Z轴的角度 */</span></span><br><span class="line">            temp = <span class="built_in">sqrt</span> ( ( x * x + y * y ) ) / z;</span><br><span class="line">            res = <span class="built_in">atan</span> ( temp );</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="number">1</span>: <span class="comment">/* 与自然X轴的角度 */</span></span><br><span class="line">            temp = x / <span class="built_in">sqrt</span> ( ( y * y + z * z ) );</span><br><span class="line">            res = <span class="built_in">atan</span> ( temp );</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="number">2</span>: <span class="comment">/* 与自然Y轴的角度 */</span></span><br><span class="line">            temp = y / <span class="built_in">sqrt</span> ( ( x * x + z * z ) );</span><br><span class="line">            res = <span class="built_in">atan</span> ( temp );</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> res * <span class="number">1800</span> / <span class="number">3.14</span>; <span class="comment">/* 把弧度转换成角度 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;加速度传感器z轴与自然坐标系z轴夹角：<br>$\angle1=\tan^{-1}(\cfrac{\sqrt{A^{2}_{x} + A^{2}_{y}}} {A_{z}})$<br>&emsp;&emsp;加速度传感器x轴与自然坐标系x轴夹角：<br>$\angle2=\tan^{-1}(\cfrac{A_{x}} {\sqrt{A^{2}_{y} + A^{2}_{z}}})$<br>&emsp;&emsp;加速度传感器y轴与自然坐标系y轴夹角：<br>$\angle3=\tan^{-1}(\cfrac{A_{y}} {\sqrt{A^{2}_{x} + A^{2}_{z}}})$<br>&emsp;&emsp;角速度传感器输出的是某个轴的角速度，所以如果想计算某个轴的角度(一般是相对于自然坐标轴)，那么只需要对角速度进行积分就可以了，举例来说，我们现在要测量X轴的角度，那么先假设起始状态x轴和自然坐标轴的角度为0，那么现在你可以将x轴想象成一辆只有速度仪表的汽车，汽车按照一定的速度行驶在一段时间后，如果你要计算汽车(x轴)到起始点的距离(x轴和自然周的角度)，那么你只需要用车速(x轴的角速度)乘以时间就可以算出来了。<br>&emsp;&emsp;当然，传感器的角速度输出严格来说是一个瞬时值，实际中不太可能是一个匀速值，所以需要做一些处理。<br><img src="/2018/12/04/硬件电路笔记/MPU6050计算角度/1.jpg"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/04/硬件电路笔记/RS485通信/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/04/硬件电路笔记/RS485通信/" itemprop="url">RS485通信</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-04T12:47:49+08:00">
-                2018-12-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/硬件电路笔记/" itemprop="url" rel="index">
-                    <span itemprop="name">硬件电路笔记</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/Qingzhusshuiyun/article/details/78262703" target="_blank" rel="noopener">RS485通信和Modbus协议</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;在工业控制、电力通讯、智能仪表等领域，通常情况下是采用串口通信的方式进行数据交换。最初采用的方式是RS232接口，由于工业现场比较复杂，各种电气设备会在环境中产生比较多的电磁干扰，会导致信号传输错误。除此之外，RS232接口只能实现点对点通信，不具备联网功能，最大传输距离也只能达到十几米，不能满足远距离通信要求。而RS485则解决了这些问题，数据信号采用差分传输方式，可以有效地解决共模干扰问题，最大距离可达1200米，并且允许多个收发设备接到同一条总线上。随着工业应用通信越来越多，1979年施耐德电气制定了一个用于工业现场的总线协议Modbus协议，现在工业中使用RS485通信场合很多都采用Modbus协议，本节课我们就来讲解一下RS485通信和Modbus协议。</p>
-<h3 id="RS485通信"><a href="#RS485通信" class="headerlink" title="RS485通信"></a>RS485通信</h3><p>&emsp;&emsp;RS232标准是诞生于RS485之前的，但是RS232有几处不足的地方：</p>
-<ul>
-<li>接口的信号电平值较高，达到十几V，使用不当容易损坏接口芯片，电平标准也与TTL电平不兼容。</li>
-<li>传输速率有局限，不可以过高，一般到一两百千比特每秒(Kb/s)就到极限了。</li>
-<li>接口使用信号线和GND与其它设备形成共地模式的通信，这种共地模式传输容易产生干扰，并且抗干扰性能也比较弱。</li>
-<li>传输距离有限，最多只能通信几十米。</li>
-<li>通信的时候只能两点之间进行通信，不能够实现多机联网通信。</li>
-</ul>
-<p>&emsp;&emsp;针对RS232接口的不足，就不断出现了一些新的接口标准，RS485就是其中之一，它具备以下的特点：</p>
-<ol>
-<li>采用差分信号。我们在讲A/D的时候，讲过差分信号输入的概念，同时也介绍了差分输入的好处，最大的优势是可以抑制共模干扰。尤其当工业现场环境比较复杂，干扰比较多时，采用差分方式可以有效的提高通信可靠性。RS485采用两根通信线，通常用A和B或者<code>D+</code>和<code>D-</code>来表示。逻辑<code>1</code>以两线之间的电压差为<code>+(0.2~6)V</code>表示，逻辑<code>0</code>以两线间的电压差为<code>-(0.2~6)V</code>来表示，是一种典型的差分通信。</li>
-<li>RS485通信速率快，最大传输速度可以达到<code>10Mb/s</code>以上。</li>
-<li>RS485内部的物理结构，采用的是平衡驱动器和差分接收器的组合，抗干扰能力也大大增加。</li>
-<li>传输距离最远可以达到1200米左右，但是它的传输速率和传输距离是成反比的，只有在<code>100Kb/s</code>以下的传输速度，才能达到最大的通信距离，如果需要传输更远距离可以使用中继。</li>
-<li>可以在总线上进行联网实现多机通信，总线上允许挂多个收发器。从现有的RS485芯片来看，有可以挂32、64、128、256等不同个设备的驱动器。</li>
-<li>RS485的接口非常简单，与RS232所使用的MAX232是类似的，只需要一个RS485转换器，就可以直接与单片机的UART串口连接起来，并且使用完全相同的异步串行通信协议。但是由于RS485是差分通信，因此接收数据和发送数据是不能同时进行的，也就是说它是一种半双工通信。那我们如何判断什么时候发送，什么时候接收呢？</li>
-</ol>
-<p>&emsp;&emsp;RS485转换芯片很多，这节课我们以典型的MAX485为例讲解RS485通信，如下图所示：<br><img src="/2018/12/04/硬件电路笔记/RS485通信/1.jpg" height="154" width="384"></p>
-<p align="center" style="color:green">图1 MAX485硬件接口</p>
-&emsp;&emsp;AX485是美信(Maxim)推出的一款常用RS485转换器，其中5脚和8脚是电源引脚；6脚和7脚就是RS485通信中的A和B两个引脚；1脚和4脚分别接到单片机的RXD和TXD引脚上，直接使用单片机UART进行数据接收和发送；2脚和3脚是方向引脚，其中2脚是低电平使能接收器，3脚是高电平使能输出驱动器，我们把这两个引脚连到一起，平时不发送数据的时候，保持这两个引脚是低电平，让MAX485处于接收状态；当需要发送数据的时候，把这个引脚拉高，发送数据，发送完毕后再拉低这个引脚就可以了。为了提高RS485的抗干扰能力，需要在靠近MAX485的A和B引脚之间并接一个电阻，这个电阻阻值从100欧到1K都是可以的。
-&emsp;&emsp;在进行RS485实验中，我们通信用的引脚必须是`P3.0`和`P3.1`(对于只有一个串口的单片机)，此外还有一个方向控制引脚，我们使用杜邦线将其连接到`P1.7`上去。RS485的另外一端，大家可以使用一个USB转RS485模块，用双绞线把开发板和模块上的A和B分别对应连起来，USB那头插入电脑，然后就可以进行通信了。
-&emsp;&emsp;程序中需要注意的一点是：因为平常都是将MAX485设置为接收状态，只有在发送数据的时候才将MAX485改为发送状态，所以在命令发送函数前将MAX485方向引脚拉高，函数退出前再拉低。但是这里有一个细节，就是单片机的发送和接收中断产生的时刻都是在停止位的一半上，也就是说每当停止位传送了一半的时候，RI或TI就已经置位并且马上进入中断(如果中断使能的话)函数了，接收的时候自然不会存在问题，但发送的时候就不一样了：当紧接着向SBUF写入一个字节数据时，UART硬件会在完成上一个停止位的发送后，再开始新字节的发送。但如果此时不是继续发送下一个字节，而是已经发送完毕了，要停止发送并将MAX485方向引脚拉低以使MAX485重新处于接收状态时就有问题了，因为这时候最后的这个停止位实际只发送了一半，还没有彻底完成。所以在命令发送函数结束后需要增加50us延时，这50us的时间正好让剩下的一半停止位完成，那么这个时间自然就是由通信波特率决定的了，为波特率周期的一半(我自己编写的代码中没有延时50us的操作)。
-
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"STC12C5A.H"</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">char</span> uint8;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">int</span>  uint16;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">char</span> int8;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">int</span>  int16;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LOCK   0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UNLOCK !LOCK</span></span><br><span class="line"></span><br><span class="line">sbit MAX485_DIR = P1 ^ <span class="number">4</span>; <span class="comment">/* 设置MAX485信号的传输方向 */</span></span><br><span class="line">sbit LED0 = P0 ^ <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span> send_rs485[] = &#123;<span class="number">0x04</span>, <span class="number">0x00</span>, <span class="number">0x01</span>, <span class="number">0x31</span>, <span class="number">0x00</span>, <span class="number">0x36</span>&#125;; <span class="comment">/* 向rs485发送的数据 */</span></span><br><span class="line"><span class="keyword">volatile</span> uint8 lock = LOCK; <span class="comment">/* 为串口1和串口2的同步操作设置锁 */</span></span><br><span class="line">uint8 recv_data[<span class="number">24</span>] = &#123;<span class="number">0</span>&#125;; <span class="comment">/* 接收数据缓冲区 */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_first_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SCON = <span class="number">0x50</span>; <span class="comment">/* 0101_0000，8位可变波特率，无奇偶校验位 */</span></span><br><span class="line">    TMOD = <span class="number">0x21</span>; <span class="comment">/* 0011_0001，设置定时器1为8位自动重装计数器 */</span></span><br><span class="line">    TH1 = <span class="number">0xFD</span>; <span class="comment">/* 设置定时器1自动重装数 */</span></span><br><span class="line">    TL1 = <span class="number">0xFD</span>;</span><br><span class="line">    TR1 = <span class="number">1</span>; <span class="comment">/* 开定时器1 */</span></span><br><span class="line">    ES = <span class="number">1</span>; <span class="comment">/* 允许串口中断 */</span></span><br><span class="line">    EA = <span class="number">1</span>; <span class="comment">/* 开总中断 */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_first_send_byte</span> <span class="params">( uint8 dat )</span> </span>&#123;</span><br><span class="line">    TI = <span class="number">0</span>; <span class="comment">/* 清零串口发送完成中断请求标志 */</span></span><br><span class="line">    SBUF = dat;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( TI == <span class="number">0</span> ); <span class="comment">/* 等待发送完成 */</span></span><br><span class="line"></span><br><span class="line">    TI = <span class="number">0</span>; <span class="comment">/* 清零串口发送完成中断请求标志 */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_second_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 9600bps@11.0592MHz */</span></span><br><span class="line">    AUXR &amp;= <span class="number">0xF7</span>; <span class="comment">/* 波特率不倍速 */</span></span><br><span class="line">    S2CON = <span class="number">0x50</span>; <span class="comment">// 8位数据，可变波特率</span></span><br><span class="line">    AUXR |= <span class="number">0x04</span>; <span class="comment">// 独立波特率发生器时钟为Fosc，即1T</span></span><br><span class="line">    BRT = <span class="number">0xDC</span>; <span class="comment">// 设定独立波特率发生器重装值</span></span><br><span class="line">    AUXR |= <span class="number">0x10</span>; <span class="comment">// 启动独立波特率发生器</span></span><br><span class="line">    IE2 = <span class="number">0X01</span>; <span class="comment">// 允许串口2中断，ES2置为1</span></span><br><span class="line">    EA = <span class="number">1</span>; <span class="comment">// 开总中断</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_second_send_byte</span> <span class="params">( uint8 i )</span> </span>&#123;</span><br><span class="line">    uint8 temp = <span class="number">0</span>;</span><br><span class="line">    IE2 = <span class="number">0X00</span>; <span class="comment">/* 关串口2中断，ES2置为0 */</span></span><br><span class="line">    S2CON = S2CON &amp; <span class="number">0XFD</span>; <span class="comment">/* 1111_1101，清零串口2发送完成中断请求标志 */</span></span><br><span class="line">    S2BUF = i;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        temp = S2CON;</span><br><span class="line">        temp = temp &amp; <span class="number">0x02</span>;</span><br><span class="line">    &#125; <span class="keyword">while</span> ( temp == <span class="number">0</span> );</span><br><span class="line"></span><br><span class="line">    S2CON = S2CON &amp; <span class="number">0XFD</span>; <span class="comment">/* 1111_1101，清零串口2发送完成中断请求标志 */</span></span><br><span class="line">    IE2 = <span class="number">0X01</span>; <span class="comment">/* 允许串口2中断，ES2 = 1 */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">delay1s</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">char</span> a, b, c;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( c = <span class="number">217</span>; c &gt; <span class="number">0</span>; c-- )</span><br><span class="line">        <span class="keyword">for</span> ( b = <span class="number">171</span>; b &gt; <span class="number">0</span>; b-- )</span><br><span class="line">            <span class="keyword">for</span> ( a = <span class="number">73</span>; a &gt; <span class="number">0</span>; a-- );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    uart_first_init(); <span class="comment">/* 初始化串口1 */</span></span><br><span class="line">    uart_second_init(); <span class="comment">/* 初始化串口2 */</span></span><br><span class="line">    delay1s();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">int</span> send_order = <span class="number">0</span>; <span class="comment">/* 命令发送的次序 */</span></span><br><span class="line">        <span class="keyword">int</span> print_order = <span class="number">0</span>; <span class="comment">/* 打印数据的次序 */</span></span><br><span class="line">        lock = LOCK; <span class="comment">/* 首先要为数据发送操作上锁 */</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> ( lock != UNLOCK ) &#123; <span class="comment">/* 死循环，直到解锁 */</span></span><br><span class="line">            MAX485_DIR = <span class="number">1</span>; <span class="comment">/* 向MAX485发送命令 */</span></span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> ( send_order = <span class="number">0</span>; send_order &lt; <span class="keyword">sizeof</span> ( send_rs485 ) / <span class="keyword">sizeof</span> ( send_rs485[<span class="number">1</span>] ); send_order++ ) &#123;</span><br><span class="line">                uart_second_send_byte ( send_rs485[send_order] );</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            MAX485_DIR = <span class="number">0</span>; <span class="comment">/* 开始从MAX485接收数据 */</span></span><br><span class="line">            delay1s();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> ( print_order = <span class="number">0</span>; print_order &lt; <span class="number">24</span>; print_order++ ) &#123; <span class="comment">/* 打印接收到的数据 */</span></span><br><span class="line">            uart_first_send_byte ( recv_data[print_order] );</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        delay1s();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_first_isr</span> <span class="params">( <span class="keyword">void</span> )</span> interrupt 4 </span>&#123;</span><br><span class="line">    <span class="keyword">volatile</span> uint8 res = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( RI ) &#123;</span><br><span class="line">        RI = <span class="number">0</span>;</span><br><span class="line">        res = SBUF;</span><br><span class="line">        uart_first_send_byte ( res );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        TI = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">uart_second_isr</span> <span class="params">( <span class="keyword">void</span> )</span> interrupt 8 </span>&#123;</span><br><span class="line">    <span class="keyword">volatile</span> uint8 res = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">static</span> recv_true = <span class="number">0</span>; <span class="comment">/* 判断接收数据的准确性，第一个数据为0x16则是正确的 */</span></span><br><span class="line">    <span class="keyword">static</span> uint8 recv_num = <span class="number">0</span>; <span class="comment">/* 接收数据的次序 */</span></span><br><span class="line">    lock = LOCK; <span class="comment">/* 接收数据时需要上锁 */</span></span><br><span class="line">    recv_true = <span class="number">1</span>; <span class="comment">/* 默认情况下接收的数据是正确的 */</span></span><br><span class="line">    recv_num = ( recv_num &lt; <span class="number">24</span> ) ? recv_num : <span class="number">0</span>; <span class="comment">/* 判断是否小于24，否则设置为0 */</span></span><br><span class="line">    res = S2CON;</span><br><span class="line">    res = res &amp; <span class="number">0x01</span>;</span><br><span class="line">    LED0 = !LED0; <span class="comment">/* 指示是否接收到数据 */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( res == <span class="number">1</span> ) &#123;</span><br><span class="line">        S2CON = S2CON &amp; <span class="number">0xFE</span>; <span class="comment">/* 1111_1110 */</span></span><br><span class="line">        res = S2BUF;</span><br><span class="line">        recv_data[recv_num++] = res; <span class="comment">/* 将数据填入接收缓冲区中 */</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        S2CON = S2CON &amp; <span class="number">0xFD</span>; <span class="comment">/* 1111_1101 */</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( recv_data[<span class="number">0</span>] != <span class="number">0x16</span> ) &#123; <span class="comment">/* 如果接收的第一个数据不是0x16，则将接收次序强制置为0 */</span></span><br><span class="line">        recv_num = <span class="number">0</span>;</span><br><span class="line">        recv_true = <span class="number">0</span>; <span class="comment">/* 接收到的数据是错误的 */</span></span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( recv_data[<span class="number">0</span>] == <span class="number">0x16</span> ) &#123;</span><br><span class="line">        recv_true = <span class="number">1</span>; <span class="comment">/* 接收到的数据是正确的 */</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( ( recv_num == <span class="number">24</span> ) &amp;&amp; ( recv_true == <span class="number">1</span> ) ) &#123; <span class="comment">/* 接收到完整的数据，并且数据是正确的 */</span></span><br><span class="line">        lock = UNLOCK; <span class="comment">/* 数据接收完成时需要解锁 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-### Modbus通信协议介绍
-
-&emsp;&emsp;我们在学习串口通信时，通过串口发给单片机三条指令，让其做了三件不同的事情，分别是`buzz on`、`buzz off`和`showstr`。随着系统复杂性的增加，我们希望可以实现更多的指令。而指令越来越多，带来的后果就是代码非常杂乱无章，尤其是有些人喜欢写成`buzz on`、`buzz off`，而另外一些人喜欢写成`on buzz`、`off buzz`。导致不同开发人员写出来的程序代码不兼容，不同厂家的产品不能挂到一条总线上通信。  
-&emsp;&emsp;随着这种矛盾的日益严重，就会有聪明人找到更合理的解决方案，提出一些标准，今后的编程必须按照这个标准来，这种标准也是一种通信协议。但是和UART、I2C、SPI这些“位级”通信协议不同，这种通信协议是字节级别的，叫做应用层通信协议。在1979年由Modicon(现为施耐德电气公司的一个品牌)提出了全球第一个真正用于工业现场总线的协议，就是Modbus协议。
-
-#### Modbus协议特点
-
-&emsp;&emsp;Modbus协议是应用于电子控制器上的一种通用语言。通过此协议，控制器相互之间、控制器经由网络(例如以太网)和其他设备之间可以通信，已经成为一种工业标准。有了它，不同厂商生产的控制设备可以连成工业网络，进行集中监控。这种协议定义了一种控制器能够认识使用的数据结构，而不管它们是经过何种网络进行通信的。它描述了控制器请求访问其它设备的过程，如何回应来自其它设备的请求以及怎样侦测错误记录，它制定了通信数据的格局和内容的公共格式。  
-&emsp;&emsp;在进行多机通信的时候，Modbus协议规定每个控制器必须要知道它们的设备地址，识别按照地址发送过来的数据，决定是否要产生动作以及产生何种动作。如果要回应，控制器将生成的反馈信息用Modbus协议发出。
-&emsp;&emsp;Modbus协议允许在各种网络体系结构内进行简单通信，每种设备(PLC、人机界面、控制面板、驱动程序、输入输出设备等)都能使用Modbus协议来启动远程操作，一些网关允许在几种使用Modbus协议的总线或网络之间的通信，如下图所示：
-<img src="/2018/12/04/硬件电路笔记/RS485通信/2.jpg" height="275" width="390">
-<p align="center" style="color:green">图2 Modbus网络体系结构实例</p>
-
-<h3 id="RTU协议帧数据"><a href="#RTU协议帧数据" class="headerlink" title="RTU协议帧数据"></a>RTU协议帧数据</h3><p>&emsp;&emsp;Modbus有两种通信传输方式，一种是ASCII模式，一种是RTU模式。由于ASCII模式的数据字节是7bit数据位，51单片机无法实现，而且实际应用的也比较少，所以这里我们只用RTU模式。两种模式相似，会用一种另外一种也就会了。一条典型的RTU数据帧如下表所示：  </p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>起始位</th>
-<th>设备地址</th>
-<th>功能代码</th>
-<th>数据</th>
-<th>CRC校验</th>
-<th>结束符</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>T1-T2-T3-T4</td>
-<td>8Bits</td>
-<td>8Bits</td>
-<td>n个8Bits</td>
-<td>16Bits</td>
-<td>T1-T2-T3-T4</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>&emsp;&emsp;与之前我们讲解实用串口通信程序时用的原理相同，一次发送的数据帧必须是作为一个连续的数据流进行传输。我们在使用串口通信程序中采用的方法是定义30ms，如果数据接收时超过了30ms还没有接收到下一个字节，就认为这次的数据结束。而Modbus的RTU模式规定不同数据帧之间的间隔是<code>3.5</code>个字节通信时间以上。如果在一帧数据完成之前有超过<code>3.5</code>个字节时间的停顿，接收设备将刷新当前的消息并假定下一个字节是一个新的数据帧的开始。同样的，如果一个新消息在小于<code>3.5</code>个字节时间内接着前边一个数据开始，接收设备将会认为它是前一帧数据的延续，这将会导致一个错误，因此大家看RTU数据帧最后还有16bit的CRC校验。<br>&emsp;&emsp;<strong>起始位和结束符</strong>：RTU数据帧前后都至少有<code>3.5</code>个字节的时间间隔，起始位和结束符实际上没有任何数据，<code>T1-T2-T3-T4</code>代表的是时间间隔<code>3.5</code>个字节以上的时间，而真正有意义的第一个字节是设备地址。<br>&emsp;&emsp;<strong>设备地址</strong>：在多机通信的时候，数据那么多，我们依靠什么判断这个数据帧是哪个设备的呢？没错，就是依靠这个设备地址字节。每个设备都有一个自己的地址，当设备接收到一帧数据后，程序首先对设备地址字节进行判断比较，如果与自己的地址不同，则对这帧数据直接不予理会；如果与自己的地址相同，就要对这帧数据进行解析，按照之后的功能码执行相应的功能。如果地址是0x00，则认为是一个广播命令，就是所有的从机设备都要执行的指令。<br>&emsp;&emsp;<strong>功能代码</strong>：在第二个字节功能代码字节中，Modbus规定了部分功能代码，此外也保留了一部分功能代码作为备用或者用户自定义，如下表所示：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>功能码</th>
-<th>名称</th>
-<th>作用</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>01</td>
-<td>读取线圈状态</td>
-<td>取得一组逻辑线圈的当前状态(ON/OFF)</td>
-</tr>
-<tr>
-<td>02</td>
-<td>读取输入状态</td>
-<td>取得一组开关输入的当前状态(ON/OFF)</td>
-</tr>
-<tr>
-<td>03</td>
-<td>读取保持寄存器</td>
-<td>在一个或多个保持寄存器中取得当前的二进制值</td>
-</tr>
-<tr>
-<td>04</td>
-<td>读取输入寄存器</td>
-<td>在一个或多个输入寄存器中取得当前的二进制值</td>
-</tr>
-<tr>
-<td>05</td>
-<td>强置单线圈</td>
-<td>强置一个逻辑线圈的通断状态</td>
-</tr>
-<tr>
-<td>06</td>
-<td>预置单寄存器</td>
-<td>把具体二进值装入一个保持寄存器</td>
-</tr>
-<tr>
-<td>07</td>
-<td>读取异常状态</td>
-<td>取得8个内部线圈的通断状态，这8个线圈的地址由控制器决定，用户逻辑可以将这些线圈定义，以说明从机状态，短报文适宜于迅速读取状态</td>
-</tr>
-<tr>
-<td>08</td>
-<td>回送诊断校验</td>
-<td>把诊断校验报文送从机，以对通信处理进行评鉴</td>
-</tr>
-<tr>
-<td>09</td>
-<td>编程(只用于484)</td>
-<td>使主机模拟编程器作用，修改PC从机逻辑</td>
-</tr>
-<tr>
-<td>10</td>
-<td>控询(只用于484)</td>
-<td>可使主机与一台正在执行长程序任务从机通信，探询该从机是否已完成其操作任务，仅在含有功能码9的报文发送后，本功能码才发送</td>
-</tr>
-<tr>
-<td>11</td>
-<td>读取事件计数</td>
-<td>可使主机发出单询问，并随即判定操作是否成功，尤其是该命令或其它应答产生通信错误时</td>
-</tr>
-<tr>
-<td>12</td>
-<td>读取通信事件记录</td>
-<td>可使主机检索每台从机的ModBus事务处理通信事件记录。如果某项事务处理完成，记录会给出有关错误</td>
-</tr>
-<tr>
-<td>13</td>
-<td>编程(184/384/484/584)</td>
-<td>可使主机模拟编程器功能修改PC从机逻辑</td>
-</tr>
-<tr>
-<td>14</td>
-<td>探询(184/384/484/584)</td>
-<td>可使主机与正在执行任务的从机通信，定期控询该从机是否已完成其程序操作，仅在含有功能13的报文发送后，本功能码才得发送</td>
-</tr>
-<tr>
-<td>15</td>
-<td>强置多线圈</td>
-<td>强置一串连续逻辑线圈的通断</td>
-</tr>
-<tr>
-<td>16</td>
-<td>预置多寄存器</td>
-<td>把具体的二进制值装入一串连续的保持寄存器</td>
-</tr>
-<tr>
-<td>17</td>
-<td>报告从机标识</td>
-<td>可使主机判断编址从机的类型及该从机运行指示灯的状态</td>
-</tr>
-<tr>
-<td>18</td>
-<td>884和MICRO_84</td>
-<td>可使主机模拟编程功能，修改PC状态逻辑</td>
-</tr>
-<tr>
-<td>19</td>
-<td>重置通信链路</td>
-<td>发生非可修改错误后，是从机复位于已知状态，可重置顺序字节</td>
-</tr>
-<tr>
-<td>20</td>
-<td>读取通用参数(584L)</td>
-<td>显示扩展存储器文件中的数据信息</td>
-</tr>
-<tr>
-<td>21</td>
-<td>写入通用参数(584L)</td>
-<td>把通用参数写入扩展存储文件，或修改</td>
-</tr>
-<tr>
-<td>22~64</td>
-<td>保留作扩展功能备用</td>
-<td></td>
-</tr>
-<tr>
-<td>65~72</td>
-<td>保留以备用户功能所用</td>
-<td>留作用户功能的扩展编码</td>
-</tr>
-<tr>
-<td>73~119</td>
-<td>非法功能</td>
-<td></td>
-</tr>
-<tr>
-<td>120~127</td>
-<td>保留</td>
-<td>留作内部作用</td>
-</tr>
-<tr>
-<td>128~255</td>
-<td>保留</td>
-<td>用于异常</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>程序对功能码的处理，就是来检测这个字节的数值，然后根据其数值来做相应的功能处理。<br>&emsp;&emsp;<strong>数据</strong>：跟在功能代码后边的是n个8bit的数据。这个n值的到底是多少，是功能代码来确定的，不同的功能代码后边跟的数据数量不同。例如，如果功能码是0x03，也就是读保持寄存器，那么主机发送数据n的组成部分就是：2个字节的寄存器起始地址加上2个字节的寄存器数量N。从机数据n的组成部分是：1个字节的字节数，因为我们回复的寄存器的值是2个字节，所以这个字节数也就是2N个，再加上2N个寄存器的值，如图3所示：<br><img src="/2018/12/04/硬件电路笔记/RS485通信/3.jpg"></p>
-<p></p><p align="center" style="color:green">图3 读保持寄存器数据结构</p><br>&emsp;&emsp;<strong>CRC校验</strong>：CRC校验是一种数据算法，是用来校验数据对错的。CRC校验函数把一帧数据除最后两个字节外，前边所有的字节进行特定的算法计算，计算完后生成了一个16bit的数据，作为CRC校验码，添加在一帧数据的最后。接收方接收到数据后，同样会把前边的字节进行CRC计算，计算完了再和发过来的16bit的CRC数据进行比较，如果相同则认为数据正常，没有出错；如果比较不相同，则说明数据在传输中发生了错误，这帧数据将被丢弃，就像没收到一样，而发送方会在得不到回应后做相应的处理错误处理。<br>&emsp;&emsp;RTU模式的每个字节的位是这样分布的：1个起始位、8个数据位(最小有效位先发送)、1个奇偶校验位(如果无校验则没有这一位)、1位停止位(有校验位时)或者2个停止位(无校验位时)。<p></p>
-<h3 id="Modbus多机通信例程"><a href="#Modbus多机通信例程" class="headerlink" title="Modbus多机通信例程"></a>Modbus多机通信例程</h3><p>&emsp;&emsp;给从机下发不同的指令，从机去执行不同的操作，这个就是判断一下功能码即可，和我们前边学的实用串口例程是类似的。多机通信，无非就是添加了一个设备地址判断而已，难度也不大。我们找了一个Modbus调试精灵，通过设置设备地址，读写寄存器的地址以及数值数量等参数，可以直接替代串口调试助手，比较方便的下发多个字节的数据，如图4所示。我们先来就图中的设置和数据来对Modbus做进一步的分析，图中的数据来自于调试精灵与我们接下来要讲的例程之间的交互。<br><img src="/2018/12/04/硬件电路笔记/RS485通信/4.jpg"></p>
-<p></p><p align="center" style="color:green">图4 Modbus调试精灵</p><br>&emsp;&emsp;我们的USB转RS485模块虚拟出的是COM5，波特率9600，无校验位，数据位是8位，1位停止位，设备地址假设为1。写寄存器的时候，如果我们要把<code>01</code>写到一个地址是<code>0000</code>的寄存器地址里，点一下<code>写入</code>，就会出现发送指令<code>01 06 00 00 00 01 48 0A</code>。我们来分析一下这帧数据，其中<code>01</code>是设备地址，<code>06</code>是功能码，代表写寄存器这个功能，后边跟<code>00 00</code>表示的是要写入的寄存器的地址，<code>00 01</code>就是要写入的数据，<code>48 0A</code>就是CRC校验码，这是软件自动算出来的。而根据Modbus协议，当写寄存器的时候，从机成功完成该指令的操作后，会把主机发送的指令直接返回，我们的调试精灵会接收到这样一帧数据<code>01 06 00 00 00 01 48 0A</code>。<br>&emsp;&emsp;假如我们现在要从寄存器地址<code>0002</code>开始读取寄存器，并且读取的数量是2个。点一下<code>读出</code>，就会出现发送指令<code>01 03 00 02 00 02 65 CB</code>。其中<code>01</code>是设备地址，<code>03</code>是功能码，代表读寄存器这个功能，<code>00 02</code>就是读寄存器的起始地址，后一个<code>00 02</code>就是要读取2个寄存器的数值，<code>65 CB</code>就是CRC校验。而接收到的数据是<code>01 03 04 00 00 00 00 FA 33</code>。其中<code>01</code>是设备地址，<code>03</code>是功能码，<code>04</code>代表的是后边读到的数据字节数是4个，<code>00 00 00 00</code>分别是地址为<code>00 02</code>和<code>00 03</code>的寄存器内部的数据，而<code>FA 33</code>就是CRC校验了。似乎越来越明朗了，所谓的Modbus通信协议，无非就是主机下发了不同的指令，从机根据指令的判断来执行不同的操作而已。<p></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/91/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/91/">91</a><span class="page-number current">92</span><a class="page-number" href="/page/93/">93</a><a class="extend next" rel="next" href="/page/93/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/91/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/91/">91</a><span class="page-number current">92</span><a class="page-number" href="/page/93/">93</a><a class="page-number" href="/page/94/">94</a><a class="extend next" rel="next" href="/page/93/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2072,7 +1883,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-count">934</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -2083,7 +1894,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>

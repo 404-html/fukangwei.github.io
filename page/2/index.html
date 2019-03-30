@@ -271,6 +271,774 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/19/软件与硬件问题/Mosquitto安装和使用/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/19/软件与硬件问题/Mosquitto安装和使用/" itemprop="url">Mosquitto安装和使用</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-19T13:15:26+08:00">
+                2019-03-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>&emsp;&emsp;<code>MQTT</code>是<code>IBM</code>开发的一个即时通讯协议。<code>MQTT</code>是面向<code>M2M</code>和物联网的连接协议，采用轻量级发布和订阅消息传输机制。<code>Mosquitto</code>是一款实现了<code>MQTT v3.1</code>协议的开源消息代理软件，提供轻量级的、支持<code>发布/订阅</code>的消息推送模式，使设备对设备之间的短消息通信简单易用。若初次接触<code>MQTT</code>协议，可先理解以下概念：</p>
+<ul>
+<li><code>MQTT</code>协议特点：相比于<code>RESTful</code>架构的物联网系统，<code>MQTT</code>协议借助消息推送功能，可以更好地实现远程控制。</li>
+<li><code>MQTT</code>协议角色：在<code>RESTful</code>架构的物联网系统，包含两个角色客户端和服务器端，而在<code>MQTT</code>协议中包括发布者、代理器(服务器)和订阅者。</li>
+<li><code>MQTT</code>协议消息：<code>MQTT</code>中的消息可理解为发布者和订阅者交换的内容(负载)，这些消息包含具体的内容，可以被订阅者使用。</li>
+<li><code>MQTT</code>协议主题：<code>MQTT</code>中的主题可理解为相同类型或相似类型的消息集合。</li>
+</ul>
+<h3 id="安装和使用注意点"><a href="#安装和使用注意点" class="headerlink" title="安装和使用注意点"></a>安装和使用注意点</h3><p>&emsp;&emsp;安装步骤如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">wget http://mosquitto.org/files/<span class="built_in">source</span>/mosquitto-1.4.5.tar.gz</span><br><span class="line">tar zxfv mosquitto-1.4.5.tar.gz</span><br><span class="line"><span class="built_in">cd</span> mosquitto-1.4.5</span><br><span class="line">make</span><br><span class="line">sudo make install</span><br></pre></td></tr></table></figure>
+<p>安装时，需要注意如下几点：</p>
+<ul>
+<li>编译找不到<code>openssl/ssl.h</code>，解决方法为<code>sudo apt-get install libssl-dev</code>。</li>
+<li>编译过程找不到<code>ares.h</code>，解决方法为<code>sudo apt-get install libc-ares-dev</code>。</li>
+<li>编译过程找不到<code>uuid/uuid.h</code>，解决方法为<code>sudo apt-get install uuid-dev</code>。</li>
+<li>使用过程中找不到<code>libmosquitto.so.1</code>，解决方法为：</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo ln -s /usr/<span class="built_in">local</span>/lib/libmosquitto.so.1 /usr/lib/libmosquitto.so.1</span><br><span class="line">sudo ldconfig</span><br></pre></td></tr></table></figure>
+<h3 id="简单测试"><a href="#简单测试" class="headerlink" title="简单测试"></a>简单测试</h3><p>&emsp;&emsp;一个完整的<code>MQTT</code>示例包括一个代理器，一个发布者和一个订阅者。测试分为以下几个步骤：</p>
+<ol>
+<li>启动服务<code>mosquitto</code>。</li>
+<li>订阅者通过<code>mosquitto_sub</code>订阅指定主题的消息。</li>
+<li>发布者通过<code>mosquitto_pub</code>发布指定主题的消息。</li>
+<li>代理服务器把该主题的消息推送到订阅者。</li>
+</ol>
+<p>&emsp;&emsp;在本例中，发布者、代理和订阅者均为<code>localhsot</code>，但是在实际的情况下三种并不是同一个设备。在<code>mosquitto</code>中可通过<code>-h</code>(或<code>--host</code>)设置主机名称(<code>hostname</code>)。为了实现这个简单的测试案例，需要在<code>linux</code>中打开三个控制台，分别代表代理服务器、发布者和订阅者：</p>
+<p><img src="/2019/03/19/软件与硬件问题/Mosquitto安装和使用/1.png"></p>
+<ul>
+<li>启动代理服务，命令为<code>mosquitto -v</code>，<code>-v</code>是为了打印更多的调试信息。</li>
+<li>订阅主题，命令为<code>mosquitto_sub -v -t sensor</code>，<code>-t</code>指定主题，此处为<code>sensor</code>。</li>
+<li>发布内容，命令为<code>mosquitto_pub -t sensor -m 12</code>，<code>-t</code>指定主题，<code>-m</code>指定消息内容。</li>
+</ul>
+<p>&emsp;&emsp;当发布者推送消息之后，订阅者获得内容<code>sensor 12</code>。而代理服务器控制台中会出现一一连接、消息发布和心跳等调试信息。通过代理服务器的调试输出，可以对<code>MQTT</code>协议的相关过程有所了解：</p>
+<p><img src="/2019/03/19/软件与硬件问题/Mosquitto安装和使用/2.png" height="275" width="436"></p>
+<p>&emsp;&emsp;<strong>补充说明</strong>：在启动<code>MQTT</code>服务器后，应该先进行消息订阅，再进行消息发布，否则订阅者收不到发布者发布的消息。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/19/单片机/STM32的ADC以及内部温度传感器/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/19/单片机/STM32的ADC以及内部温度传感器/" itemprop="url">STM32的ADC以及内部温度传感器</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-19T09:58:57+08:00">
+                2019-03-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>STM32</code>自带<code>1</code>至<code>3</code>个<code>ADC</code>模块，采样精度达到了<code>12</code>位。在<code>STM32F103RBT6</code>中，<code>ADC1</code>和<code>ADC2</code>共用一组管脚。总体编程思路如下：</p>
+<ol>
+<li>初始化<code>RCC</code>相关，使能系统时钟，使能功能模块如<code>ADC</code>、<code>DMA</code>的时钟。</li>
+<li><code>GPIO</code>相关初始化，比如常用的指示灯，<code>ADC</code>的引脚要设置为输入。</li>
+<li><code>NVIC</code>向量中断的配置，因为这里使用了<code>DMA</code>中断和中断服务程序编写(下例中暂不使用)。</li>
+<li><code>DMA</code>配置(下例中暂不使用)。</li>
+<li><code>ADC</code>初始化。</li>
+</ol>
+<p>&emsp;&emsp;相关的通道如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>通道</th>
+<th>ADC1</th>
+<th>ADC2</th>
+<th>ADC3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>通道<code>0</code></td>
+<td><code>PA0</code></td>
+<td><code>PA0</code></td>
+<td><code>PA0</code></td>
+</tr>
+<tr>
+<td>通道<code>1</code></td>
+<td><code>PA1</code></td>
+<td><code>PA1</code></td>
+<td><code>PA1</code></td>
+</tr>
+<tr>
+<td>通道<code>2</code></td>
+<td><code>PA2</code></td>
+<td><code>PA2</code></td>
+<td><code>PA2</code></td>
+</tr>
+<tr>
+<td>通道<code>3</code></td>
+<td><code>PA3</code></td>
+<td><code>PA3</code></td>
+<td><code>PA3</code></td>
+</tr>
+<tr>
+<td>通道<code>4</code></td>
+<td><code>PA4</code></td>
+<td><code>PA4</code></td>
+<td><code>PF6</code></td>
+</tr>
+<tr>
+<td>通道<code>5</code></td>
+<td><code>PA5</code></td>
+<td><code>PA5</code></td>
+<td><code>PF7</code></td>
+</tr>
+<tr>
+<td>通道<code>6</code></td>
+<td><code>PA6</code></td>
+<td><code>PA6</code></td>
+<td><code>PF8</code></td>
+</tr>
+<tr>
+<td>通道<code>7</code></td>
+<td><code>PA7</code></td>
+<td><code>PA7</code></td>
+<td><code>PF9</code></td>
+</tr>
+<tr>
+<td>通道<code>8</code></td>
+<td><code>PB0</code></td>
+<td><code>PB0</code></td>
+<td><code>PF10</code></td>
+</tr>
+<tr>
+<td>通道<code>9</code></td>
+<td><code>PB1</code></td>
+<td><code>PB1</code></td>
+<td></td>
+</tr>
+<tr>
+<td>通道<code>10</code></td>
+<td><code>PC0</code></td>
+<td><code>PC0</code></td>
+<td><code>PC0</code></td>
+</tr>
+<tr>
+<td>通道<code>11</code></td>
+<td><code>PC1</code></td>
+<td><code>PC1</code></td>
+<td><code>PC1</code></td>
+</tr>
+<tr>
+<td>通道<code>12</code></td>
+<td><code>PC2</code></td>
+<td><code>PC2</code></td>
+<td><code>PC2</code></td>
+</tr>
+<tr>
+<td>通道<code>13</code></td>
+<td><code>PC3</code></td>
+<td><code>PC3</code></td>
+<td><code>PC3</code></td>
+</tr>
+<tr>
+<td>通道<code>14</code></td>
+<td><code>PC4</code></td>
+<td><code>PC4</code></td>
+<td></td>
+</tr>
+<tr>
+<td>通道<code>15</code></td>
+<td><code>PC5</code></td>
+<td><code>PC5</code></td>
+<td></td>
+</tr>
+<tr>
+<td>通道<code>16</code></td>
+<td>温度传感器</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>通道<code>17</code></td>
+<td>内部参考电压</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>&emsp;&emsp;以下是参考代码，使用<code>ADC1</code>的<code>IN0</code>脚：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ADC_GPIO_Init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    GPIO_InitTypeDef GPIO_InitStructure;</span><br><span class="line">    RCC_APB2PeriphClockCmd ( RCC_APB2Periph_GPIOA | RCC_APB2Periph_ADC1, ENABLE );</span><br><span class="line">    GPIO_DeInit ( GPIOA );</span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN; <span class="comment">/* 设为模拟输入 */</span></span><br><span class="line">    GPIO_Init ( GPIOA, &amp;GPIO_InitStructure );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ADC_configuration</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    ADC_InitTypeDef ADC_InitStructure;</span><br><span class="line">    ADC_InitStructure.ADC_Mode = ADC_Mode_Independent; <span class="comment">/* 独立模式 */</span></span><br><span class="line">    ADC_InitStructure.ADC_ScanConvMode = DISABLE; <span class="comment">/* 连续多通道模式 */</span></span><br><span class="line">    ADC_InitStructure.ADC_ContinuousConvMode = DISABLE; <span class="comment">/* 单次转换 */</span></span><br><span class="line">    <span class="comment">/* 转换由软件而不是外部触发启动 */</span></span><br><span class="line">    ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;</span><br><span class="line">    ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right; <span class="comment">/* 右对齐 */</span></span><br><span class="line">    ADC_InitStructure.ADC_NbrOfChannel = <span class="number">1</span>; <span class="comment">/* 扫描通道数 */</span></span><br><span class="line">    ADC_Init ( ADC1, &amp;ADC_InitStructure );</span><br><span class="line">    <span class="comment">// ADC_RegularChannelConfig( ADC1, ADC_Channel_0, 1, ADC_SampleTime_7Cycles5 );</span></span><br><span class="line">    ADC_Cmd ( ADC1, ENABLE ); <span class="comment">/* 使能或者失能指定的ADC */</span></span><br><span class="line">    ADC_ResetCalibration ( ADC1 ); <span class="comment">/* 重置指定的ADC的校准寄存器 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( ADC_GetResetCalibrationStatus ( ADC1 ) ); <span class="comment">/* 等待校准寄存器初始化 */</span></span><br><span class="line">​</span><br><span class="line">    ADC_StartCalibration ( ADC1 ); <span class="comment">/* 开始校准 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( ADC_GetCalibrationStatus ( ADC1 ) ); <span class="comment">/* 等待校准完成 */</span></span><br><span class="line">​</span><br><span class="line">    ADC_SoftwareStartConvCmd ( ADC1, ENABLE ); <span class="comment">/* 使能指定的ADC的软件转换启动功能 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function">u16 <span class="title">GetADCValue</span> <span class="params">( u8 ADC_Channel )</span> </span>&#123; <span class="comment">/* ADC_Channel_x 0~17 */</span></span><br><span class="line">    u16 adc_value;</span><br><span class="line">    ADC_RegularChannelConfig ( ADC1, ADC_Channel, <span class="number">1</span>, ADC_SampleTime_7Cycles5 );</span><br><span class="line">    ADC_SoftwareStartConvCmd ( ADC1, ENABLE ); <span class="comment">/* 使能指定的ADC的软件转换启动功能 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 检查制定ADC标志位是否置为1，ADC_FLAG_EOC是转换结束标志位 */</span></span><br><span class="line">    <span class="keyword">while</span> ( ADC_GetFlagStatus ( ADC1, ADC_FLAG_EOC ) == RESET );</span><br><span class="line">​</span><br><span class="line">    adc_value = ADC_GetConversionValue ( ADC1 );</span><br><span class="line">    <span class="keyword">return</span> adc_value; <span class="comment">/* 返回最近一次ADCx规则组的转换结果 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;当使用内部温度传感器时，需要使能温度传感器通道：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ADC_TempSensorVrefintCmd ( ENABLE );</span><br></pre></td></tr></table></figure>
+<p>温度传感器通道号是<code>ADC_Channel_16</code>，此通道的采样时间调到最大，来保证精度。温度的计算公式如下：</p>
+<script type="math/tex; mode=display">温度(^{\circ}C) = \{(V_{25}-V_{SENSE})/Avg\_Slope\} + 25</script><p>其中$V_{25}$是$V_{SENSE}$在$25^{\circ}C$时的数值；$Avg\_Slope$是温度与$V_{SENSE}$曲线的平均斜率(单位是$mV/^{\circ}C$或$\mu V/^{\circ}C$)。$V_{25}$、$V_{SENSE}$的典型值分别为$1.43$、$4.3mV/^{\circ}C$，则<code>TEMP = (1.43 - Vsense)/0.0043 + 25</code>。</p>
+<p>&emsp;&emsp;<strong>补充说明</strong>：</p>
+<ol>
+<li><code>STM32</code>的<code>ADC</code>可以分为注入组(<code>Injected Channel</code>)和规则组(<code>Regular Channel</code>)，规则组放的是常规情况下的检查所需要的数据，注入组放的是特殊情况下的检查所需要的数据(或者是特殊数据)，也可以说规则组是主程序，而注入组是中断程序。</li>
+<li>如果你的<code>ADC_CLK</code>越小，即你的<code>AD</code>转换速度越慢，那么<code>AD</code>转换的精度就越高。</li>
+<li>注意<code>STM32</code>的<code>ADC</code>功能的触发模块(可允许外部触发，也可以允许内部定时器触发)。</li>
+<li><code>STM32</code>的<code>ADC</code>转换模式：单次(对单个端口只转换一次)、连续(对端口连续转换多次)、扫描(对多个端口进行扫描)和中断。</li>
+<li>自动注入(<code>IAUTO</code>)将规则组与注入组规为一组。</li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/19/ucos和ucgui/STM32的ucgui移植/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/19/ucos和ucgui/STM32的ucgui移植/" itemprop="url">STM32的ucgui移植</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-19T09:18:14+08:00">
+                2019-03-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;这里移植的是<code>UCGUI3.90a</code>版本，虽然已经有更新的版本，例如<code>UCGUI3.98</code>、甚至<code>4.04</code>版本，但目前只有这个版本的代码是最全的，包括<code>JPEG</code>、<code>MULTILAYER</code>、<code>MEMDEV</code>、<code>AntiAlias</code>等模块。<br>&emsp;&emsp;<code>UCGUI</code>的文件数量很大，主要用到<code>UCGUI390a/Start/Config</code>和<code>UCGUI390a/Start/GUI</code>两个文件夹下文件，相关文件介绍如下。将<code>Config</code>和<code>GUI</code>下的所有文件加入工程，这是<code>UCGUI</code>官方推荐的结构：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>目录</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Config</code></td>
+<td>配置文件</td>
+</tr>
+<tr>
+<td><code>GUI/AntiAlias</code></td>
+<td>抗锯齿支持</td>
+</tr>
+<tr>
+<td><code>GUI/ConvertMono</code></td>
+<td>用于<code>B/W</code>(黑白两色)以及灰度显示的色彩转换程序</td>
+</tr>
+<tr>
+<td><code>GUI/ConvertColor</code></td>
+<td>用于彩色显示的色彩转换程序</td>
+</tr>
+<tr>
+<td><code>GUI/Core</code></td>
+<td>UCGUI内核文件</td>
+</tr>
+<tr>
+<td><code>GUI/Font</code></td>
+<td>字体文件</td>
+</tr>
+<tr>
+<td><code>GUI/LCDDriver</code></td>
+<td>LCD驱动</td>
+</tr>
+<tr>
+<td><code>GUI/Mendev</code></td>
+<td>存储器件支持</td>
+</tr>
+<tr>
+<td><code>GUI/Touch</code></td>
+<td>触摸屏支持</td>
+</tr>
+<tr>
+<td><code>GUI/Widget</code></td>
+<td>视窗控件库</td>
+</tr>
+<tr>
+<td><code>GUI/WM</code></td>
+<td>视窗管理器</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>&emsp;&emsp;<code>JPEG</code>、<code>MemDev</code>、<code>MultiLayer</code>、<code>Widget</code>和<code>Wm</code>这<code>5</code>个文件夹的内容可以暂时不加入<code>MDK</code>工程，因为这些文件起到的是扩展功能。<code>ConverMono</code>、<code>ConverColor</code>、<code>Core</code>、<code>Font</code>这四个目录下的文件是不用修改的，要修改的文件在<code>LCDDriver</code>、<code>Config</code>这两个目录下的内容。<code>LCDDriver</code>是<code>LCD</code>的驱动接口函数文件，需要将自己的<code>LCD</code>驱动函数提供给<code>UCGUI</code>调用。需要提供<code>3</code>个<code>LCD</code>底层驱动函数：</p>
+<ul>
+<li><code>void LCD_L0_SetPixelIndex ( int x, int y, int PixelIndex )</code>：<code>LCD</code>画点函数，用指定颜色填充一个像素。</li>
+<li><code>unsigned int LCD_L0_GetPixelIndex ( int x, int y )</code>：<code>LCD</code>读取定点颜色函数，读取一个像素点的<code>16</code>位<code>RGB</code>颜色值。</li>
+<li><code>void LCD_L0_FillRect ( int x0, int y0, int x1, int y1 )</code>：矩形填充函数，用指定颜色填充一个矩形。这个函数也可以不改，使用<code>UCGUI</code>的函数，用一个一个的像素点填充成一个矩形。也可以在底层驱动根据像素个数直接往<code>GRAM</code>中写数据，封装成函数，供这个函数调用，速度会快很多。</li>
+</ul>
+<p>&emsp;&emsp;<code>LCDDriver</code>下有三个文件，即<code>LCDDummy.c</code>、<code>LCDNull.c</code>和<code>LCDWin.c</code>，它们都是<code>UCGUI</code>的<code>LCD</code>接口模板文件。以<code>LCDDummy.c</code>为例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"LCD_Private.h"</span> <span class="comment">/* private modul definitions &amp; config */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"GUI_Private.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"GUIDebug.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* #if (LCD_CONTROLLER == -1) \</span></span><br><span class="line"><span class="comment">    &amp;&amp; (!defined(WIN32) | defined(LCD_SIMCONTROLLER)) */</span> <span class="comment">/* 必须注释，否则不会编译 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ili93xx.h"</span> <span class="comment">/* 包含你的LCD驱动函数声明 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> (LCD_CONTROLLER == -1) <span class="comment">/* 这句对应“Config/LCDConf.h” */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">LCD_L0_SetPixelIndex</span> <span class="params">( <span class="keyword">int</span> x, <span class="keyword">int</span> y, <span class="keyword">int</span> PixelIndex )</span> </span>&#123;</span><br><span class="line">    POINT_COLOR = PixelIndex; <span class="comment">/* 我的画点函数使用了一个全局变量设定颜色 */</span></span><br><span class="line">    LCD_DrawPoint ( x, y ); <span class="comment">/* 画点函数 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="title">LCD_L0_GetPixelIndex</span> <span class="params">( <span class="keyword">int</span> x, <span class="keyword">int</span> y )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> LCD_ReadPoint ( x, y ); <span class="comment">/* 我的读取像素颜色函数 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">LCD_L0_FillRect</span> <span class="params">( <span class="keyword">int</span> x0, <span class="keyword">int</span> y0, <span class="keyword">int</span> x1, <span class="keyword">int</span> y1 )</span> </span>&#123;</span><br><span class="line">    LCD_Fill ( x0, y0, x1, y1, LCD_COLORINDEX ); <span class="comment">/* 填充矩形函数 */</span></span><br><span class="line">    <span class="comment">/*------------------------</span></span><br><span class="line"><span class="comment">    for ( ; y0 &lt;= y1; y0++ ) &#123;</span></span><br><span class="line"><span class="comment">        LCD_L0_DrawHLine ( x0, y0, x1 );</span></span><br><span class="line"><span class="comment">    &#125;</span></span><br><span class="line"><span class="comment">    ------------------------*/</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>UCGUI</code>提供了一些<code>LCD</code>控制器的驱动函数，但是这种配置方法可以适用于任何控制<code>IC</code>。<br>&emsp;&emsp;接下来修改<code>Config</code>文件夹下文件，即<code>GUIConf.h</code>、<code>LCDConf.h</code>和<code>GUITouchConf.h</code>。还需要加入一个<code>GUI_X.c</code>文件，否则编译时会有错误，直接复制<code>UCGUI390a\Sample\GUI_X\GUI_X.c</code>即可。如果打开了触摸功能，还需要加入<code>UCGUI390a\Sample\GUI_X\GUI_X_Touch.c</code>。这三个文件是<code>UCGUI</code>的上层配置文件，也就是<code>GUI</code>一些功能的开关。<br>&emsp;&emsp;<code>GUIConf.h</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> GUICONF_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUICONF_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_OS              (0) <span class="comment">/* 操作系统的支持，当用到ucos时需要打开 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_SUPPORT_TOUCH   (0) <span class="comment">/* 触摸屏的支持 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_SUPPORT_UNICODE (0) <span class="comment">/* 用汉字库时再打开 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_DEFAULT_FONT   &amp;GUI_Font6x8 <span class="comment">/* 定义字体大小 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_ALLOC_SIZE     12500 <span class="comment">/* 分配的动态内存空间 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/*********************************************************************</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">*         Configuration of available packages</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_WINSUPPORT     0 <span class="comment">/* 窗口功能支持  要使用指针图标时必须打开 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_SUPPORT_MEMDEV 0 <span class="comment">/* 内存管理 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_SUPPORT_AA     0 <span class="comment">/* 抗锯齿功能，打开后可以提高显示效果 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span>  <span class="comment">/* Avoid multiple inclusion */</span></span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>LCDConf.h</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> LCDCONF_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LCDCONF_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LCD_XSIZE  (320) <span class="comment">/* lcd的水平分辨率 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LCD_YSIZE  (480) <span class="comment">/* lcd的垂直分辨率 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LCD_BITSPERPIXEL (16) <span class="comment">/* 16位颜色RGB值(颜色深度) */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LCD_SWAP_RB      (1)  <span class="comment">/* 红蓝反色交换 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* lcd控制器的具体型号</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 设置为“-1”时，会编译LCDDriver下的LCDDummy.c</span></span><br><span class="line"><span class="comment"> * 设置为“-2”时，会编译LCDDriver下的LCDNull.c</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * 还需要修改LCDDriver下文件的宏定义才可以被编译</span></span><br><span class="line"><span class="comment"> * eg. LCDDummy.c：</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * #if (LCD_CONTROLLER == -1) &amp;&amp; (!defined(WIN32) |defined(LCD_SIMCONTROLLER))</span></span><br><span class="line"><span class="comment"> * 改为#if (LCD_CONTROLLER == -1)</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LCD_CONTROLLER  -1 <span class="comment">/* 设置为“-1”或“-2”，因为UCGUI没有相应LCD控制IC驱动 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LCD_INIT_CONTROLLER() LCD_Config(); <span class="comment">/* 绑定相关LCD底层驱动的初始化函数 */</span></span></span><br></pre></td></tr></table></figure>
+<p>配置完这两个文件，如果不启用触摸屏的话，UCGUI已经可以正常运行。<br>&emsp;&emsp;先修改主函数，添加<code>#include &quot;GUI.h&quot;</code>，在<code>main</code>里添加：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">GUI_Init();</span><br><span class="line">GUI_SetBkColor ( GUI_BLUE );</span><br><span class="line">GUI_SetColor ( GUI_RED );</span><br><span class="line">GUI_Clear();</span><br><span class="line">GUI_DrawCircle ( <span class="number">100</span>, <span class="number">100</span>, <span class="number">50</span> ); <span class="comment">/* 画圆 */</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">while</span> ( <span class="number">1</span> );</span><br></pre></td></tr></table></figure>
+<p>要实现横屏效果，首先让显示屏基本驱动实现横屏，然后将<code>LCDConf.h</code>中的<code>LCD_XSIZE</code>和<code>LCD_YSIZE</code>进行互换。<br>&emsp;&emsp;下面讲解<code>UCGUI</code>触摸屏的配置。在<code>ucgui</code>的<code>Config</code>目录中添加<code>GUI_X_Touch.c</code>，然后将<code>GUIConf.h</code>文件中的<code>GUI_WINSUPPORT</code>和<code>GUI_SUPPORT_TOUCH</code>设置为<code>1</code>。配置<code>GUIToucConf.h</code>文件(下面的配置是针对<code>320 * 240</code>的<code>2.8</code>寸<code>TFT LCD</code>，上面的是针对<code>480 * 320</code>的<code>TFT LCD</code>)：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> GUITOUCH_CONF_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUITOUCH_CONF_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_TOUCH_AD_LEFT     0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_TOUCH_AD_RIGHT    240</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_TOUCH_AD_TOP      0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_TOUCH_AD_BOTTOM   320</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_TOUCH_SWAP_XY    0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_TOUCH_MIRROR_X   0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GUI_TOUCH_MIRROR_Y   0</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p><code>UCGUI</code>触摸屏驱动接口函数文件<code>GUI_X_Touch.c</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"GUI.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"GUI_X.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"touch.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GUI_TOUCH_X_ActivateX</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GUI_TOUCH_X_ActivateY</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span>  <span class="title">GUI_TOUCH_X_MeasureX</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    Convert_Pos();</span><br><span class="line">    <span class="keyword">return</span> Pen_Point.X0;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span>  <span class="title">GUI_TOUCH_X_MeasureY</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    Convert_Pos();</span><br><span class="line">    <span class="keyword">return</span> Pen_Point.Y0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对<code>main</code>函数进行如下修改：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"led.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"delay.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"sys.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"usart.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"GUI.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"touch.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SystemInit();</span><br><span class="line">    delay_init ( <span class="number">72</span> );</span><br><span class="line">    NVIC_Configuration();</span><br><span class="line">    uart_init ( <span class="number">9600</span> );</span><br><span class="line">    LED_Init();</span><br><span class="line">    GUI_Init();</span><br><span class="line">    Touch_Init();</span><br><span class="line">    GUI_SetBkColor ( GUI_RED ); <span class="comment">/* 设置背景颜色 */</span></span><br><span class="line">    GUI_SetColor ( GUI_WHITE ); <span class="comment">/* 设置前景颜色，即字体和绘图的颜色 */</span></span><br><span class="line">    GUI_Clear(); <span class="comment">/* 按指定颜色清屏 */</span></span><br><span class="line">    GUI_DispStringAt ( <span class="string">"Hello World .."</span>, <span class="number">10</span>, <span class="number">10</span> ); <span class="comment">/* 显示字符 */</span></span><br><span class="line">    GUI_CURSOR_Show(); <span class="comment">/* 显示鼠标来测试触摸屏，必须打开窗口功能GUI_WINSUPPORT */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        GUI_TOUCH_Exec(); <span class="comment">/* 调用UCGUI的TOUCH相关函数 */</span></span><br><span class="line">        GUI_Exec(); <span class="comment">/* GUI事件更新 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;触摸屏横屏的方法如下：<br>&emsp;&emsp;1. 修改<code>LCD</code>的默认显示方向：<code>LCD</code>的驱动文件里有个<code>LCD_MyInit</code>函数，用于初始化<code>LCD</code>。该函数中有个<code>LCD_Display_Dir</code>函数，用于切换<code>LCD</code>的显示方向，根据需要选择：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LCD_Display_Dir ( <span class="number">1</span> ); <span class="comment">/* 0为竖屏，1为横屏 */</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;2. 修改<code>ucgui</code>中对应于触摸的坐标检测函数：<code>GUI_X_Touch.c</code>有两个检测触摸的函数，即<code>GUI_TOUCH_X_MeasureX</code>与<code>GUI_TOUCH_X_MeasureY</code>。如果是竖屏显示，<code>GUI_TOUCH_X_MeasureX</code>返回<code>X</code>坐标，<code>GUI_TOUCH_X_MeasureY</code>返回<code>Y</code>坐标，横屏显示的话反过来就可以了：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GUI_TOUCH_X_MeasureX</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    tp_dev.scan ( <span class="number">0</span> );</span><br><span class="line">    <span class="comment">// return tp_dev.x; /* 竖屏显示 */</span></span><br><span class="line">    <span class="keyword">return</span> tp_dev.y; <span class="comment">/* 横屏显示 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GUI_TOUCH_X_MeasureY</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    tp_dev.scan ( <span class="number">0</span> );</span><br><span class="line">    <span class="comment">// return tp_dev.y; /* 竖屏显示 */</span></span><br><span class="line">    <span class="keyword">return</span> tp_dev.x; <span class="comment">/* 横屏显示 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;3. 修改<code>ucgui</code>中触摸屏的相关设置：在<code>LCDConf.h</code>中修改<code>LCD_XSIZE</code>与<code>LCD_YSIZE</code>，在<code>GUITouchConf.h</code>中修改<code>GUI_TOUCH_AD_RIGHT</code>与<code>GUI_TOUCH_AD_BOTTOM</code>。如果<code>X</code>轴触摸是反的，需要修改一下<code>GUI_TOUCH_MIRROR</code>。</p>
+<p>&emsp;&emsp;如果需要将<code>UCOS</code>系统移植到<code>ucgui</code>上，可以参考以下步骤：<br>&emsp;&emsp;1. 首先将<code>ucos</code>系统移植到<code>STM32</code>上，并通过信号量、消息邮箱等机制的测试。<br>&emsp;&emsp;2. 将<code>GUIConf.h</code>文件中的<code>GUI_OS</code>设置为<code>1</code>，同时在<code>Config</code>文件夹下添加<code>GUI_X_uCOS.c</code>文件，并加入到工程中。<br>&emsp;&emsp;3. 将<code>GUI_X_uCOS.c</code>文件中的<code>GUI_X_ExecIdle</code>函数改为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GUI_X_ExecIdle</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="comment">//OS_X_Delay ( 1 );</span></span><br><span class="line">    OSTimeDly ( <span class="number">50</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同时在该文件中增加宏定义：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> TRUE   1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> FALSE  0</span></span><br></pre></td></tr></table></figure>
+<p>将<code>GUI_X.c</code>文件中的如下<code>4</code>个函数注释掉：</p>
+<ul>
+<li><code>GUI_X_GetTime(void);</code></li>
+<li><code>GUI_X_Delay(int ms);</code></li>
+<li><code>GUI_X_Init(void);</code></li>
+<li><code>GUI_X_ExecIdle(void);</code></li>
+</ul>
+<p>最后将<code>TFT</code>显示屏中的延时函数用<code>ucos</code>的延时函数替代，延时毫秒的(如<code>delay_ms</code>)用<code>OSTimeDly</code>替代，延时微秒的(如<code>delay_us</code>)用<code>OSTimeDly(1);</code>替代。至此所有移植工作结束！</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/19/ucos和ucgui/ucos在STM32上的移植/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/19/ucos和ucgui/ucos在STM32上的移植/" itemprop="url">ucos在STM32上的移植</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-19T08:49:39+08:00">
+                2019-03-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>UCOS-II</code>由<code>Micrium</code>公司提供，是一个可移植、可固化的、可裁剪的、占先式多任务实时内核，它适用于多种微处理器、微控制器和数字处理芯片。同时，该系统源代码开放、注释详尽，适合系统开发。<code>UCOS-II</code>已经通过联邦航空局(<code>FAA</code>)商用航行器认证，符合航空无线电技术委员会(<code>RTCA</code>)的<code>DO-178B</code>标准。<br>&emsp;&emsp;<code>UCOS-II</code>的架构如下：</p>
+<p><img src="/2019/03/19/ucos和ucgui/ucos在STM32上的移植/1.png" height="295" width="344"></p>
+<p>&emsp;&emsp;<strong>Step one</strong>：下面这几个文件可以完全不用修改：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">+----------------------------</span><br><span class="line">|core: os_core.c</span><br><span class="line">|  os: os_flag.c  os_mbox.c</span><br><span class="line">|      os_mem.c   os_mutex.c</span><br><span class="line">|      os_q.c     os_sem.c</span><br><span class="line">|      os_task.c  os_time.c</span><br><span class="line">|      os_tmr.c</span><br><span class="line">|head: ucos_ii.h</span><br><span class="line">+----------------------------</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<strong>Step two</strong>：<code>os_ports</code>在<code>uCOS-II\Ports\ARM-Cortex-M3\Generic\IAR</code>目录下。对于<code>os_cpu_c.c</code>文件，<code>stm32</code>的启动代码里有部分函数和该文件重复了，所以要把重复的代码删除，并在<code>os_cpu.h</code>中注释掉它们的外部声明。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">if</span> 0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_CPU_CM3_NVIC_ST_CTRL    (*((volatile INT32U *)0xE000E010uL)) <span class="comment">/* SysTick Ctrl &amp; Status Reg. */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_CPU_CM3_NVIC_ST_RELOAD  (*((volatile INT32U *)0xE000E014uL)) <span class="comment">/* SysTick Reload  Value Reg. */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_CPU_CM3_NVIC_ST_CURRENT (*((volatile INT32U *)0xE000E018uL)) <span class="comment">/* SysTick Current Value Reg. */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_CPU_CM3_NVIC_ST_CAL     (*((volatile INT32U *)0xE000E01CuL)) <span class="comment">/* SysTick Cal     Value Reg. */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_CPU_CM3_NVIC_PRIO_ST    (*((volatile INT8U  *)0xE000ED23uL)) <span class="comment">/* SysTick Handler Prio  Reg. */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_CPU_CM3_NVIC_ST_CTRL_COUNT                    0x00010000uL   <span class="comment">/* Count flag.                */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_CPU_CM3_NVIC_ST_CTRL_CLK_SRC                  0x00000004uL   <span class="comment">/* Clock Source.              */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_CPU_CM3_NVIC_ST_CTRL_INTEN                    0x00000002uL   <span class="comment">/* Interrupt enable.          */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_CPU_CM3_NVIC_ST_CTRL_ENABLE                   0x00000001uL   <span class="comment">/* Counter mode.              */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_CPU_CM3_NVIC_PRIO_MIN                               0xFFu    <span class="comment">/* Min handler prio.          */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> 0</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">OS_CPU_SysTickHandler</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">OS_CPU_SysTickInit</span> <span class="params">( INT32U  cnts )</span></span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;在<code>os_cpu.h</code>文件中，同样把下面几个外部声明的函数注释掉：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">if</span> 0</span></span><br><span class="line"><span class="comment">/* See OS_CPU_C.C */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">OS_CPU_SysTickHandler</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">OS_CPU_SysTickInit</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="comment">/* See BSP.C */</span></span><br><span class="line"><span class="function">INT32U <span class="title">OS_CPU_SysTickClkFreq</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>os_cpu_a.asm</code>是汇编代码。由于它里面有部分指令集不适合stm32，所以要进行如下修改：</p>
+<ul>
+<li>将所有的<code>PUBLIC</code>改为<code>EXPORT</code>。</li>
+<li>把对齐部分也改一下，也是因为指令集不匹配：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">;       RSEG CODE:CODE:NOROOT(<span class="number">2</span>)</span><br><span class="line">    PRESERVE8</span><br><span class="line">    AREA |.text|, CODE, READONLY, ALIGN=<span class="number">2</span></span><br><span class="line">    THUMB</span><br><span class="line">    REQUIRE8</span><br></pre></td></tr></table></figure>
+<p>注意，<code>AREA</code>不能顶头写，这是规定，不然会编译出错。<br>&emsp;&emsp;在<code>os_dbg.c</code>文件中，把<code>#define OS_COMPILER_OPT __root</code>改为<code>#define OS_COMPILER_OPT //__root</code>。<br>&emsp;&emsp;<strong>Step three</strong>：将<code>ST</code>的官方库导进去即可。<br>&emsp;&emsp;<strong>Step four</strong>：在<code>startup_stm32f10x_hd.s</code>文件中，将<code>PendSV_Handler</code>替换成<code>OS_CPU_PendSVHandler</code>。在<code>stm32f10x_it.c</code>文件中加头文件<code>ucos_ii.h</code>，并添加如下代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SysTick_Handler</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    OSIntEnter(); <span class="comment">/* 进入中断 */</span></span><br><span class="line">    OSTimeTick(); <span class="comment">/* 调用ucos的时钟服务程序 */</span></span><br><span class="line">    OSIntExit(); <span class="comment">/* 触发任务切换软中断 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>os_cfg.h</code>中对部分功能进行剪裁：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_FLAG_EN        0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_MBOX_EN        0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_MEM_EN         0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_MUTEX_EN       0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_Q_EN           0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_SEM_EN         0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_TMR_EN         0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_DEBUG_EN       0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_APP_HOOKS_EN   0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> OS_EVENT_MULTI_EN 0</span></span><br></pre></td></tr></table></figure>
+<p>至此系统移植完成了。下面就是写自己的<code>app</code>，<code>main.c</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"led.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"sys.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"usart.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stm32f10x.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stm32f10x_conf.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ucos_ii.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> STARTUP_TASK_PRIO     8</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> STARTUP_TASK_STK_SIZE 80</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SysTick_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_Config ( SystemCoreClock / OS_TICKS_PER_SEC );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestLed1</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        LED0 = !LED0;</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">500</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TestLed2</span> <span class="params">( <span class="keyword">void</span> *p_arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"hello\r\n"</span> );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testled1[STARTUP_TASK_STK_SIZE];</span><br><span class="line"><span class="keyword">static</span> OS_STK task_testled2[STARTUP_TASK_STK_SIZE];</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    SysTick_init();</span><br><span class="line">    LED_Init();</span><br><span class="line">    uart_init ( <span class="number">9600</span> );</span><br><span class="line">    OSInit();</span><br><span class="line">    OSTaskCreate ( TestLed1, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testled1[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO - <span class="number">1</span> );</span><br><span class="line">    OSTaskCreate ( TestLed2, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;task_testled2[STARTUP_TASK_STK_SIZE - <span class="number">1</span>], STARTUP_TASK_PRIO );</span><br><span class="line">    OSStart();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/19/ucos和ucgui/ucgui添加自定义汉字库/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1192,590 +1960,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/18/单片机/AD转换程序的问题/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/18/单片机/AD转换程序的问题/" itemprop="url">AD转换程序的问题</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-18T18:02:16+08:00">
-                2019-03-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;关于<code>AD</code>转换的代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> ( n = <span class="number">0</span>; n &lt; <span class="number">8</span>; n++ ) &#123;</span><br><span class="line">    dis[<span class="number">2</span>] = ad_data[n] / <span class="number">51</span>; <span class="comment">/* 测得值转换为3位BCD码，最大为5.00V */</span></span><br><span class="line">    dis[<span class="number">4</span>] = ad_data[n] % <span class="number">51</span>; <span class="comment">/* 余数暂存 */</span></span><br><span class="line">    dis[<span class="number">4</span>] = dis[<span class="number">4</span>] * <span class="number">10</span>; <span class="comment">/* 计算小数第一位 */</span></span><br><span class="line">    dis[<span class="number">1</span>] = dis[<span class="number">4</span>] / <span class="number">51</span>;</span><br><span class="line">    dis[<span class="number">4</span>] = dis[<span class="number">4</span>] % <span class="number">51</span>;</span><br><span class="line">    dis[<span class="number">4</span>] = dis[<span class="number">4</span>] * <span class="number">10</span>; <span class="comment">/* 计算小数第二位 */</span></span><br><span class="line">    dis[<span class="number">0</span>] = dis[<span class="number">4</span>] / <span class="number">51</span>;</span><br><span class="line">    .....</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>其中<code>ad_data</code>是<code>AD</code>转换后的数据，<code>dis</code>是要显示的内容。关于这段代码的解释如下：<br>&emsp;&emsp;<code>AD</code>转换一般是将外接的<code>0</code>至<code>5V</code>的电压变换成为<code>8</code>位二进制数，即<code>0</code>至<code>255</code>。如果想要将这些数字转换成<code>0.00</code>至<code>5.00V</code>，需要除以<code>51</code>。假设外接的电压是<code>3.29V</code>，经过<code>AD</code>转换后，送到单片机的数据将是<code>168</code>。由这个数字变换成<code>329</code>的运算步骤如下：</p>
-<p><img src="/2019/03/18/单片机/AD转换程序的问题/1.jpg"></p>
-<p>&emsp;&emsp;计算步骤如下：</p>
-<ol>
-<li><code>168</code>除以<code>51</code>，整数部分是<code>3</code>，余数部分是<code>15</code>。</li>
-<li><code>15</code>后面添上<code>0</code>，即余数部分乘以<code>10</code>。</li>
-<li><code>150</code>除以<code>51</code>，整数部分是<code>2</code>，余数部分是<code>48</code>。</li>
-<li><code>48</code>后面添上<code>0</code>，即余数部分乘以<code>10</code>。</li>
-<li><code>480</code>除以<code>51</code>，整数部分是<code>9</code>，余数部分是<code>21</code>。</li>
-</ol>
-<p>此时就得到了<code>329</code>，如果要求精度较高，可以继续除下去。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/18/Qt语法详解/Qt之QPainter/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/18/Qt语法详解/Qt之QPainter/" itemprop="url">Qt之QPainter</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-18T16:59:06+08:00">
-                2019-03-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="简述"><a href="#简述" class="headerlink" title="简述"></a>简述</h3><p>&emsp;&emsp;<code>Qt</code>中提供了强大的<code>2D</code>绘图系统，可以使用相同的<code>API</code>在屏幕和绘图设备上进行绘制，它主要基于<code>QPainter</code>、<code>QPaintDevice</code>和<code>QPaintEngine</code>这三个类。<br>&emsp;&emsp;<code>QPainter</code>用来执行绘图操作，其提供的<code>API</code>在<code>GUI</code>或<code>QImage</code>、<code>QOpenGLPaintDevice</code>、<code>QWidget</code>和<code>QPaintDevice</code>显示图形(线、形状、渐变等)、文本和图像。<code>QPaintDevice</code>不直接绘制物理显示画面，而利用逻辑界面的中间媒介。例如绘制矩形图形时，为了将对象绘制到<code>QWidget</code>、<code>QGLPixelBuffer</code>、<code>QImage</code>、<code>QPixmap</code>、<code>QPicture</code>等多种界面中间，必须使用<code>QPaintDevice</code>。<code>QPaintEngine</code>提供了一些接口，可以用于<code>QPainter</code>在不同的设备上进行绘制。下图给出了这三个类之间的层次结构：</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QPainter/1.png"></p>
-<p>&emsp;&emsp;这种实现的主要好处是，所有的绘制都遵循着同一种绘制流程，这样可以很方便地添加新的特性，也可以为不支持的功能添加一个默认的实现方式。另外需要说明一点，<code>Qt</code>提供了一个独立的<code>QtOpenGL</code>模块，可以让你在<code>Qt</code>的应用程序中使用<code>OpenGL</code>功能。该模块提供了一个<code>OpenGL</code>的模块，可以像其他的<code>Qt</code>组件一样的使用。它的不同之处在于，它是使用<code>OpenGL</code>作为显示技术，使用<code>OpenGL</code>函数进行绘制。<br>&emsp;&emsp;绘图系统由<code>QPainter</code>完成具体的绘制操作，<code>QPainter</code>类提供了大量高度优化的函数来完成<code>GUI</code>编程所需要的大部分绘制工作。它可以绘制一切想要的图形，从最简单的一条直线到其他任何复杂的图形，例如饼图、弧形等，还可以用来绘制文本和图片。<code>QPainter</code>可以在继承自<code>QPaintDevice</code>类的任何对象上进行绘制操作。<br>&emsp;&emsp;<code>QPainter</code>一般在部件的绘图事件<code>paintEvent</code>中进行绘制，首先创建<code>QPainter</code>对象，然后进行图形的绘制，最后记得销毁<code>QPainter</code>对象。当窗口程序需要升级或者重新绘制时，调用此成员函数。使用<code>repaint</code>和<code>update</code>后，调用函数<code>paintEvent</code>。</p>
-<h3 id="绘制文本"><a href="#绘制文本" class="headerlink" title="绘制文本"></a>绘制文本</h3><p>&emsp;&emsp;效果如下：</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QPainter/2.png"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> MainWindow::paintEvent ( QPaintEvent *event ) &#123;</span><br><span class="line">    Q_UNUSED ( event );</span><br><span class="line">    <span class="function">QPainter <span class="title">painter</span> <span class="params">( <span class="keyword">this</span> )</span></span>;</span><br><span class="line">    painter.setRenderHint ( QPainter::Antialiasing, <span class="literal">true</span> ); <span class="comment">/* 反走样 */</span></span><br><span class="line">    painter.setPen ( QColor ( <span class="number">0</span>, <span class="number">160</span>, <span class="number">230</span> ) ); <span class="comment">/* 设置画笔颜色 */</span></span><br><span class="line">    <span class="comment">/* 绘制直线 */</span></span><br><span class="line">    painter.drawLine ( QPointF ( <span class="number">0</span>, height() ), QPointF ( width() / <span class="number">2</span>, height() / <span class="number">2</span> ) );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>首先通过<code>setRenderHint</code>来设置反走样，否则绘制出来的线条会出现锯齿；调用<code>setPen</code>来设置画笔颜色(淡蓝色)。最后调用<code>drawLine</code>来实现直线的绘制，其中<code>QPointF(0, height())</code>是指直线的起点坐标，<code>QPointF(width() / 2, height() / 2)</code>是指直线的终点坐标。</p>
-<h3 id="绘制矩形"><a href="#绘制矩形" class="headerlink" title="绘制矩形"></a>绘制矩形</h3><p>&emsp;&emsp;效果如下：</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QPainter/3.png"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> MainWindow::paintEvent ( QPaintEvent *event ) &#123;</span><br><span class="line">    Q_UNUSED ( event );</span><br><span class="line">    <span class="function">QPainter <span class="title">painter</span> <span class="params">( <span class="keyword">this</span> )</span></span>;</span><br><span class="line">    painter.setRenderHint ( QPainter::Antialiasing, <span class="literal">true</span> ); <span class="comment">/* 反走样 */</span></span><br><span class="line">    painter.setPen ( QPen ( QColor ( <span class="number">0</span>, <span class="number">160</span>, <span class="number">230</span> ), <span class="number">2</span> ) ); <span class="comment">/* 设置画笔颜色、宽度 */</span></span><br><span class="line">    painter.setBrush ( QColor ( <span class="number">255</span>, <span class="number">160</span>, <span class="number">90</span> ) ); <span class="comment">/* 设置画刷颜色 */</span></span><br><span class="line">    painter.drawRect ( <span class="number">50</span>, <span class="number">50</span>, <span class="number">160</span>, <span class="number">100</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>首先使用<code>setPen</code>来设置画笔颜色(淡蓝色)、宽度(<code>2</code>像素)，用来设置矩形区域的边框。然后使用<code>setBrush</code>来设置画刷颜色(这里为橙色)，用来填充矩形区域，最后调用<code>drawRect</code>来实现矩形的绘制，其中参数依次顺序为<code>x</code>、<code>y</code>、<code>w</code>、<code>h</code>，是指区域从<code>x</code>为<code>50</code>、<code>y</code>为<code>50</code>的坐标点起，宽度为<code>160</code>，高度为<code>100</code>的矩形。</p>
-<h3 id="绘制弧线"><a href="#绘制弧线" class="headerlink" title="绘制弧线"></a>绘制弧线</h3><p>&emsp;&emsp;效果如下：</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QPainter/4.png"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> MainWindow::paintEvent ( QPaintEvent *event ) &#123;</span><br><span class="line">    Q_UNUSED ( event );</span><br><span class="line">    <span class="function">QRectF <span class="title">rect</span> <span class="params">( <span class="number">90.0</span>, <span class="number">90.0</span>, <span class="number">80.0</span>, <span class="number">90.0</span> )</span></span>; <span class="comment">/* 矩形 */</span></span><br><span class="line">    <span class="keyword">int</span> startAngle = <span class="number">30</span> * <span class="number">16</span>; <span class="comment">/* 起始角度 */</span></span><br><span class="line">    <span class="keyword">int</span> spanAngle = <span class="number">120</span> * <span class="number">16</span>; <span class="comment">/* 跨越度数 */</span></span><br><span class="line">    <span class="function">QPainter <span class="title">painter</span> <span class="params">( <span class="keyword">this</span> )</span></span>;</span><br><span class="line">    painter.setRenderHint ( QPainter::Antialiasing, <span class="literal">true</span> ); <span class="comment">/* 反走样 */</span></span><br><span class="line">    painter.setPen ( QPen ( QColor ( <span class="number">0</span>, <span class="number">160</span>, <span class="number">230</span> ), <span class="number">2</span> ) ); <span class="comment">/* 设置画笔颜色、宽度 */</span></span><br><span class="line">    painter.drawArc ( rect, startAngle, spanAngle ); <span class="comment">/* 绘制弧线 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>画弧线时，角度被分成了十六分之一，就是说如果需要画出要<code>30</code>度，就是<code>30 * 16</code>。它有起始角度和跨度，还有位置矩形，所以要想画出自己想要的弧线，就需要大概估算出各个参数的预估值。</p>
-<h3 id="绘制椭圆"><a href="#绘制椭圆" class="headerlink" title="绘制椭圆"></a>绘制椭圆</h3><p>&emsp;&emsp;效果如下：</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QPainter/5.png"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> MainWindow::paintEvent ( QPaintEvent *event ) &#123;</span><br><span class="line">    Q_UNUSED ( event );</span><br><span class="line">    <span class="function">QPainter <span class="title">painter</span> <span class="params">( <span class="keyword">this</span> )</span></span>;</span><br><span class="line">    painter.setRenderHint ( QPainter::Antialiasing, <span class="literal">true</span> ); <span class="comment">/* 反走样 */</span></span><br><span class="line">    painter.setPen ( QPen ( QColor ( <span class="number">0</span>, <span class="number">160</span>, <span class="number">230</span> ), <span class="number">2</span> ) ); <span class="comment">/* 设置画笔颜色、宽度 */</span></span><br><span class="line">    painter.drawEllipse ( QPointF ( <span class="number">120</span>, <span class="number">60</span> ), <span class="number">50</span>, <span class="number">20</span> ); <span class="comment">/* 绘制椭圆 */</span></span><br><span class="line">    painter.setBrush ( QColor ( <span class="number">255</span>, <span class="number">160</span>, <span class="number">90</span> ) ); <span class="comment">/* 设置画刷颜色 */</span></span><br><span class="line">    painter.drawEllipse ( QPointF ( <span class="number">120</span>, <span class="number">140</span> ), <span class="number">40</span>, <span class="number">40</span> ); <span class="comment">/* 绘制椭圆 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这里绘制了一个椭圆和一个圆形，都是调用<code>drawEllipse</code>接口。我们可以很轻易地发现，如果为椭圆的时候，后面两个参数不一样，圆形则相同。第一个参数<code>QPointF</code>是指椭圆的中心点相对当前窗体<code>QPoint(0, 0)</code>点的位置，后面的参数指椭圆的<code>x</code>轴及<code>y</code>轴的半径。</p>
-<h3 id="绘制多边形"><a href="#绘制多边形" class="headerlink" title="绘制多边形"></a>绘制多边形</h3><p>&emsp;&emsp;效果如下：</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QPainter/6.png"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> MainWindow::paintEvent ( QPaintEvent *event ) &#123;</span><br><span class="line">    Q_UNUSED ( event );</span><br><span class="line">    <span class="function">QPainter <span class="title">painter</span> <span class="params">( <span class="keyword">this</span> )</span></span>;</span><br><span class="line">    painter.setRenderHint ( QPainter::Antialiasing, <span class="literal">true</span> ); <span class="comment">/* 反走样 */</span></span><br><span class="line">    painter.setPen ( QColor ( <span class="number">0</span>, <span class="number">160</span>, <span class="number">230</span> ) ); <span class="comment">/* 设置画笔颜色 */</span></span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">const</span> QPointF points[<span class="number">4</span>] = &#123; <span class="comment">/* 各个点的坐标 */</span></span><br><span class="line">        QPointF ( <span class="number">30</span>, <span class="number">40</span> ), QPointF ( <span class="number">60</span>, <span class="number">150</span> ),</span><br><span class="line">        QPointF ( <span class="number">150</span>, <span class="number">160</span> ), QPointF ( <span class="number">220</span>, <span class="number">100</span> ) &#125;;</span><br><span class="line">    painter.drawPolygon ( points, <span class="number">4</span> ); <span class="comment">/* 绘制多边形 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>首先指定坐标点的位置，这里有四个点，分别为<code>QPointF(30, 40)</code>、<code>QPointF(60, 150)</code>、<code>QPointF(150, 160)</code>、<code>QPointF(220, 100)</code>，然后调用<code>drawPolygon</code>将各个点连接起来，绘制为多边形。</p>
-<h3 id="绘制图片"><a href="#绘制图片" class="headerlink" title="绘制图片"></a>绘制图片</h3><p>&emsp;&emsp;效果如下：</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QPainter/7.png"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> MainWindow::paintEvent ( QPaintEvent *event ) &#123;</span><br><span class="line">    Q_UNUSED ( event );</span><br><span class="line">    <span class="function">QPainter <span class="title">painter</span> <span class="params">( <span class="keyword">this</span> )</span></span>;</span><br><span class="line">    painter.setRenderHint ( QPainter::Antialiasing, <span class="literal">true</span> ); <span class="comment">/* 反走样 */</span></span><br><span class="line">    painter.drawPixmap ( rect(), QPixmap ( <span class="string">":/Images/logo"</span> ) ); <span class="comment">/* 绘制图标 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>通过<code>drawPixmap</code>来绘制图片，我们可以指定图片绘制的区域<code>QRect</code>，这里为整个界面的区域。当界面伸缩的时候，图片也会跟着伸缩。<br>&emsp;&emsp;<code>QPainter</code>有很多以<code>draw</code>开头的函数，它们用于各种图形的绘制，比如<code>drawLine</code>、<code>drawRect</code>和和<code>drawEllipse</code>等。下图给出了<code>QPainter</code>的<code>draw</code>函数的实例：</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QPainter/8.png" height="306" width="254"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/18/Qt语法详解/Qt之QMainWindow/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/18/Qt语法详解/Qt之QMainWindow/" itemprop="url">Qt之QMainWindow</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-18T15:59:28+08:00">
-                2019-03-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="主窗口简介"><a href="#主窗口简介" class="headerlink" title="主窗口简介"></a>主窗口简介</h3><p>&emsp;&emsp;<code>QT</code>中直接支持主窗口，<code>QMainWindow</code>是<code>QT</code>中主窗口的基类，是继承于<code>QWidget</code>类的容器型组件。<code>QMainWindow</code>内部封装了菜单栏、工具栏、中心组件、停靠组件、状态栏等。<code>QMainWindow</code>内置了布局管理器，基本的组件布局如下：</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QMainWindow/1.png"></p>
-<h3 id="菜单栏"><a href="#菜单栏" class="headerlink" title="菜单栏"></a>菜单栏</h3><p>&emsp;&emsp;<code>QT</code>中提供了预定义的与菜单相关的类组件，例如菜单栏<code>QMenuBar</code>、下拉菜单<code>QMenu</code>和菜单项<code>QAction</code>。</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QMainWindow/2.png"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">QMenuBar *mb = menuBar();</span><br><span class="line">QMenu *menu = <span class="keyword">new</span> QMenu ( <span class="string">"File(&amp;F)"</span> );</span><br><span class="line">QAction *action = <span class="keyword">new</span> QAction ( text, <span class="literal">NULL</span> );</span><br><span class="line">menu-&gt;addAction ( action );</span><br><span class="line">mb-&gt;addMenu ( menu );</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;快捷键设置如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">action-&gt;setShortcut ( QKeySequence ( KEY ) );</span><br></pre></td></tr></table></figure>
-<h3 id="工具栏"><a href="#工具栏" class="headerlink" title="工具栏"></a>工具栏</h3><p>&emsp;&emsp;工具栏是应用程序中集成各种功能使用快捷方式的区域，不是应用程序必须存在的组件。工具栏的元素可以是各种窗口组件，但通常以图标按钮的方式存在。<code>QT</code>中提供了预定义的工具栏相关组件，工具栏<code>QToolBar</code>和快捷项<code>QAction</code>。</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QMainWindow/3.png"></p>
-<p>&emsp;&emsp;工具栏使用方法如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">QToolBar *tb = addToolBar ( <span class="string">"ToolBar"</span> ); <span class="comment">/* 创建工具栏 */</span></span><br><span class="line">QAction *action = <span class="keyword">new</span> QAction ( <span class="string">""</span>, <span class="literal">NULL</span> ); <span class="comment">/* 创建工具栏选项 */</span></span><br><span class="line">action-&gt;setToolTip ( <span class="string">"Open"</span> );</span><br><span class="line">action-&gt;setIcon ( QIcon ( <span class="string">"/res/pic/ open.png"</span> ) );</span><br><span class="line">tb-&gt;addAction ( action ); <span class="comment">/* 将工具栏选项加入工具栏 */</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>QToolBar</code>实用函数如下：</p>
-<ul>
-<li><code>void setFloatable ( bool floatable )</code>：设置工具栏为浮动。</li>
-<li><code>void setMovable ( bool movable )</code>：设置工具栏为可移动。</li>
-<li><code>void setIconSize ( const QSize &amp;iconSize )</code>：设置工具栏的图标大小。</li>
-</ul>
-<p>&emsp;&emsp;<code>QTollBar</code>组件中可以加入<code>QT</code>中的任意<code>QWidget</code>组件：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">QToolBar *tb = addToolBar ( <span class="string">"Tool Bar"</span> );</span><br><span class="line">QAction *action = <span class="keyword">new</span> QAction ( <span class="string">""</span>, <span class="literal">NULL</span> );</span><br><span class="line">​</span><br><span class="line">tb-&gt;setFloatable ( <span class="literal">false</span> );</span><br><span class="line">tb-&gt;setMovable ( <span class="literal">false</span> );</span><br><span class="line">action-&gt;setToolTip ( <span class="string">"Open"</span> );</span><br><span class="line">action-&gt;setIcon ( QIcon ( <span class="string">":/Res/open.png"</span> ) );</span><br><span class="line">tb-&gt;addAction ( action );</span><br><span class="line">​</span><br><span class="line">QPushButton *b = <span class="keyword">new</span> QPushButton ( <span class="string">"Button"</span> );</span><br><span class="line">QLabel *l = <span class="keyword">new</span> QLabel ( <span class="string">"Label"</span> );</span><br><span class="line">QLineEdit *e = <span class="keyword">new</span> QLineEdit();</span><br><span class="line">​</span><br><span class="line">tb-&gt;addWidget ( b );</span><br><span class="line">tb-&gt;addWidget ( l );</span><br><span class="line">tb-&gt;addWidget ( e );</span><br></pre></td></tr></table></figure>
-<h3 id="状态栏"><a href="#状态栏" class="headerlink" title="状态栏"></a>状态栏</h3><p>&emsp;&emsp;状态栏是应用程序中输出简要信息的区域，一般位于窗口的底部。状态栏显示的消息类型如下：</p>
-<ul>
-<li>实时消息，例如当前程序状态。</li>
-<li>永久消息，例如程序版本，开发机构。</li>
-<li>进度消息，用于进度显示。</li>
-</ul>
-<p>&emsp;&emsp;<code>QT</code>中提供了预定义的状态栏相关组件状态栏<code>QStatusBar</code>，<code>QStatusBar</code>是容器型组件，可以是任意组件<code>QWidget</code>的父组件。</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QMainWindow/4.png"></p>
-<p>&emsp;&emsp;<code>QT</code>状态栏的一般设计原则：</p>
-<ul>
-<li>状态栏左边区域用于输出实时消息。</li>
-<li>状态栏右边区域用于输出永久消息。</li>
-</ul>
-<p>&emsp;&emsp;因此，<code>addWidget</code>函数用于在状态栏左边区域添加组件，<code>addPermanentWidget</code>函数用于在状态栏右边区域添加组件。状态栏使用方法如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">QStatusBar *sb = statusBar();</span><br><span class="line">QLabel *label = <span class="keyword">new</span> QLabel ( <span class="string">"CopyRight @ Scorpio Studio 2016"</span> );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( label != <span class="literal">NULL</span> ) &#123;</span><br><span class="line">    line.setMinimumWidth ( <span class="number">120</span> );</span><br><span class="line">    line.setAlignment ( Qt::AlignCenter );</span><br><span class="line">    line.setText ( <span class="string">"Ln: 1    Col: 1"</span> );</span><br><span class="line">    label-&gt;setMinimumWidth ( <span class="number">160</span> );</span><br><span class="line">    label-&gt;setAlignment ( Qt::AlignCenter );</span><br><span class="line">    sb-&gt;addPermanentWidget ( <span class="keyword">new</span> QLabel() );</span><br><span class="line">    sb-&gt;addPermanentWidget ( &amp;line );</span><br><span class="line">    sb-&gt;addPermanentWidget ( label );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="文本编辑组件"><a href="#文本编辑组件" class="headerlink" title="文本编辑组件"></a>文本编辑组件</h3><p>&emsp;&emsp;<code>QT</code>中预定义了三种文本编辑组件，用于满足不同的开发需求。</p>
-<ul>
-<li><code>QLineEdit</code>：单行文本编辑组件。</li>
-<li><code>QTextEdit</code>：多行富文本编辑组件。</li>
-<li><code>QPlainTextEdit</code>：多行普通文本编辑组件。</li>
-</ul>
-<p>&emsp;&emsp;<code>QT</code>文本编辑组件的类继承图如下：</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QMainWindow/5.png" height="252" width="331"></p>
-<p>&emsp;&emsp;<code>QT</code>中的文本编辑组件内置了右键弹出和快捷键功能。文本编辑器的使用为：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mainEditor.setParent ( <span class="keyword">this</span> ); <span class="comment">/* 设置文本编辑器的父组件 */</span></span><br><span class="line">setCentralWidget ( &amp;mainEditor ); <span class="comment">/* 设置文本编辑器为中央组件 */</span></span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/18/Qt语法详解/Qt之QSplitter/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/18/Qt语法详解/Qt之QSplitter/" itemprop="url">Qt之QSplitter</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-18T15:18:56+08:00">
-                2019-03-18
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;分割窗口在应用程序中经常用到，它可以灵活分布窗口布局，经常用于类似文件资源管理器的窗口设计中。</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QSplitter/1.png" height="275" width="694"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QApplication&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QSplitter&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QTextEdit&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QTextCodec&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span> </span>&#123;</span><br><span class="line">    QTextCodec::setCodecForTr ( QTextCodec::codecForLocale() );</span><br><span class="line">    <span class="function">QApplication <span class="title">app</span> <span class="params">( argc, argv )</span></span>;</span><br><span class="line">    <span class="comment">/* 创建主分割窗口，设置方向为水平分割窗口 */</span></span><br><span class="line">    QSplitter *mainSplitter = <span class="keyword">new</span> QSplitter ( Qt::Horizontal, <span class="number">0</span> );</span><br><span class="line">    <span class="comment">/* 创建一个QTextEdit控件，设置其父控件为mainSplitter */</span></span><br><span class="line">    QTextEdit *leftEdit = <span class="keyword">new</span> QTextEdit ( QObject::tr ( <span class="string">"左窗口"</span> ), mainSplitter );</span><br><span class="line">    <span class="comment">/* 设置QTextEdit控件中的文字的对齐方式居中显示 */</span></span><br><span class="line">    leftEdit-&gt;setAlignment ( Qt::AlignCenter );</span><br><span class="line">    <span class="comment">/* 创建右分割窗口，设置其父控件为mainSplitter，设置方向为垂直分割窗口，最后其分割成上下两个窗口 */</span></span><br><span class="line">    QSplitter *rightSplitter = <span class="keyword">new</span> QSplitter ( Qt::Vertical, mainSplitter );</span><br><span class="line">    <span class="comment">/* 设定分割窗口的分割条在拖动时是否为实时更新，true为实时更新，false则在拖动时只显示一条灰色的线条，</span></span><br><span class="line"><span class="comment">       在拖动到位并弹起鼠标后再显示分隔条 */</span></span><br><span class="line">    rightSplitter-&gt;setOpaqueResize ( <span class="literal">false</span> );</span><br><span class="line">    <span class="comment">/* 开始将其分割成上下两个窗口 */</span></span><br><span class="line">    QTextEdit *upEdit = <span class="keyword">new</span> QTextEdit ( QObject::tr ( <span class="string">"上窗口"</span> ), rightSplitter );</span><br><span class="line">    upEdit-&gt;setAlignment ( Qt::AlignCenter );</span><br><span class="line">    QTextEdit *bottomEdit = <span class="keyword">new</span> QTextEdit ( QObject::tr ( <span class="string">"下窗口"</span> ), rightSplitter );</span><br><span class="line">    bottomEdit-&gt;setAlignment ( Qt::AlignCenter );</span><br><span class="line">    <span class="comment">/* 设定可伸缩控件，第一个参数指定控件设置的控件序号，该控件序号按插入的先后次序依次从0开始编号。</span></span><br><span class="line"><span class="comment">       第二个参数大于0表示此控件为伸缩控件，此例中设置右部分割窗口为可伸缩控件 */</span></span><br><span class="line">    mainSplitter-&gt;setStretchFactor ( <span class="number">1</span>, <span class="number">1</span> );</span><br><span class="line">    mainSplitter-&gt;setWindowTitle ( QObject::tr ( <span class="string">"分割窗口"</span> ) );</span><br><span class="line">    mainSplitter-&gt;show();</span><br><span class="line">    <span class="keyword">return</span> app.exec();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="Qt之Splitter分割窗口"><a href="#Qt之Splitter分割窗口" class="headerlink" title="Qt之Splitter分割窗口"></a>Qt之Splitter分割窗口</h3><p>&emsp;&emsp;一个<code>QSplitter</code>控件中可以包含其他控件，这些控件被一个分隔条隔开。托拽这个分隔条，里面的控件的大小可以改变。<code>QSplitter</code>控件经常做为布局管理器使用，给用户提供更多的界面控制。<code>QSplitter</code>控件中的子控件总是按顺序自动并肩排列(或者上下排列)，相邻的控件之间有一个分隔条。下面是创建下图中窗体的代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span> </span>&#123;</span><br><span class="line">    <span class="function">QApplication <span class="title">app</span> <span class="params">( argc, argv )</span></span>;</span><br><span class="line">    QTextEdit *editor1 = <span class="keyword">new</span> QTextEdit;</span><br><span class="line">    QTextEdit *editor2 = <span class="keyword">new</span> QTextEdit;</span><br><span class="line">    QTextEdit *editor3 = <span class="keyword">new</span> QTextEdit;</span><br><span class="line">    <span class="function">QSplitter <span class="title">splitter</span> <span class="params">( Qt::Horizontal )</span></span>;</span><br><span class="line">    splitter.addWidget ( editor1 );</span><br><span class="line">    splitter.addWidget ( editor2 );</span><br><span class="line">    splitter.addWidget ( editor3 );</span><br><span class="line">    ...</span><br><span class="line">    splitter.show();</span><br><span class="line">    <span class="keyword">return</span> app.exec();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QSplitter/2.png"></p>
-<p>&emsp;&emsp;这个例子中的窗体有一个<code>QSplitter</code>控件，其中有三个水平排列的<code>QTextEdit</code>控件。和布局管理器不同，<code>QSplitter</code>不但可以排列子控件，还有一个可视的外观，<code>QSplitter</code>控件从<code>QWidget</code>继承，拥有<code>QWidget</code>所有的功能。</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QSplitter/3.png"></p>
-<p>&emsp;&emsp;当应用程序启动时，<code>QSplitter</code>根据子控件的初始尺寸或者<code>sizeHint</code>合理分配每一个子控件的大小。在程序中，我们可以调用<code>QSplitter::setSizes</code>改变分隔条的位置。<code>QSplitter</code>还可以保存当前的状态，在程序下一次运行时恢复以前的状态。下面是<code>writeSettings</code>函数，保存当前分隔条的状态：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> MailClient::writeSettings() &#123;</span><br><span class="line">    <span class="function">QSettings <span class="title">settings</span> <span class="params">( <span class="string">"Software Inc."</span>, <span class="string">"Mail Client"</span> )</span></span>;</span><br><span class="line">    settings.beginGroup ( <span class="string">"mainWindow"</span> );</span><br><span class="line">    settings.setValue ( <span class="string">"size"</span>, size() );</span><br><span class="line">    settings.setValue ( <span class="string">"mainSplitter"</span>, mainSplitter-&gt;saveState() );</span><br><span class="line">    settings.setValue ( <span class="string">"rightSplitter"</span>, rightSplitter-&gt;saveState() );</span><br><span class="line">    settings.endGroup();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;下面是相应的<code>readSettings</code>函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> MailClient::readSettings() &#123;</span><br><span class="line">    <span class="function">QSettings <span class="title">settings</span> <span class="params">( <span class="string">"Software Inc."</span>, <span class="string">"Mail Client"</span> )</span></span>;</span><br><span class="line">    settings.beginGroup ( <span class="string">"mainWindow"</span> );</span><br><span class="line">    resize ( settings.value ( <span class="string">"size"</span>, QSize ( <span class="number">480</span>, <span class="number">360</span> ) ).toSize() );</span><br><span class="line">    mainSplitter-&gt;restoreState ( settings.value ( <span class="string">"mainSplitter"</span> ).toByteArray() );</span><br><span class="line">    rightSplitter-&gt;restoreState ( settings.value ( <span class="string">"rightSplitter"</span> ).toByteArray() );</span><br><span class="line">    settings.endGroup();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>Qt Designer</code>也支持<code>QSplitter</code>，把子控件放到合适的位置，将他们选中，选择菜单<code>Form|Lay out Horizontally in Splitter</code>或者<code>Form|Lay out Verticallly in Splitter</code>，所选择的子控件就被加入到<code>QSplitter</code>控件中。<br>&emsp;&emsp;对<code>QSplitter</code>进行水平或者垂直嵌套可以实现更加复杂的布局。例如下图所示的<code>MailClient</code>程序中，就是一个垂直方向的<code>QSplitter</code>控件中嵌套了一个水平方向的<code>QSplitter</code>控件。</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QSplitter/4.png" height="286" width="416"></p>
-<p>&emsp;&emsp;下面的代码是<code>MailClient</code>程序的主窗口类构造函数代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">MailClient::MailClient() &#123;</span><br><span class="line">    ...</span><br><span class="line">    rightSplitter = <span class="keyword">new</span> QSplitter ( Qt::Vertical );</span><br><span class="line">    rightSplitter-&gt;addWidget ( messagesTreeWidget ); <span class="comment">/* 索引0 */</span></span><br><span class="line">    rightSplitter-&gt;addWidget ( textEdit ); <span class="comment">/* 索引1 */</span></span><br><span class="line">    rightSplitter-&gt;setStretchFactor ( <span class="number">1</span>, <span class="number">1</span> ); <span class="comment">/* 指定索引为1的textEdit拉伸 */</span></span><br><span class="line">    mainSplitter = <span class="keyword">new</span> QSplitter ( Qt::Horizontal );</span><br><span class="line">    mainSplitter-&gt;addWidget ( foldersTreeWidget );</span><br><span class="line">    mainSplitter-&gt;addWidget ( rightSplitter );</span><br><span class="line">    mainSplitter-&gt;setStretchFactor ( <span class="number">1</span>, <span class="number">1</span> );</span><br><span class="line">    setCentralWidget ( mainSplitter );</span><br><span class="line">    setWindowTitle ( tr ( <span class="string">"Mail Client"</span> ) );</span><br><span class="line">    readSettings();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;创建完我们所需要显示三个控件(<code>messageTreeWidget</code>、<code>textEdit</code>和<code>foldersTreeWidget</code>)后，再创建一个垂直的<code>rightSplitter</code>控件，把<code>messageTreeWidget</code>和<code>textEdit</code>控件加到<code>rightSplitter</code>中。然后创建一个水平的<code>mainSplitter</code>控件，把<code>rightSplitter</code>和<code>foldersTreeWidget</code>加入到<code>mainSplitter</code>中，把<code>mainSplitter</code>做为<code>QMainWindow</code>的中央控件。<br>&emsp;&emsp;当用户改变窗口的大小时，<code>QSplitter</code>通常给所有的子控件一样的空间。在<code>MailClient</code>程序中，我们希望左边的文件树控件(<code>foldersTreeWidget</code>)和消息树控件(<code>messageTreeWidget</code>)保持它们的大小，把其他的空间都分配给<code>QTextEdit</code>，这是由两个<code>setStretchFactor</code>调用实现。第一个参数是<code>0</code>开始的子控件的索引值，第二个参数是设置的拉伸系数，缺省值为<code>0</code>。</p>
-<p><img src="/2019/03/18/Qt语法详解/Qt之QSplitter/5.png"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/93/">93</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/94/">94</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1821,7 +2010,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">930</span>
+                  <span class="site-state-item-count">934</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -1832,7 +2021,7 @@
               
               <div class="site-state-item site-state-categories">
                 <a href="/categories/index.html">
-                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">分类</span>
                 </a>
               </div>
