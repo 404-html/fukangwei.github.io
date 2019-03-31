@@ -271,6 +271,652 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/协调器向子节点发消息/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/05/CC2530和zigbee笔记/协调器向子节点发消息/" itemprop="url">协调器向子节点发消息</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T13:42:50+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;在一般的<code>ZigBee</code>教程中，子节点如何向协调器发送消息已经被描述得非常清楚了，即子节点直接使用<code>API</code>向地址为<code>0x0000</code>的协调器发送消息即可。用到的函数如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">afStatus_t <span class="title">AF_DataRequest</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    afAddrType_t *dstAddr,</span></span></span><br><span class="line"><span class="function"><span class="params">    endPointDesc_t *srcEP,</span></span></span><br><span class="line"><span class="function"><span class="params">    uint16 cID,</span></span></span><br><span class="line"><span class="function"><span class="params">    uint16 len,</span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 *buf,</span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 *transID,</span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 options,</span></span></span><br><span class="line"><span class="function"><span class="params">    uint8 radius</span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>dstAddr</code>即为目标节点的地址。例如做一个点对点的通信实验，向协调器发数据，则<code>dstAddr</code>应该这样实例化：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">afAddrType_t Point_To_Point_DstAddr; <span class="comment">/* 点对点通信 */</span></span><br><span class="line">Point_To_Point_DstAddr.addrMode = ( afAddrMode_t ) afAddr16Bit; <span class="comment">/* 点播 */</span></span><br><span class="line">Point_To_Point_DstAddr.endPoint = SAMPLEAPP_ENDPOINT;</span><br><span class="line">Point_To_Point_DstAddr.addr.shortAddr = <span class="number">0x0000</span>; <span class="comment">/* 发送给协调器，0x0000是协调器的地址 */</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;要使协调器向子节点发送数据，只需要知道子节点的地址即可。在许多深入讲解<code>ZigBee</code>通信协议的书中，对<code>ZigBee</code>网络节点的地址分配机制都做了详细的介绍，依据一些公式和描述该网络拓扑结构的参数可以计算出每个节点的地址。这也就似乎意味着如果一个网络拓扑结构固定的<code>ZigBee</code>网络，则其节点的地址也是固定的，可以通过事先计算将节点地址算出来，再进行通信。但是在项目开发阶段，我们很难做到固定拓扑结构，而且这需要修改<code>ZigBee</code>协议栈中关于网络拓扑结构类型的预先定义。所以比较可靠的方法是：当<code>ZigBee</code>子节点加入网络后的第一时间，立即向协调器发送一条消息，告诉协调器它的地址及认为给它加上的编号。这样协调器端则会形成一个编号和短地址的对应表，协调器根据这张表向相应的子节点发送数据。<br>&emsp;&emsp;具体实现过程可以是这样的：在子节点端的<code>SampleApp_ProcessEvent</code>函数中，在处理节点网络状态改变的分支位置开启一个定时器，在处理定时器计时完成的代码中向协调器发送该节点的短地址：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> ZDO_STATE_CHANGE:</span><br><span class="line">    SampleApp_NwkState = ( devStates_t ) ( MSGpkt-&gt;hdr.status );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( SampleApp_NwkState == DEV_ZB_COORD ) || ( SampleApp_NwkState == DEV_ROUTER ) || \</span><br><span class="line">         ( SampleApp_NwkState == DEV_END_DEVICE ) ) &#123;</span><br><span class="line">        <span class="comment">/* Start sending the periodic message in a regular interval */</span></span><br><span class="line">        osal_start_timerEx ( SampleApp_TaskID, SEND_ADDR_MSG_EVT, SEND_ADDR_STEP_TIMEOUT );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">/* Device is no longer in the network */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">break</span>;</span><br></pre></td></tr></table></figure>
+<p>在处理<code>SEND_ADDR_MSG_EVT</code>事件中，可以这样做：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( events &amp;SEND_ADDR_MSG_EVT ) &#123;</span><br><span class="line">    HalUARTWrite ( <span class="number">0</span>, <span class="string">"开始发送"</span>, <span class="number">4</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( AF_DataRequest (</span><br><span class="line">            &amp;Point_To_Point_DstAddr, &amp;SampleApp_epDesc,</span><br><span class="line">            SAMPLEAPP_POINT_TO_POINT_CLUSTERID,</span><br><span class="line">            <span class="number">4</span>,</span><br><span class="line">            sendAddr,</span><br><span class="line">            &amp;SampleApp_TransID,</span><br><span class="line">            AF_DISCV_ROUTE,</span><br><span class="line">            AF_DEFAULT_RADIUS ) == afStatus_SUCCESS ) &#123;</span><br><span class="line">        HalUARTWrite ( <span class="number">0</span>, <span class="string">"成功发送"</span>, <span class="number">4</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        HalUARTWrite ( <span class="number">0</span>, <span class="string">"发送失败"</span>, <span class="number">4</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>sendAddr</code>为一个<code>uint8</code>类型的数组，存储了该节点的编号(人为编号)。这样当协调器收到这个数据包时，即可以知道这个节点的短地址(数据包中自带)和编号(来自数据包中的数据体)。协调器端知道了这个节点的短地址，接下来利用该地址就可以向这个节点发送数据了。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/CC2530应用总结/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/05/CC2530和zigbee笔记/CC2530应用总结/" itemprop="url">CC2530应用总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T13:33:57+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="zigbee使用注意事项"><a href="#zigbee使用注意事项" class="headerlink" title="zigbee使用注意事项"></a>zigbee使用注意事项</h3><ol>
+<li>注意<code>zigbee</code>中协调器的供电，否则通讯网络就无法建立。</li>
+<li>对<code>zigbee</code>开发板下载代码时，首先要对下载器进行复位。</li>
+<li><code>zigbee</code>的协调器和路由器需要进行持续供电，而终端节点不需要。</li>
+<li><code>zigbee</code>的路由器具备路由功能，而终端节点不具备。</li>
+<li><code>zigbee</code>协议栈的端口<code>0</code>保留给<code>ZDO</code>(设备对象层)的数据接口，端口<code>255</code>用于向所有应用任务广播数据。</li>
+<li><code>zigbee</code>协议栈中有内存管理和字符串管理函数，最好使用<code>zigbee</code>提供的函数。</li>
+<li><code>tasksArr</code>数组里各事件处理函数的排列顺序要与<code>osalInitTasks</code>函数中调用各任务初始化函数的顺序保持一致，只有这样才能保证每个任务的事件处理函数能够接收到正确的任务<code>ID</code>(在<code>osalInitTasks</code>函数中分配)。</li>
+</ol>
+<h3 id="CC2530内置温度传感器温度计算方法"><a href="#CC2530内置温度传感器温度计算方法" class="headerlink" title="CC2530内置温度传感器温度计算方法"></a>CC2530内置温度传感器温度计算方法</h3><p>&emsp;&emsp;如果<code>ADC</code>采用<code>12</code>位方式，工作电压<code>3V</code>，使用内部基准<code>1.25V</code>，温度传感器有如下规律：<code>25</code>摄氏度时，<code>AD</code>读数为<code>1480</code>；温度变化<code>1</code>度，<code>AD</code>采集值变化<code>4.5</code>(<code>CC2530</code>数据手册有误，写成温度变化<code>10</code>摄氏度<code>AD</code>采集值变化<code>4.5</code>；另外<code>demosensor</code>代码认为温度变化<code>1</code>摄氏度，<code>AD</code>采集值变化<code>4.0</code>，这两个地方都是有误的)。<br>&emsp;&emsp;了解上述规律，温度计算就可以用这个公式来计算：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">实际温度 = ( AD读数 - ( <span class="number">1480</span> - <span class="number">4.5</span> * <span class="number">25</span> ) ) / <span class="number">4.5</span> = ( AD读数 - <span class="number">1367.5</span> ) / <span class="number">4.5</span></span><br></pre></td></tr></table></figure>
+<h3 id="CC2530的P0IFG与P0IF"><a href="#CC2530的P0IFG与P0IF" class="headerlink" title="CC2530的P0IFG与P0IF"></a>CC2530的P0IFG与P0IF</h3><p>&emsp;&emsp;为什么有了<code>P0IFG</code>，怎么又需要操作<code>P0IF</code>？<code>P0IF</code>是<code>IRCON</code>中的一位，用于表示<code>P0</code>口有中断，但具体是哪一个由<code>P0IFG</code>来判断，所以<code>IO</code>口中断处理函数的一般写法是：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">HAL_ISR_FUNCTION ( port0_ISR, P0INT_VECTOR ) &#123;</span><br><span class="line">    <span class="keyword">register</span> uint8 i;</span><br><span class="line">    P0IF = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> ( P0IFG ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">8</span>; i++ ) &#123;</span><br><span class="line">            <span class="keyword">register</span> <span class="keyword">const</span> uint8 pinmask = <span class="number">1</span> &lt;&lt; i;</span><br><span class="line">            <span class="keyword">if</span> ( P0IFG &amp; pinmask ) &#123;</span><br><span class="line">                <span class="keyword">if</span> ( port0_isr_tbl[i] != <span class="number">0</span> ) &#123;</span><br><span class="line">                    ( *port0_isr_tbl[i] ) ();</span><br><span class="line">                &#125;</span><br><span class="line">                P0IFG &amp;= ~pinmask;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">/* __low_power_mode_off_on_exit(); */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="PERCFG的备用位置"><a href="#PERCFG的备用位置" class="headerlink" title="PERCFG的备用位置"></a>PERCFG的备用位置</h3><p>&emsp;&emsp;具体情况要参考<code>CC253x</code>用户手册的外设<code>I/O</code>引脚映射表格。对于外设，定时器和<code>USART</code>在<code>I/O</code>端口中有对应的位置。比如<code>USART1</code>，当使用<code>UART</code>模式的备用位置<code>1</code>时，使用的是<code>P0.4</code>和<code>P0.5</code>端口来实现接收和发送数据，<code>P0.4</code>对应<code>TX</code>，<code>P0.5</code>对应<code>RX</code>；备用位置<code>2</code>使用的是<code>P1.6</code>和<code>P1.7</code>端口，其中<code>P1.6</code>对应<code>TX</code>，<code>P1.7</code>对应<code>RX</code>。</p>
+<h3 id="CC2530的printf重定向"><a href="#CC2530的printf重定向" class="headerlink" title="CC2530的printf重定向"></a>CC2530的printf重定向</h3><p>&emsp;&emsp;<code>CC2530</code>在<code>IAR</code>下的<code>printf</code>重定向的方法和<code>8051</code>是一致的。第一步是包含头文件<code>stdio.h</code>，第二步是定义<code>putchar</code>函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">__<span class="function">near_func <span class="keyword">int</span> <span class="title">putchar</span> <span class="params">( <span class="keyword">int</span> c )</span> </span>&#123;</span><br><span class="line">    UTX0IF = <span class="number">0</span>;</span><br><span class="line">    U0DBUF = ( <span class="keyword">char</span> ) c;</span><br><span class="line">    <span class="keyword">while</span> ( UTX0IF == <span class="number">0</span> );</span><br><span class="line">    <span class="keyword">return</span> ( c );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>到这里所有工作都完成了。在使用时，一定要注意串口的初始化，尤其要注意<code>CC2530</code>当前使用的晶振频率，否则会打印出乱码。当需要串口<code>1</code>实现这样的功能时，需要对上述代码进行相应修改。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/网络的建立和加入/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/05/CC2530和zigbee笔记/网络的建立和加入/" itemprop="url">网络的建立和加入</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T13:27:34+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;协调器节点如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> ( MSGpkt ) &#123;</span><br><span class="line">    <span class="keyword">switch</span> ( MSGpkt-&gt;hdr.event ) &#123;</span><br><span class="line">        <span class="keyword">case</span> ZDO_STATE_CHANGE: <span class="comment">/* 建立网络后，设置事件 */</span></span><br><span class="line">            GenericApp_NwkState = ( devStates_t ) ( MSGpkt-&gt;hdr.status );</span><br><span class="line">​</span><br><span class="line">            <span class="comment">/* 如果该节点已初始化为协调器 */</span></span><br><span class="line">            <span class="keyword">if</span> ( GenericApp_NwkState == DEV_ZB_COORD ) &#123;</span><br><span class="line">                HalLedBlink ( HAL_LED_2, <span class="number">0</span>, <span class="number">50</span>, <span class="number">500</span> );</span><br><span class="line">                aps_AddGroup ( GENERICAPP_ENDPOINT, &amp;GenericApp_Group );</span><br><span class="line">                osal_start_timerEx ( GenericApp_TaskID, SEND_TO_ALL_EVENT, <span class="number">5000</span> );</span><br><span class="line">            &#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;路由器节点如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> ( MSGpkt ) &#123;</span><br><span class="line">    <span class="keyword">switch</span> ( MSGpkt-&gt;hdr.event ) &#123;</span><br><span class="line">        <span class="keyword">case</span> ZDO_STATE_CHANGE: <span class="comment">/* 加入网络 */</span></span><br><span class="line">            GenericApp_NwkState = ( devStates_t ) ( MSGpkt-&gt;hdr.status ); <span class="comment">/* 读取节点的设备类型 */</span></span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( GenericApp_NwkState == DEV_ROUTER ) &#123;</span><br><span class="line">                aps_AddGroup ( GENERICAPP_ENDPOINT, &amp;GenericApp_Group );</span><br><span class="line">            &#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;终端节点如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> ( MSGpkt ) &#123;</span><br><span class="line">    <span class="keyword">switch</span> ( MSGpkt-&gt;hdr.event ) &#123;</span><br><span class="line">        <span class="keyword">case</span> ZDO_STATE_CHANGE:</span><br><span class="line">            GenericApp_NwkState = ( devStates_t ) ( MSGpkt-&gt;hdr.status );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( GenericApp_NwkState == DEV_END_DEVICE ) &#123;</span><br><span class="line">                <span class="comment">/* 当中断节点加入网络后，使用osal_set_envent函数设置</span></span><br><span class="line"><span class="comment">                   SEND_DATA_EVENT事件。当事件发生时，执行事件处理函数 */</span></span><br><span class="line">                osal_set_event ( GenericApp_TaskID, SEND_DATA_EVENT );</span><br><span class="line">            &#125;</span><br></pre></td></tr></table></figure>
+<p><code>GenericApp_NwkState</code>的定义是<code>devStates_t GenericApp_NwkState;</code>，用于保存节点状态：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> &#123;</span><br><span class="line">    DEV_HOLD,              <span class="comment">/* Initialized - not started automatically */</span></span><br><span class="line">    DEV_INIT,              <span class="comment">/* Initialized - not connected to anything */</span></span><br><span class="line">    DEV_NWK_DISC,          <span class="comment">/* Discovering PAN's to join */</span></span><br><span class="line">    DEV_NWK_JOINING,       <span class="comment">/* Joining a PAN */</span></span><br><span class="line">    DEV_NWK_REJOIN,        <span class="comment">/* ReJoining a PAN, only for end devices */</span></span><br><span class="line">    DEV_END_DEVICE_UNAUTH, <span class="comment">/* Joined but not yet authenticated by trust center */</span></span><br><span class="line">    DEV_END_DEVICE,        <span class="comment">/* Started as device after authentication */</span></span><br><span class="line">    DEV_ROUTER,            <span class="comment">/* Device joined, authenticated and is a router */</span></span><br><span class="line">    DEV_COORD_STARTING,    <span class="comment">/* Started as Zigbee Coordinator */</span></span><br><span class="line">    DEV_ZB_COORD,          <span class="comment">/* Started as Zigbee Coordinator */</span></span><br><span class="line">    DEV_NWK_ORPHAN         <span class="comment">/* Device has lost information about its parent */</span></span><br><span class="line">&#125; devStates_t;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;刚开始时，都是在<code>GenericApp_Init</code>函数中将<code>GenericApp_NwkState</code>设置为<code>DEV_INIT</code>，最后转换为上面的<code>DEV_ZB_COORD</code>、<code>DEV_ROUTER</code>、<code>DEV_END_DEVICE</code>。<br>&emsp;&emsp;运行于端口<code>0</code>的<code>ZDO</code>负责应用层用户程序和网络层之间的通信，网络层的建立过程是也是由<code>ZDO</code>实现的。网络建立后，应用层会接收到<code>ZDO_STATE_CHANGE</code>消息。使用下面语句就可以读取当前网络的状态：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GenericApp_NwkState = ( devStates_t ) ( MSGpkt-&gt;hdr.status ); <span class="comment">/* 读取节点的设备类型 */</span></span><br></pre></td></tr></table></figure>
+<p>状态可能是<code>DEV_ZB_COORD</code>、<code>DEV_ROUTER</code>、<code>DEV_END_DEVICE</code>中的一种。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/协议栈配置文件/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/05/CC2530和zigbee笔记/协议栈配置文件/" itemprop="url">协议栈配置文件</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T13:21:57+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>f8w2530.xcl</code>包含<code>CC2530</code>单片机的链接控制指令(如定义堆栈大小、内存分配等)，一般不需要改动：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-D_XDATA_START=<span class="number">0x0001</span> ; 标明外部存储器的起始地址</span><br><span class="line">-D_XDATA_END=<span class="number">0x1EFF</span>   ; 标明外部存储器的结束地址</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>f8config.cfg</code>主要用于配置<code>zigbee</code>设备，是<code>IAR</code>编译的命令行参数，包含信道选择、网络号等有关的链接命令，每一个宏都以<code>-D</code>为前缀：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Default channel is Channel 11 - 0x0B */</span></span><br><span class="line">-DDEFAULT_CHANLIST=<span class="number">0x00000800</span> <span class="comment">/* 11 - 0x0B 默认情况下，信道设置为11 */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Define the default PAN ID.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Setting this to a value other than 0xFFFF causes</span></span><br><span class="line"><span class="comment"> * ZDO_COORD to use this value as its PAN ID and</span></span><br><span class="line"><span class="comment"> * Routers and end devices to join PAN with this ID</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">-DZDAPP_CONFIG_PAN_ID=<span class="number">0xFFFF</span> <span class="comment">/* 默认“pANID = OXFFFF;”，这一行定义zigbee的网络号 */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* The number of simultaneous route discoveries in network */</span></span><br><span class="line">-DMAX_RREQ_ENTRIES=<span class="number">8</span> <span class="comment">/* 定义允许在网络中同时存在的路由器的数量 */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* The maximum number of retries allowed after a transmission failure */</span></span><br><span class="line">-DAPSC_MAX_FRAME_RETRIES=<span class="number">3</span> <span class="comment">/* 传输失败后允许重传的最多次数 */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Max number of times retry looking for the next hop address of a message */</span></span><br><span class="line">-DNWK_MAX_DATA_RETRIES=<span class="number">2</span> <span class="comment">/* 重新尝试查找下一跳地址的最大次数 */</span></span><br><span class="line"><span class="comment">/* The number of items in the broadcast table */</span></span><br><span class="line">-DMAX_BCAST=<span class="number">9</span> <span class="comment">/* 广播列表中最大的项目数 */</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>f8wCoord.cfg</code>定义了设备类型：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Common To All Applications 所用的应用都通用的 */</span>  </span><br><span class="line">-DCPU32MHZ <span class="comment">/* CC2530s Run at 32MHz 定义CC2530跑在32MHz上 */</span></span><br><span class="line">-DROOT=__near_func <span class="comment">/* MAC/ZMAC code in NEAR */</span></span><br><span class="line">-DMAC_CFG_APP_PENDING_QUEUE=TRUE <span class="comment">/* MAC Settings */</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Coordinator Settings */</span></span><br><span class="line">-DZDO_COORDINATOR <span class="comment">/* Coordinator Functions 开启协调器功能 */</span></span><br><span class="line">-DRTR_NWK <span class="comment">/* Router Functions 开启路由功能 */</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Optional Settings */</span></span><br><span class="line">-DBLINK_LEDS <span class="comment">/* LED Blink Functions led闪烁功能 */</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>f8wEndev.cfg</code>是终端设备配置文件：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Common To All Applications */</span></span><br><span class="line">-DCPU32MHZ <span class="comment">/* CC2530s Run at 32MHz */</span></span><br><span class="line">-DROOT=__near_func <span class="comment">/* MAC/ZMAC code in NEAR */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* MAC Settings */</span></span><br><span class="line">-DMAC_CFG_TX_DATA_MAX=<span class="number">3</span></span><br><span class="line">-DMAC_CFG_TX_MAX=<span class="number">6</span></span><br><span class="line">-DMAC_CFG_RX_MAX=<span class="number">3</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>f8wRouter.cfg</code>是路由配置文件：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Common To All Applications */</span></span><br><span class="line">-DCPU32MHZ <span class="comment">/* CC2530s Run at 32MHz */</span></span><br><span class="line">-DROOT=__near_func <span class="comment">/* MAC/ZMAC code in NEAR */</span></span><br><span class="line">​</span><br><span class="line">-DMAC_CFG_APP_PENDING_QUEUE=TRUE <span class="comment">/* MAC Settings */</span></span><br><span class="line">  </span><br><span class="line"><span class="comment">/* Router Settings */</span></span><br><span class="line">-DRTR_NWK <span class="comment">/* Router Functions 具备路由功能 */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Optional Settings */</span></span><br><span class="line">-DBLINK_LEDS <span class="comment">/* LED Blink Functions */</span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/判断设备的网络状态/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/05/CC2530和zigbee笔记/判断设备的网络状态/" itemprop="url">判断设备的网络状态</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T13:17:30+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;1. 定义<code>devStates_t</code>类型的变量：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> devStates_t devState; <span class="comment">/* 在ZDApp.h中声明 */</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> &#123;</span><br><span class="line">    DEV_HOLD,              <span class="comment">/* Initialized - not started automatically */</span></span><br><span class="line">    DEV_INIT,              <span class="comment">/* Initialized - not connected to anything */</span></span><br><span class="line">    DEV_NWK_DISC,          <span class="comment">/* Discovering PAN's to join */</span></span><br><span class="line">    DEV_NWK_JOINING,       <span class="comment">/* Joining a PAN */</span></span><br><span class="line">    DEV_NWK_REJOIN,        <span class="comment">/* ReJoining a PAN, only for end devices */</span></span><br><span class="line">    DEV_END_DEVICE_UNAUTH, <span class="comment">/* Joined but not yet authenticated by trust center */</span></span><br><span class="line">    DEV_END_DEVICE,        <span class="comment">/* Started as device after authentication */</span></span><br><span class="line">    DEV_ROUTER,            <span class="comment">/* Device joined, authenticated and is a router */</span></span><br><span class="line">    DEV_COORD_STARTING,    <span class="comment">/* Started as Zigbee Coordinator */</span></span><br><span class="line">    DEV_ZB_COORD,          <span class="comment">/* Started as Zigbee Coordinator */</span></span><br><span class="line">    DEV_NWK_ORPHAN         <span class="comment">/* Device has lost information about its parent */</span></span><br><span class="line">&#125; devStates_t;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;2. 注意<code>HAL_LED_3</code>灯的状态，<code>亮</code>表示设备成为<code>Coo</code>(<code>ZDO_NetworkFormationConfirmCB</code>函数)或者<code>Route</code>(<code>ZDO_StartRouterConfirmCB</code>函数)成功、加网成功(<code>ZDO_JoinConfirmCB</code>函数)，<code>闪烁</code>表示失败，在<code>ZDApp.c</code>文件中设值。<br>&emsp;&emsp;3. 在主<code>task</code>中注册<code>ZDO_STATE_CHANGE</code>消息的事件函数。在消息事件相应函数中可以获取新状态，用于判断设备状态：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">uint16 ***_event_loop ( () &#123;</span><br><span class="line">    <span class="keyword">if</span> ( events &amp; SYS_EVENT_MSG ) &#123;</span><br><span class="line">        MSGpkt = ( afIncomingMSGPacket_t * ) osal_msg_receive ( * **_TaskID );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( MSGpkt ) &#123;</span><br><span class="line">            <span class="keyword">switch</span> ( MSGpkt-&gt;hdr.event ) &#123;</span><br><span class="line">                <span class="keyword">case</span> ZDO_STATE_CHANGE:</span><br><span class="line">                    ***_NwkState = ( devStates_t ) ( MSGpkt-&gt;hdr.status );</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">                <span class="keyword">default</span>:</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            osal_msg_deallocate ( ( uint8 * ) MSGpkt ); <span class="comment">/* Release the memory */</span></span><br><span class="line">            MSGpkt = ( afIncomingMSGPacket_t * ) osal_msg_receive ( * **_TaskID ); <span class="comment">/* Next */</span></span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">return</span> ( events ^ SYS_EVENT_MSG ); <span class="comment">/* Return unprocessed events */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意，只有<code>EndDevice</code>设备才能判断是否为孤儿节点，<code>router</code>设备是不能的。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/CC2530和zigbee笔记/协议栈NV操作/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1017,710 +1663,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/Contiki和uip/Contiki系统定时器/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/05/Contiki和uip/Contiki系统定时器/" itemprop="url">Contiki系统定时器</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T08:40:07+08:00">
-                2019-02-05
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="Timers"><a href="#Timers" class="headerlink" title="Timers"></a>Timers</h3><p>&emsp;&emsp;<code>Contiki</code>系统提供了一套时钟库用于应用程序和系统本身。时钟库包含了检查时间超出、将系统从低功耗模式唤醒到预定时间，以及实时任务安排等功能。时钟也用于应用程序，让系统和其他一起工作，或者在恢复执行前进入低功耗模式一段时间。</p>
-<h3 id="The-Contiki-Timer-Modules"><a href="#The-Contiki-Timer-Modules" class="headerlink" title="The Contiki Timer Modules"></a>The Contiki Timer Modules</h3><p>&emsp;&emsp;<code>Contiki</code>有一个时钟模块和一套时钟：<code>timer</code>、<code>stimer</code>、<code>ctimer</code>、<code>etimer</code>和<code>rtimer</code>。不同的时钟有不同的用处，有的时钟提供了长运行时间低密度(时间间隔长)，有的时钟提供了短运行时间和高密度(时间间隔短)，有的时钟可以用在中断上下文(<code>rtimer</code>)，而其他时钟则不行。时钟模块提供了操作系统时间的功能，以及短时间阻塞<code>CPU</code>的功能。定时器库是实现时钟模块的功能的基础。<br>&emsp;&emsp;<code>timer</code>和<code>stimer</code>库提供了最简单形式的定时器，用于检查一段时间是否到期。应用程序需要询问计时器，它们是否已经过期。然而两者的区别在于：<code>timer</code>使用系统嘀嗒，而<code>stimer</code>使用秒，允许更长的时间。不同于其他定时器，<code>timer</code>和<code>stimer</code>库可以从中断中安全地使用，这使得它们在底层驱动中特别有用。<br>&emsp;&emsp;<code>Etimer</code>库提供事件时间，用于执行<code>Contiki</code>进程在一段时间后的计划事件。它用于<code>Contiki</code>的进程中，等待一段时间，此时其他的部分可以工作或进入低功耗模式。<br>&emsp;&emsp;<code>Ctimer</code>提供回调时间，用于在一段时间之后安排调用回调函数。就像事件定时器一样，它们用来等待一些时间，而在这段时间内，系统其他的部分可以工作或进入低功耗模式。当时间到期之后，回调定时器调用函数，<code>they are especially useful in any code that do not have an explicit Contiki process such as protocol implementations</code>。在其他方面，使用的回调定时器在<code>Rime</code>协议栈处理通信超时。<br>&emsp;&emsp;<code>Rtimer</code>库提供实时任务调度。<code>Rtimer</code>库抢占任何正在运行的<code>Contiki</code>进程，让实时任务在预定的时间里执行。</p>
-<h3 id="The-Clock-Module"><a href="#The-Clock-Module" class="headerlink" title="The Clock Module"></a>The Clock Module</h3><p>&emsp;&emsp;时钟模块提供操作系统时间的功能。<br>&emsp;&emsp;<code>Contiki</code>时钟模块的<code>API</code>接口如下：<code>clock_time</code>函数以时钟嘀嗒的形式返回当前系统时间。每秒时钟嘀嗒的数是和平台相关的，通常被指定为常数<code>CLOCK_SECOND</code>。系统时间被指定为和平台相关的类型<code>clock_time_t</code>，在大多数情况下这是一个有限的无符号值，运行时会变很大。时钟模块也提供<code>clock_seconds</code>函数，以秒的形式获得系统时间，其值为一个无符号的长整型数，这个时间值会变的很大，直到它增加到最大(在<code>MSP430</code>平台上为<code>136</code>年)，然后系统重新开始，时间也从零开始。<br>&emsp;&emsp;时钟模块提供两个函数阻塞<code>CPU</code>：<code>clock_delay</code>阻塞<code>CPU</code>一个指定的延迟，<code>clock_wait</code>阻塞<code>CPU</code>一个指定的时钟嘀嗒。这些函数通常只用于底层驱动程序，尤其是在有必要等待很短的时间，但并不放弃控制<code>CPU</code>的情况。<br>&emsp;&emsp;函数<code>clock_init</code>由系统启动，初始化时钟模块的时候调用。</p>
-<h3 id="The-Timer-Library"><a href="#The-Timer-Library" class="headerlink" title="The Timer Library"></a>The Timer Library</h3><p>&emsp;&emsp;<code>Contiki</code>时钟库提供设置、重置、重启时钟的函数，并检查一个时钟是否到期。一个应用程序需要<code>手动</code>地检查定时器是否到期，而不是自动完成的。在时钟模块中，时钟库使用<code>clock_timer</code>获得当前的系统时间。定时器被声明为<code>struct</code>类型，所有访问定时器都是经过指针指向被声明的定时器。<code>Contiki</code>定时器库的<code>API</code>如下：</p>
-<ul>
-<li><code>void timer_set ( struct timer *t, clock_time_t interval )</code>：启动定时器。</li>
-<li><code>void timer_reset ( struct timer *t )</code>：从以前到期时间重新启动定时器。</li>
-<li><code>void timer_restart ( struct timer *t )</code>：从当前时间重启定时器。</li>
-<li><code>int timer_expired ( struct timer *t )</code>：检查定时器是否到期。</li>
-<li><code>clock_time_t timer_remaining ( struct timer *t )</code>：获得剩余时间。</li>
-</ul>
-<p>&emsp;&emsp;定时器由<code>timer_set</code>完成初始化，设置定时器从当前时间到指定时间的延迟，而且它还存储了定时器的时间间隔。<code>Timer_reset</code>可以从之前的到期时间重置定时器，<code>timer_restart</code>从当前时间重新启动定时器。<code>Timer_reset</code>和<code>timer_restart</code>都是调用<code>timer_set</code>，用时间间隔设置定时器。这些函数的区别是：<code>timer_reset</code>用完全相同的时间间隔设置定时器延时，而<code>timer_restart</code>从当前时间设置时间间隔。<code>Timer_expired</code>函数用来检查定时器是否到期，<code>timer_remaining</code>用于获得一个定时器到期的剩余时间。如果定时器已经过期，它的返回值未知的。<br>&emsp;&emsp;<code>Timer</code>库可以在中断中安全地使用。下面的代码显示了一个定时器如何在中断中检测超时。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">timer</span> <span class="title">rxtimer</span>;</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    timer_set ( &amp;rxtimer, CLOCK_SECOND / <span class="number">2</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">interrupt ( UART1RX_VECTOR )</span><br><span class="line">uart1_rx_interrupt ( <span class="keyword">void</span> ) &#123;</span><br><span class="line">    <span class="keyword">if</span> ( timer_expired ( &amp;rxtimer ) ) &#123;</span><br><span class="line">        <span class="comment">/* Timeout */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    timer_restart ( &amp;rxtimer );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="The-Stimer-Library"><a href="#The-Stimer-Library" class="headerlink" title="The Stimer Library"></a>The Stimer Library</h3><p>&emsp;&emsp;<code>Contiki</code>的<code>Stimer</code>库提供的定时机制类似于<code>timer</code>库，但是它的时间使用是秒，允许更长的到期时间。<code>stimer</code>库在时钟模块中用<code>clock_seconds</code>以秒的形式获得当前的系统时间。<br>&emsp;&emsp;<code>Stimer</code>库的<code>API</code>如下，它非常类似于<code>timer</code>的库。不同的是，它以秒为单位，而<code>timer</code>是以系统嘀嗒为单位。<code>Stimer</code>库可以在中断中安全地使用。</p>
-<ul>
-<li><code>void stimer_set ( struct stimer *t, unsigned long interval )</code>：启动<code>timer</code>。</li>
-<li><code>void stimer_reset ( struct stimer *t )</code>：从到期时间中重启<code>timer</code>。</li>
-<li><code>void stimer_restart ( struct stimer *t )</code>：从当前时间重启<code>timer</code>。</li>
-<li><code>int stimer_expired ( struct stimer *t )</code>：检查时间是否到期。</li>
-<li><code>unsigned long stimer_remaining ( struct stimer *t )</code>：获得剩余时间。</li>
-</ul>
-<h3 id="The-Etimer-Library"><a href="#The-Etimer-Library" class="headerlink" title="The Etimer Library"></a>The Etimer Library</h3><p>&emsp;&emsp;<code>Contiki</code>的<code>etimer</code>库提供了一个定时器机制，产生定时事件。当事件时间到期时，事件定时器将向进程标示<code>PROCESS_EVENT_TIMER</code>来设置定时器。在时钟模块中，<code>Etimer</code>库使用<code>clock_time</code>获得系统当前时间。事件定时器声明为<code>struct etimer</code>类型，所有访问事件定时器都需要通过指针来指向被声明的<code>etimer</code>时间。<code>Etimer</code>库的<code>API</code>如下：</p>
-<ul>
-<li><code>void etimer_set ( struct etimer *t, clock_time_t interval )</code>：启动定时器。</li>
-<li><code>void etimer_reset ( struct etimer *t )</code>：从以前到期时间重启定时器。</li>
-<li><code>void etimer_restart ( struct etimer *t )</code>：从当前时间重启定时器。</li>
-<li><code>void etimer_stop ( struct etimer *t )</code>：停止定时器。</li>
-<li><code>int etimer_expired ( struct etimer *t )</code>：检查时间是否到期。</li>
-<li><code>int etimer_pending( void )</code>：检查是否有非过期的事件计时器。</li>
-<li><code>clock_time_t etimer_next_expiration_time( void )</code>：得到下一个事件定时器过期时间。</li>
-<li><code>void etimer_request_poll( void )</code>：通知<code>etimer</code>库，系统时间已经改变。</li>
-</ul>
-<p>&emsp;&emsp;事件定时器调用<code>etimer_set</code>进行初始化，设置定时器从当前时间开始到指定时间的延时。<code>etimer_reset</code>可以从之前的到期时间启动定时器；<code>Etimer_restart</code>从当前时间重启定时器，它们都使用相同的时间间隔，且最初都是由<code>etimer_set</code>设置。<code>etimer_reset</code>和<code>etimer_restart</code>的区别在于：前者的时间是从以前的到期时间，而后者的时间是从当前时间开始。一个事件定时器可以被<code>etimer_stop</code>停止，这意味着<code>etimer</code>立即过期，而不会产生一个定时器事件；<code>Etimer_expired</code>用来检查一个<code>etimer</code>时间是否过期。<code>Etimer</code>库不能在中断中安全地使用。<br>&emsp;&emsp;下面演示如何用<code>etimer</code>安排<code>process</code>每秒运行一次：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">PROCESS_THREAD ( example_process, ev, data ) &#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">etimer</span> <span class="title">et</span>;</span></span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">    etimer_set ( &amp;et, CLOCK_SECOND ); <span class="comment">/* Delay 1 second */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et ) );</span><br><span class="line">        etimer_reset ( &amp;et ); <span class="comment">/* Reset the etimer to trig again in 1 second */</span></span><br><span class="line">        <span class="comment">/* ... */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="Porting-the-Etimer-Library"><a href="#Porting-the-Etimer-Library" class="headerlink" title="Porting the Etimer Library"></a>Porting the Etimer Library</h3><p>&emsp;&emsp;<code>Etimer</code>库实现的核心是<code>/sys/etimer.c</code>，与平台无关，但需要回调<code>etimer_request_poll</code>来处理事件定时器。这允许事件定时器到期时，从低功耗模式唤醒。<code>Etimer</code>库提供三种功能：</p>
-<ul>
-<li><code>etimer_pending</code>：检查是否有任何非过期事件定时器。</li>
-<li><code>etimer_next_expiration_time</code>：得到下一个事件定时器过期时间。</li>
-<li><code>etimer_request_poll</code>：通知<code>etimer</code>库，系统时间已经改变，一个<code>etimer</code>已经过期。这个函数从中断调用是安全的。</li>
-</ul>
-<p>&emsp;&emsp;时钟模块处理系统时间之后，通常还要回调<code>etimer</code>库(原文是<code>The implementation of the clock module usually also handles the callbacks to the etimer library since the module already handles the system time</code>)。可以通过定期调用<code>etimer_request_poll</code>简单地实现，或者利用<code>etime_next_expiration_time</code>，或者在需要时通知<code>etimer</code>库。</p>
-<h3 id="The-Ctimer-Library"><a href="#The-Ctimer-Library" class="headerlink" title="The Ctimer Library"></a>The Ctimer Library</h3><p>&emsp;&emsp;<code>Contiki</code>的<code>ctimer</code>库提供了一个定时器机制，当回调时间过期时，调用指定的函数。在时钟模块中，<code>Ctimer</code>库使用<code>clock_timer</code>获得当前的系统时间。<code>Ctimer</code>库的实现使用了<code>etimer</code>库。<br>&emsp;&emsp;<code>Ctimer</code>库的<code>API</code>如下，它和<code>etimer</code>的库很像，区别在于<code>ctimer_set</code>需要一个回调函数指针和数据指针作为参数。当<code>ctimer</code>到期时，它将数据指针作为参数调用回调函数。<code>Ctimer</code>库在中断中使用不是安全的。</p>
-<ul>
-<li><code>void ctimer_set ( struct ctimer *c, clock_time_t t, void ( *f ) ( void * ), void *ptr )</code>：启动定时器。</li>
-<li><code>void ctimer_reset ( struct ctimer *t )</code>：从以前到期的时间重启定时器。</li>
-<li><code>void ctimer_restart ( struct ctimer *t )</code>：从当前时间重启定时器。</li>
-<li><code>void ctimer_stop ( struct ctimer *t )</code>：停止定时器。</li>
-<li><code>int ctimer_expired ( struct ctimer *t )</code>：检查定时器是否过期。</li>
-</ul>
-<p>&emsp;&emsp;下面的代码展示了<code>ctimer</code>如何安排回调函数每秒调用一次：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">callback</span> <span class="params">( <span class="keyword">void</span> *ptr )</span> </span>&#123;</span><br><span class="line">    ctimer_reset ( &amp;timer );</span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    ctimer_set ( &amp;timer, CLOCK_SECOND, callback, <span class="literal">NULL</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="The-Rtimer-Library"><a href="#The-Rtimer-Library" class="headerlink" title="The Rtimer Library"></a>The Rtimer Library</h3><p>&emsp;&emsp;<code>Contiki</code>的<code>rtimer</code>库提供了实时任务调度和执行(可预测执行时间)。<code>Rtimer</code>使用自己的时钟模块调度，允许更高的时钟分辨率。<code>RTIMER_SECOND</code>函数以嘀嗒的形式获取当前系统时间，<code>RTIMER_SECOND</code>指定每秒的时钟节拍数。不像其他的<code>Contiki</code>定时器库，实时任务抢占正常执行的进程，立即执行任务。</p>
-<h3 id="Porting-the-Rtimer-Library"><a href="#Porting-the-Rtimer-Library" class="headerlink" title="Porting the Rtimer Library"></a>Porting the Rtimer Library</h3><p>&emsp;&emsp;<code>Rtimer</code>库实现的核心是<code>/sys/rtimer.c</code>，与平台无关，取决于<code>rtime-arch.c</code>处理平台的相关功能，如任务调度等。<code>rtimer</code>架构代码需要定义<code>RTIMER_ARCH_SECOND</code>作为每秒的滴答数，<code>rtimer_clock_t</code>数据类型用于<code>rtimer</code>时间，这些都是在<code>rtimer-arch.h</code>文件中声明的。<code>Rtimer</code>库与平台相关的函数如下：</p>
-<ul>
-<li><code>RTIMER_ARCH_SECOND</code>：每秒的滴答数。</li>
-<li><code>void rtimer_arch_init ( void )</code>：初始化<code>rtimer</code>。</li>
-<li><code>rtimer_clock_t rtimer_arch_now( void )</code>：获取当前时间。</li>
-<li><code>int rtimer_arch_schedule ( rtimer_clock_t wakeup_time )</code>：安排一个<code>rtimer_run_next</code>调用。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/Contiki和uip/Contiki内核的STM32移植/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/05/Contiki和uip/Contiki内核的STM32移植/" itemprop="url">Contiki内核的STM32移植</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T07:24:14+08:00">
-                2019-02-05
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;1. 找一个<code>STM32</code>的<code>UART</code>的打印例程，最好是支持<code>printf</code>函数的。<br>&emsp;&emsp;2. 接下来拷贝<code>contiki\core</code>中的文件。要加入工程的文件只有如下几个：<code>core\sys</code>目录下的<code>autostart.c</code>、<code>etimer.c</code>、<code>process.c</code>和<code>timer.c</code>。<br>&emsp;&emsp;3. 在<code>include</code>路径中，加入<code>contiki\core</code>、<code>contiki\core\sys</code>、<code>contiki\core\lib</code>、<code>contiki\cpu</code>。<br>&emsp;&emsp;4. 把<code>cpu\arm\stm32f103</code>目录下的<code>clock.c</code>拷贝到工程目录(<code>stm32f10x_it.c</code>所在目录)并加入工程中。<br>&emsp;&emsp;5. 把<code>platform\stm32test</code>目录下的<code>contiki_main.c</code>复制到<code>main.c</code>中，并将该目录下的<code>contiki_conf.h</code>加入到<code>include</code>路径中。<br>&emsp;&emsp;6. 把<code>uart</code>的文件改成<code>debug-uart.c</code>，并将相应的<code>.h</code>文件也改了，重新放入工程中。<br>&emsp;&emsp;7. 把<code>clock.c</code>中两个函数做如下更改：用<code>#include &quot;stm32f10x.h&quot;</code>和<code>#include &quot;stm32f10x_it.h&quot;</code>替换原来的<code>#include &lt;stm32f10x_map.h&gt;</code>和<code>#include &lt;nvic.h&gt;</code>。其他源文件和头文件也做此修改。把<code>systick</code>初始化函数改成：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clock_init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( SysTick_Config ( SystemCoreClock / CLOCK_SECOND ) ) &#123;</span><br><span class="line">        <span class="keyword">while</span> ( <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>把<code>systick</code>中断函数改为：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SysTick_Handler</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    current_clock++;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( etimer_pending() &amp;&amp; etimer_next_expiration_time() &lt;= current_clock ) &#123;</span><br><span class="line">        etimer_request_poll();</span><br><span class="line">        <span class="comment">// printf( "%d, %d\n", clock_time(), etimer_next_expiration_time() );</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( --second_countdown == <span class="number">0</span> ) &#123;</span><br><span class="line">        current_seconds++;</span><br><span class="line">        second_countdown = CLOCK_SECOND;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>最后把<code>stm32f10x_it.c</code>的<code>void SysTick_Handler(void){}</code>删除。<br>&emsp;&emsp;8. 把串口初始化函数改为：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">dbg_setup_uart</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    USART_InitTypeDef USART_InitStructure;</span><br><span class="line">    GPIO_InitTypeDef GPIO_InitStructure;</span><br><span class="line">    RCC_APB2PeriphClockCmd ( RCC_APB2Periph_GPIOA | RCC_APB2Periph_USART1 | RCC_APB2Periph_AFIO, ENABLE );</span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;</span><br><span class="line">    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;</span><br><span class="line">    GPIO_Init ( GPIOA, &amp;GPIO_InitStructure );</span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;</span><br><span class="line">    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;</span><br><span class="line">    GPIO_Init ( GPIOA, &amp;GPIO_InitStructure );</span><br><span class="line">    USART_InitStructure.USART_BaudRate = <span class="number">9600</span>;</span><br><span class="line">    USART_InitStructure.USART_WordLength = USART_WordLength_8b;</span><br><span class="line">    USART_InitStructure.USART_StopBits = USART_StopBits_1;</span><br><span class="line">    USART_InitStructure.USART_Parity = USART_Parity_No;</span><br><span class="line">    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;</span><br><span class="line">    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;</span><br><span class="line">    USART_Init ( USART1, &amp;USART_InitStructure );</span><br><span class="line">    USART_ITConfig ( USART1, USART_IT_RXNE, ENABLE );</span><br><span class="line">    USART_Cmd ( USART1, ENABLE );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;9. 将<code>main.c</code>中的<code>#include&lt;gpio.h&gt;</code>删除，并编译工程。可能会出一些错误，比如多定义或者未定义。其中<code>1</code>个是<code>autostart_processes</code>未定义，解决方法是创建一个进程并使用<code>AUTOSTART_PROCESSES</code>加入自启动项目。<code>main.c</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stm32f10x.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stm32f10x_it.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stm32f10x_dma.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;debug-uart.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/process.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/procinit.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/etimer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/autostart.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/clock.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"led.h"</span></span></span><br><span class="line">​</span><br><span class="line">PROCESS ( blink_process, <span class="string">"Blink"</span> );</span><br><span class="line">PROCESS_THREAD ( blink_process, ev, data ) &#123;</span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">etimer</span> <span class="title">et</span>;</span></span><br><span class="line">        etimer_set ( &amp;et, CLOCK_SECOND );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et ) );</span><br><span class="line">        GPIO_ResetBits ( GPIOA, GPIO_Pin_8 );</span><br><span class="line">        etimer_set ( &amp;et, CLOCK_SECOND );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et ) );</span><br><span class="line">        GPIO_SetBits ( GPIOA, GPIO_Pin_8 );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">PROCESS ( blink_process_2, <span class="string">"Blink"</span> );</span><br><span class="line">PROCESS_THREAD ( blink_process_2, ev, data ) &#123;</span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">etimer</span> <span class="title">et_2</span>;</span></span><br><span class="line">        etimer_set ( &amp;et_2, CLOCK_SECOND / <span class="number">2</span> );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et_2 ) );</span><br><span class="line">        GPIO_ResetBits ( GPIOD, GPIO_Pin_2 );</span><br><span class="line">        etimer_set ( &amp;et_2, CLOCK_SECOND / <span class="number">2</span> );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et_2 ) );</span><br><span class="line">        GPIO_SetBits ( GPIOD, GPIO_Pin_2 );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">int</span> idle_count = <span class="number">0</span>;</span><br><span class="line">AUTOSTART_PROCESSES ( &amp;blink_process, &amp;blink_process_2 );</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    LED_Init();</span><br><span class="line">    dbg_setup_uart();</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Initialising\n"</span> );</span><br><span class="line">    clock_init();</span><br><span class="line">    process_init();</span><br><span class="line">    process_start ( &amp;etimer_process, <span class="literal">NULL</span> );</span><br><span class="line">    autostart_start ( autostart_processes );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Processes running\n"</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">        &#125; <span class="keyword">while</span> ( process_run() &gt; <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">        idle_count++;</span><br><span class="line">        <span class="comment">/* Idle! */</span></span><br><span class="line">        <span class="comment">/* Stop processor clock */</span></span><br><span class="line">        <span class="comment">/* asm("wfi"::); */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/04/Contiki和uip/Contiki的SPI接口/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/04/Contiki和uip/Contiki的SPI接口/" itemprop="url">Contiki的SPI接口</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-04T23:50:56+08:00">
-                2019-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="SPI宏定义"><a href="#SPI宏定义" class="headerlink" title="SPI宏定义"></a>SPI宏定义</h3><p>&emsp;&emsp;<code>Contiki</code>源码的<code>SPI</code>宏定义如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> __SPI_H__</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __SPI_H__</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> SPI_WAITFORTxREADY</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_BEFORE() SPI_WAITFORTxREADY()</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_AFTER()</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_ENDED() SPI_WAITFOREOTx()</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span> <span class="comment">/* SPI_WAITFORTxREADY */</span></span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_BEFORE()</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_AFTER() SPI_WAITFOREOTx()</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_ENDED()</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* SPI_WAITFORTxREADY */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">unsigned</span> <span class="keyword">char</span> spi_busy;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">spi_init</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Write one character to SPI */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE(data)          \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                         \</span><br><span class="line">        SPI_WAITFORTx_BEFORE();  \</span><br><span class="line">        SPI_TXBUF = data;        \</span><br><span class="line">        SPI_WAITFOREOTx();       \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Write one character to SPI - will not wait for end</span></span><br><span class="line"><span class="comment">   useful for multiple writes with wait after final */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE_FAST(data)     \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                         \</span><br><span class="line">        SPI_WAITFORTx_BEFORE();  \</span><br><span class="line">        SPI_TXBUF = data;        \</span><br><span class="line">        SPI_WAITFORTx_AFTER();   \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Read one character from SPI */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_READ(data)      \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                    \</span><br><span class="line">        SPI_TXBUF = <span class="number">0</span>;      \</span><br><span class="line">        SPI_WAITFOREORx();  \</span><br><span class="line">        data = SPI_RXBUF;   \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Flush the SPI read register */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_FLUSH()  \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;             \</span><br><span class="line">        SPI_RXBUF;   \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>);</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* __SPI_H__ */</span></span></span><br></pre></td></tr></table></figure>
-<h3 id="platform-conf-h中的SPI宏定义"><a href="#platform-conf-h中的SPI宏定义" class="headerlink" title="platform-conf.h中的SPI宏定义"></a>platform-conf.h中的SPI宏定义</h3><p>&emsp;&emsp;<code>Contiki</code>中有两个重要的头文件，一个是<code>contiki-conf.h</code>，另一个是<code>platform-conf.h</code>。该头文件中存在所有和平台有关的宏定义，其中包括<code>SPI</code>接口。<br>&emsp;&emsp;<code>MSP430</code>平台(<code>exp5438</code>)如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_TXBUF UCB0TXBUF</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_RXBUF UCB0RXBUF</span></span><br><span class="line"><span class="comment">/* USART0 Tx ready? */</span></span><br><span class="line"><span class="comment">/* 发送或接收正在进行，UCBUSY置位 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREOTx()  while ((UCB0STAT &amp; UCBUSY) != 0)</span></span><br><span class="line"><span class="comment">/* USART0 Rx ready? */</span></span><br><span class="line"><span class="comment">/* 当RXBUF接收到一个字符，UCRXIFG置位 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREORx()  while ((UCB0IFG &amp; UCRXIFG) == 0)</span></span><br><span class="line"><span class="comment">/* USART0 Tx buffer ready? */</span></span><br><span class="line"><span class="comment">/* 当TXBUF为空时，UCTXIFG置位 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTxREADY()  while ((UCB0IFG &amp; UCTXIFG) == 0)</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>AVR</code>平台(<code>micaz</code>)如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_TXBUF SPDR</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_RXBUF SPDR</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREOTx() do &#123; while (!(SPSR &amp; BV(SPIF))); &#125; while (0)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREORx() do &#123; while (!(SPSR &amp; BV(SPIF))); &#125; while (0)</span></span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>SPI_WAITFOREOTx</code>为等待发送完成，<code>MSP430F5438</code>检测忙碌标志，<code>Atmeg128</code>检测发送接收完成标志位。</li>
-<li><code>SPI_WAITFOREORx</code>为等待接收完成，<code>MSP430F5438</code>检测接收缓冲区标志位，<code>Atmeg128</code>检测发送接收完成标志。</li>
-</ul>
-<h3 id="SPI宏定义展开"><a href="#SPI宏定义展开" class="headerlink" title="SPI宏定义展开"></a>SPI宏定义展开</h3><p>&emsp;&emsp;<code>EXP5438</code>的<code>SPI</code>宏展开如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Write one character to SPI */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE(data)          \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                         \</span><br><span class="line">        SPI_WAITFORTx_BEFORE();  \</span><br><span class="line">        SPI_TXBUF = data;        \</span><br><span class="line">        SPI_WAITFOREOTx();       \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE(data)               \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                              \</span><br><span class="line">        UCB0TXBUF = data;             \</span><br><span class="line">        <span class="keyword">while</span>((UCB0STAT&amp;UCBUSY)!=<span class="number">0</span>);  \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Write one character to SPI - will not wait for end</span></span><br><span class="line"><span class="comment">   useful for multiple writes with wait after final */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE_FAST(data)     \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                         \</span><br><span class="line">        SPI_WAITFORTx_BEFORE();  \</span><br><span class="line">        SPI_TXBUF = data;        \</span><br><span class="line">        SPI_WAITFORTx_AFTER();   \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE_FAST(data)          \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                              \</span><br><span class="line">        UCB0TXBUF = data;             \</span><br><span class="line">        <span class="keyword">while</span>((UCB0STAT&amp;UCBUSY)!=<span class="number">0</span>);  \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Read one character from SPI */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_READ(data)      \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                    \</span><br><span class="line">        SPI_TXBUF = <span class="number">0</span>;      \</span><br><span class="line">        SPI_WAITFOREORx();  \</span><br><span class="line">        data = SPI_RXBUF;   \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_READ(data)                  \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                                \</span><br><span class="line">        UCB0RXBUF = <span class="number">0</span>;                  \</span><br><span class="line">        <span class="keyword">while</span>((UCB0IFG&amp;UCRXIFG) == <span class="number">0</span>);  \</span><br><span class="line">        data = SPI_RXBUF;               \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
-<h3 id="STM32平台"><a href="#STM32平台" class="headerlink" title="STM32平台"></a>STM32平台</h3><p>&emsp;&emsp;如果<code>STM32</code>连接<code>CC2520</code>，那么<code>SPI</code>的关键定义如下(暂未使用硬件平台进行测试，并假设使用<code>SPI1</code>)：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_TXBUF SPI1-&gt;DR</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_RXBUF SPI1-&gt;DR</span></span><br><span class="line"><span class="comment">/* 等待发送完成 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREOTx() while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);</span></span><br><span class="line"><span class="comment">/* 等待接收完成 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREORx() while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET);</span></span><br><span class="line"><span class="comment">/* 同为等待发送完成 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTxREADY() while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);</span></span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/04/Contiki和uip/Contiki在CC2530的移植/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/04/Contiki和uip/Contiki在CC2530的移植/" itemprop="url">Contiki在CC2530的移植</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-04T23:38:25+08:00">
-                2019-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;首先选择一个<code>CC2530</code>上的基础程序(例如串口打印)，移植系统在此基础上进行。<br>&emsp;&emsp;将<code>contiki-3.0/core/sys</code>目录下的<code>autostart.c</code>、<code>etimer.c</code>、<code>process.c</code>和<code>timer.c</code>文件，<code>contiki-3.0\cpu\cc253x\dev</code>目录下的<code>clock.c</code>以及<code>contiki-3.0\cpu\cc253x\dev</code>目录下的<code>soc.c</code>添加到工程中。<br>&emsp;&emsp;将头文件路径添加到<code>IAR</code>中：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\core\</span><br><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\core\lib\</span><br><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\cpu\</span><br><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\core\sys\</span><br><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\platform\cc2530dk\</span><br><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\cpu\cc253x\</span><br></pre></td></tr></table></figure>
-<p>将<code>main</code>文件修改为：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/process.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/procinit.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/etimer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/autostart.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/clock.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED1 P1_0 <span class="comment">/* 定义P1.0口为LED1控制端 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">IO_Init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1SEL &amp;= ~<span class="number">0x01</span>; <span class="comment">/* P1.0作为普通IO口 */</span></span><br><span class="line">    P1DIR |= <span class="number">0x01</span>; <span class="comment">/* P1.0定义为输出 */</span></span><br><span class="line">    P1INP |= <span class="number">0X01</span>; <span class="comment">/* 打开三态 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitUART</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    PERCFG = <span class="number">0x00</span>; <span class="comment">/* (外设控制寄存器)USART_0的I/O位置为备用位置0 */</span></span><br><span class="line">    P0SEL = <span class="number">0x0c</span>; <span class="comment">/* P0_2和P0_3用作串口(外部设备功能) */</span></span><br><span class="line">    P2DIR &amp;= ~<span class="number">0XC0</span>; <span class="comment">/* (端口2方向和端口0外设优先级控制)P0优先作为UART0 */</span></span><br><span class="line">    U0CSR |= <span class="number">0x80</span>; <span class="comment">/* 设置为UART模式 */</span></span><br><span class="line">    U0GCR |= <span class="number">8</span>; <span class="comment">/* 波特率指数值，BAUD_E和BAUD_M决定了UART波特率 */</span></span><br><span class="line">    U0BAUD |= <span class="number">59</span>; <span class="comment">/* 波特率设为9600 */</span></span><br><span class="line">    UTX0IF = <span class="number">0</span>; <span class="comment">/* UART0的TX中断标志初始设置为0 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">__<span class="function">near_func <span class="keyword">int</span> <span class="title">putchar</span> <span class="params">( <span class="keyword">int</span> c )</span> </span>&#123;</span><br><span class="line">    UTX0IF = <span class="number">0</span>;</span><br><span class="line">    U0DBUF = ( <span class="keyword">char</span> ) c;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( UTX0IF == <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ( c );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">PROCESS ( led_process, <span class="string">"led"</span> );</span><br><span class="line">PROCESS_THREAD ( led_process, ev, data ) &#123;</span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">    IO_Init();</span><br><span class="line">    LED1 = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">etimer</span> <span class="title">et</span>;</span></span><br><span class="line">        etimer_set ( &amp;et, CLOCK_SECOND / <span class="number">2</span> );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et ) );</span><br><span class="line">        LED1 = !LED1; <span class="comment">/* LED1闪烁 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">PROCESS ( print_process, <span class="string">"print"</span> );</span><br><span class="line">PROCESS_THREAD ( print_process, ev, data ) &#123;</span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">etimer</span> <span class="title">et</span>;</span></span><br><span class="line">        etimer_set ( &amp;et, CLOCK_SECOND / <span class="number">2</span> );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et ) );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"I am running!\r\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">int</span> idle_count = <span class="number">0</span>;</span><br><span class="line">AUTOSTART_PROCESSES ( &amp;led_process, &amp;print_process );</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">soc_init</span><span class="params">()</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    InitUART();</span><br><span class="line">    clock_init();</span><br><span class="line">    soc_init();</span><br><span class="line">    process_init();</span><br><span class="line">    process_start ( &amp;etimer_process, <span class="literal">NULL</span> );</span><br><span class="line">    autostart_start ( autostart_processes );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">while</span> ( process_run() &gt; <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">        idle_count++;</span><br><span class="line">        <span class="comment">/* Idle! */</span></span><br><span class="line">        <span class="comment">/* Stop processor clock */</span></span><br><span class="line">        <span class="comment">/* asm("wfi"::); */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>对工程进行编译，会出现很多错误，接下来更改错误。系统会提示<code>8051def.h</code>文件中的<code>stdint.h</code>不存在，解决方法是在<code>IAR</code>头文件路径中添加如下路径：</p>
-<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$TOOLKIT_DIR$\inc\dlib\c\</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;系统会提示没有<code>compiler.h</code>文件，解决方法是注释<code>cc253x.h</code>中的<code>#include &lt;compiler.h&gt;</code>，然后加入<code>#include &lt;ioCC2530.h&gt;</code>，将<code>cc253x.h</code>中与<code>ioCC2530.h</code>重复的部分注释掉。将<code>contiki-conf.h</code>文件中的<code>CLOCK_CONF_STACK_FRIENDLY</code>设置为<code>0</code>，将<code>clock.c</code>中的<code>__xdata __at(0x0000) static unsigned long timer_value = 0;</code>改为<code>static volatile unsigned long timer_value = 0;</code>。将如下内容进行修改：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> save</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> CC_CONF_OPTIMIZE_STACK_SIZE</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">pragma</span> exclude bits</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clock_isr</span> <span class="params">( <span class="keyword">void</span> )</span> __<span class="title">interrupt</span> <span class="params">( ST_VECTOR )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> restore</span></span><br></pre></td></tr></table></figure>
-<p>修改为：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//#pragma save</span></span><br><span class="line"><span class="comment">//#if CC_CONF_OPTIMIZE_STACK_SIZE</span></span><br><span class="line"><span class="comment">//#pragma exclude bits</span></span><br><span class="line"><span class="comment">//#endif</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> vector=ST_VECTOR</span></span><br><span class="line">__near_func __<span class="function">interrupt <span class="keyword">void</span> <span class="title">clock_isr</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//#pragma restore</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;将<code>8051def.h</code>中的如下内容注释掉：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">if</span> !defined(__SDCC_mcs51) &amp;&amp; !defined(SDCC_mcs51)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __data</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __xdata</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __code</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __bit bool</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __sfr volatile unsigned char</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __sbit volatile bool</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __critical</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __at(x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __using(x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __interrupt(x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __naked</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
-<p>在<code>autostart.h</code>中加入如下内容，移植工作结束。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AUTOSTART_ENABLE 1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CC_NO_VA_ARGS    0</span></span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/04/Contiki和uip/Contiki的rtimer移植/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/04/Contiki和uip/Contiki的rtimer移植/" itemprop="url">Contiki的rtimer移植</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-04T23:00:12+08:00">
-                2019-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="移植基础"><a href="#移植基础" class="headerlink" title="移植基础"></a>移植基础</h3><p>&emsp;&emsp;<code>rtimer</code>即<code>real-time timer</code>，在特定时间调用特定函数，用于处理一些对时间敏感的事件。相比较<code>etimer</code>而言，<code>rtimer</code>是细粒度的(<code>10KHz</code>)定时器。但是对于细粒度定时器，若频繁产生中断，则会比较消耗<code>CPU</code>资源，因此在实现<code>rtimer</code>时应尽可能减少中断调用。<br>&emsp;&emsp;对于<code>Contiki</code>系统，它已经在<code>/core/sys/rtimer.h</code>和<code>rtimer.c</code>中对<code>rtimer</code>相关结构进行了定义。对于特定平台而言，主要需要实现以下几个函数：</p>
-<ul>
-<li><code>rtimer_arch_init( void )</code>：针对特定平台的初始化操作，被<code>rtimer_init</code>函数调用。</li>
-<li><code>rtimer_arch_now( void )</code>：用于获取当前的<code>rtimer</code>时间。</li>
-<li><code>rtimer_arch_schedule ( rtimer_clock_t t )</code>：传递一个唤醒时间，在特定时刻进行调度操作，调用<code>rtimer_run_next</code>。</li>
-</ul>
-<p>&emsp;&emsp;同时需要在<code>rtimer_arch.h</code>中定义<code>RTIMER_ARCH_SECOND</code>确定<code>rtimer</code>每秒的滴答数。</p>
-<h3 id="STM32移植准备"><a href="#STM32移植准备" class="headerlink" title="STM32移植准备"></a>STM32移植准备</h3><p>&emsp;&emsp;移植过程中，首先需要确定<code>rtimer</code>每秒的滴答数是多少。在本系统中，达到<code>100us</code>的精度就可以了，因此选用了<code>10KHz</code>的频率。并且在<code>10KHz</code>的情况下，<code>16bit</code>计数而言可以达到<code>6.5s</code>的计时，能够满足一般的应用。<br>&emsp;&emsp;选定用于实现<code>rtimer</code>的定时器。<code>STM32</code>具备多个定时器，且多个定时器基本都能够满足这样的需求。因此，在本系统中选用了<code>TIM3</code>，并利用<code>TIM3</code>的<code>TIM_IT_CC1</code>中断来完成<code>rtiemr_run_next</code>的调度。</p>
-<h3 id="rtimer移植"><a href="#rtimer移植" class="headerlink" title="rtimer移植"></a>rtimer移植</h3><p>&emsp;&emsp;<code>timer</code>的初始化：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">rtimer_arch_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">uint16_t</span> prescaler = ( <span class="keyword">uint16_t</span> ) ( SystemCoreClock  / RTIMER_ARCH_SECOND ) - <span class="number">1</span>;</span><br><span class="line">    RCC_APB1PeriphClockCmd ( RCC_APB1Periph_TIM3, ENABLE );</span><br><span class="line">    TIM_TimeBaseStructure.TIM_Period = <span class="number">65535</span>;</span><br><span class="line">    TIM_TimeBaseStructure.TIM_Prescaler = <span class="number">0</span>;</span><br><span class="line">    TIM_TimeBaseStructure.TIM_ClockDivision = <span class="number">0</span>;</span><br><span class="line">    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;  </span><br><span class="line">    TIM_TimeBaseInit ( TIM3, &amp;TIM_TimeBaseStructure );</span><br><span class="line">    TIM_PrescalerConfig ( TIM3, prescaler, TIM_PSCReloadMode_Immediate );</span><br><span class="line">    TIM_Cmd ( TIM3, ENABLE );</span><br><span class="line">    rtimer_arch_disable_irq();</span><br><span class="line">    NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;</span><br><span class="line">    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = <span class="number">0</span>;</span><br><span class="line">    NVIC_InitStructure.NVIC_IRQChannelSubPriority = <span class="number">3</span>;  </span><br><span class="line">    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;</span><br><span class="line">    NVIC_Init ( &amp;NVIC_InitStructure );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;实现<code>rtimer_arch_schedule</code>函数：在此函数中，需要确定定时器的计数时间，同时使能定时器，并配置<code>CCR1</code>的值，开启定时器中断，等待中断调度。<code>rtimer_arch_schedule</code>函数实际在<code>rtimer_set</code>中被调用，当设置<code>rtimer</code>相关回调时配置，但是一次仅仅能够配置一个<code>rtimer</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">rtimer_arch_schedule</span> <span class="params">( <span class="keyword">rtimer_clock_t</span> t )</span> </span>&#123;</span><br><span class="line">    rtimer_arch_enable_irq();</span><br><span class="line">    PRINTF ( <span class="string">"rtimer_arch_schedule time %u\r\n"</span>, t );</span><br><span class="line">    TIM_SetCompare1 ( TIM3, t );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>中断使能直接封装<code>rtimer_arch_enable_irq</code>与<code>rtimer_arch_disable_irq</code>函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">rtimer_arch_disable_irq</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    TIM_ITConfig ( TIM3, TIM_IT_CC1, DISABLE );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">rtimer_arch_enable_irq</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    TIM_ITConfig ( TIM3, TIM_IT_CC1, ENABLE );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;中断调度处理如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TIM3_IRQHandler</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* TIM3中断 */</span></span><br><span class="line">    <span class="comment">/* 检查指定的TIM中断发生与否 */</span></span><br><span class="line">    <span class="keyword">if</span> ( TIM_GetITStatus ( TIM3, TIM_IT_CC1 ) != RESET ) &#123;</span><br><span class="line">        <span class="comment">/* 清除TIMx的中断待处理位 */</span></span><br><span class="line">        TIM_ClearITPendingBit ( TIM3, TIM_IT_CC1 );</span><br><span class="line">        rtimer_arch_disable_irq();</span><br><span class="line">        rtimer_run_next();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="rtimer使用示例"><a href="#rtimer使用示例" class="headerlink" title="rtimer使用示例"></a>rtimer使用示例</h3><p>&emsp;&emsp;首先开启一个线程，配置一个<code>rtimer</code>定时器<code>ex_timer</code>，定时器时间到之后调用<code>led_on</code>函数。同时在<code>led_on</code>中重新配置<code>ex_timer</code>回调为<code>led_off</code>，当<code>led_off</code>调用之后又配置为<code>led_on</code>。如此循环配置，从而实现一个简单的<code>LED</code>闪烁操作：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rtimer</span> <span class="title">ex_timer</span>;</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">led_on</span> <span class="params">( struct rtimer *t, <span class="keyword">void</span> *ptr )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">led_off</span> <span class="params">( struct rtimer *t, <span class="keyword">void</span> *ptr )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">led_on</span> <span class="params">( struct rtimer *t, <span class="keyword">void</span> *ptr )</span> </span>&#123;</span><br><span class="line">    LED = <span class="number">0</span>;</span><br><span class="line">    rtimer_set ( &amp;ex_timer, <span class="number">1000</span>, <span class="number">0</span>, led_off, <span class="literal">NULL</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">led_off</span> <span class="params">( struct rtimer *t, <span class="keyword">void</span> *ptr )</span> </span>&#123;</span><br><span class="line">    LED = <span class="number">1</span>;</span><br><span class="line">    rtimer_set ( &amp;ex_timer, <span class="number">1000</span>, <span class="number">0</span>, led_on, <span class="literal">NULL</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">PROCESS ( rtimer_ex_process, <span class="string">"rtimer_ex_process"</span> );</span><br><span class="line">PROCESS_THREAD ( rtimer_ex_process, ev, data ) &#123;</span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">    rtimer_set ( &amp;ex_timer, <span class="number">1000</span>, <span class="number">0</span>, led_on, <span class="literal">NULL</span> );</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1771,7 +1713,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">934</span>
+                  <span class="site-state-item-count">939</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

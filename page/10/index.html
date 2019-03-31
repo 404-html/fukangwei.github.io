@@ -271,6 +271,769 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/04/opencv和图像处理/Haar分类器/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/04/opencv和图像处理/Haar分类器/" itemprop="url">Haar分类器</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-04T12:35:12+08:00">
+                2019-03-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;以<code>Haar</code>特征分类器为基础的对象检测技术是一种非常有效的对象检测技术。它是基于机器学习的，通过使用大量的正负样本图像训练得到一个<code>cascade function</code>，最后再用它来做对象检测。<br>&emsp;&emsp;现在我们来学习面部检测。开始时，算法需要大量的正样本图像(面部图像)和负样本图像(不含面部的图像)来训练分类器，我们需要从其中提取特征。下图中的Haar特征会被使用，它们就像我们的卷积核。每一个特征是一个值，这个值等于黑色矩形中的像素值之后减去白色矩形中的像素值之和。</p>
+<p><img src="/2019/03/04/opencv和图像处理/Haar分类器/1.png" height="244" width="295"></p>
+<p>&emsp;&emsp;使用所有可能的核来计算足够多的特征(想象一下这需要多少计算量，仅仅是一个<code>24 * 24</code>的窗口就有<code>160000</code>个特征)。对于每一个特征的计算，我们需要计算白色和黑色矩形内的像素和。为了解决这个问题，作者引入了积分图像，这可以大大地简化求和运算。对于任何一个区域的像素和，只需要对积分图像上的四个像素操作即可。非常漂亮，它可以使运算速度飞快。但是，在我们计算得到的所有的这些特征中，大多数是不相关的，如下图所示。上边一行显示了两个好的特征，第一个特征看上去是对眼部周围区域的描述，因为眼睛总是比鼻子黑一些；第二个特征是描述的是眼睛比鼻梁要黑一些。</p>
+<p><img src="/2019/03/04/opencv和图像处理/Haar分类器/2.png" height="262" width="421"></p>
+<p>&emsp;&emsp;但是如果把这两个窗口放到脸颊的话，就一点都不相关了。那么我们怎样从超过<code>160000</code>个特征中选出最好的特征呢？可以使用<code>Adaboost</code>算法。<br>&emsp;&emsp;为了达到这个目的，我们将每一个特征应用于所有的训练图像。对于每一个特征，我们要找到它能够区分出正样本和负样本的最佳阈值。但是很明显，这会产生错误或者错误分类。我们要选取错误率最低的特征，这说明它们是检测面部和非面部图像最好的特征(这个过程其实不像我们说的这么简单，在开始时每一张图像都具有相同的权重，每一次分类之后，被错分的图像的权重会增大。同样的过程会被再做一遍，然后我们又得到新的错误率和新的权重。重复执行这个过程，直到到达要求的准确率(或者错误率)或者找到要求数目的特征。<br>&emsp;&emsp;最终的分类器是这些弱分类器的加权和。之所以成为弱分类器，是因为只是用这些分类器不足以对图像进行分类，但是与其他的分类器联合起来就是一个很强的分类器了。经过实验，<code>200</code>个特征就能够提供<code>95%</code>的准确度了。他们最后使用<code>6000</code>个特征(从<code>160000</code>减到<code>6000</code>，效果显著)。<br>&emsp;&emsp;现在你有一幅图像，对每一个<code>24 * 24</code>的窗口使用这<code>6000</code>个特征来做检查，看它是不是面部。这是不是很低效、很耗时呢？的确如此，但作者有更好的解决方法。<br>&emsp;&emsp;在一幅图像中，大多数区域是非面部区域，所以最好有一个简单的方法来证明这个窗口不是面部区域。如果不是，就直接抛弃，不用对它再做处理，而不是集中在研究这个区域是不是面部。按照这种方法，我们可以在可能是面部的区域多花点时间。<br>&emsp;&emsp;为了达到这个目的，作者提出了级联分类器的概念。不是在一开始就对窗口进行这<code>6000</code>个特征测试，而是将这些特征分成不同组，在不同的分类阶段逐个使用。如果一个窗口第一阶段的检测都过不了，就可以直接放弃后面的测试了；如果它通过了，就进入第二阶段的检测。如果一个窗口经过了所有的测试，那么这个窗口就被认为是面部区域。<br>&emsp;&emsp;作者将<code>6000</code>多个特征分为<code>38</code>个阶段，前五个阶段的特征数分别为<code>1</code>、<code>10</code>、<code>25</code>、<code>25</code>和<code>50</code>(上图中的两个特征其实就是从<code>Adaboost</code>获得的最好特征)。</p>
+<h3 id="OpenCV中的Haar级联检测"><a href="#OpenCV中的Haar级联检测" class="headerlink" title="OpenCV中的Haar级联检测"></a>OpenCV中的Haar级联检测</h3><p>&emsp;&emsp;<code>OpenCV</code>自带了训练器和检测器。如果你想自己训练一个分类器来检测汽车、飞机等的话，可以使用<code>OpenCV</code>构建。<br>&emsp;&emsp;现在我们来学习一下如何使用检测器。<code>OpenCV</code>已经包含了很多已经训练好的分类器，其中包括面部、眼睛、微笑等。这些<code>XML</code>文件保存在<code>opencv/data/haarcascades/</code>文件夹中。下面我们将使用<code>OpenCV</code>创建一个面部和眼部检测器。<br>&emsp;&emsp;首先我们要加载需要的<code>XML</code>分类器，然后以灰度格式加载输入图像或者是视频。如果检测到面部，它会返回面部所在的矩形区域<code>Rect(x, y, w, h)</code>。一旦我们获得这个位置，就可以创建一个<code>ROI</code>，并在其中进行眼部检测(谁让眼睛长在脸上呢)：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line">​</span><br><span class="line">face_cascade = cv2.CascadeClassifier(<span class="string">'haarcascade_frontalface_default.xml'</span>)</span><br><span class="line">eye_cascade = cv2.CascadeClassifier(<span class="string">'haarcascade_eye.xml'</span>)</span><br><span class="line">img = cv2.imread(<span class="string">'face.jpg'</span>)</span><br><span class="line">gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)</span><br><span class="line">​</span><br><span class="line"><span class="comment"># Detects objects of different sizes in the input image.</span></span><br><span class="line"><span class="comment"># The detected objects are returned as a list of rectangles.</span></span><br><span class="line"><span class="comment"># cv2.CascadeClassifier.detectMultiScale(image, scaleFactor, minNeighbors, flags, minSize, maxSize)</span></span><br><span class="line"><span class="comment"># scaleFactor – Parameter specifying how much the image size is reduced at each image</span></span><br><span class="line"><span class="comment"># scale.</span></span><br><span class="line"><span class="comment"># minNeighbors – Parameter specifying how many neighbors each candidate rectangle should</span></span><br><span class="line"><span class="comment"># have to retain it.</span></span><br><span class="line"><span class="comment"># minSize – Minimum possible object size. Objects smaller than that are ignored.</span></span><br><span class="line"><span class="comment"># maxSize – Maximum possible object size. Objects larger than that are ignored.</span></span><br><span class="line">faces = face_cascade.detectMultiScale(gray, <span class="number">1.3</span>, <span class="number">5</span>)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> (x, y, w, h) <span class="keyword">in</span> faces:</span><br><span class="line">    img = cv2.rectangle(img, (x, y), (x + w, y + h), (<span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span>), <span class="number">2</span>)</span><br><span class="line">    roi_gray = gray[y:y + h, x:x + w]</span><br><span class="line">    roi_color = img[y:y + h, x:x + w]</span><br><span class="line">    eyes = eye_cascade.detectMultiScale(roi_gray)</span><br><span class="line">    <span class="keyword">for</span> (ex, ey, ew, eh) <span class="keyword">in</span> eyes:</span><br><span class="line">        cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (<span class="number">0</span>, <span class="number">255</span>, <span class="number">0</span>), <span class="number">2</span>)</span><br><span class="line">​</span><br><span class="line">cv2.imshow(<span class="string">'img'</span>, img)</span><br><span class="line">cv2.waitKey(<span class="number">0</span>)</span><br><span class="line">cv2.destroyAllWindows()</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/04/opencv和图像处理/Haar分类器/3.png"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/04/opencv和图像处理/重映射cvRemap/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/04/opencv和图像处理/重映射cvRemap/" itemprop="url">重映射cvRemap</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-04T11:47:15+08:00">
+                2019-03-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>cvRemap</code>可以对图像进行普通几何变换，它利用下面指定的矩阵变换输入图像：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">src(mapx(x, y), mapy(x, y)) -&gt; dst(x, y)</span><br></pre></td></tr></table></figure>
+<p>与其它几何变换类似，可以使用一些插值方法(由用户指定，同<code>cvResize</code>)来计算非整数坐标的像素值。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvRemap</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *src, CvArr *dst, <span class="keyword">const</span> CvArr *mapx, <span class="keyword">const</span> CvArr *mapy,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> flags = CV_INTER_LINEAR + CV_WARP_FILL_OUTLIERS,</span></span></span><br><span class="line"><span class="function"><span class="params">    CvScalar fillval = cvScalarAll ( <span class="number">0</span> ))</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>src</code>：输入图像。</li>
+<li><code>dst</code>：输出图像。</li>
+<li><code>mapx</code>：<code>x</code>坐标的映。</li>
+<li><code>mapy</code>：<code>y</code>坐标的映射。</li>
+<li><code>flags</code>：这是插值方法，要和以下开关选项的组合：</li>
+</ul>
+<ol>
+<li><code>CV_WARP_FILL_OUTLIERS</code>：填充边界外的像素，如果输出图像的部分像素落在变换后的边界外，那么它们的值设定为<code>fillval</code>。</li>
+</ol>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cv.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"cxcore.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"highgui.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    uchar DataSrc[] = &#123;</span><br><span class="line">        <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>,</span><br><span class="line">        <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>,</span><br><span class="line">        <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span></span><br><span class="line">    &#125;;</span><br><span class="line">    CvMat MatSrc;</span><br><span class="line">    cvInitMatHeader ( &amp;MatSrc, <span class="number">3</span>, <span class="number">3</span>, CV_8UC1, DataSrc ); <span class="comment">/* 初始化矩阵 */</span></span><br><span class="line">    CvMat *MatDst = cvCreateMat ( <span class="number">3</span>, <span class="number">3</span>, CV_8UC1 ); <span class="comment">/* 创建矩阵 */</span></span><br><span class="line">    <span class="keyword">float</span> DataMapx[] = &#123; <span class="comment">/* cvRemap函数的mapx一定要为float型 */</span></span><br><span class="line">        <span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>,</span><br><span class="line">        <span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>,</span><br><span class="line">        <span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span></span><br><span class="line">    &#125;;</span><br><span class="line">    CvMat mapx;</span><br><span class="line">    cvInitMatHeader ( &amp;mapx, <span class="number">3</span>, <span class="number">3</span>, CV_32FC1, DataMapx ); <span class="comment">/* 注意类型是CV_32FC1 */</span></span><br><span class="line">    <span class="keyword">float</span> DataMapy[] = &#123;</span><br><span class="line">        <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>,</span><br><span class="line">        <span class="number">1</span>, <span class="number">1</span>, <span class="number">2</span>,</span><br><span class="line">        <span class="number">2</span>, <span class="number">2</span>, <span class="number">0</span></span><br><span class="line">    &#125;;</span><br><span class="line">    CvMat mapy;</span><br><span class="line">    cvInitMatHeader ( &amp;mapy, <span class="number">3</span>, <span class="number">3</span>, CV_32FC1, DataMapy );</span><br><span class="line">    cvRemap ( &amp;MatSrc, MatDst, &amp;mapx, &amp;mapy, CV_INTER_LINEAR | CV_WARP_FILL_OUTLIERS );</span><br><span class="line">    <span class="comment">/* 打印原矩阵 */</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"MatSrc:"</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> rows = <span class="number">0</span>; rows &lt; MatSrc.height; rows++ ) &#123;</span><br><span class="line">        uchar *DataPt = ( uchar * ) ( MatSrc.data.ptr + rows * MatSrc.step );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> cols = <span class="number">0</span>; cols &lt; MatSrc.width; cols++ ) &#123;</span><br><span class="line">            uchar data = * ( DataPt + cols );</span><br><span class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; ( <span class="keyword">int</span> ) data &lt;&lt; <span class="string">" "</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 打印mapx */</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"mapx:"</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> rows = <span class="number">0</span>; rows &lt; mapx.height; rows++ ) &#123;</span><br><span class="line">        <span class="keyword">float</span> *DataPt = ( <span class="keyword">float</span> * ) ( mapx.data.ptr + rows * mapx.step );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> cols = <span class="number">0</span>; cols &lt; mapx.width; cols++ ) &#123;</span><br><span class="line">            <span class="keyword">float</span> data = * ( DataPt + cols );</span><br><span class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; ( <span class="keyword">float</span> ) data &lt;&lt; <span class="string">" "</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 打印mapy */</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"mapy:"</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> rows = <span class="number">0</span>; rows &lt; mapy.height; rows++ ) &#123;</span><br><span class="line">        <span class="keyword">float</span> *DataPt = ( <span class="keyword">float</span> * ) ( mapy.data.ptr + rows * mapy.step );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> cols = <span class="number">0</span>; cols &lt; mapy.width; cols++ ) &#123;</span><br><span class="line">            <span class="keyword">float</span> data = * ( DataPt + cols );</span><br><span class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; ( <span class="keyword">float</span> ) data &lt;&lt; <span class="string">" "</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 打印结果矩阵 */</span></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"MatDst:"</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> rows = <span class="number">0</span>; rows &lt; MatDst-&gt;height; rows++ ) &#123;</span><br><span class="line">        uchar *DataPt = ( uchar * ) ( MatDst-&gt;data.ptr + rows * MatDst-&gt;step );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> cols = <span class="number">0</span>; cols &lt; MatDst-&gt;width; cols++ ) &#123;</span><br><span class="line">            uchar data = * ( DataPt + cols );</span><br><span class="line">            <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; ( <span class="keyword">int</span> ) data &lt;&lt; <span class="string">" "</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">MatSrc:</span><br><span class="line"><span class="number">1</span> <span class="number">2</span> <span class="number">3</span></span><br><span class="line"><span class="number">4</span> <span class="number">5</span> <span class="number">6</span></span><br><span class="line"><span class="number">7</span> <span class="number">8</span> <span class="number">9</span></span><br><span class="line">mapx:</span><br><span class="line"><span class="number">1</span> <span class="number">2</span> <span class="number">0</span></span><br><span class="line"><span class="number">1</span> <span class="number">2</span> <span class="number">0</span></span><br><span class="line"><span class="number">1</span> <span class="number">2</span> <span class="number">0</span></span><br><span class="line">mapy:</span><br><span class="line"><span class="number">0</span> <span class="number">0</span> <span class="number">1</span></span><br><span class="line"><span class="number">1</span> <span class="number">1</span> <span class="number">2</span></span><br><span class="line"><span class="number">2</span> <span class="number">2</span> <span class="number">0</span></span><br><span class="line">MatDst:</span><br><span class="line"><span class="number">2</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"><span class="number">5</span> <span class="number">6</span> <span class="number">7</span></span><br><span class="line"><span class="number">8</span> <span class="number">9</span> <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<hr>
+<p>&emsp;&emsp;重映射就是把一幅图像中某位置的像素放置到另一个图片指定位置的过程，<code>opencv</code>使用<code>remap</code>函数进行重映射：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">remap</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    InputArray src, OutputArray dst, InputArray map1, InputArray map2,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> interpolation, intborderMode = BORDER_CONSTANT,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> Scalar &amp;borderValue = Scalar())</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>src</code>：输入图像，即原图像，需要单通道<code>8</code>位或者浮点类型的图像。</li>
+<li><code>dst</code>：输出图像，即目标图像，需和原图形一样的尺寸和类型。</li>
+<li><code>map1</code>：它有两种可能表示的对象：</li>
+</ul>
+<ol>
+<li>表示点<code>(x, y)</code>的第一个映射。</li>
+<li>表示<code>CV_16SC2</code>、<code>CV_32FC1</code>等。</li>
+</ol>
+<ul>
+<li><code>map2</code>：它有两种可能表示的对象：</li>
+</ul>
+<ol>
+<li>若<code>map1</code>表示点<code>(x, y)</code>时，这个参数不代表任何值。</li>
+<li>表示<code>CV_16UC1</code>、<code>CV_32FC1</code>等。</li>
+</ol>
+<ul>
+<li><code>interpolation</code>：插值方式，有四种插值方式：</li>
+</ul>
+<ol>
+<li><code>INTER_NEAREST</code>：最近邻插值。</li>
+<li><code>INTER_LINEAR</code>：双线性插值。</li>
+<li><code>INTER_CUBIC</code>：双三样条插值。</li>
+<li><code>INTER_LANCZOS4</code>：<code>lanczos</code>插值。</li>
+</ol>
+<ul>
+<li><code>intborderMode</code>：边界模式，默认是<code>BORDER_CONSTANT</code>。</li>
+<li><code>borderValue</code>：边界颜色，默认是黑色。</li>
+</ul>
+<p>以下代码使用<code>remap</code>对图像进行水平翻转：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/opencv.hpp&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Mat srcImage = imread ( <span class="string">"timg1.jpg"</span> );</span><br><span class="line">    Mat dstImage, map_x, map_y;</span><br><span class="line">    imshow ( <span class="string">"原图"</span>, srcImage );</span><br><span class="line">    <span class="comment">/* 创建和原始图像一样的效果图、x重映射图和y重映射图 */</span></span><br><span class="line">    dstImage.create ( srcImage.size(), srcImage.type() );</span><br><span class="line">    map_x.create ( srcImage.size(), CV_32FC1 );</span><br><span class="line">    map_y.create ( srcImage.size(), CV_32FC1 );</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 双层循环，遍历每一个像素点，改变map_x和map_y的值 */</span></span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; srcImage.rows; i++ ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> j = <span class="number">0</span>; j &lt; srcImage.cols ; j++ ) &#123;</span><br><span class="line">            map_x.at&lt;<span class="keyword">float</span>&gt; ( i, j ) = <span class="keyword">static_cast</span>&lt;<span class="keyword">float</span>&gt; ( srcImage.cols - j - <span class="number">1</span> );</span><br><span class="line">            map_y.at&lt;<span class="keyword">float</span>&gt; ( i, j ) = <span class="keyword">static_cast</span>&lt;<span class="keyword">float</span>&gt; ( i );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 进行重映射操作 */</span></span><br><span class="line">    remap ( srcImage, dstImage, map_x, map_y, CV_INTER_LINEAR, BORDER_CONSTANT, Scalar ( <span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span> ) );</span><br><span class="line">    imshow ( <span class="string">"效果图"</span>, dstImage );</span><br><span class="line">    waitKey ( <span class="number">0</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/04/opencv和图像处理/重映射cvRemap/1.png" height="255" width="693"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/04/opencv和图像处理/改变图像的对比度和亮度/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/04/opencv和图像处理/改变图像的对比度和亮度/" itemprop="url">改变图像的对比度和亮度</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-04T10:53:29+08:00">
+                2019-03-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="图像处理"><a href="#图像处理" class="headerlink" title="图像处理"></a>图像处理</h3><p>&emsp;&emsp;一般来说，图像处理算子是带有一幅或多幅输入图像，并产生一幅输出图像的函数。图像变换可分为以下两种：</p>
+<ul>
+<li>点算子(像素变换)。</li>
+<li>邻域(基于区域的)算子。</li>
+</ul>
+<h3 id="像素变换"><a href="#像素变换" class="headerlink" title="像素变换"></a>像素变换</h3><p>&emsp;&emsp;在这一类图像处理变换中，仅仅根据输入像素值(有时可加上某些全局信息或参数)计算相应的输出像素值。这类算子包括亮度和对比度调整，以及颜色校正和变换。</p>
+<h3 id="亮度和对比度调整"><a href="#亮度和对比度调整" class="headerlink" title="亮度和对比度调整"></a>亮度和对比度调整</h3><p>&emsp;&emsp;两种常用的点过程(即点算子)，是用常数对点进行乘法和加法运算：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">g(x) = a * f(x) + b</span><br></pre></td></tr></table></figure>
+<p>两个参数<code>a</code>(<code>a &gt; 0</code>)和<code>b</code>一般称作增益和偏置参数，我们往往用这两个参数来分别控制对比度和亮度。你可以把<code>f(x)</code>看成源图像像素，把<code>g(x)</code>看成输出图像像素。这样一来，上面的式子就能写得更清楚一些：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">g(i, j) = a * f(i, j) + b</span><br></pre></td></tr></table></figure>
+<p>其中<code>i</code>和<code>j</code>表示像素位于第<code>i</code>行和第<code>j</code>列。下面的代码执行运算<code>g(i, j) = a * f(i, j) + b</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/core/core.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">double</span> alpha; <span class="comment">/* 控制对比度 */</span></span><br><span class="line"><span class="keyword">int</span> beta;  <span class="comment">/* 控制亮度 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    Mat image = imread ( argv[<span class="number">1</span>] ); <span class="comment">/* 读入用户提供的图像 */</span></span><br><span class="line">    Mat new_image = Mat::zeros ( image.size(), image.type() );</span><br><span class="line">    <span class="comment">/* 初始化 */</span></span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">" Basic Linear Transforms "</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"-------------------------"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"* Enter the alpha value [1.0-3.0]: "</span>;</span><br><span class="line">    <span class="built_in">cin</span> &gt;&gt; alpha;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"* Enter the beta value [0-100]: "</span>;</span><br><span class="line">    <span class="built_in">cin</span> &gt;&gt; beta;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 执行运算“new_image(i,j) = alpha * image(i,j) + beta” */</span></span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> y = <span class="number">0</span>; y &lt; image.rows; y++ ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> x = <span class="number">0</span>; x &lt; image.cols; x++ ) &#123;</span><br><span class="line">            <span class="keyword">for</span> ( <span class="keyword">int</span> c = <span class="number">0</span>; c &lt; <span class="number">3</span>; c++ ) &#123;</span><br><span class="line">                new_image.at&lt;Vec3b&gt; ( y, x ) [c] = \</span><br><span class="line">                    saturate_cast&lt;uchar&gt; ( alpha * ( image.at&lt;Vec3b&gt; ( y, x ) [c] ) + beta );</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 创建窗口 */</span></span><br><span class="line">    namedWindow ( <span class="string">"Original Image"</span>, <span class="number">1</span> );</span><br><span class="line">    namedWindow ( <span class="string">"New Image"</span>, <span class="number">1</span> );</span><br><span class="line">    <span class="comment">/* 显示图像 */</span></span><br><span class="line">    imshow ( <span class="string">"Original Image"</span>, image );</span><br><span class="line">    imshow ( <span class="string">"New Image"</span>, new_image );</span><br><span class="line">    waitKey(); <span class="comment">/* 等待用户按键 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>建立两个变量，用于存储用户输入的<code>a</code>和<code>b</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">double</span> alpha;</span><br><span class="line"><span class="keyword">int</span> beta;</span><br></pre></td></tr></table></figure>
+<p>然后用<code>imread</code>载入图像，并将其存入一个<code>Mat</code>对象：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Mat image = imread ( argv[<span class="number">1</span>] );</span><br></pre></td></tr></table></figure>
+<p>因为要对图像进行一些变换，所以需要一个新的<code>Mat</code>对象存储变换后的图像。我们希望这个<code>Mat</code>对象拥有下面的性质：</p>
+<ul>
+<li>像素值初始化为<code>0</code>。</li>
+<li>与原图像有相同的大小和类型。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Mat new_image = Mat::zeros ( image.size(), image.type() );</span><br></pre></td></tr></table></figure>
+<p><code>Mat::zeros</code>采用<code>Matlab</code>风格的初始化方式，用<code>image.size</code>和<code>image.type</code>来对<code>Mat</code>对象进行<code>0</code>初始化。<br>&emsp;&emsp;为了执行运算<code>g(i, j) = a * f(i, j) + b</code>，我们要访问图像的每一个像素。因为是对<code>RGB</code>图像进行运算，每个像素有三个值(<code>R</code>、<code>G</code>、<code>B</code>)，所以要分别访问它们。下面是访问像素的代码片段：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> ( <span class="keyword">int</span> y = <span class="number">0</span>; y &lt; image.rows; y++ ) &#123;</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> x = <span class="number">0</span>; x &lt; image.cols; x++ ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> c = <span class="number">0</span>; c &lt; <span class="number">3</span>; c++ ) &#123;</span><br><span class="line">            new_image.at&lt;Vec3b&gt; ( y, x ) [c] = \</span><br><span class="line">                saturate_cast&lt;uchar&gt; ( alpha * ( image.at&lt;Vec3b&gt; ( y, x ) [c] ) + beta );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意以下两点：</p>
+<ul>
+<li>为了访问图像的每一个像素，我们使用语法<code>image.at&lt;Vec3b&gt;(y, x)[c]</code>，其中<code>y</code>是像素所在的行，<code>x</code>是像素所在的列，<code>c</code>是<code>R</code>、<code>G</code>、<code>B</code>(<code>0</code>、<code>1</code>、<code>2</code>)之一。</li>
+<li>因为<code>g(i, j) = a * f(i, j) + b</code>的运算结果可能超出像素取值范围，还可能是非整数(如果<code>a</code>是浮点数的话)，所以要用<code>saturate_cast</code>对结果进行转换，以确保它为有效值。</li>
+</ul>
+<p>&emsp;&emsp;我们可以不用<code>for</code>循环来访问每个像素，而是直接采用下面这个命令：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">image.convertTo ( new_image, <span class="number">-1</span>, alpha, beta );</span><br></pre></td></tr></table></figure>
+<p>这里的<code>convertTo</code>将执行我们想做的<code>new_image = alpha * image + beta</code>。<br>&emsp;&emsp;运行代码，取参数<code>a = 2.2</code>和<code>b = 50</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ ./BasicLinearTransforms lena.jpg</span><br><span class="line">Basic Linear Transforms</span><br><span class="line">-------------------------</span><br><span class="line">* Enter the alpha value [<span class="number">1.0</span><span class="number">-3.0</span>]: <span class="number">2.2</span></span><br><span class="line">* Enter the beta value [<span class="number">0</span><span class="number">-100</span>]: <span class="number">50</span></span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/04/opencv和图像处理/改变图像的对比度和亮度/1.png"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/03/opencv和图像处理/Canny边缘检测/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/03/opencv和图像处理/Canny边缘检测/" itemprop="url">Canny边缘检测</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-03T14:42:20+08:00">
+                2019-03-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;图像的边缘检测的原理是检测出图像中所有灰度值变化较大的点，而且这些点连接起来就构成了若干线条，这些线条就可以称为图像的边缘。<code>Canny</code>边缘检测算子是<code>John F. Canny</code>于<code>1986</code>年开发出来的一个多级边缘检测算法。<br>&emsp;&emsp;<code>Canny</code>基于三个基本目标：</p>
+<ul>
+<li>低错误率。所有的边缘都应被找到，并且应该没有伪响应。也就是检测到的边缘必须尽可能是真实的边缘。</li>
+<li>边缘点应被很好地定位。已定位边缘必须尽可能接近真实边缘。也就是由检测器标记为边缘的点和真实边缘的中心之间的距离应该最小。</li>
+<li>单一的边缘点响应。对于真实的边缘点，检测器仅应返回一个点。也就是真实边缘周围的局部最大数应该是最小的。这意味着在仅存一个单一边缘点的位置，检测器不应指出多个边缘像素。</li>
+</ul>
+<h3 id="cvCanny"><a href="#cvCanny" class="headerlink" title="cvCanny"></a>cvCanny</h3><p>&emsp;&emsp;函数功能为采用<code>Canny</code>方法对图像进行边缘检测：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvCanny</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *image, CvArr *edges, <span class="keyword">double</span> threshold1,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> threshold2, <span class="keyword">int</span> aperture_size = <span class="number">3</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>image</code>：输入图像，必须为单通道灰度图。</li>
+<li><code>edges</code>：输出的边缘图像，为单通道黑白图。</li>
+<li><code>threshold1</code>和<code>threshold2</code>：表示阈值，小阈值用来控制边缘连接，大阈值用来控制强边缘的初始分割，即如果一个像素的梯度大于上限值，则被认为是边缘像素；如果小于下限阈值，则被抛弃。如果该点的梯度在两者之间，则当这个点与高于上限值的像素点连接时才保留，否则删除。</li>
+<li><code>aperture_size</code>：<code>Sobel</code>算子大小，默认为<code>3</code>，即表示一个<code>3 * 3</code>的矩阵。<code>Sobel</code>算子与高斯拉普拉斯算子都是常用的边缘算子。</li>
+</ul>
+<h3 id="cvCreateTrackbar"><a href="#cvCreateTrackbar" class="headerlink" title="cvCreateTrackbar"></a>cvCreateTrackbar</h3><p>&emsp;&emsp;函数功能为创建<code>trackbar</code>，并添加到指定窗口：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cvCreateTrackbar</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> <span class="keyword">char</span> *trackbar_name, <span class="keyword">const</span> <span class="keyword">char</span> *window_name,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> *value, <span class="keyword">int</span> count, CvTrackbarCallback on_change )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>trackbar_name</code>：该<code>trackbar</code>的名称。</li>
+<li><code>window_name</code>：窗口名称，该<code>trackbar</code>将显示在这个窗口内。</li>
+<li><code>value</code>：创建时滑块的位置。</li>
+<li><code>count</code>：滑块位置的最大值，最小值固定为<code>0</code>。</li>
+<li><code>on_change</code>：回调函数，当滑块位置有变化时，系统会调用该回调函数。注意，被创建的- <code>trackbar</code>默认显示在指定窗口的顶端，可以通过函数<code>cvGetTrackbarPos</code>来获取- <code>trackbar</code>显示的位置信息，以及通过函数<code>cvSetTrackbarPos</code>来重新设置<code>trackbar</code>的显示位置。</li>
+</ul>
+<h3 id="CvTrackbarCallback"><a href="#CvTrackbarCallback" class="headerlink" title="CvTrackbarCallback"></a>CvTrackbarCallback</h3><p>&emsp;&emsp;函数功能为<code>cvCreateTrackbar</code>函数所使用的回调函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">void</span> <span class="params">( CV_CDECL *CvTrackbarCallback )</span> <span class="params">( <span class="keyword">int</span> pos )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>当<code>trackbar</code>位置被改变的时，系统会调用这个回调函数，并将参数<code>pos</code>设置为表示<code>trackbar</code>位置的数值。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/opencv.hpp&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line">IplImage *g_pSrcImage, *g_pCannyImg;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsCannyTitle = <span class="string">"边缘检测图"</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">on_trackbar</span> <span class="params">( <span class="keyword">int</span> threshold )</span> </span>&#123; <span class="comment">/* cvCreateTrackbar的回调函数 */</span></span><br><span class="line">    cvCanny ( g_pSrcImage, g_pCannyImg, threshold, threshold * <span class="number">3</span>, <span class="number">3</span> ); <span class="comment">/* canny边缘检测 */</span></span><br><span class="line">    cvShowImage ( pstrWindowsCannyTitle, g_pCannyImg );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *pstrImageName = <span class="string">"zzjb.jpg"</span>;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsSrcTitle = <span class="string">"原图"</span>;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsToolBar = <span class="string">"Threshold"</span>;</span><br><span class="line">    <span class="comment">/* 从文件中载入图像的灰度图(CV_LOAD_IMAGE_GRAYSCALE) */</span></span><br><span class="line">    g_pSrcImage = cvLoadImage ( pstrImageName, CV_LOAD_IMAGE_GRAYSCALE );</span><br><span class="line">    g_pCannyImg = cvCreateImage ( cvGetSize ( g_pSrcImage ), IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">    <span class="comment">/* 创建窗口 */</span></span><br><span class="line">    cvNamedWindow ( pstrWindowsSrcTitle, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    cvNamedWindow ( pstrWindowsCannyTitle, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    <span class="comment">/* 创建滑动条 */</span></span><br><span class="line">    <span class="keyword">int</span> nThresholdEdge = <span class="number">1</span>;</span><br><span class="line">    cvCreateTrackbar ( pstrWindowsToolBar, pstrWindowsCannyTitle, &amp;nThresholdEdge, <span class="number">100</span>, on_trackbar );</span><br><span class="line">    <span class="comment">/* 在指定窗口中显示图像 */</span></span><br><span class="line">    cvShowImage ( pstrWindowsSrcTitle, g_pSrcImage );</span><br><span class="line">    on_trackbar ( <span class="number">1</span> );</span><br><span class="line">    cvWaitKey(); <span class="comment">/* 等待按键事件 */</span></span><br><span class="line">    cvDestroyWindow ( pstrWindowsSrcTitle );</span><br><span class="line">    cvDestroyWindow ( pstrWindowsCannyTitle );</span><br><span class="line">    cvReleaseImage ( &amp;g_pSrcImage );</span><br><span class="line">    cvReleaseImage ( &amp;g_pCannyImg );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/03/opencv和图像处理/Canny边缘检测/1.png" height="282" width="395"></p>
+<p>&emsp;&emsp;<code>python</code>代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">from</span> matplotlib <span class="keyword">import</span> pyplot <span class="keyword">as</span> plt</span><br><span class="line">​</span><br><span class="line">img = cv2.imread(<span class="string">'timg1.jpg'</span>, <span class="number">0</span>)</span><br><span class="line">edges = cv2.Canny(img, <span class="number">100</span>, <span class="number">200</span>)</span><br><span class="line">plt.subplot(<span class="number">121</span>), plt.imshow(img, cmap=<span class="string">'gray'</span>)</span><br><span class="line">plt.title(<span class="string">'Original Image'</span>), plt.xticks([]), plt.yticks([])</span><br><span class="line">plt.subplot(<span class="number">122</span>), plt.imshow(edges, cmap=<span class="string">'gray'</span>)</span><br><span class="line">plt.title(<span class="string">'Edge Image'</span>), plt.xticks([]), plt.yticks([])</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/03/opencv和图像处理/Canny边缘检测/2.png"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/03/opencv和图像处理/图像二值化/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/03/opencv和图像处理/图像二值化/" itemprop="url">图像二值化</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-03T14:24:09+08:00">
+                2019-03-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;与边缘检测相比，轮廓检测有时能更好的反映图像的内容。而要对图像进行轮廓检测，则必须要先对图像进行二值化，图像的二值化就是将图像上的像素点的灰度值设置为<code>0</code>或<code>255</code>，这样将使整个图像呈现出明显的黑白效果。在数字图像处理中，二值图像占有非常重要的地位，图像的二值化使图像中数据量大为减少，从而能凸显出目标的轮廓。<br>&emsp;&emsp;对图像进行二值化的关键函数为<code>cvThreshold</code>，它采用<code>Canny</code>方法对图像进行边缘检测：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvThreshold</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *src, CvArr *dst, <span class="keyword">double</span> threshold,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> max_value, <span class="keyword">int</span> threshold_type )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>src</code>表示输入图像，必须为单通道灰度图；参数<code>dst</code>表示输出的边缘图像，为单通道黑白图；参数<code>threshold</code>表示阈值；参数<code>max_value</code>表示最大值；参数<code>threshold_type</code>表示运算方法，在<code>OpenCV</code>的<code>imgproc\types_c.h</code>中可以找到运算方法的定义：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Threshold types */</span></span><br><span class="line"><span class="keyword">enum</span> &#123;</span><br><span class="line">    CV_THRESH_BINARY     = <span class="number">0</span>, <span class="comment">/* value = value &gt; threshold ? max_value : 0     */</span></span><br><span class="line">    CV_THRESH_BINARY_INV = <span class="number">1</span>, <span class="comment">/* value = value &gt; threshold ? 0 : max_value     */</span></span><br><span class="line">    CV_THRESH_TRUNC      = <span class="number">2</span>, <span class="comment">/* value = value &gt; threshold ? threshold : value */</span></span><br><span class="line">    CV_THRESH_TOZERO     = <span class="number">3</span>, <span class="comment">/* value = value &gt; threshold ? value : 0         */</span></span><br><span class="line">    CV_THRESH_TOZERO_INV = <span class="number">4</span>, <span class="comment">/* value = value &gt; threshold ? 0 : value         */</span></span><br><span class="line">    CV_THRESH_MASK       = <span class="number">7</span>,</span><br><span class="line">    <span class="comment">/* use Otsu algorithm to choose the optimal threshold value;</span></span><br><span class="line"><span class="comment">       combine the flag with one of the above CV_THRESH_* values */</span></span><br><span class="line">    CV_THRESH_OTSU       = <span class="number">8</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/opencv.hpp&gt;</span></span></span><br><span class="line">​</span><br><span class="line">IplImage *g_pGrayImage = <span class="literal">NULL</span>;</span><br><span class="line">IplImage *g_pBinaryImage = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsBinaryTitle = <span class="string">"二值图"</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">on_trackbar</span> <span class="params">( <span class="keyword">int</span> pos )</span> </span>&#123;</span><br><span class="line">    cvThreshold ( g_pGrayImage, g_pBinaryImage, pos, <span class="number">255</span>, CV_THRESH_BINARY ); <span class="comment">/* 转为二值图 */</span></span><br><span class="line">    cvShowImage ( pstrWindowsBinaryTitle, g_pBinaryImage ); <span class="comment">/* 显示二值图 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsSrcTitle = <span class="string">"原图"</span>;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *pstrWindowsToolBarName = <span class="string">"二值图阈值"</span>;</span><br><span class="line">    IplImage *pSrcImage = cvLoadImage ( <span class="string">"zzjb.jpg"</span>, CV_LOAD_IMAGE_UNCHANGED ); <span class="comment">/* 从文件中加载原图 */</span></span><br><span class="line">    <span class="comment">/* 转为灰度图 */</span></span><br><span class="line">    g_pGrayImage =  cvCreateImage ( cvGetSize ( pSrcImage ), IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">    cvCvtColor ( pSrcImage, g_pGrayImage, CV_BGR2GRAY );</span><br><span class="line">    g_pBinaryImage = cvCreateImage ( cvGetSize ( g_pGrayImage ), IPL_DEPTH_8U, <span class="number">1</span> ); <span class="comment">/* 创建二值图 */</span></span><br><span class="line">    <span class="comment">/* 显示原图 */</span></span><br><span class="line">    cvNamedWindow ( pstrWindowsSrcTitle, CV_WINDOW_AUTOSIZE );</span><br><span class="line">    cvShowImage ( pstrWindowsSrcTitle, pSrcImage );</span><br><span class="line">    cvNamedWindow ( pstrWindowsBinaryTitle, CV_WINDOW_AUTOSIZE ); <span class="comment">/* 创建二值图窗口 */</span></span><br><span class="line">    <span class="comment">/* 滑动条 */</span></span><br><span class="line">    <span class="keyword">int</span> nThreshold = <span class="number">0</span>;</span><br><span class="line">    cvCreateTrackbar ( pstrWindowsToolBarName, pstrWindowsBinaryTitle, &amp;nThreshold, <span class="number">254</span>, on_trackbar );</span><br><span class="line">    on_trackbar ( <span class="number">1</span> );</span><br><span class="line">    cvWaitKey ( <span class="number">0</span> );</span><br><span class="line">    cvDestroyWindow ( pstrWindowsSrcTitle );</span><br><span class="line">    cvDestroyWindow ( pstrWindowsBinaryTitle );</span><br><span class="line">    cvReleaseImage ( &amp;pSrcImage );</span><br><span class="line">    cvReleaseImage ( &amp;g_pGrayImage );</span><br><span class="line">    cvReleaseImage ( &amp;g_pBinaryImage );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/03/opencv和图像处理/图像二值化/1.png" height="271" width="392"></p>
+<p><code>OpenCV</code>还有个<code>cvAdaptiveThreshold</code>函数，这个函数会使用<code>Otsu</code>算法(大律法或最大类间方差法)来计算出一个全局阈值，然后根据这个阈值进行二值化。</p>
+<hr>
+<h3 id="cv2-threshold"><a href="#cv2-threshold" class="headerlink" title="cv2.threshold"></a>cv2.threshold</h3><p>&emsp;&emsp;<code>cv2.threshold</code>的作用是：当像素高于阈值时，给像素赋予新值，否则赋予另外一种颜色。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cv2.threshold(src, thresh, maxval, type[, dst]) -&gt; retval,dst</span><br></pre></td></tr></table></figure>
+<p>示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line">​</span><br><span class="line">img = cv2.imread(<span class="string">'ml.png'</span>, <span class="number">0</span>)</span><br><span class="line">ret, thresh1 = cv2.threshold(img, <span class="number">1</span>, <span class="number">255</span>, cv2.THRESH_BINARY)</span><br><span class="line">ret, thresh2 = cv2.threshold(img, <span class="number">127</span>, <span class="number">255</span>, cv2.THRESH_BINARY_INV)</span><br><span class="line">ret, thresh3 = cv2.threshold(img, <span class="number">127</span>, <span class="number">255</span>, cv2.THRESH_TRUNC)</span><br><span class="line">ret, thresh4 = cv2.threshold(img, <span class="number">127</span>, <span class="number">255</span>, cv2.THRESH_TOZERO)</span><br><span class="line">ret, thresh5 = cv2.threshold(img, <span class="number">127</span>, <span class="number">255</span>, cv2.THRESH_TOZERO_INV)</span><br><span class="line">​</span><br><span class="line">titles = [<span class="string">'img'</span>, <span class="string">'BINARY'</span>, <span class="string">'BINARY_INV'</span>, <span class="string">'TRUNC'</span>, <span class="string">'TOZERO'</span>, <span class="string">'TOZERO_INV'</span>]</span><br><span class="line">images = [img, thresh1, thresh2, thresh3, thresh4, thresh5]</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">6</span>):</span><br><span class="line">    plt.subplot(<span class="number">2</span>, <span class="number">3</span>, i + <span class="number">1</span>), plt.imshow(images[i], <span class="string">'gray'</span>)</span><br><span class="line">    plt.title(titles[i])</span><br><span class="line">    plt.xticks([]), plt.yticks([])</span><br><span class="line"></span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/03/opencv和图像处理/图像二值化/2.png" height="264" width="330"></p>
+<hr>
+<h3 id="adaptiveThreshold"><a href="#adaptiveThreshold" class="headerlink" title="adaptiveThreshold"></a>adaptiveThreshold</h3><p>&emsp;&emsp;自适应阈值二值化函数根据图片一小块区域的值来计算对应区域的阈值，从而得到也许更为合适的图片：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dst = cv2.adaptiveThreshold(src, maxval, thresh_type, type, Block_Size, C)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>src</code>：输入图，只能输入单通道图像，通常来说为灰度图。</li>
+<li><code>dst</code>：输出图。</li>
+<li><code>maxval</code>：当像素值超过了阈值(或者小于阈值，根据<code>type</code>来决定)，所赋予的值。</li>
+<li><code>thresh_type</code>：阈值的计算方法，包含以下<code>2</code>种类型：</li>
+</ul>
+<ol>
+<li><code>cv2.ADAPTIVE_THRESH_MEAN_C</code></li>
+<li><code>cv2.ADAPTIVE_THRESH_GAUSSIAN_C</code></li>
+</ol>
+<ul>
+<li><code>type</code>：二值化操作的类型，与固定阈值函数相同，包含以下<code>5</code>种类型：</li>
+</ul>
+<ol>
+<li><code>cv2.THRESH_BINARY</code></li>
+<li><code>cv2.THRESH_BINARY_INV</code></li>
+<li><code>cv2.THRESH_TRUNC</code></li>
+<li><code>cv2.THRESH_TOZERO</code></li>
+<li><code>cv2.THRESH_TOZERO_INV</code></li>
+</ol>
+<ul>
+<li><code>Block_Size</code>：图片中分块的大小。</li>
+<li><code>C</code>：阈值计算方法中的常数项。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">from</span> matplotlib <span class="keyword">import</span> pyplot <span class="keyword">as</span> plt</span><br><span class="line">​</span><br><span class="line">img = cv2.imread(<span class="string">'ml.png'</span>, <span class="number">0</span>)</span><br><span class="line">img = cv2.medianBlur(img, <span class="number">5</span>)</span><br><span class="line">ret, th1 = cv2.threshold(img, <span class="number">127</span>, <span class="number">255</span>, cv2.THRESH_BINARY)</span><br><span class="line">th2 = cv2.adaptiveThreshold(img, <span class="number">255</span>, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, <span class="number">11</span>, <span class="number">2</span>)</span><br><span class="line">th3 = cv2.adaptiveThreshold(img, <span class="number">255</span>, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, <span class="number">11</span>, <span class="number">2</span>)</span><br><span class="line">titles = [<span class="string">'Original Image'</span>, <span class="string">'Global Thresholding (v = 127)'</span>,</span><br><span class="line">          <span class="string">'Adaptive Mean Thresholding'</span>, <span class="string">'Adaptive Gaussian Thresholding'</span>]</span><br><span class="line">images = [img, th1, th2, th3]</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">4</span>):</span><br><span class="line">    plt.subplot(<span class="number">2</span>, <span class="number">2</span>, i + <span class="number">1</span>), plt.imshow(images[i], <span class="string">'gray'</span>)</span><br><span class="line">    plt.title(titles[i])</span><br><span class="line">    plt.xticks([]), plt.yticks([])</span><br><span class="line"></span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/03/opencv和图像处理/图像二值化/3.png" height="266" width="352"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/03/opencv和图像处理/伪彩色处理/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -892,663 +1655,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/03/数据结构和算法/尺取法/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/03/数据结构和算法/尺取法/" itemprop="url">尺取法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-03T11:11:04+08:00">
-                2019-03-03
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;给定长度为<code>n</code>的整数数列<code>a</code>以及整数<code>S</code>，求出总和不小于<code>S</code>的连续子序列的长度的最小值。如果不存在，则输出<code>0</code>。样例输入：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">n = <span class="number">10</span></span><br><span class="line">S = <span class="number">15</span></span><br><span class="line">a = &#123;<span class="number">5</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">10</span>, <span class="number">7</span>, <span class="number">4</span>, <span class="number">9</span>, <span class="number">2</span>, <span class="number">8</span>&#125;</span><br></pre></td></tr></table></figure>
-<p>输出<code>2</code>，即<code>5 + 10</code>。可以采用尺取法来解决(反复地推进区间的开头和末尾，来求取满足条件的最小区间的方法是尺取法)：</p>
-<ol>
-<li>以<code>s = t = sum = 0</code>初始化。</li>
-<li>只要依然有<code>sum &lt; S</code>，就不断将<code>sum</code>增加<code>at</code>，并将<code>t</code>增加<code>1</code>。</li>
-<li>如果<code>2</code>中无法满足<code>sum ≥ S</code>则终止。否则的话，更新<code>res = min(res, t - s)</code>。</li>
-<li>将<code>sum</code>减去<code>as</code>，<code>s</code>增加<code>1</code>，然后回到<code>2</code>。</li>
-</ol>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">solve</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> res = n + <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> s = <span class="number">0</span>, t = <span class="number">0</span>, sum = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        <span class="keyword">while</span> ( t &lt; n &amp;&amp; sum &lt; S ) &#123;</span><br><span class="line">            sum += a[t++];</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( sum &lt; S ) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        res = min ( res, t - s );</span><br><span class="line">        sum -= a[s++];</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( res &gt; n ) &#123; <span class="comment">/* 解不存在 */</span></span><br><span class="line">        res = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, res );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/03/数据结构和算法/尺取法/1.jpg" height="229" width="286"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/03/数据结构和算法/用两个栈实现队列/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/03/数据结构和算法/用两个栈实现队列/" itemprop="url">用两个栈实现队列</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-03T11:02:25+08:00">
-                2019-03-03
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;题目描述：用两个栈来实现一个队列，完成队列的<code>Push</code>和<code>Pop</code>操作，队列中的元素为<code>int</code>类型。<br>&emsp;&emsp;输入：每个输入文件包含一个测试样例。对于每个测试样例，第一行输入一个<code>n</code>(<code>1 &lt;= n &lt;= 100000</code>)，代表队列操作的个数。接下来的<code>n</code>行，每行输入一个队列操作：<code>PUSH X</code>向队列中<code>push</code>一个整数<code>x</code>(<code>x &gt;= 0</code>)，<code>POP</code>从队列中<code>pop</code>一个数。<br>&emsp;&emsp;输出：对应每个测试案例，打印所有<code>pop</code>操作中从队列<code>pop</code>中的数字。如果执行<code>pop</code>操作时，队列为空，则打印<code>-1</code>。样例输入：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">3</span></span><br><span class="line">PUSH <span class="number">10</span></span><br><span class="line">POP</span><br><span class="line">POP</span><br></pre></td></tr></table></figure>
-<p>样例输出：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">10</span></span><br><span class="line"><span class="number">-1</span></span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/03/数据结构和算法/用两个栈实现队列/1.png" height="198" width="570"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 100005</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">int</span> stack1[N], stack2[N];</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n, top1, top2, v;</span><br><span class="line">    <span class="keyword">char</span> s[<span class="number">10</span>];</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="built_in">scanf</span> ( <span class="string">"%d"</span>, &amp;n ) != EOF ) &#123;</span><br><span class="line">        top1 = <span class="number">0</span>, top2 = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( n-- ) &#123;</span><br><span class="line">            <span class="built_in">scanf</span> ( <span class="string">"%s"</span>, s );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( s[<span class="number">1</span>] == <span class="string">'U'</span> ) &#123; <span class="comment">/* PUSH */</span></span><br><span class="line">                <span class="built_in">scanf</span> ( <span class="string">"%d"</span>, &amp;v );</span><br><span class="line">                stack1[top1++] = v;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">if</span> ( top2 == <span class="number">0</span> ) &#123; <span class="comment">/*只有把前面“倒过来”的数输出完，后面的数才能“倒过来”*/</span></span><br><span class="line">                    <span class="keyword">while</span> ( top1 ) &#123;</span><br><span class="line">                        <span class="comment">/*类似于从一摞书A中自上向下取，放到第二摞书B中,实现了“倒栈”, 倒完了就是一个队列的顺序了*/</span></span><br><span class="line">                        stack2[top2++] = stack1[--top1];</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">​</span><br><span class="line">                <span class="keyword">if</span> ( top2 ) &#123;</span><br><span class="line">                    <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, stack2[--top2] );</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="built_in">printf</span> ( <span class="string">"-1\n"</span> );</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/03/数据结构和算法/拓扑排序/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/03/数据结构和算法/拓扑排序/" itemprop="url">拓扑排序</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-03T10:48:38+08:00">
-                2019-03-03
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;在图论中，拓扑排序(<code>Topological Sorting</code>)是一个有向无环图(<code>Directed Acyclic Graph</code>，<code>DAG</code>)的所有顶点的线性序列，且该序列必须满足下面两个条件：</p>
-<ul>
-<li>每个顶点出现且只出现一次。</li>
-<li>若存在一条从顶点<code>A</code>到顶点<code>B</code>的路径，那么在序列中顶点<code>A</code>出现在顶点<code>B</code>的前面。</li>
-</ul>
-<p>有向无环图才有拓扑排序，非<code>DAG</code>图没有拓扑排序的说法。例如下面这个图：</p>
-<p><img src="/2019/03/03/数据结构和算法/拓扑排序/1.png" height="162" width="206"></p>
-<p>它是一个<code>DAG</code>图，那么如何写出它的拓扑排序呢？这里说一种比较常用的方法：</p>
-<ol>
-<li>从<code>DAG</code>图中选择一个没有前驱(即入度为<code>0</code>)的顶点并输出。</li>
-<li>从图中删除该顶点和所有以它为起点的有向边。</li>
-<li>重复<code>1</code>和<code>2</code>直到当前的<code>DAG</code>图为空或当前图中不存在无前驱的顶点为止。后一种情况说明有向图中必然存在环。</li>
-</ol>
-<p><img src="/2019/03/03/数据结构和算法/拓扑排序/2.png" height="224" width="353"></p>
-<p>于是，得到拓扑排序后的结果是<code>{1, 2, 4, 3, 5}</code>。通常，一个有向无环图可以有一个或多个拓扑排序序列。<br>&emsp;&emsp;拓扑排序通常用来<code>排序</code>具有依赖关系的任务。比如，如果用一个<code>DAG</code>图来表示一个工程，其中每个顶点表示工程中的一个任务，用有向边<code>&lt;A, B&gt;</code>表示在做任务<code>B</code>之前必须先完成任务<code>A</code>。故在这个工程中，任意两个任务要么具有确定的先后关系，要么是没有关系，绝对不存在互相矛盾的关系(<code>环路</code>)。<br>&emsp;&emsp;根据上面讲的方法，我们关键是要维护一个入度为<code>0</code>的顶点的集合。图的存储方式有两种，即邻接矩阵和邻接表，这里我们采用邻接表来存储图：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;list&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;queue&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdlib.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Graph</span> &#123;</span> <span class="comment">/* 类声明 */</span></span><br><span class="line">    <span class="keyword">int</span> V;          <span class="comment">/* 顶点个数 */</span></span><br><span class="line">    <span class="built_in">list</span>&lt;<span class="keyword">int</span>&gt; *adj; <span class="comment">/* 邻接表 */</span></span><br><span class="line">    <span class="built_in">queue</span>&lt;<span class="keyword">int</span>&gt; q;   <span class="comment">/* 维护一个入度为0的顶点的集合 */</span></span><br><span class="line">    <span class="keyword">int</span> *indegree;  <span class="comment">/* 记录每个顶点的入度 */</span></span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    Graph ( <span class="keyword">int</span> V );               <span class="comment">/* 构造函数 */</span></span><br><span class="line">    ~Graph();                      <span class="comment">/* 析构函数 */</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">addEdge</span> <span class="params">( <span class="keyword">int</span> v, <span class="keyword">int</span> w )</span></span>; <span class="comment">/* 添加边 */</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">topological_sort</span><span class="params">()</span></span>;       <span class="comment">/* 拓扑排序 */</span></span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line">Graph::Graph ( <span class="keyword">int</span> V ) &#123; <span class="comment">/* 类定义 */</span></span><br><span class="line">    <span class="keyword">this</span>-&gt;V = V;</span><br><span class="line">    adj = <span class="keyword">new</span> <span class="built_in">list</span>&lt;<span class="keyword">int</span>&gt;[V];</span><br><span class="line">    indegree = <span class="keyword">new</span> <span class="keyword">int</span>[V]; <span class="comment">/* 入度全部初始化为0 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; V; ++i ) &#123;</span><br><span class="line">        indegree[i] = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">Graph::~Graph() &#123;</span><br><span class="line">    <span class="keyword">delete</span>[] adj;</span><br><span class="line">    <span class="keyword">delete</span>[] indegree;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> Graph::addEdge ( <span class="keyword">int</span> v, <span class="keyword">int</span> w ) &#123;</span><br><span class="line">    adj[v].push_back ( w );</span><br><span class="line">    ++indegree[w];</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">bool</span> Graph::topological_sort() &#123;</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; V; ++i )</span><br><span class="line">        <span class="keyword">if</span> ( indegree[i] == <span class="number">0</span> ) &#123;</span><br><span class="line">            q.push ( i ); <span class="comment">/* 将所有入度为0的顶点入队 */</span></span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>; <span class="comment">/* 计数，记录当前已经输出的顶点数 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( !q.empty() ) &#123;</span><br><span class="line">        <span class="keyword">int</span> v = q.front(); <span class="comment">/* 从队列中取出一个顶点 */</span></span><br><span class="line">        q.pop();</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; v &lt;&lt; <span class="string">" "</span>; <span class="comment">/* 输出该顶点 */</span></span><br><span class="line">        ++count;</span><br><span class="line">        <span class="comment">/* 将所有v指向的顶点的入度减1，并将入度减为0的顶点入栈 */</span></span><br><span class="line">        <span class="built_in">list</span>&lt;<span class="keyword">int</span>&gt;::iterator beg = adj[v].begin();</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( ; beg != adj[v].end(); ++beg )</span><br><span class="line">            <span class="keyword">if</span> ( ! ( --indegree[*beg] ) ) &#123;</span><br><span class="line">                q.push ( *beg ); <span class="comment">/* 若入度为0，则入栈 */</span></span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( count &lt; V ) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>; <span class="comment">/* 没有输出全部顶点，有向图中有回路 */</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>; <span class="comment">/* 拓扑排序成功 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">Graph <span class="title">g</span> <span class="params">( <span class="number">6</span> )</span></span>; <span class="comment">/* 创建图 */</span></span><br><span class="line">    g.addEdge ( <span class="number">5</span>, <span class="number">2</span> );</span><br><span class="line">    g.addEdge ( <span class="number">5</span>, <span class="number">0</span> );</span><br><span class="line">    g.addEdge ( <span class="number">4</span>, <span class="number">0</span> );</span><br><span class="line">    g.addEdge ( <span class="number">4</span>, <span class="number">1</span> );</span><br><span class="line">    g.addEdge ( <span class="number">2</span>, <span class="number">3</span> );</span><br><span class="line">    g.addEdge ( <span class="number">3</span>, <span class="number">1</span> );</span><br><span class="line">    g.topological_sort();</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    system ( <span class="string">"PAUSE"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>测试如下<code>DAG</code>图：</p>
-<p><img src="/2019/03/03/数据结构和算法/拓扑排序/3.png" height="172" width="213"></p>
-<p>输出结果是<code>{4, 5, 2, 0, 3, 1}</code>，这是该图的拓扑排序序列之一。<br>&emsp;&emsp;每次在入度为<code>0</code>的集合中取顶点，并没有特殊的取出规则，随机取出也行，这里使用的<code>queue</code>。取顶点的顺序不同会得到不同的拓扑排序序列，当然前提是该图存在多个拓扑排序序列。由于输出每个顶点的同时还要删除以它为起点的边，故上述拓扑排序的时间复杂度为<code>O(V + E)</code>。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/03/数据结构和算法/二分图/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/03/数据结构和算法/二分图/" itemprop="url">二分图</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-03T10:38:37+08:00">
-                2019-03-03
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;二分图又称双分图、二部图、偶图，指顶点可以分成两个不相交的集<code>U</code>和<code>V</code>(<code>U</code>和<code>V</code>皆为独立集)，使得在同一个集内的顶点不相邻(没有共同边)的图。</p>
-<p><img src="/2019/03/03/数据结构和算法/二分图/1.png" height="268" width="285"></p>
-<p>&emsp;&emsp;设<code>G = (V, E)</code>是一个无向图，如果顶点<code>V</code>可分割为两个互不相交的子集<code>(U, V)</code>，并且图中的每条边<code>(i, j)</code>所关联的两个顶点<code>i</code>和<code>j</code>分别属于这两个不同的顶点集<code>(i in U, j in V)</code>，则称图<code>G</code>为一个二分图。<br>&emsp;&emsp;无向图<code>G</code>为二分图的充分必要条件是，<code>G</code>至少有两个顶点，且其所有回路的长度均为偶数。如果无回路，相当于任一回路的长度为<code>0</code>，<code>0</code>视为偶数。</p>
-<p><img src="/2019/03/03/数据结构和算法/二分图/2.jpg"></p>
-<p>&emsp;&emsp;可以将<code>U</code>和<code>V</code>当做着色图：<code>U</code>中所有节点为蓝色，<code>V</code>中所有节点着绿色，每条边的两个端点的颜色不同，符合图着色问题的要求。相反，用这样的着色方式对非二分图是行不通的，根据<code>triangle</code>：其中一个顶点着蓝色并且另一个着绿色后，三角形的第三个顶点与上述具有两个颜色的顶点相连，无法再对其着蓝色或绿色。<br>&emsp;&emsp;二分图的判定如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; G[<span class="number">10</span>]; <span class="comment">/* 图 */</span></span><br><span class="line"><span class="keyword">int</span> color[<span class="number">10</span>]; <span class="comment">/* 顶点i的颜色(1 or -1) */</span></span><br><span class="line"><span class="keyword">int</span> V = <span class="number">4</span>; <span class="comment">/* 顶点数 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">dfs</span><span class="params">(<span class="keyword">int</span> s, <span class="keyword">int</span> c)</span> </span>&#123; <span class="comment">/* 把顶点染成“1”或“-1” */</span></span><br><span class="line">    color[s] = c; <span class="comment">/* 把顶点v染成颜色c */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; G[s].size(); i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (color[G[s][i]] == c) &#123; <span class="comment">/* 如果相邻的顶点同色，则返回false */</span></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 如果相邻的顶点还没被染色，则染成“-c” */</span></span><br><span class="line">        <span class="keyword">if</span> (color[G[s][i]] == <span class="number">0</span> &amp;&amp; !dfs(G[s][i], <span class="number">-1</span> * c)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>; <span class="comment">/* 如果所有顶点都染过色了。则返回true */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    G[<span class="number">0</span>].push_back(<span class="number">1</span>);</span><br><span class="line">    G[<span class="number">0</span>].push_back(<span class="number">3</span>);</span><br><span class="line">    G[<span class="number">1</span>].push_back(<span class="number">0</span>);</span><br><span class="line">    G[<span class="number">1</span>].push_back(<span class="number">2</span>);</span><br><span class="line">    G[<span class="number">2</span>].push_back(<span class="number">1</span>);</span><br><span class="line">    G[<span class="number">2</span>].push_back(<span class="number">3</span>);</span><br><span class="line">    G[<span class="number">3</span>].push_back(<span class="number">0</span>);</span><br><span class="line">    G[<span class="number">3</span>].push_back(<span class="number">2</span>);</span><br><span class="line">    fill(color, color + <span class="number">10</span>, <span class="number">0</span>);</span><br><span class="line">    <span class="built_in">string</span> suc = <span class="string">"yes"</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; V; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (color[i] == <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">if</span> (dfs(i, <span class="number">1</span>) == <span class="literal">false</span>) &#123;</span><br><span class="line">                suc = <span class="string">"no"</span>;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; suc &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; V; i++) &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; color[i] &lt;&lt; <span class="string">" "</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    system(<span class="string">"pause"</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/03/数据结构和算法/BFPRT算法/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/03/数据结构和算法/BFPRT算法/" itemprop="url">BFPRT算法</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-03T10:24:35+08:00">
-                2019-03-03
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;在一堆数中求其前<code>k</code>大或前<code>k</code>小的问题，简称<code>TOP-K</code>问题。而目前解决<code>TOP-K</code>问题最有效的算法即是<code>BFPRT</code>算法，又称为<code>中位数的中位数</code>算法，该算法由<code>Blum</code>、<code>Floyd</code>、<code>Pratt</code>、<code>Rivest</code>、<code>Tarjan</code>提出，最坏时间复杂度为<code>O(n)</code>。<br>&emsp;&emsp;在首次接触<code>TOP-K</code>问题时，我们的第一反应就是可以先对所有数据进行一次排序，然后取其前<code>k</code>即可，但是这么做有两个问题：</p>
-<ul>
-<li>快速排序的平均复杂度为<code>O(nlogn)</code>，但最坏时间复杂度为<code>O(n^2)</code>，不能始终保证较好的复杂度。</li>
-<li>我们只需要前<code>k</code>大的，而对其余不需要的数也进行了排序，浪费了大量排序时间。</li>
-</ul>
-<p>除这种方法之外，堆排序也是一个比较好的选择，可以维护一个大小为<code>k</code>的堆，时间复杂度为<code>O(nlogk)</code>。</p>
-<p>&emsp;&emsp;那是否还存在更有效的方法呢？<code>BFPRT</code>算法的做法就是在快速排序的基础上，通过判断主元位置与k的大小使递归的规模变小，其次通过修改快速排序中主元的选取方法来降低快速排序在最坏情况下的时间复杂度。下面先来简单回顾下快速排序的过程，以升序为例：</p>
-<ol>
-<li>选取主元(数组中随机一个元素)。</li>
-<li>以选取的主元为分界点，把小于主元的放在左边，大于主元的放在右边。</li>
-<li>分别对左边和右边进行递归，重复上述过程。</li>
-</ol>
-<p>&emsp;&emsp;<code>BFPRT</code>算法步骤如下：<br>&emsp;&emsp;第一步选取主元：</p>
-<ol>
-<li>将<code>n</code>个元素划分为<code>floor(n/5)</code>个组，每组<code>5</code>个元素，若有剩余，舍去。</li>
-<li>使用插入排序找到<code>floor(n/5)</code>个组中每一组的中位数。</li>
-<li>对于<code>2</code>中找到的所有中位数，调用<code>BFPRT</code>算法求出它们的中位数，作为主元。</li>
-</ol>
-<p>第二步以<code>3</code>选取的主元为分界点，把小于主元的放在左边，大于主元的放在右边。第三步判断主元的位置与k的大小，有选择的对左边或右边递归。</p>
-<p><img src="/2019/03/03/数据结构和算法/BFPRT算法/1.png" height="220" width="398"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;algorithm&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">BFPRT</span><span class="params">(<span class="keyword">int</span> <span class="built_in">array</span>[], <span class="keyword">int</span> left, <span class="keyword">int</span> right, <span class="keyword">const</span> <span class="keyword">int</span> &amp;k)</span></span>; <span class="comment">/* 返回中位数的中位数下标 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">InsertSort</span><span class="params">(<span class="keyword">int</span> <span class="built_in">array</span>[], <span class="keyword">int</span> left, <span class="keyword">int</span> right)</span> </span>&#123; <span class="comment">/* 插入排序，返回中位数下标 */</span></span><br><span class="line">    <span class="keyword">int</span> temp;</span><br><span class="line">    <span class="keyword">int</span> j;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = left + <span class="number">1</span>; i &lt;= right; i++) &#123;</span><br><span class="line">        temp = <span class="built_in">array</span>[i];</span><br><span class="line">        j = i - <span class="number">1</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> (j &gt;= left &amp;&amp; <span class="built_in">array</span>[j] &gt; temp) &#123;</span><br><span class="line">            <span class="built_in">array</span>[j + <span class="number">1</span>] = <span class="built_in">array</span>[j--];</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">array</span>[j + <span class="number">1</span>] = temp;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ((right - left) &gt;&gt; <span class="number">1</span>) + left;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GetPivotIndex</span><span class="params">(<span class="keyword">int</span> <span class="built_in">array</span>[], <span class="keyword">int</span> left, <span class="keyword">int</span> right)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (right - left &lt; <span class="number">5</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> InsertSort(<span class="built_in">array</span>, left, right);</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">int</span> sub_right = left - <span class="number">1</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = left; i + <span class="number">4</span> &lt;= right; i += <span class="number">5</span>) &#123;</span><br><span class="line">        <span class="keyword">int</span> index = InsertSort(<span class="built_in">array</span>, i, i + <span class="number">4</span>); <span class="comment">/* 找到五个元素的中位数的下标 */</span></span><br><span class="line">        swap(<span class="built_in">array</span>[++sub_right], <span class="built_in">array</span>[index]); <span class="comment">/* 依次放在左侧 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> BFPRT(<span class="built_in">array</span>, left, sub_right, ((sub_right - left + <span class="number">1</span>) &gt;&gt; <span class="number">1</span>) + <span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 利用中位数的中位数的下标进行划分，返回分界线下标 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">Partition</span><span class="params">(<span class="keyword">int</span> <span class="built_in">array</span>[], <span class="keyword">int</span> left, <span class="keyword">int</span> right, <span class="keyword">int</span> pivot_index)</span> </span>&#123;</span><br><span class="line">    swap(<span class="built_in">array</span>[pivot_index], <span class="built_in">array</span>[right]); <span class="comment">/* 把主元放置于末尾 */</span></span><br><span class="line">    <span class="keyword">int</span> divide_index = left; <span class="comment">/* 跟踪划分的分界线 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = left; i &lt; right; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="built_in">array</span>[i] &lt; <span class="built_in">array</span>[right]) &#123;</span><br><span class="line">            swap(<span class="built_in">array</span>[divide_index++], <span class="built_in">array</span>[i]); <span class="comment">/* 比主元小的都放在左侧 */</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    swap(<span class="built_in">array</span>[divide_index], <span class="built_in">array</span>[right]); <span class="comment">/* 最后把主元换回来 */</span></span><br><span class="line">    <span class="keyword">return</span> divide_index;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">BFPRT</span><span class="params">(<span class="keyword">int</span> <span class="built_in">array</span>[], <span class="keyword">int</span> left, <span class="keyword">int</span> right, <span class="keyword">const</span> <span class="keyword">int</span> &amp;k)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> pivot_index = GetPivotIndex(<span class="built_in">array</span>, left, right); <span class="comment">/* 得到中位数的中位数下标 */</span></span><br><span class="line">    <span class="keyword">int</span> divide_index = Partition(<span class="built_in">array</span>, left, right, pivot_index); <span class="comment">/* 进行划分，返回划分边界 */</span></span><br><span class="line">    <span class="keyword">int</span> num = divide_index - left + <span class="number">1</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> (num == k) &#123;</span><br><span class="line">        <span class="keyword">return</span> divide_index;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (num &gt; k) &#123;</span><br><span class="line">        <span class="keyword">return</span> BFPRT(<span class="built_in">array</span>, left, divide_index - <span class="number">1</span>, k);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> BFPRT(<span class="built_in">array</span>, divide_index + <span class="number">1</span>, right, k - num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> k = <span class="number">5</span>;</span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">array</span>[<span class="number">10</span>] = &#123; <span class="number">1</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">1</span>, <span class="number">5</span>, <span class="number">-1</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">-10</span> &#125;;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"原数组: "</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">array</span>[i] &lt;&lt; <span class="string">" "</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"第"</span> &lt;&lt; k &lt;&lt; <span class="string">"小值为: "</span> &lt;&lt; <span class="built_in">array</span>[BFPRT(<span class="built_in">array</span>, <span class="number">0</span>, <span class="number">9</span>, k)] &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"变换后的数组: "</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="built_in">array</span>[i] &lt;&lt; <span class="string">" "</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    system(<span class="string">"pause"</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">原数组: <span class="number">1</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="number">1</span> <span class="number">5</span> <span class="number">-1</span> <span class="number">7</span> <span class="number">8</span> <span class="number">-10</span></span><br><span class="line">第<span class="number">5</span>小值为: <span class="number">1</span></span><br><span class="line">变换后的数组: <span class="number">-10</span> <span class="number">-1</span> <span class="number">1</span> <span class="number">1</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="number">5</span> <span class="number">7</span> <span class="number">8</span></span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1599,7 +1705,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">934</span>
+                  <span class="site-state-item-count">939</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

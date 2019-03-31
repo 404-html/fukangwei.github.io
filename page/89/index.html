@@ -271,6 +271,901 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/13/C语言语法详解/clock函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/13/C语言语法详解/clock函数/" itemprop="url">clock函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-13T08:25:29+08:00">
+                2018-12-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://zhidao.baidu.com/question/745245942534889812.html" target="_blank" rel="noopener">C语言中有没有用于计时的函数？怎么用？</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;clock是C和C++中的计时函数，而与其相关的数据类型是<code>clock_t</code>。在MSDN中，clock函数定义为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">clock_t</span> clock ( <span class="keyword">void</span> );</span><br></pre></td></tr></table></figure>
+<p>该函数返回从<code>开启这个程序进程</code>到<code>程序中调用clock函数</code>时之间的CPU时钟计时单元<code>clock tick</code>数，在MSDN中称之为挂钟时间<code>wal-clock</code>；若挂钟时间不可取，则返回<code>-1</code>。其中，<code>clock_t</code>是用来保存时间的数据类型。</p>
+<h3 id="clock-t定义"><a href="#clock-t定义" class="headerlink" title="clock_t定义"></a>clock_t定义</h3><p>&emsp;&emsp;在<code>time.h</code>文件中，我们可以找到它的定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _CLOCK_T_DEFINED</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">clock_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _CLOCK_T_DEFINED</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>很明显，<code>clock_t</code>是一个长整形数。在<code>time.h</code>文件中，还定义了一个常量<code>CLOCKS_PER_SEC</code>，它用来表示一秒钟会有多少个时钟计时单元，其定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CLOCKS_PER_SEC ( ( clock_t ) 1000 )</span></span><br></pre></td></tr></table></figure>
+<p>在Linux系统下，<code>CLOCKS_PER_SEC</code>的值可能有所不同，目前Linux打印出来的值是1000000，表示的是微秒。<br>&emsp;&emsp;可以看到，每过千分之一秒(1毫秒)，调用clock函数返回的值就加1。你可以使用公式<code>clock()/CLOCKS_PER_SEC</code>来计算一个进程自身的运行时间：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">elapsed_time</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Elapsed time:%u secs.\n"</span>, clock() / CLOCKS_PER_SEC );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当然，你也可以用clock函数来计算机器运行一个循环或者处理其它事件到底花了多少时间：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdlib.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"time.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> i = <span class="number">10000000L</span>;</span><br><span class="line">    <span class="keyword">clock_t</span> start, finish;</span><br><span class="line">    <span class="keyword">double</span> duration;</span><br><span class="line">    <span class="comment">/* 测量一个事件持续的时间 */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Time to do %ld empty loops is "</span>, i );</span><br><span class="line">    start = clock();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( i-- ) ; <span class="comment">/* 注意这行后面有个分号 */</span></span><br><span class="line"></span><br><span class="line">    finish = clock();</span><br><span class="line">    duration = ( <span class="keyword">double</span> ) ( finish - start ) / CLOCKS_PER_SEC;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%f seconds\n"</span>, duration );</span><br><span class="line">    system ( <span class="string">"pause"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行结果为<code>Time to do 10000000 empty loops is 0.03000 seconds</code>。从上面可以看到，时钟计时单元的长度为1毫秒，那么计时的精度也为1毫秒。我们可不可以通过改变<code>CLOCKS_PER_SEC</code>的定义，通过把它定义的大一些，从而使计时精度更高呢？通过尝试，你会发现这样是不行的。在标准<code>C/C++</code>中，最小的计时单位是1毫秒。</p>
+<h3 id="宏CLOCKS-PER-SEC"><a href="#宏CLOCKS-PER-SEC" class="headerlink" title="宏CLOCKS_PER_SEC"></a>宏CLOCKS_PER_SEC</h3><p>&emsp;&emsp;宏<code>CLOCKS_PER_SEC</code>适用于将计算系统时间类型转换为用户可读的秒时间，包含于头文件<code>ctime</code>(或<code>time.h</code>)中。在很久以前，人们就用for来进行延时，但是计算机处理速度越来越快，for循环已经无法实现精确延时，此时使用clock函数就可以实现这个功能：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctime&gt; /* or time.h */​</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> b = clock() / CLOCKS_PER_SEC;​</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; ) &#123; <span class="comment">/* 完成3秒定时 */</span></span><br><span class="line">        i = clock() / CLOCKS_PER_SEC;</span><br><span class="line">        i = i - b;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"Finish it!"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/12/C语言语法详解/freopen函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/12/C语言语法详解/freopen函数/" itemprop="url">freopen函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-12T19:58:09+08:00">
+                2018-12-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://baike.baidu.com/item/freopen" target="_blank" rel="noopener">freopen</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;freopen是C标准库头文件<code>stdio.h</code>中的一个函数，用于重定向输入输出流。该函数可以在不改变代码原貌的情况下改变输入输出环境，但使用时应当保证流是可靠的。C89函数声明为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FILE* <span class="title">freopen</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* filename, <span class="keyword">const</span> <span class="keyword">char</span>* mode, FILE* stream )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>C99函数声明为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FILE* <span class="title">freopen</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* <span class="keyword">restrict</span> filename, <span class="keyword">const</span> <span class="keyword">char</span>* <span class="keyword">restrict</span> mode, FILE* <span class="keyword">restrict</span> stream )</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>filename：需要重定向到的文件名或文件路径。</li>
+<li>mode：代表文件访问权限的字符串，例如<code>r</code>表示<code>只读访问</code>、<code>w</code>表示<code>只写访问</code>、<code>a</code>表示<code>追加写入</code>。</li>
+<li>stream：需要被重定向的文件流。</li>
+</ul>
+<p>&emsp;&emsp;返回值为：如果成功，则返回该指向该输出流的文件指针，否则返回为NULL。<br>&emsp;&emsp;代码示例1如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 将输出重定向到一个文件中 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* redirect standard output to a file */</span></span><br><span class="line">    <span class="keyword">if</span> ( freopen ( <span class="string">"./output.txt"</span>, <span class="string">"w"</span>, <span class="built_in">stdout</span> ) == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"error redirecting stdout\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* this output will go to a file */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"This will go into a file.\n"</span> );</span><br><span class="line">    fclose ( <span class="built_in">stdout</span> ); <span class="comment">/* close the standard output stream */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码示例2如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 从文件in.txt中读入数据，计算加和并输出到out.txt中 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a, b;</span><br><span class="line">    freopen ( <span class="string">"in.txt"</span>, <span class="string">"r"</span>, <span class="built_in">stdin</span> );</span><br><span class="line">    freopen ( <span class="string">"out.txt"</span>, <span class="string">"w"</span>, <span class="built_in">stdout</span> );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( <span class="built_in">scanf</span> ( <span class="string">"%d%d"</span>, &amp;a, &amp;b ) != EOF ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, a + b );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fclose ( <span class="built_in">stdin</span> );</span><br><span class="line">    fclose ( <span class="built_in">stdout</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="恢复文件流"><a href="#恢复文件流" class="headerlink" title="恢复文件流"></a>恢复文件流</h3><p>&emsp;&emsp;当标准输出stdout被重定向到指定文件后，如何把它重定向回原来<code>默认</code>的输出设备(即显示器)呢？C标准库的回复是<code>不支持</code>，没有任何方法可以恢复原来的输出流。那是否存在依赖具体平台的实现呢？的确存在这个方法。<br>&emsp;&emsp;在操作系统中，命令行控制台(即键盘或者显示器)被视为一个文件，既然是文件，那么就有<code>文件名</code>。由于历史原因，命令行控制台文件在DOS操作系统和Windows操作系统中的文件名为<code>CON</code>，在其它的操作系统(例如<code>Unix</code>、<code>Linux</code>、<code>Mac OS X</code>、<code>Androi</code>d等)中的文件名为<code>/dev/tty</code>。因此，在Windows中可以使用<code>freopen( &quot;CON&quot;, &quot;w&quot;, stdout );</code>，其它操作系统中使用<code>freopen( &quot;/dev/tty&quot;, &quot;w&quot;, stdout );</code>。<br>&emsp;&emsp;Windows代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    FILE* stream;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( ( stream = freopen ( <span class="string">"file.txt"</span>, <span class="string">"w"</span>, <span class="built_in">stdout</span> ) ) == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">-1</span> );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"this is stdout output\n"</span> );</span><br><span class="line">    stream = freopen ( <span class="string">"CON"</span>, <span class="string">"w"</span>, <span class="built_in">stdout</span> ); <span class="comment">/* stdout是向程序的末尾的控制台重定向 */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"And now back to the console once again\n"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;类Unix代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    FILE* stream;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( ( stream = freopen ( <span class="string">"file.txt"</span>, <span class="string">"w"</span>, <span class="built_in">stdout</span> ) ) == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">-1</span> );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"this is stdout output\n"</span> );</span><br><span class="line">    stream = freopen ( <span class="string">"/dev/tty"</span>, <span class="string">"w"</span>, <span class="built_in">stdout</span> ); <span class="comment">/* stdout是向程序的末尾的控制台重定向 */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"And now back to the console once again\n"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;在使用上诉方法在输入输出流间进行反复的重定向时，极有可能导致流指针得到不被期待的结果，即输入输出发生异常。所以，如果需要在文件的输入输出和标准输入输出流之间进行切换，建议使用fopen或者是<code>C++</code>标准的ifstream以及ofstream。</p>
+<hr>
+<h3 id="freopen函数在竞赛中的使用"><a href="#freopen函数在竞赛中的使用" class="headerlink" title="freopen函数在竞赛中的使用"></a>freopen函数在竞赛中的使用</h3><p>&emsp;&emsp;在做ACM题目的过程中，我们需要在本地机器上调试。如果输入数据很庞大的话，就很难忍受一次又一次地重新输入和调试了。使用freopen函数可以解决测试数据输入问题，避免重复输入。示例如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;​</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> ONLINE_JUDGE</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">    freopen ( <span class="string">"in.txt"</span>, <span class="string">"r"</span>, <span class="built_in">stdin</span> );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="keyword">int</span> a, b;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( <span class="built_in">cin</span> &gt;&gt; a &gt;&gt; b ) &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; a + b &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在本地机器调试时，因为没有定义过<code>ONLINE_JUDGE</code>，所以会执行<code>freopen( &quot;in.txt&quot;, &quot;r&quot;, stdin );</code>方便本机上的调试；当提交到OJ上后，因为有了<code>ONLINE_JUDGE</code>的定义，所以跳过语句<code>freopen( &quot;in.txt&quot;, &quot;r&quot;, stdin );</code>，从<code>int a, b;</code>处开始执行。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/12/C语言语法详解/qsort函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/12/C语言语法详解/qsort函数/" itemprop="url">qsort函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-12T18:38:58+08:00">
+                2018-12-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://baike.baidu.com/item/qsort" target="_blank" rel="noopener">qsort</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;qsort函数是编译器函数库自带的快速排序函数，其函数原型为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">qsort</span> <span class="params">( <span class="keyword">void</span>* base, <span class="keyword">int</span> num, <span class="keyword">int</span> width, <span class="keyword">int</span> ( *fcmp ) ( <span class="keyword">const</span> <span class="keyword">void</span>*, <span class="keyword">const</span> <span class="keyword">void</span>* ) )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>base是待排序数组首地址，num是数组中待排序元素数量，width是各元素的占用空间大小，fcmp是指向函数的指针，用于确定排序的顺序。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">MSDN: The qsort <span class="keyword">function</span> implements a quick-sort algorithm to sort an array of num elements, each of width bytes.</span><br><span class="line">The argument base is a pointer to the base of the array to be sorted. qsort overwrites this array with the sorted elements.</span><br><span class="line">The argument compare is a pointer to a user-supplied routine that compares two array elements and returns a value specifying their</span><br><span class="line">relationship. qsort calls the compare routine one or more <span class="built_in">times</span> during the sort, passing pointers to two array elements on each call.</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;fcmp函数的原型为<code>fcmp ( ( void * ) &amp;elem1, ( void * ) &amp;elem2 );</code>，具体描述为：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>fcmp函数的返回值</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>&lt; 0</td>
+<td>elem1将被排在elem2前面</td>
+</tr>
+<tr>
+<td>= 0</td>
+<td>elem1等于elem2</td>
+</tr>
+<tr>
+<td>&gt; 0</td>
+<td>elem1将被排在elem2后面</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>&emsp;&emsp;例如对于一个长为1000的数组(例如<code>int a[1000];</code>)进行排序，那么base为<code>a</code>，num为1000，width为<code>sizeof(int)</code>，fcmp是自己定义的函数，即<code>qsort ( a, 1000, sizeof ( int ), comp );</code>。其中，comp函数为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">comp</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* a, <span class="keyword">const</span> <span class="keyword">void</span>* b )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> * ( <span class="keyword">int</span>* ) a - * ( <span class="keyword">int</span>* ) b;   <span class="comment">/* 由小到大排序 */</span></span><br><span class="line">    <span class="comment">// return * ( int * ) b - * ( int * ) a; /* 为由大到小排序 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>参数列表是两个空指针，现在它要去指向你的数组元素，所以要转型为你当前的类型，然后取值。升序排列时，若第一个参数指针指向的<code>值</code>大于第二个参数指针指向的<code>值</code>，则返回正；若第一个参数指针指向的<code>值</code>等于第二个参数指针指向的<code>值</code>，则返回零；若第一个参数指针指向的<code>值</code>小于第二个参数指针指向的<code>值</code>，则返回负。降序排列时，则刚好相反。<br>&emsp;&emsp;对一维数组的排序示例(从小到大排序)如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">comp</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* a, <span class="keyword">const</span> <span class="keyword">void</span>* b )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> * ( <span class="keyword">int</span>* ) a - * ( <span class="keyword">int</span>* ) b;</span><br><span class="line">&#125;​</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span>* <span class="built_in">array</span> = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">int</span> n;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Input n: "</span> );</span><br><span class="line">    <span class="built_in">scanf</span> ( <span class="string">"%d"</span>, &amp;n );</span><br><span class="line">    <span class="built_in">array</span> = ( <span class="keyword">int</span>* ) <span class="built_in">malloc</span> ( n * <span class="keyword">sizeof</span> ( <span class="keyword">int</span> ) );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Input the elements: "</span> );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( ; i &lt; n; i++ ) &#123;</span><br><span class="line">        <span class="built_in">scanf</span> ( <span class="string">"%d"</span>, ( <span class="built_in">array</span> + i ) );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    qsort ( <span class="built_in">array</span>, n, <span class="keyword">sizeof</span> ( <span class="keyword">int</span> ), comp );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d "</span>, <span class="built_in">array</span>[i] );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">free</span> ( <span class="built_in">array</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;按结构体中某个关键字排序(对结构体一级排序)：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">In</span> &#123;</span></span><br><span class="line">    <span class="keyword">double</span> data;</span><br><span class="line">    <span class="keyword">int</span> other;</span><br><span class="line">&#125; s[<span class="number">100</span>]​;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cmp</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* a, <span class="keyword">const</span> <span class="keyword">void</span>* b )</span> </span>&#123; <span class="comment">/* 按照data的值从小到大将结构体排序 */</span></span><br><span class="line">    <span class="keyword">return</span> ( * ( In* ) a ).data &gt; ( * ( In* ) b ).data ? <span class="number">1</span> : <span class="number">-1</span>;</span><br><span class="line">    <span class="comment">/* 注意，这条语句在VC6.0环境下运行可能会出错，但是并不是语句错了，而是你要先Build，</span></span><br><span class="line"><span class="comment">       或者全部重建。或者你可以将这上面1条语句改成下面这3条语句：</span></span><br><span class="line"><span class="comment">    struct In *aa = (In *)a;</span></span><br><span class="line"><span class="comment">    struct In *bb = (In *)b;</span></span><br><span class="line"><span class="comment">    return aa-&gt;data &gt; bb-&gt;data ? 1 : -1; */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">qsort ( s, <span class="number">100</span>, <span class="keyword">sizeof</span> ( s[<span class="number">0</span>] ), cmp );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;按结构体中多个关键字排序(对结构体多级排序)，以二级为例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">In</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> x; <span class="comment">/* 你可以理解为失败次数 */</span></span><br><span class="line">    <span class="keyword">int</span> y; <span class="comment">/* 你可以比喻成成功次数 */</span></span><br><span class="line">&#125; s[<span class="number">100</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 按照x从小到大排序，当x相等时按照y从大到小排序。你可以理解为：失败是主要</span></span><br><span class="line"><span class="comment">   因素的一个问题，先比较谁的失败次数少；如果失败次数相同，再看谁的成功次数多 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cmp</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* a, <span class="keyword">const</span> <span class="keyword">void</span>* b )</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">In</span>* <span class="title">c</span> = ( <span class="title">In</span>* ) <span class="title">a</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">In</span>* <span class="title">d</span> = ( <span class="title">In</span>* ) <span class="title">b</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( c-&gt;x != d-&gt;x ) &#123;</span><br><span class="line">        <span class="keyword">return</span> c-&gt;x - d-&gt;x;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> d-&gt;y - c-&gt;y;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">qsort ( s, <span class="number">100</span>, <span class="keyword">sizeof</span> ( s[<span class="number">0</span>] ), cmp );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;对结构体中的字符串进行排序：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">In</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> data;</span><br><span class="line">    <span class="keyword">char</span> str[<span class="number">100</span>];</span><br><span class="line">&#125; s[<span class="number">100</span>];​</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 按照结构体中字符串str的字典顺序排序 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cmp</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* a, <span class="keyword">const</span> <span class="keyword">void</span>* b )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">strcmp</span> ( ( * ( In* ) a )-&gt;str, ( * ( In* ) b )-&gt;str );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">qsort ( s, <span class="number">100</span>, <span class="keyword">sizeof</span> ( s[<span class="number">0</span>] ), cmp );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;qsort对其他类型的数组进行排序：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 对char类型数组排序 */</span></span><br><span class="line"><span class="keyword">char</span> word[<span class="number">100</span>];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cmp</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* a, <span class="keyword">const</span> <span class="keyword">void</span>* b )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> * ( <span class="keyword">char</span>* ) a - * ( <span class="keyword">char</span>* ) b;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">qsort ( word, <span class="number">100</span>, <span class="keyword">sizeof</span> ( word[<span class="number">0</span>] ), cmp );</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 对double类型数组排序 */</span></span><br><span class="line"><span class="keyword">double</span> in[<span class="number">100</span>];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cmp</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* a, <span class="keyword">const</span> <span class="keyword">void</span>* b )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* 返回值的问题，显然cmp返回的是一个整型 */</span></span><br><span class="line">    <span class="keyword">return</span> * ( <span class="keyword">double</span>* ) a &gt; * ( <span class="keyword">double</span>* ) b ? <span class="number">1</span> : <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">qsort ( in, <span class="number">100</span>, <span class="keyword">sizeof</span> ( in[<span class="number">0</span>] ), cmp );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;对字符串数组的排序：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 对于“char s[][]”型 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">char</span> s[<span class="number">100</span>][<span class="number">100</span>];</span><br><span class="line"><span class="keyword">int</span> i, n;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cmp</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* a, <span class="keyword">const</span> <span class="keyword">void</span>* b )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> ( <span class="built_in">strcmp</span> ( ( <span class="keyword">char</span>* ) a, ( <span class="keyword">char</span>* ) b ) );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">scanf</span> ( <span class="string">"%d"</span>, &amp;n );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123;</span><br><span class="line">        <span class="built_in">scanf</span> ( <span class="string">"%s"</span>, s[i] );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    qsort ( s, n, <span class="keyword">sizeof</span> ( s[<span class="number">0</span>] ), cmp );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%s\n"</span>, s[i] );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ( <span class="number">0</span> );</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*-------------------------------------------------*/</span></span><br><span class="line"><span class="comment">/* 对于“char *s[]”型 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">char</span>* s[<span class="number">100</span>];</span><br><span class="line"><span class="keyword">int</span> i, n;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cmp</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* a, <span class="keyword">const</span> <span class="keyword">void</span>* b )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> ( <span class="built_in">strcmp</span> ( * ( <span class="keyword">char</span>** ) a, * ( <span class="keyword">char</span>** ) b ) );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">scanf</span> ( <span class="string">"%d"</span>, &amp;n );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123;</span><br><span class="line">        s[i] = ( <span class="keyword">char</span>* ) <span class="built_in">malloc</span> ( <span class="number">20</span> );</span><br><span class="line">        <span class="built_in">scanf</span> ( <span class="string">"%s"</span>, s[i] );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    qsort ( s, n, <span class="keyword">sizeof</span> ( s[<span class="number">0</span>] ), cmp );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%s\n"</span>, s[i] );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123;</span><br><span class="line">        <span class="built_in">free</span> ( s[i] );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ( <span class="number">0</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;对一个二维数组进行排序：例如<code>int a[1000][2];</code>，按照<code>a[0]</code>的大小进行一个整体的排序，其中<code>a[1]</code>必须和<code>a[0]</code>一起移动交换，即第一行和第二行(<code>a[0]</code>和<code>a[1]</code>分别代表第一行和第二行的首地址)。使用库函数排序的代码量并不比用冒泡排序法少，但速度却快很多。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">qsort ( a, <span class="number">1000</span>, <span class="keyword">sizeof</span> ( <span class="keyword">int</span> ) * <span class="number">2</span>, comp );</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">comp</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* a, <span class="keyword">const</span> <span class="keyword">void</span>* b )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> ( ( <span class="keyword">int</span>* ) a ) [<span class="number">0</span>] - ( ( <span class="keyword">int</span>* ) b ) [<span class="number">0</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/12/C语言语法详解/scanf函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/12/C语言语法详解/scanf函数/" itemprop="url">scanf函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-12T13:29:39+08:00">
+                2018-12-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://baike.baidu.com/item/scanf/10773316" target="_blank" rel="noopener">scanf</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;scanf是C语言中的一个输入函数，与printf函数一样，都被声明在头文件<code>stdio.h</code>里。它是格式输入函数，即按用户指定的格式从键盘上把数据输入到指定的变量之中。函数原型如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">scanf</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* <span class="keyword">restrict</span> format, ... )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>函数scanf是从标准输入流stdio(标准输入设备，一般指向键盘)中读内容的通用子程序，用说明的格式读入多个字符，并保存在对应地址的变量中。函数的第一个参数是格式字符串，它指定了输入的格式，并按照格式说明符解析输入对应位置的信息，并存储于可变参数列表中对应的指针所指位置。每一个指针要求非空，并且与字符串中的格式符一一顺次对应。若函数执行成功，则返回读入的数据项数；读到文件末尾或出错时则返回EOF。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">scanf</span> ( <span class="string">"%d %d"</span>, &amp;a, &amp;b );</span><br></pre></td></tr></table></figure>
+<p>如果a和b都被成功读入，那么scanf的返回值就是2；如果只有a被成功读入，返回值为1；如果a和b都未被成功读入，返回值为0；如果遇到错误或遇到<code>end of file</code>，返回值为EOF。使用scanf函数输入数据：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a, b, c;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Give me the value of a,b,c seperated with whitespaces:\n"</span> );</span><br><span class="line">    <span class="built_in">scanf</span> ( <span class="string">"%d%d%d"</span>, &amp;a, &amp;b, &amp;c );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"a = %d, b = %d, c = %d\n"</span>, a, b, c );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>&amp;a, &amp;b, &amp;c</code>中的<code>&amp;</code>是寻址操作符，<code>&amp;a</code>表示对象a在内存中的地址，是一个右值。变量a、b、c的地址是在编译阶段分配的(存储顺序由编译器决定)。需要注意，如果scanf中<code>%d</code>是连着写的(如<code>%d%d%d</code>)，在输入数据时，数据之间不可以用逗号分隔，只能用空白字符(空格或tab键或者回车键)分隔：<code>2(空格)3(tab)4</code>或<code>2(tab)3(回车)4</code>等。若是<code>%d,%d,%d</code>，则在输入数据时需要加<code>,</code>，如<code>2,3,4</code>。</p>
+<h3 id="格式指令说明"><a href="#格式指令说明" class="headerlink" title="格式指令说明"></a>格式指令说明</h3><p>&emsp;&emsp;format指向的字符串包含的格式指令由以下字符序列组成：<br>&emsp;&emsp;1. <code>*</code>：表示读入的数据将被舍弃。带有<code>*</code>的格式指令不对应可变参数列表中的任何数据。<br>&emsp;&emsp;2. <code>域宽</code>：以一个非零的十进制整数形式出现，表示该格式指令最多读入的字符数。<br>&emsp;&emsp;3. <code>格式说明符</code>：如下所示，无效的转换说明符将引起未定义的行为：</p>
+<ul>
+<li><code>c</code>：读入域宽指定的数目个字符组成的字符序列(后面不会加上空字节)，如果省略宽度则读入单字符。如<code>%c</code>或<code>%1c</code>读入单字符，<code>%2c</code>读入两个字符(后面不会加上空字节)，以此类推。</li>
+<li><code>s</code>：读入一个的字符序列，后面会加上空字节。</li>
+<li><code>d</code>：读入可选有符号(可选有符号表示输入时可以带符号也可以不带符号，不带符号则视为非负)十进制整数。输入格式应该像<code>strtol</code>函数的base实参为10调用时识别的字符序列一样。</li>
+<li><code>i</code>：读入可选有符号整数。输入格式应该像<code>strtol</code>函数的base实参为0调用时识别的字符序列一样。</li>
+<li><code>a、e、f、g、A、E、F、G</code>：读入可选有符号浮点数，输入格式应该像<code>strtod</code>函数识别的字符序列一样。</li>
+<li><code>o</code>：读入可选有符号八进制整数。输入格式应该像<code>strtoul</code>函数的base实参为8调用时识别的字符序列一样。</li>
+<li><code>x、X</code>：读入可选有符号十六进制整数。输入格式应该像<code>strtoul</code>函数的base实参为16调用时识别的字符序列一样。</li>
+<li><code>p</code>：读入一个指针值。读入的字符序列应该与<code>fprintf</code>的<code>%p</code>产生的字符序列形式相同。</li>
+<li><code>n</code>：不读入任何字符，而是把到该位置已读入的字符数存储到与之对应的<code>int *</code>指向的位置。本转换说明符如果带有<code>*</code>或者带有域宽信息(如<code>%*n</code>或<code>%3n</code>等)，则后果是未定义的。</li>
+<li><code>u</code>：读入可选有符号八进制整数。输入格式应该像<code>strtoul</code>函数的base实参为10调用时识别的字符序列一样。</li>
+<li><code>[</code>：扫描字符集合。</li>
+<li><code>%</code>：读入<code>%</code>符号(百分号)。</li>
+</ul>
+<p>&emsp;&emsp;4. <code>长度修饰符</code>：如下所示，如果长度修饰符与格式说明符不匹配则引起未定义的行为：</p>
+<ul>
+<li><code>hh</code>与<code>d、i、o、u、x、X、n</code>配合使用，表示对应一个<code>signed char</code>或<code>unsigned char</code>数据。</li>
+<li><code>h</code>与<code>d、i、o、u、x、X、n</code>配合使用，表示对应一个<code>short int</code>或<code>unsigned short int</code>数据。</li>
+<li><code>l</code>与<code>d、i、o、u、x、X、n</code>配合使用，表示对应一个<code>long int</code>或<code>unsigned long int</code>数据；与<code>a, A, e, E, f, F, g, or G</code>配合使用表示对应一个double数据；与<code>c、s、[</code>配合使用表示对应<code>wchar_t</code>数据。</li>
+<li><code>ll</code>与<code>d、i、o、u、x、X、n</code>配合使用，表示对应一个<code>long long int</code>或<code>unsigned long long int</code>数据。</li>
+<li><code>j</code>与<code>d、i、o、u、x、X、n</code>配合使用，表示对应一个<code>intmax_t</code>或<code>uintmax_t</code>数据。</li>
+<li><code>z</code>与<code>d、i、o、u、x、X、n</code>配合使用，表示对应一个<code>size_t</code>数据(或与<code>size_t</code>对应的有符号整型数据)。</li>
+<li><code>t</code>与<code>d、i、o、u、x、X、n</code>配合使用，表示对应一个<code>ptrdiff_t</code>数据(或与<code>ptrdiff_t</code>对应的无符号整型数据)。</li>
+<li><code>L</code>与<code>a、A、e、E、f、F、g、G</code>配合使用，表示对应一个<code>long double</code>数据。</li>
+</ul>
+<h4 id="空白字符和非空白字符"><a href="#空白字符和非空白字符" class="headerlink" title="空白字符和非空白字符"></a>空白字符和非空白字符</h4><ul>
+<li>空白字符：空白字符会使scanf函数在读操作中略去输入中的一个或多个空白字符。</li>
+<li>非空白字符：一个非空白字符会使scanf函数在读入时剔除掉与这个非空白字符相同的字符。</li>
+</ul>
+<p>&emsp;&emsp;具体说明如下所示：</p>
+<ul>
+<li><code>%s</code>表示读字符串，而<code>%d</code>表示读整数。格式串的处理顺序为从左到右，格式说明符逐一与变元表中的变元匹配。为了读取长整数，可以将<code>L/l</code>放在格式说明符的前面；为了读取短整数，可以将<code>h</code>放在格式说明符的前面。这些修饰符可以与<code>d、i、o、u</code>和<code>x</code>格式代码一起使用。</li>
+<li>默认情况下，<code>a、f、e</code>和<code>g</code>告诉scanf为float分配数据。如果将<code>L/l</code>放在这些修饰符的前面，则scanf为double分配数据。使用L就是告诉scanf，接收数据的变量是<code>long double</code>型变量。</li>
+<li>控制串中的空白符使scanf在输入流中跳过一个或多个空白行。空白符可以是空格(space)、制表符(tab)和新行符(newline)。 本质上，控制串中的空白符使scanf在输入流中读，但不保存结果，直到发现非空白字符为止。</li>
+<li>非空白符使scanf在流中读一个匹配的字符并忽略之。例如，<code>%d,%d</code>使scanf先读入一个整数，读入中放弃逗号，然后读另一个整数；如未发现匹配，scanf返回。</li>
+<li>scanf中用于保存读入值的变元必须都是变量指针，即相应变量的地址。</li>
+<li>在输入流中，数据项必须由空格、制表符和新行符分割。逗号和分号等不是分隔符，比如<code>scanf(&quot;%d%d&quot;, &amp;r, &amp;c);</code>将接受输入<code>10 20</code>，但遇到<code>10,20</code>则失败。</li>
+<li>百分号<code>%</code>与格式符之间的星号<code>*</code>表示读指定类型的数据但不保存。因此<code>scanf(&quot;%d%*c%d&quot;, &amp;x, &amp;y);</code>对<code>10/20</code>的读入操作中，10放入变量<code>x</code>，20放入<code>y</code>。</li>
+<li>格式命令可以说明最大域宽。在百分号<code>%</code>与格式码之间的整数用于限制从对应域读入的最大字符数。例如，希望向address读入不多于20个字符时，可以书写成如下形式<code>scanf(&quot;%20s&quot;, &amp;address);</code>。如果输入流的内容多于20个字符，则下次scanf从此次停止处开始读入。若达到最大域宽前已遇到空白符，则对该域的读立即停止；此时，scanf跳到下一个域。</li>
+<li>虽然空格、制表符和新行符都用做域分割符号，但读单字符操作中却按一般字符处理。例如，对输入流<code>x y</code>调用<code>scanf(&quot;%c%c%c&quot;, &amp;a, &amp;b, &amp;c);</code>返回后，x在变量a中，空格在变量b中，y在变量c中。注意控制串中的其它字符，包括空格、制表符和新行符，都用于从输入流中匹配并放弃字符，被匹配的字符都放弃。例如，给定输入流<code>10t20</code>，调用<code>scanf(&quot;%dt%d&quot;, &amp;x, &amp;y);</code>后，将把10和20分别放到x和y中，t被放弃，因为t在控制串中。</li>
+<li><code>ANSI C</code>标准向scanf增加了一种新特性，称为扫描集(scanset)。扫描集定义一个字符集合，可由scanf读入其中允许的字符并赋给对应字符数组。扫描集合由一对方括号中的一串字符定义，左方括号前必须缀以百分号。例如，以下的扫描集使scanf读入字符A、B和C：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">%[ABC]</span><br></pre></td></tr></table></figure>
+<p>使用扫描集时，scanf连续吃进集合中的字符并放入对应的字符数组，直到发现不在集合中的字符为止(即扫描集仅读匹配的字符)。返回时，数组中放置以null结尾、由读入字符组成的字符串。用字符<code>^</code>可以说明补集，把<code>^</code>字符放为扫描集的第一字符时，构成其它字符组成的命令的补集合，指示scanf只接受未说明的其它字符。对于许多实现来说，用连字符可以说明一个范围(<code>ISO C99</code>标准没有规定)。例如，以下扫描集使scanf接受字母A到Z：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">%[A-Z]</span><br></pre></td></tr></table></figure>
+<p>重要的是要注意扫描集是区分大小写的。因此，希望扫描大、小写字符时，应该分别说明大、小写字母。</p>
+<ul>
+<li>scanf返回等于成功赋值的域数的值，但由于星号修饰符而读入未赋值的域不计算在内；遇到文件结束则返回EOF；若出错则返回0。</li>
+</ul>
+<h3 id="注意问题"><a href="#注意问题" class="headerlink" title="注意问题"></a>注意问题</h3><ul>
+<li>对于字符串数组或字符串指针变量，由于数组名可以转换为数组和指针变量名本身就是地址，因此使用scanf函数时，不需要在它们前面加上<code>&amp;</code>操作符。</li>
+<li>可以在格式化字符串中的<code>%</code>各格式化规定符之间加入一个整数，表示任何读操作中的最大位数。</li>
+<li>scanf函数中没有类似printf的精度控制。如<code>scanf(&quot;%5.2f&quot;, &amp;a);</code>是非法的，不能企图用此语句输入小数为2位的实数。</li>
+<li>scanf中要求给出变量地址，如给出变量名则会出错。如<code>scanf(&quot;%d&quot;, a);</code>是非法的，应改为<code>scanf(&quot;%d&quot;, &amp;a);</code>。</li>
+<li>在输入多个数值数据时，若格式控制串中没有非格式字符作输入数据之间的间隔，则可用空格、TAB或回车作间隔。C编译在碰到空格、TAB、回车或非法数据(如对<code>%d</code>输入<code>12A</code>时，A即为非法数据)时即认为该数据结束。</li>
+<li>在输入字符数据<code>%c</code>时，若格式控制串中无非格式字符，则认为所有输入的字符均为有效字符。例如<code>scanf(&quot;%c%c%c&quot;, &amp;a, &amp;b, &amp;c);</code>，输入为<code>d e f</code>时，则把<code>d</code>赋予a，空格赋予b，<code>e</code>赋予c。因为<code>%c</code>只要求读入一个字符，后面不需要用空格作为两个字符的间隔，因此把空格作为下一个字符送给b。只有当输入为<code>def</code>，字符间无空格时，才能把<code>d</code>赋于a，<code>e</code>赋予b，<code>f</code>赋予c。如果在格式控制中加入空格作为间隔，如<code>scanf(&quot;%c %c %c&quot;, &amp;a, &amp;b, &amp;c);</code>时，则输入时各数据之间可加空格。</li>
+</ul>
+<p>&emsp;&emsp;如何让scanf函数正确接受有空格的字符串？如输入<code>I love you!</code>。如果使用<code>char str[80]; scanf(&quot;%s&quot;, str);</code>，只能输出<code>I</code>，因为scanf扫描到<code>I</code>后面的空格就认为对str的扫描结束(空格没有被扫描)，并忽略后面的<code>(空格)love you!</code>。残留的信息<code>(空格)love you</code>是存在于stdin流中，而不是在键盘缓冲区中。那么scanf函数能不能完成这个任务？回答是<code>能</code>！别忘了scanf函数还有一个<code>%[]</code>格式控制符，请看下面的程序：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> str[<span class="number">50</span>];</span><br><span class="line">    <span class="built_in">scanf</span> ( <span class="string">"%[^\n]"</span>, str ); <span class="comment">/* “scanf( "%s", string );”不能接收空格符 */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%s\n"</span>, str );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/12/C语言语法详解/内置宏/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/12/C语言语法详解/内置宏/" itemprop="url">内置宏</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-12T07:29:58+08:00">
+                2018-12-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/zxnsirius/article/details/51158895" target="_blank" rel="noopener">ANSIC标准定义的C语言预处理指令总结</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;ANSI标准C还定义了如下几个宏：</p>
+<ul>
+<li><code>_LINE_</code>：表示正在编译的文件的行号。</li>
+<li><code>_FILE_</code>：表示正在编译的文件的名字。</li>
+<li><code>_DATE_</code>：表示编译时刻的日期字符串，例如<code>25 Dec 2007</code>。</li>
+<li><code>_TIME_</code>：表示编译时刻的时间字符串，例如<code>12:30:55</code>。</li>
+<li><code>_STDC_</code>：判断该文件是不是定义成标准C程序。</li>
+</ul>
+<p>&emsp;&emsp;产品线区分及调试代码应用：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> DEBUG</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LOG(s) printf( <span class="meta-string">"[%s:%d] %s\n"</span>, __FILE__, __LINE__, s )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LOG(s) NULL</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span>​</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> HIGH</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"This is the high level product!\n"</span> );</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">f</span><span class="params">()</span> </span>&#123;</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    LOG ( <span class="string">"Enter main() ..."</span> );</span><br><span class="line">    f();</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"1. Query Information.\n"</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"2. Record Information.\n"</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"3. Delete Information.\n"</span> );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> HIGH</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"4. High Level Query.\n"</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"5. Mannul Service.\n"</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"6. Exit.\n"</span> );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"4. Exit.\n"</span> );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    LOG ( <span class="string">"Exit main() ..."</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;如果需要编译mini版，则使用命令<code>gcc -DDEBUG test.c</code>；如果需要编译高级版，命令为<code>gcc -DHIGH test.c</code>；如果需要高级版中的debug版，命令为<code>gcc -DDEBUG -DHIGH test.c</code>。这样有利于我们调试程序，分析问题。</p>
+<h3 id="error预处理"><a href="#error预处理" class="headerlink" title="#error预处理"></a>#error预处理</h3><p>&emsp;&emsp;<code>#error</code>预处理指令的作用是：编译程序时，只要遇到<code>#error</code>，就会生成一个编译错误提示消息并停止编译，其语法格式为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">error</span> <span class="meta-keyword">error</span>-message</span></span><br></pre></td></tr></table></figure>
+<p>注意，宏串<code>error-message</code>不用双引号包围。遇到<code>#error</code>指令时，错误信息被显示，可能同时还显示编译程序作者预先定义的其他内容。示例如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[] )</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CONST_NAME1 <span class="meta-string">"CONST_NAME1"</span></span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%s\n"</span>, CONST_NAME1 );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">undef</span> CONST_NAME1</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> CONST_NAME1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">error</span> No defined Constant Symbol CONST_NAME1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CONST_NAME2 <span class="meta-string">"CONST_NAME2"</span></span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%s\n"</span>, CONST_NAME2 );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%s\n"</span>, CONST_NAME2 );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在编译的时候输出如下编译信息：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fatal error C1189: <span class="comment">#error : No defined Constant Symbol CONST_NAME1</span></span><br></pre></td></tr></table></figure>
+<p>上面的代码会引发一个<code>#error</code>错误。综上所述，对含有复杂逻辑的宏代码使用<code>#error</code>是一个很好用的技巧。它确保了程序在关键点上确实按照程序员的想法被预处理，否则便无法编译通过。而且重要的是，编译期行为不会引起任何运行期的资源开销。</p>
+<h3 id="line预处理"><a href="#line预处理" class="headerlink" title="#line预处理"></a>#line预处理</h3><p>&emsp;&emsp;<code>#line</code>的作用是改变当前行数和文件名称，它们是在编译程序中预先定义的标识符。该命令的基本形式如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">line</span> number[<span class="meta-string">"filename"</span>]</span></span><br></pre></td></tr></table></figure>
+<p>其中<code>[]</code>内的文件名可以省略。例如：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">line</span> 30 a.h</span></span><br></pre></td></tr></table></figure>
+<p>其中文件名<code>a.h</code>可以省略不写。这条指令可以改变当前的行号和文件名，例如上面的这条预处理指令就可以改变当前的行号为30，文件名是<code>a.h</code>。初看起来似乎没有什么用，不过它还是有点用的，那就是用在编译器的编写中。我们知道编译器对C源码编译过程中会产生一些中间文件，通过这条指令，可以保证文件名是固定的，不会被这些中间文件代替，有利于进行分析。代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%s:%d\n"</span>, __FILE__, __LINE__ );</span><br><span class="line"><span class="meta">#<span class="meta-keyword">line</span> 100 <span class="meta-string">"bbb.c"</span></span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%s:%d\n"</span>, __FILE__, __LINE__ );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%s:%d\n"</span>, __FILE__, __LINE__ );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="pragma预处理"><a href="#pragma预处理" class="headerlink" title="#pragma预处理"></a>#pragma预处理</h3><p>&emsp;&emsp;在所有的预处理指令中，<code>#pragma</code>指令可能是最复杂的了，它的作用是设定编译器的状态或者是指示编译器完成一些特定的动作。<code>#pragma</code>指令对每个编译器给出了一个方法，在保持与C和C++语言完全兼容的情况下，给出主机或操作系统专有的特征。依据定义，编译指示是机器或操作系统专有的，且对于每个编译器都是不同的。其格式一般为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> para</span></span><br></pre></td></tr></table></figure>
+<p>其中para为参数，下面来看一些常用的参数。<br>&emsp;&emsp;1. <code>#pragma message</code><br>&emsp;&emsp;message参数是我最喜欢的一个参数，它能够在编译信息输出窗口中输出相应的信息，这对于源代码信息的控制是非常重要的。其使用方法为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> message( <span class="meta-string">"消息文本"</span> )</span></span><br></pre></td></tr></table></figure>
+<p>当编译器遇到这条指令时，就在编译输出窗口中将消息文本打印出来。当我们在程序中定义了许多宏来控制源代码版本的时候，有可能会忘记有没有正确地设置这些宏，此时可以用这条指令在编译的时候进行检查。假设我们希望判断自己有没有在源代码的某个地方定义了<code>_X86</code>这个宏，可以用下面的方法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> _X86</span></span><br><span class="line">#<span class="function">Pragma <span class="title">message</span><span class="params">( <span class="string">"_X86 macro activated!"</span> )</span></span></span><br><span class="line"><span class="function"><span class="meta">#<span class="meta-keyword">endif</span></span></span></span><br></pre></td></tr></table></figure>
+<p>当我们定义了<code>_X86</code>这个宏以后，应用程序在编译时就会在编译输出窗口里显示<code>_X86 macro activated!</code>。<br>&emsp;&emsp;2. <code>#pragma code_seg</code><br>&emsp;&emsp;另一个使用得比较多的参数是code_seg，格式如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> code_seg( [<span class="meta-string">"section-name"</span> [, <span class="meta-string">"section-class"</span>]] )</span></span><br></pre></td></tr></table></figure>
+<p>它能够设置程序中函数代码存放的代码段，当我们开发驱动程序的时候就会使用到它。<br>&emsp;&emsp;3. <code>#pragma once</code><br>&emsp;&emsp;只要在头文件的最开始加入这条指令就能够保证头文件被编译一次，这条指令实际上在<code>Visual C++ 6.0</code>中就已经有了，但是考虑到兼容性并没有太多地使用它。<br>&emsp;&emsp;4. <code>#pragma hdrstop</code><br>&emsp;&emsp;<code>#pragma hdrstop</code>表示预编译头文件到此为止，后面的头文件不进行预编译。BCB可以预编译头文件以加快链接的速度，但如果所有头文件都进行预编译又可能占太多磁盘空间，所以使用这个选项排除一些头文件。有时单元之间有依赖关系，比如单元A依赖单元B，所以单元B要先于单元A编译。你可以用<code>#pragma startup</code>指定编译优先级，如果使用了<code>#pragma package(smart_init)</code>，BCB就会根据优先级的大小先后编译。<br>&emsp;&emsp;5. <code>#pragma resource</code><br>&emsp;&emsp;<code>#pragma resource &quot;*.dfm&quot;</code>表示把<code>*.dfm</code>文件中的资源加入工程，<code>*.dfm</code>中包括窗体外观的定义。<br>&emsp;&emsp;6. <code>#pragma warning</code><br>&emsp;&emsp;<code>#pragma warning( disable : 4507 34; once : 4385; error : 164 )</code>等价于：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( disable : 4507 34 ) <span class="comment">/* 不显示4507和34号警告信息 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( once : 4385 ) <span class="comment">/* 4385号警告信息仅报告一次 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( <span class="meta-keyword">error</span> : 164 ) <span class="comment">/* 把164号警告信息作为一个错误 */</span></span></span><br></pre></td></tr></table></figure>
+<p>同时<code>#pragma warning</code>也支持如下格式：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( push [, n] )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( pop )</span></span><br></pre></td></tr></table></figure>
+<p>这里n代表一个警告等级(1至4)。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( push ) <span class="comment">/* 保存所有警告信息的现有的警告状态 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( push, n) <span class="comment">/* 保存所有警告信息的现有的警告状态，并且把全局警告等级设定为n */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( pop ) <span class="comment">/* 向栈中弹出最后一个警告信息，在入栈和出栈之间所作的一切改动取消 */</span></span></span><br></pre></td></tr></table></figure>
+<p>使用示例如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( push )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( disable : 4705 )</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( disable : 4706 )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( disable : 4707 )</span></span><br><span class="line"><span class="comment">//...</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> <span class="meta-keyword">warning</span>( pop )</span></span><br></pre></td></tr></table></figure>
+<p>在这段代码的最后，重新保存所有的警告信息(包括4705、4706和4707)。<br>&emsp;&emsp;7. <code>#pragma comment</code><br>&emsp;&emsp;该指令将一个注释记录放入一个对象文件或可执行文件中。常用的lib关键字，可以帮我们连入一个库文件，例如：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> comment( lib, <span class="meta-string">"user32.lib"</span> )</span></span><br></pre></td></tr></table></figure>
+<p>该指令用来将<code>user32.lib</code>库文件加入到本工程中。<br>&emsp;&emsp;linker将一个链接选项放入目标文件中，你可以使用这个指令来代替由命令行传入的或者在开发环境中设置的链接选项，也可以指定<code>/include</code>选项来强制包含某个对象，如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> comment( linker, <span class="meta-string">"/include:__mySymbol"</span> )</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;8. <code>#pragma pack</code><br>&emsp;&emsp;内存对齐的问题和<code>#pragma pack</code>有关。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/12/C语言语法详解/itoa函数/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1008,935 +1903,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/12/C语言语法详解/clearerr函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/12/C语言语法详解/clearerr函数/" itemprop="url">clearerr函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-12T00:32:53+08:00">
-                2018-12-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="http://wiki.jikexueyuan.com/project/c/clearerr.html" target="_blank" rel="noopener">C库函数之clearerr</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;clearerr函数清除给定流stream的文件结束和错误标识符。下面是clearerr函数的声明：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clearerr</span> <span class="params">( FILE* stream )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数stream是指向FILE对象的指针，该FILE对象标识了流。如果它检测到它的参数不是一个有效的流，则返回<code>-1</code>，并设置errno为EBADF。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    FILE* fp;</span><br><span class="line">    <span class="keyword">char</span> c;</span><br><span class="line">    fp = fopen ( <span class="string">"file.txt"</span>, <span class="string">"w"</span> );</span><br><span class="line">    c = fgetc ( fp );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( ferror ( fp ) ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"读取文件file.txt时发生错误(first)\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    clearerr ( fp );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( ferror ( fp ) ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"读取文件file.txt时发生错误(second)\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fclose ( fp );</span><br><span class="line">    <span class="keyword">return</span> ( <span class="number">0</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>假设我们有一个文本文件<code>file.txt</code>，它是一个空文件。当试图读取一个以只写模式打开的文件，这将产生以下结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">读取文件file.txt时发生错误(first)</span><br></pre></td></tr></table></figure>
-<p>若去掉<code>clearerr(fp);</code>，则执行结果为：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">读取文件file.txt时发生错误(first)</span><br><span class="line">读取文件file.txt时发生错误(second)</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/12/C语言语法详解/bsearch函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/12/C语言语法详解/bsearch函数/" itemprop="url">bsearch函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-12T00:18:48+08:00">
-                2018-12-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/hermito/article/details/51622321" target="_blank" rel="noopener">C语言中用bsearch</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;C语言中可以用bsearch实现二分查找，同qsort一样，bsearch也包含在库中，且同样要自定义比较子函数：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span>* <span class="title">bsearch</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* key, <span class="keyword">const</span> <span class="keyword">void</span>* base, <span class="keyword">size_t</span> nmem, <span class="keyword">size_t</span> size, <span class="keyword">int</span> ( *comp ) ( <span class="keyword">const</span> <span class="keyword">void</span>*, <span class="keyword">const</span> <span class="keyword">void</span>* ) )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>key指向所要查找的元素；base指向进行查找的数组；nmem为查找长度，一般为数组长度；size为每个元素所占的字节数，一般用<code>sizeof(...)</code>表示；comp指向比较子函数，它定义比较的规则。需要注意的是，数据必须是经过预先排序的，而排序的规则要和comp所指向比较子函数的规则相同。如果查找成功，则返回数组中匹配元素的地址，反之则返回空。对于有多于一个的元素匹配成功的情况，bsearch未定义返回哪一个。示例如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NUM 8</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">compare</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">void</span>* p, <span class="keyword">const</span> <span class="keyword">void</span>* q )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> ( * ( <span class="keyword">int</span>* ) p - * ( <span class="keyword">int</span>* ) q );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[] )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">array</span>[NUM] = &#123;<span class="number">9</span>, <span class="number">2</span>, <span class="number">7</span>, <span class="number">11</span>, <span class="number">3</span>, <span class="number">87</span>, <span class="number">34</span>, <span class="number">6</span>&#125;;</span><br><span class="line">    <span class="keyword">int</span> key = <span class="number">3</span>;</span><br><span class="line">    <span class="keyword">int</span>* p;</span><br><span class="line">    qsort ( <span class="built_in">array</span>, NUM, <span class="keyword">sizeof</span> ( <span class="keyword">int</span> ), compare );</span><br><span class="line">    p = ( <span class="keyword">int</span>* ) bsearch ( &amp;key, <span class="built_in">array</span>, NUM, <span class="keyword">sizeof</span> ( <span class="keyword">int</span> ), compare );</span><br><span class="line">    ( p == <span class="literal">NULL</span> ) ? <span class="built_in">puts</span> ( <span class="string">"not found"</span> ) : <span class="built_in">puts</span> ( <span class="string">"found"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">found</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/11/C语言语法详解/limits和float头文件/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/11/C语言语法详解/limits和float头文件/" itemprop="url">limits和float头文件</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-11T16:32:45+08:00">
-                2018-12-11
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客从网上整理了limits和float头文件有关的内容，感谢分享资料的人们！<br>&emsp;&emsp;limits.h专门用于检测整型数据数据类型的表达值范围，主要提供对整型和字符型范围的限制的宏，同样没有指定类型和函数的定义。</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>宏</th>
-<th>值</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>CHAR_BIT</td>
-<td>8</td>
-<td>定义了字节中的比特数</td>
-</tr>
-<tr>
-<td>SCHAR_MIN</td>
-<td>-127</td>
-<td>定义有符号char类型的最小值</td>
-</tr>
-<tr>
-<td>SCHAR_MAX</td>
-<td>127</td>
-<td>定义有符号char类型的最大值</td>
-</tr>
-<tr>
-<td>UCHAR_MAX</td>
-<td>255</td>
-<td>定义<code>unsigned char</code>类型的最大值</td>
-</tr>
-<tr>
-<td>CHAR_MIN</td>
-<td>0</td>
-<td>定义char类型的最小值(<code>0</code>或者<code>SCHAR_MIN</code>)</td>
-</tr>
-<tr>
-<td>CHAR_MAX</td>
-<td>127</td>
-<td>定义char类型的最大值(<code>UCHAR_MAX</code>或者<code>SCHAR_MAX</code>)</td>
-</tr>
-<tr>
-<td>SHRT_MIN</td>
-<td>-32767</td>
-<td>定义短整型的最小值</td>
-</tr>
-<tr>
-<td>SHRT_MAX</td>
-<td>+32767</td>
-<td>定义短整型的最大值</td>
-</tr>
-<tr>
-<td>USHRT_MAX</td>
-<td>65535</td>
-<td>定义无符号短整型的最大值</td>
-</tr>
-<tr>
-<td>INT_MIN</td>
-<td>-32767</td>
-<td>定义int的最小值</td>
-</tr>
-<tr>
-<td>INT_MAX</td>
-<td>+32767</td>
-<td>定义int的最大值</td>
-</tr>
-<tr>
-<td>UINT_MAX</td>
-<td>65535</td>
-<td>定义<code>unsigned int</code>的最大值</td>
-</tr>
-<tr>
-<td>LONG_MIN</td>
-<td>-2147483647</td>
-<td>定义长整型的最小值</td>
-</tr>
-<tr>
-<td>LONG_MAX</td>
-<td>+2147483647</td>
-<td>定义长整型的最大值</td>
-</tr>
-<tr>
-<td>ULONG_MAX</td>
-<td>4294967295</td>
-<td>定义无符号长整型的最大值</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>示例如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;limits.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The number of bits in a byte %d\n"</span>, CHAR_BIT );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The minimum value of SIGNED CHAR = %d\n"</span>, SCHAR_MIN );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The maximum value of SIGNED CHAR = %d\n"</span>, SCHAR_MAX );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The maximum value of UNSIGNED CHAR = %d\n"</span>, UCHAR_MAX );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The minimum value of SHORT INT = %d\n"</span>, SHRT_MIN );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The maximum value of SHORT INT = %d\n"</span>, SHRT_MAX );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The minimum value of INT = %d\n"</span>, INT_MIN );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The maximum value of INT = %d\n"</span>, INT_MAX );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The minimum value of CHAR = %d\n"</span>, CHAR_MIN );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The maximum value of CHAR = %d\n"</span>, CHAR_MAX );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The minimum value of LONG = %ld\n"</span>, LONG_MIN );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The maximum value of LONG = %ld\n"</span>, LONG_MAX );</span><br><span class="line">    <span class="keyword">return</span> ( <span class="number">0</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">The number of bits <span class="keyword">in</span> a byte 8</span><br><span class="line">The minimum value of SIGNED CHAR = -128</span><br><span class="line">The maximum value of SIGNED CHAR = 127</span><br><span class="line">The maximum value of UNSIGNED CHAR = 255</span><br><span class="line">The minimum value of SHORT INT = -32768</span><br><span class="line">The maximum value of SHORT INT = 32767</span><br><span class="line">The minimum value of INT = -32768</span><br><span class="line">The maximum value of INT = 32767</span><br><span class="line">The minimum value of CHAR = -128</span><br><span class="line">The maximum value of CHAR = 127</span><br><span class="line">The minimum value of LONG = -2147483648</span><br><span class="line">The maximum value of LONG = 2147483647</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>float.h</code>提供了浮点型的范围和精度的宏，没有类型和函数的定义，一般用于数值分析。<code>float.h</code>头文件包含了一组与浮点值相关的依赖于平台的常量。这些常量是由<code>ANSI C</code>提出的，这让程序更具有可移植性。在讲解这些常量之前，最好先弄清楚浮点数是由下面四个元素组成的：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>组件</th>
-<th>组件描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>S</td>
-<td>符号(<code>+</code>或<code>-</code>)</td>
-</tr>
-<tr>
-<td>b</td>
-<td>指数表示的基数，2表示二进制，10表示十进制，16表示十六进制等等</td>
-</tr>
-<tr>
-<td>e</td>
-<td>指数，一个介于最小值emin和最大值emax之间的整数</td>
-</tr>
-<tr>
-<td>p</td>
-<td>精度，基数b的有效位数</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>基于以上4个组成部分，一个浮点数的值如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">floating-point = (S) p * b^e</span><br></pre></td></tr></table></figure>
-<p>或</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">floating-point = (+/-) precision * base^exponent</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;下面的值是特定实现的，并且是通过define指令来定义的，这些值都不得低于下边所给出的值。请注意，所有的实例FLT是指类型float，DBL是指类型double，LDBL是指类型<code>long double</code>。</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>宏</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>FLT_ROUNDS</td>
-<td>定义浮点加法的舍入模式，它可以是下列任何一个值：<li>-1：无法确定</li> <li>0：趋向于零</li> <li>1：去最近的值</li><li>2：趋向于正无穷</li><li>3：趋向于负无穷</li></td>
-</tr>
-<tr>
-<td>FLT_RADIX 2</td>
-<td>这个宏定义了指数表示的基数，基数2表示二进制，基数10表示十进制，基数16表示十六进制</td>
-</tr>
-<tr>
-<td><li>FLT_MANT_DIG</li><li>DBL_MANT_DIG</li><li>LDBL_MANT_DIG</li></td>
-<td>这些宏定义了<code>FLT_RADIX</code>基数中的位数</td>
-</tr>
-<tr>
-<td><li>FLT_DIG 6</li><li>DBL_DIG 10</li><li>LDBL_DIG 10</li></td>
-<td>这些宏定义了舍入后不会改变表示的十进制数字的最大值(基数10)</td>
-</tr>
-<tr>
-<td><li>FLT_MIN_EXP</li><li>DBL_MIN_EXP</li><li>LDBL_MIN_EXP</li></td>
-<td>这些宏定义了基数为<code>FLT_RADIX</code>时的指数的最小负整数值</td>
-</tr>
-<tr>
-<td><li>FLT_MIN_10_EXP -37 </li><li>DBL_MIN_10_EXP -37</li><li>LDBL_MIN_10_EXP -37</li></td>
-<td>这些宏定义了基数为10时的指数的最小负整数值</td>
-</tr>
-<tr>
-<td><li>FLT_MAX_EXP</li><li>DBL_MAX_EXP</li><li>LDBL_MAX_EXP</li></td>
-<td>这些宏定义了基数为FLT_RADIX时的指数的最大整数值</td>
-</tr>
-<tr>
-<td><li>FLT_MAX_10_EXP +37</li><li>DBL_MAX_10_EXP +37</li><li>LDBL_MAX_10_EXP +37</li></td>
-<td>这些宏定义了基数为10时的指数的最大整数值</td>
-</tr>
-<tr>
-<td><li>FLT_MAX 1E+37</li><li>DBL_MAX 1E+37</li><li>LDBL_MAX 1E+37</li></td>
-<td>这些宏定义最大的有限浮点值</td>
-</tr>
-<tr>
-<td><li>FLT_EPSILON 1E-5</li><li>DBL_EPSILON 1E-9</li><li>LDBL_EPSILON 1E-9</li></td>
-<td>这些宏定义了可表示的最小有效数字</td>
-</tr>
-<tr>
-<td><li>FLT_MIN 1E-37</li><li>DBL_MIN 1E-37</li><li>LDBL_MIN 1E-37</li></td>
-<td>这些宏定义了最小的浮点值</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>&emsp;&emsp;下面的实例演示了float.h文件中定义的一些常量的使用：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;float.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The maximum value of float = %.10e\n"</span>, FLT_MAX );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The minimum value of float = %.10e\n"</span>, FLT_MIN );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The number of digits in the number = %.10e\n"</span>, FLT_MANT_DIG );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">The maximum value of <span class="built_in">float</span> = 3.4028234664e+38</span><br><span class="line">The minimum value of <span class="built_in">float</span> = 1.1754943508e-38</span><br><span class="line">The number of digits <span class="keyword">in</span> the number = 7.2996655210e-312</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/10/C语言语法详解/atexit和abort函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/10/C语言语法详解/atexit和abort函数/" itemprop="url">atexit和abort函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-10T21:39:36+08:00">
-                2018-12-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://www.cnblogs.com/jikexianfeng/p/6321741.html" target="_blank" rel="noopener">atexit函数和exit函数的理解</a>，内容经过测试和修改，感谢原作者。</p>
-<h3 id="atexit函数"><a href="#atexit函数" class="headerlink" title="atexit函数"></a>atexit函数</h3><p>&emsp;&emsp;按照<code>ISO C</code>的规定，一个进程可以登记多达32个函数，这些函数将由exit自动调用，通常这32个函数被称为终止处理程序，并调用atexit函数来登记这些函数。<br>&emsp;&emsp;我们通常认为C语言的起始函数是main函数，实质上一个程序的启动函数并不一定是main函数，这个可以使用链接器来设置，但是gcc中默认main函数就是C语言的入口函数。在main函数启动之前，内核会调用一个特殊的启动例程，这个启动例程从内核中取得命令行参数值和环境变量值，为调用main函数做好准备。因此对程序而言，main函数并不是起始，但是对应C语言而言，main函数就是入口地址。实际上main函数的执行是使用了exec函数，这是一个函数族，这也是内核执行一个程序的唯一方法。<br>&emsp;&emsp;记得在面试题中有一道关于在main函数退出之后，是否还可以执行程序的问题，这时候就要使用到前面提到的atexit函数：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">atexit</span> <span class="params">( <span class="keyword">void</span> ( *func ) ( <span class="keyword">void</span> ) )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>其中atexit的参数是一个函数地址，当调用此函数时无须传递任何参数，该函数也不能返回值。atexit函数称为终止处理程序注册程序，注册完成以后，当函数终止时，exit函数会主动地调用前面注册的各个函数。但是exit函数调用这些函数的顺序于这些函数登记的顺序是相反的，实际上是参数压栈造成的，参数由于压栈顺序而先入后出。同时如果一个函数被多次登记，那么该函数也将多次的执行。<br>&emsp;&emsp;我们知道exit是在main函数调用结束以后调用，因此这些函数的执行肯定在main函数之后，这也是上面面试题的解决方法，采用atexit函数登记相关的执行函数即可。<br>&emsp;&emsp;<code>exit</code>、<code>_exit</code>以及<code>_Exit</code>函数的本质区别是是否立即进入内核。<code>_exit</code>和<code>_Exit</code>函数都是在调用后立即进入内核，而不会执行一些清理处理，但是exit则会执行一些清理处理，这也是为什么会存在atexit函数的原因，因为exit函数需要执行清理处理，需要执行一系列的操作，这些终止处理函数实际上就是完成各种所谓的清除操作的实际执行体。atexit函数的定义也给了程序员一种运用exit执行一些清除操作的方法，比如有一些程序需要额外的操作，具体的清除操作可以采用这种方法对特殊操作进行清除等。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func1</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"in func1\n"</span> );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func2</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"in func2\n"</span> );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func3</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"in func3\n"</span> );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    atexit ( func3 );</span><br><span class="line">    atexit ( func2 );</span><br><span class="line">    atexit ( func1 );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"In main\n"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">In main</span><br><span class="line"><span class="keyword">in</span> func1</span><br><span class="line"><span class="keyword">in</span> func2</span><br><span class="line"><span class="keyword">in</span> func3</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;根据exit的执行过程可知，exit首先会调用各个终止处理程序，然后按需多次调用fclose，关闭所有打开流。也就是说exit函数会执行一个标准<code>I/O</code>库的清理关闭操作：对所有打开的流调用fclose，这样就会造成所有缓冲的输出数据都被冲洗即写入文件中。<br>&emsp;&emsp;进程自愿终止的唯一方法是显式或者隐式地调用(通过exit函数)<code>_exit</code>或者<code>_Exit</code>函数，因此exit函数中实质是对<code>_exit</code>或者<code>_Exit</code>函数的封装。exit会先执行自定义的终止处理函数，然后执行<code>I/O</code>库函数清理函数fclose，这也是为什么可以在终止处理函数中可以继续运用printf之类函数的原因，因为<code>I/O</code>库函数的流对象还没有被清除，当然可以继续运用。执行完了所有的fclose以后，可以执行真正意义上的终止函数<code>_exit</code>或者<code>_Exit</code>函数。</p>
-<hr>
-<h3 id="abort函数"><a href="#abort函数" class="headerlink" title="abort函数"></a>abort函数</h3><p>&emsp;&emsp;abort函数用于非正常地终止一个正在执行的程序，其函数原型如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">abort</span><span class="params">( <span class="keyword">void</span> )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>这个函数将引发<code>SIGABRT</code>信号，你可以在程序中为这个信号设置一个信号处理函数，在程序终止(或干脆不终止)之前采取任何你想采取的动作，甚至可以不终止程序。<br>&emsp;&emsp;abort函数类似于exit函数，但调用它会导致异常的程序终止，atexit函数注册的退出函数不会被调用。根据具体的实现，它可能不会清理包含未输出数据的输出缓冲区，不会关闭打开的流，也不会删除临时文件。abort函数返回一个由实现定义的状态码来指出<code>不成功的终止</code>。<br>&emsp;&emsp;调用abort函数时，实际上会产生<code>SIGABRT</code>信号。如果没有处理<code>SIGABRT</code>信号的函数，那么程序会如前所述那样异常终止；如果为<code>SIGABRT</code>安装了信号处理函数，那么就会调用处理函数，处理函数返回后，程序会异常终止。但是如果处理函数不返回，例如它调用了<code>longjmp</code>函数，那么程序就不会终止。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/10/C语言语法详解/fdopen函数详解/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/10/C语言语法详解/fdopen函数详解/" itemprop="url">fdopen函数详解</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-10T21:31:39+08:00">
-                2018-12-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://baike.baidu.com/item/fdopen" target="_blank" rel="noopener">fdopen</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;fdopen取一个现存的文件描述符，并使一个标准的<code>I/O</code>流与该描述符相结合。此函数常用于由创建管道和网络通信通道函数获得的描述符，因为这些特殊类型的文件不能用标准<code>I/O</code>库的fopen函数打开，首先必须先调用设备专用函数以获得一个文件描述符，然后用fdopen使一个标准<code>I/O</code>流与该描述符相结合。函数原型如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function">FILE* <span class="title">fdopen</span> <span class="params">( <span class="keyword">int</span> fildes, <span class="keyword">const</span> <span class="keyword">char</span>* mode )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>fdopen会将参数fildes的文件描述符转换为对应的文件指针后返回。参数mode字符串则代表着文件指针的流形态，此形态必须和原先文件描述词读写模式相同。mode有下列几种形态字符串：</p>
-<ul>
-<li><code>r</code>：打开只读文件，该文件必须存在。</li>
-<li><code>r+</code>：打开可读写的文件，该文件必须存在。</li>
-<li><code>w</code>：打开只写文件，若文件存在则文件长度清为0，即该文件内容会消失。若文件不存在则建立该文件。</li>
-<li><code>w+</code>：打开可读写文件，若文件存在则文件长度清为零，即该文件内容会消失。若文件不存在则建立该文件。</li>
-<li><code>a</code>：以附加的方式打开只写文件。若文件不存在，则会建立该文件；如果文件存在，写入的数据会被加到文件尾，即文件原先的内容会被保留。</li>
-<li><code>a+</code>：以附加方式打开可读写的文件。若文件不存在，则会建立该文件；如果文件存在，写入的数据会被加到文件尾后，即文件原先的内容会被保留。</li>
-</ul>
-<p>&emsp;&emsp;函数如果执行成功，则返回指向该流的文件指针，失败则返回NULL，并把错误代码存在errno中。范例如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    FILE* fp = fdopen ( <span class="number">1</span>, <span class="string">"w+"</span> );</span><br><span class="line">    <span class="built_in">fprintf</span> ( fp, <span class="string">"%s\n"</span>, <span class="string">"hello!"</span> );</span><br><span class="line">    fclose ( fp );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果为</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hello!</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1987,7 +1953,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">934</span>
+                  <span class="site-state-item-count">939</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

@@ -271,6 +271,676 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/17/Intel汇编/十六进制转换工具/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/17/Intel汇编/十六进制转换工具/" itemprop="url">十六进制转换工具</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-17T09:01:30+08:00">
+                2018-12-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line">SECTION .bss</span><br><span class="line">    BUFFLEN equ <span class="number">16</span>    ; 我们一次从这个文本读取<span class="number">16</span>个字节</span><br><span class="line">    Buff resb BUFFLEN ; 文本缓冲区本身</span><br><span class="line"></span><br><span class="line">SECTION .data</span><br><span class="line">    HexStr: db <span class="string">" 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"</span>, <span class="number">10</span></span><br><span class="line">    HEXLEN equ $-HexStr</span><br><span class="line">    Digits: db <span class="string">"0123456789ABCDEF"</span></span><br><span class="line"></span><br><span class="line">SECTION .text</span><br><span class="line"></span><br><span class="line">global _start</span><br><span class="line"></span><br><span class="line">_start:</span><br><span class="line">    nop ; 这个无操作指令让gdb非常高兴</span><br><span class="line"></span><br><span class="line">; 从标准输入中读取满满一缓冲区的文本</span><br><span class="line">Read: mov eax, <span class="number">3</span>       ; 指定sys_read系统调用</span><br><span class="line">      mov ebx, <span class="number">0</span>       ; 指定文件描述符<span class="number">0</span>：标准输入</span><br><span class="line">      mov ecx, Buff    ; 传递即将从中读取数据的缓冲区的地址</span><br><span class="line">      mov edx, BUFFLEN ; 传递一次循环中要读入的字节数</span><br><span class="line">      <span class="keyword">int</span> <span class="number">80</span>h          ; 调用sys_read来填充缓冲区</span><br><span class="line">      mov ebp, eax     ; 复制sys_read的返回值并妥善保管</span><br><span class="line">      cmp eax, <span class="number">0</span>       ; 如果“eax = <span class="number">0</span>”，则sys_read到了标准输入的结尾</span><br><span class="line">      je  Done         ; 如果(与<span class="number">0</span>相比较)相等，则跳转</span><br><span class="line"></span><br><span class="line">    ; 设置寄存器用于处理缓冲区步骤:</span><br><span class="line">    mov esi, Buff   ; 将文本缓冲区的地址放入esi寄存器中</span><br><span class="line">    mov edi, HexStr ; 将线性字符串的地址放入edi寄存器中</span><br><span class="line">    xor ecx, ecx    ; 将线性字符串指针清<span class="number">0</span></span><br><span class="line"></span><br><span class="line">; 检查缓冲区，将二进制数值转换为<span class="number">16</span>进制位元</span><br><span class="line">Scan:</span><br><span class="line">    xor eax, eax  ; 将寄存器eax清零</span><br><span class="line">    ; 这里我们可以计算相对于HexStr的偏移地址，它等于ecx中的值乘以<span class="number">3</span></span><br><span class="line">    mov edx, ecx  ; 将字符串计数器的值复制到edx中</span><br><span class="line">    shl edx, <span class="number">1</span>    ; 通过左移位操作将指针的值乘以<span class="number">2</span></span><br><span class="line">    add edx, ecx  ; 完成乘以<span class="number">3</span>操作</span><br><span class="line"></span><br><span class="line">    ; 从缓冲区中获取一个字符，并将其同时存入eax和ebx中:</span><br><span class="line">    mov al, byte [esi+ecx] ; 从输入缓冲中取出一个字节,送入al</span><br><span class="line">    mov ebx, eax           ; 为了求得第二个“半字节”，将该字节复制到bl中</span><br><span class="line"></span><br><span class="line">    ; 查找低半字节符并将其插入字符串</span><br><span class="line">    <span class="keyword">and</span> al, <span class="number">0F</span>h                 ; 屏蔽除了低半字节之外的所有内容</span><br><span class="line">    mov al, byte [Digits+eax]   ; 查找与该半字节相等的字符</span><br><span class="line">    mov byte [HexStr+edx+<span class="number">2</span>], al ; 将最低有效位(LSB)字符位元(digit)写入线性字符串</span><br><span class="line"></span><br><span class="line">    ; 查找高半字节符并将其插入字符串</span><br><span class="line">    shr bl, <span class="number">4</span>                   ; 将字符的高四位移入低四位</span><br><span class="line">    mov bl, byte [Digits+ebx]   ; 查找与该半字节相等的字符</span><br><span class="line">    mov byte [HexStr+edx+<span class="number">1</span>], bl ; 将最高有效位(MSB)字符位元写入线性字符串</span><br><span class="line"></span><br><span class="line">    ; 将缓冲区指针指向下一个字符，看一下任务是否完成</span><br><span class="line">    inc ecx      ; 增加线性字符串指针的值</span><br><span class="line">    cmp ecx, ebp ; 与缓冲区中的字符数进行比较</span><br><span class="line">    jna Scan     ; 如果ecx小于等于缓冲区中的字符数，转回去继续循环</span><br><span class="line"></span><br><span class="line">; 将这行十六进制写到标准输出:</span><br><span class="line">Write: mov eax, <span class="number">4</span>      ; 指定sys_write系统调用</span><br><span class="line">       mov ebx, <span class="number">1</span>      ; 指定文件描述符，<span class="number">1</span>是标准输出</span><br><span class="line">       mov ecx, HexStr ; 传递线性字符串的偏移地址</span><br><span class="line">       mov edx, HEXLEN ; 传递线性字符串的大小</span><br><span class="line">       <span class="keyword">int</span> <span class="number">80</span>h         ; 调用sys_write</span><br><span class="line">       jmp Read        ; 回去继续循环，加载另一满满的缓冲区数据</span><br><span class="line"></span><br><span class="line">Done: mov eax, <span class="number">1</span> ; 指定Exit系统调用</span><br><span class="line">      mov ebx, <span class="number">0</span> ; 返回一个零代码</span><br><span class="line">      <span class="keyword">int</span> <span class="number">80</span>h    ; 进行系统调用来终止程序</span><br></pre></td></tr></table></figure>
+<p>使用方法为：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./hexdump &lt; inputfile &gt; outputfile</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/16/Intel汇编/获取处理器生产厂商/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/16/Intel汇编/获取处理器生产厂商/" itemprop="url">获取处理器生产厂商</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-16T19:22:51+08:00">
+                2018-12-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;cpuid.s(系统调用版)：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta"># cpuid.s: Sample program to extract the processor Vendor ID</span></span><br><span class="line">.section .data</span><br><span class="line">output:</span><br><span class="line">    .ascii <span class="string">"The processor Vendor ID is 'xxxxxxxxxxxx'\n"</span></span><br><span class="line"></span><br><span class="line">.section .text</span><br><span class="line">.globl main</span><br><span class="line">main:</span><br><span class="line">    movl $<span class="number">0</span>, %eax</span><br><span class="line">    cpuid</span><br><span class="line"></span><br><span class="line">    movl $output, %edi</span><br><span class="line">    movl %ebx, <span class="number">28</span>(%edi)</span><br><span class="line">    movl %edx, <span class="number">32</span>(%edi)</span><br><span class="line">    movl %ecx, <span class="number">36</span>(%edi)</span><br><span class="line"></span><br><span class="line">    movl $<span class="number">4</span>, %eax</span><br><span class="line">    movl $<span class="number">1</span>, %ebx</span><br><span class="line">    movl $output, %ecx</span><br><span class="line">    movl $<span class="number">42</span>, %edx</span><br><span class="line">    <span class="keyword">int</span> $<span class="number">0x80</span></span><br><span class="line"></span><br><span class="line">    movl $<span class="number">1</span>, %eax</span><br><span class="line">    movl $<span class="number">0</span>, %ebx</span><br><span class="line">    <span class="keyword">int</span> $<span class="number">0x80</span></span><br></pre></td></tr></table></figure>
+<p>编译指令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc cpuid.s -o cpuid</span><br></pre></td></tr></table></figure>
+<p>运行结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">The processor Vendor ID is <span class="string">'GenuineIntel'</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;cpuid2.s(C语言库函数版本)：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"># cpuid2.s: Sample program to extract the processor Vendor ID</span><br><span class="line">.section .data</span><br><span class="line">output:</span><br><span class="line">    .asciz <span class="string">"The processor Vendor ID is '%s'\n"</span></span><br><span class="line"></span><br><span class="line">.section .bss</span><br><span class="line">    .lcomm buffer, <span class="number">12</span></span><br><span class="line"></span><br><span class="line">.section .text</span><br><span class="line">.globl main</span><br><span class="line">main:</span><br><span class="line">    movl $<span class="number">0</span>, %eax</span><br><span class="line">    cpuid</span><br><span class="line"></span><br><span class="line">    movl $buffer, %edi</span><br><span class="line">    movl %ebx, (%edi)</span><br><span class="line">    movl %edx, <span class="number">4</span>(%edi)</span><br><span class="line">    movl %ecx, <span class="number">8</span>(%edi)</span><br><span class="line"></span><br><span class="line">    pushl $buffer</span><br><span class="line">    pushl $output</span><br><span class="line">    call <span class="built_in">printf</span></span><br><span class="line"></span><br><span class="line">    addl $<span class="number">8</span>, %esp</span><br><span class="line">    pushl $<span class="number">0</span></span><br><span class="line">    call <span class="built_in">exit</span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/16/Intel汇编/Linux汇编/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/16/Intel汇编/Linux汇编/" itemprop="url">Linux汇编</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-16T18:05:16+08:00">
+                2018-12-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="显示字符串-AT-amp-T汇编"><a href="#显示字符串-AT-amp-T汇编" class="headerlink" title="显示字符串(AT&amp;T汇编)"></a>显示字符串(AT&amp;T汇编)</h3><p>&emsp;&emsp;代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">SECTION .data ; 包含已初始化的数据的段</span><br><span class="line"></span><br><span class="line">EatMsg: db <span class="string">"Eat at Joe's!"</span>, <span class="number">10</span></span><br><span class="line">EatLen: equ $-EatMsg</span><br><span class="line"></span><br><span class="line">SECTION .bss  ; 包含未始化的数据的段</span><br><span class="line">SECTION .text ; 包含代码的段</span><br><span class="line"></span><br><span class="line">global _start ; 连接器需要据此找到入口点</span><br><span class="line">_start:</span><br><span class="line">    nop ; 这个无操作指令让gdb非常高兴</span><br><span class="line">    mov eax, <span class="number">4</span> ; 指定sys_write系统调用</span><br><span class="line">    mov ebx, <span class="number">1</span> ; 指定文件描述符，<span class="number">1</span>是标准输出</span><br><span class="line">    mov ecx, EatMsg ; 传递显示信息的偏移地址</span><br><span class="line">    mov edx, EatLen ; 传递显示信息的长度</span><br><span class="line">    <span class="keyword">int</span> <span class="number">80</span>h ; 进行系统调用来输出文本到标准输出</span><br><span class="line">    mov eax, <span class="number">1</span> ; 指定Exit系统调用</span><br><span class="line">    mov ebx, <span class="number">0</span> ; 返回一个零代码</span><br><span class="line">    <span class="keyword">int</span> <span class="number">80</span>h ; 进行系统调用来终止程序</span><br></pre></td></tr></table></figure>
+<h3 id="字符串大写字母转换-AT-amp-T汇编"><a href="#字符串大写字母转换-AT-amp-T汇编" class="headerlink" title="字符串大写字母转换(AT&amp;T汇编)"></a>字符串大写字母转换(AT&amp;T汇编)</h3><p>&emsp;&emsp;代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">.section .data</span><br><span class="line">string1:</span><br><span class="line">    .asciz <span class="string">"This is a TEST, of the conversion program!\n"</span></span><br><span class="line">length:</span><br><span class="line">    .<span class="keyword">int</span> <span class="number">43</span></span><br><span class="line"></span><br><span class="line">.section .text</span><br><span class="line">.globl main</span><br><span class="line">main:</span><br><span class="line">    nop</span><br><span class="line">    leal string1, %esi</span><br><span class="line">    movl %esi, %edi</span><br><span class="line">    movl length, %ecx</span><br><span class="line">    cld</span><br><span class="line"></span><br><span class="line">loop1:</span><br><span class="line">    lodsb</span><br><span class="line">    cmpb $<span class="string">'a'</span>, %al</span><br><span class="line">    jl skip</span><br><span class="line">    cmpb $<span class="string">'z'</span>, %al</span><br><span class="line">    jg skip</span><br><span class="line">    subb $<span class="number">0x20</span>, %al</span><br><span class="line"></span><br><span class="line">skip:</span><br><span class="line">    stosb</span><br><span class="line">    loop loop1</span><br><span class="line"></span><br><span class="line">end:</span><br><span class="line">    pushl $string1</span><br><span class="line">    call <span class="built_in">printf</span></span><br><span class="line">    addl $<span class="number">4</span>, %esp</span><br><span class="line">    pushl $<span class="number">0</span></span><br><span class="line">    call <span class="built_in">exit</span></span><br></pre></td></tr></table></figure>
+<h3 id="显示数组-AT-amp-T汇编"><a href="#显示数组-AT-amp-T汇编" class="headerlink" title="显示数组(AT&amp;T汇编)"></a>显示数组(AT&amp;T汇编)</h3><p>&emsp;&emsp;代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">.section .data</span><br><span class="line">output:</span><br><span class="line">    .asciz <span class="string">"The value is %d\n"</span></span><br><span class="line">values:</span><br><span class="line">    .<span class="keyword">int</span> <span class="number">10</span>, <span class="number">15</span>,  <span class="number">20</span>, <span class="number">25</span>, <span class="number">30</span>, <span class="number">35</span>, <span class="number">40</span>, <span class="number">45</span>, <span class="number">50</span>, <span class="number">55</span>, <span class="number">60</span></span><br><span class="line"></span><br><span class="line">.section .text</span><br><span class="line">.globl main</span><br><span class="line"></span><br><span class="line">main:</span><br><span class="line">    nop # 加上“nop”是为了方便调试</span><br><span class="line">    movl $<span class="number">0</span>, %edi</span><br><span class="line"></span><br><span class="line">loop:</span><br><span class="line">    movl values(, %edi, 4), %eax</span><br><span class="line">    pushl %eax</span><br><span class="line">    pushl $output</span><br><span class="line">    call <span class="built_in">printf</span></span><br><span class="line"></span><br><span class="line">    addl $<span class="number">8</span>, %esp</span><br><span class="line">    inc %edi</span><br><span class="line">    cmpl $<span class="number">11</span>, %edi</span><br><span class="line">    jne loop</span><br><span class="line">    movl $<span class="number">0</span>, %ebx</span><br><span class="line">    movl $<span class="number">1</span>, %eax</span><br><span class="line">    <span class="keyword">int</span> $<span class="number">0x80</span></span><br></pre></td></tr></table></figure>
+<h3 id="在数组中找出最大值-AT-amp-T汇编"><a href="#在数组中找出最大值-AT-amp-T汇编" class="headerlink" title="在数组中找出最大值(AT&amp;T汇编)"></a>在数组中找出最大值(AT&amp;T汇编)</h3><p>&emsp;&emsp;代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">.section .data</span><br><span class="line">output:</span><br><span class="line">    .asciz <span class="string">"The largest value is %d\n"</span></span><br><span class="line">values:</span><br><span class="line">    .<span class="keyword">int</span> <span class="number">105</span>, <span class="number">235</span>, <span class="number">61</span>, <span class="number">315</span>, <span class="number">134</span>, <span class="number">221</span>, <span class="number">53</span>, <span class="number">145</span>, <span class="number">117</span>, <span class="number">5</span></span><br><span class="line"></span><br><span class="line">.section .text</span><br><span class="line">.globl main</span><br><span class="line"></span><br><span class="line">main:</span><br><span class="line">    nop # 加上“nop”是为了方便调试</span><br><span class="line">    movl values, %ebx</span><br><span class="line">    movl $<span class="number">1</span>, %edi</span><br><span class="line"></span><br><span class="line">loop:</span><br><span class="line">    movl values(, %edi, 4), %eax</span><br><span class="line">    cmp %ebx, %eax</span><br><span class="line">    cmova %eax, %ebx</span><br><span class="line">    inc %edi</span><br><span class="line">    cmp $<span class="number">10</span>, %edi</span><br><span class="line">    jne loop</span><br><span class="line"></span><br><span class="line">    pushl %ebx</span><br><span class="line">    pushl $output</span><br><span class="line">    call <span class="built_in">printf</span></span><br><span class="line">    addl $<span class="number">8</span>, %esp</span><br><span class="line">    pushl $<span class="number">0</span></span><br><span class="line">    call <span class="built_in">exit</span></span><br></pre></td></tr></table></figure>
+<h3 id="使用系统调用-AT-amp-T汇编"><a href="#使用系统调用-AT-amp-T汇编" class="headerlink" title="使用系统调用(AT&amp;T汇编)"></a>使用系统调用(AT&amp;T汇编)</h3><p>&emsp;&emsp;代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">.section .data</span><br><span class="line">output:</span><br><span class="line">    .ascii <span class="string">"This is a test message.\n"</span></span><br><span class="line">output_end:</span><br><span class="line">    .equ len, output_end - output</span><br><span class="line"></span><br><span class="line">.section .text</span><br><span class="line">.globl main</span><br><span class="line">main:</span><br><span class="line">    movl $<span class="number">4</span>, %eax</span><br><span class="line">    movl $<span class="number">1</span>, %ebx</span><br><span class="line">    movl $output, %ecx</span><br><span class="line">    movl $len, %edx</span><br><span class="line">    <span class="keyword">int</span> $<span class="number">0x80</span></span><br><span class="line"></span><br><span class="line">    movl $<span class="number">1</span>, %eax</span><br><span class="line">    movl $<span class="number">0</span>, %ebx</span><br><span class="line">    <span class="keyword">int</span> $<span class="number">0x80</span></span><br></pre></td></tr></table></figure>
+<h3 id="反向遍历数据数组-AT-amp-T汇编"><a href="#反向遍历数据数组-AT-amp-T汇编" class="headerlink" title="反向遍历数据数组(AT&amp;T汇编)"></a>反向遍历数据数组(AT&amp;T汇编)</h3><p>&emsp;&emsp;代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">.section .data</span><br><span class="line">value:</span><br><span class="line">    .<span class="keyword">int</span> <span class="number">21</span>, <span class="number">15</span>, <span class="number">34</span>, <span class="number">11</span>, <span class="number">6</span>, <span class="number">50</span>, <span class="number">32</span>, <span class="number">80</span>, <span class="number">10</span>, <span class="number">2</span></span><br><span class="line">output:</span><br><span class="line">    .asciz <span class="string">"The value is %d\n"</span></span><br><span class="line"></span><br><span class="line">.section .text</span><br><span class="line">.globl main</span><br><span class="line"></span><br><span class="line">main:</span><br><span class="line">    movl $<span class="number">9</span>, %edi</span><br><span class="line">loop:</span><br><span class="line">    <span class="function">pushl <span class="title">value</span><span class="params">(, %edi, <span class="number">4</span>)</span></span></span><br><span class="line">    pushl $output</span><br><span class="line">    call <span class="built_in">printf</span></span><br><span class="line">    addl $<span class="number">8</span>, %esp</span><br><span class="line">    dec %edi</span><br><span class="line">    jns loop</span><br><span class="line"></span><br><span class="line">    movl $<span class="number">1</span>, %eax</span><br><span class="line">    movl $<span class="number">0</span>, %ebx</span><br><span class="line">    <span class="keyword">int</span> $<span class="number">0x80</span></span><br></pre></td></tr></table></figure>
+<h3 id="使用call命令调用函数-AT-amp-T汇编"><a href="#使用call命令调用函数-AT-amp-T汇编" class="headerlink" title="使用call命令调用函数(AT&amp;T汇编)"></a>使用call命令调用函数(AT&amp;T汇编)</h3><p>&emsp;&emsp;代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">.section .data</span><br><span class="line">output:</span><br><span class="line">    .asciz <span class="string">"This is section %d\n"</span></span><br><span class="line"></span><br><span class="line">.section .text</span><br><span class="line">.globl main</span><br><span class="line"></span><br><span class="line">main:</span><br><span class="line">    pushl $<span class="number">1</span></span><br><span class="line">    pushl $output</span><br><span class="line">    call <span class="built_in">printf</span></span><br><span class="line">    add $<span class="number">8</span>, %esp <span class="meta"># should clean up stack</span></span><br><span class="line">    call overhere</span><br><span class="line">    pushl $<span class="number">3</span></span><br><span class="line">    pushl $output</span><br><span class="line">    call <span class="built_in">printf</span></span><br><span class="line">    add $<span class="number">8</span>, %esp <span class="meta"># should clean up stack</span></span><br><span class="line">    pushl $<span class="number">0</span></span><br><span class="line">    call <span class="built_in">exit</span></span><br><span class="line"></span><br><span class="line">overhere:</span><br><span class="line">    pushl %ebp</span><br><span class="line">    movl %esp, %ebp</span><br><span class="line"></span><br><span class="line">    pushl $<span class="number">2</span></span><br><span class="line">    pushl $output</span><br><span class="line">    call <span class="built_in">printf</span></span><br><span class="line">    add $<span class="number">8</span>, %esp <span class="meta"># should clean up stack</span></span><br><span class="line"></span><br><span class="line">    movl %ebp, %esp</span><br><span class="line">    popl %ebp</span><br><span class="line">    ret</span><br></pre></td></tr></table></figure>
+<h3 id="两个64位数值的相减-AT-amp-T汇编"><a href="#两个64位数值的相减-AT-amp-T汇编" class="headerlink" title="两个64位数值的相减(AT&amp;T汇编)"></a>两个64位数值的相减(AT&amp;T汇编)</h3><p>&emsp;&emsp;代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">.section .data</span><br><span class="line">data1:</span><br><span class="line">    .quad <span class="number">7252051615</span></span><br><span class="line">data2:</span><br><span class="line">    .quad <span class="number">5732348928</span></span><br><span class="line">output:</span><br><span class="line">    .asciz <span class="string">"The result is %qd\n"</span></span><br><span class="line"></span><br><span class="line">.section .text</span><br><span class="line">.globl main</span><br><span class="line"></span><br><span class="line">main:</span><br><span class="line">    nop</span><br><span class="line">    movl data1, %ebx</span><br><span class="line">    movl data1+<span class="number">4</span>, %eax</span><br><span class="line">    movl data2, %edx</span><br><span class="line">    movl data2+<span class="number">4</span>, %ecx</span><br><span class="line">    subl %ebx, %edx</span><br><span class="line">    sbbl %eax, %ecx</span><br><span class="line"></span><br><span class="line">    pushl %ecx</span><br><span class="line">    pushl %edx</span><br><span class="line">    push $output</span><br><span class="line">    call <span class="built_in">printf</span></span><br><span class="line">    addl $<span class="number">12</span>, %esp</span><br><span class="line">    pushl $<span class="number">0</span></span><br><span class="line">    call <span class="built_in">exit</span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/16/C++应用代码/构造String类/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/16/C++应用代码/构造String类/" itemprop="url">构造String类</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-16T13:07:07+08:00">
+                2018-12-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C-应用代码/" itemprop="url" rel="index">
+                    <span itemprop="name">C++应用代码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;编写类String的构造函数、析构函数和赋值函数，已知类String的原型为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">String</span> &#123;</span></span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    String ( <span class="keyword">const</span> <span class="keyword">char</span>* str = <span class="literal">NULL</span> ); <span class="comment">/* 普通构造函数 */</span></span><br><span class="line">    String ( <span class="keyword">const</span> String&amp; other ); <span class="comment">/* 拷贝构造函数 */</span></span><br><span class="line">    ~String ( <span class="keyword">void</span> ); <span class="comment">/* 析构函数 */</span></span><br><span class="line">    String&amp; operate = ( <span class="keyword">const</span> String&amp; other ); <span class="comment">/* 赋值函数 */</span></span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">char</span>* m_data; <span class="comment">/* 用于保存字符串 */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>代码如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">String::String ( <span class="keyword">const</span> <span class="keyword">char</span>* str ) &#123; <span class="comment">/* 普通构造函数 */</span></span><br><span class="line">    <span class="keyword">if</span> ( str == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        m_data = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="number">1</span>]; <span class="comment">/* 对空字符串自动申请存放结束标志“\0” */</span></span><br><span class="line">        *m_data = <span class="string">'\0'</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">int</span> length = <span class="built_in">strlen</span> ( str );</span><br><span class="line">        m_data = <span class="keyword">new</span> <span class="keyword">char</span>[length + <span class="number">1</span>];</span><br><span class="line">        <span class="built_in">strcpy</span> ( m_data, str );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">String::~String ( <span class="keyword">void</span> ) &#123; <span class="comment">/* String的析构函数 */</span></span><br><span class="line">    <span class="keyword">delete</span> [] m_data;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">String::String ( <span class="keyword">const</span> String&amp; other ) &#123; <span class="comment">/* 拷贝构造函数 */</span></span><br><span class="line">    <span class="keyword">int</span> length = <span class="built_in">strlen</span> ( other.m_data );</span><br><span class="line">    m_data = <span class="keyword">new</span> <span class="keyword">char</span>[length + <span class="number">1</span>];</span><br><span class="line">    <span class="built_in">strcpy</span> ( m_data, other.m_data );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">String&amp; String::operate = ( <span class="keyword">const</span> String&amp; other ) &#123; <span class="comment">/* 赋值函数 */</span></span><br><span class="line">    <span class="keyword">if</span> ( <span class="keyword">this</span> == &amp;other ) &#123; <span class="comment">/* 检查自赋值 */</span></span><br><span class="line">        <span class="keyword">return</span> *<span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">delete</span> [] m_data; <span class="comment">/* 释放原有的内存资源 */</span></span><br><span class="line">    <span class="keyword">int</span> length = <span class="built_in">strlen</span> ( other.m_data );</span><br><span class="line">    m_data = <span class="keyword">new</span> <span class="keyword">char</span>[length + <span class="number">1</span>];</span><br><span class="line">    <span class="built_in">strcpy</span> ( m_data, other.m_data );</span><br><span class="line">    <span class="keyword">return</span> *<span class="keyword">this</span>; <span class="comment">/* 返回本对象的引用 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/16/C++应用代码/设计一个不能被继承的类/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="暴徒">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/16/C++应用代码/设计一个不能被继承的类/" itemprop="url">设计一个不能被继承的类</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-16T12:36:15+08:00">
+                2018-12-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C-应用代码/" itemprop="url" rel="index">
+                    <span itemprop="name">C++应用代码</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;使用友元、私有构造函数、虚继承等方式可以使一个类不能被继承，代码如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt; <span class="class"><span class="keyword">class</span> <span class="title">Base</span> &#123;</span></span><br><span class="line">    <span class="keyword">friend</span> T;</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    Base() &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"base"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ~Base() &#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 一定注意，必须是虚继承 */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span>:</span> <span class="keyword">virtual</span> <span class="keyword">public</span> Base&lt;B&gt; &#123;</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    B() &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"B"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">C</span>:</span> <span class="keyword">public</span> B &#123;</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    C() &#123;&#125; <span class="comment">/* 继承时报错，无法通过编译 */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    B b; <span class="comment">/* B类无法被继承 */</span></span><br><span class="line">    <span class="comment">//C c;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;B类继承于Base类，Base类为虚基类。因为B类是Base类的友元类，所以它可以访问Base类的私有构造函数以及析构函数，编译运行时是正确的。<br>&emsp;&emsp;为什么必须是虚继承(virtual)呢？通常每个类只初始化自己的直接基类，但是在虚继承的时候这个情况发生了变化，可能导致虚基类被多次初始化，这显然不是我们想要的(例如，AA和AB都是类A的派生类，然后类C又继承自AA和AB，如果按照之前的方法会导致C里面A被初始化两次，也会存在两份数据)。为了解决重复初始化的问题，从虚基类继承的类在初始化时进行了特殊处理。在虚派生中，由最低层次的派生类的构造函数初始化虚基类。上面的例子就是由C的构造函数来控制如何进行虚基类的初始化。<br>&emsp;&emsp;为什么B类不能被继承？因为B是Base的友元，所以B对象可以正常创建，但由于B使用了虚继承，所以如果要创建C对象，那么C类的构造函数就要负责虚基类(Base)的构造。但是Base的构造函数是私有的，C没有访问的权限(友元关系不能被继承的)，所以C类在编译时就会报错，这样B类就不能被继承了。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/16/C++应用代码/文件复制程序/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1034,880 +1704,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/14/C语言语法详解/strtok和strsep函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/14/C语言语法详解/strtok和strsep函数/" itemprop="url">strtok和strsep函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-14T19:55:28+08:00">
-                2018-12-14
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://baike.baidu.com/item/strtok" target="_blank" rel="noopener">strtok</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;函数原型如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">char</span>* <span class="title">strtok</span> <span class="params">( <span class="keyword">char</span>* s, <span class="keyword">const</span> <span class="keyword">char</span>* delim )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">char</span>* <span class="title">strsep</span> <span class="params">( <span class="keyword">char</span>** s, <span class="keyword">const</span> <span class="keyword">char</span>* delim )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>strtok和strsep两个函数的功能都是用来分解字符串为一组字符串，s为要分解的字符串，delim为分隔符字符串。函数返回从s开头开始的一个个子串，当没有分割的子串时返回NULL。两者都会改变源字符串，想要避免，可以使用strdupa或strdup。<br>&emsp;&emsp;strtok函数第一次调用时会把s字符串中所有在delim中出现的字符替换为NULL，然后通过依次调用<code>strtok(NULL, delim)</code>得到各部分子串。测试代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> s[] = <span class="string">"hello, world! welcome to china!"</span>;</span><br><span class="line">    <span class="keyword">char</span> delim[] = <span class="string">" ,!"</span>;</span><br><span class="line">    <span class="keyword">char</span>* token;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( token = strtok ( s, delim ); token != <span class="literal">NULL</span>; token = strtok ( <span class="literal">NULL</span>, delim ) ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%s"</span>, token );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"+"</span> );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\n"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hello+world+welcome+china+</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;对于strsep有如下例子：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> source[] = <span class="string">"hello, world! welcome to china!"</span>;</span><br><span class="line">    <span class="keyword">char</span> delim[] = <span class="string">" ,!"</span>;</span><br><span class="line">    <span class="keyword">char</span>* s = strdup ( source );</span><br><span class="line">    <span class="keyword">char</span>* token;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( token = strsep ( &amp;s, delim ); token != <span class="literal">NULL</span>; token = strsep ( &amp;s, delim ) ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%s"</span>, token );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"+"</span> );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\n"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hello++world++welcome+to+china++</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;为什么用strtok时子串中间只有一个<code>+</code>，而strsep却有多个<code>+</code>呢？文档中有如下的解释：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">One difference between strsep <span class="keyword">and</span> strtok_r is that <span class="keyword">if</span> the input <span class="built_in">string</span> contains</span><br><span class="line">more than one character from delimiter in a row strsep returns an empty <span class="built_in">string</span></span><br><span class="line"><span class="keyword">for</span> each pair of characters from delimiter. This means that a program normally</span><br><span class="line">should test <span class="keyword">for</span> strsep returning an empty <span class="built_in">string</span> before processing it.</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;如果输入的串的有连续的多个字符属于delim(此例source中的逗号加上空格，感叹号加上空格等就是这种情况)，strtok会返回NULL，而strsep会返回空串。因而如果想用strsep函数分割字符串，必须进行返回值是否是空串的判断。这也就解释了strsep的例子中有多个<code>+</code>的原因。我们在自己的程序中最好尽量避免使用strtok，转而使用strsep。</p>
-<hr>
-<h3 id="strsep函数用法"><a href="#strsep函数用法" class="headerlink" title="strsep函数用法"></a>strsep函数用法</h3><p>&emsp;&emsp;strsep作为strtok的升级版，是一个很有用的字符串处理函数，但是也有很多不方便的地方，使用时需要特别小心。好在注意的事项都在<code>man strsep</code>里，如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">char</span>* <span class="title">strsep</span> <span class="params">( <span class="keyword">char</span>** stringp, <span class="keyword">const</span> <span class="keyword">char</span>* delim )</span></span>;</span><br><span class="line">​</span><br><span class="line">Be cautious when <span class="keyword">using</span> <span class="keyword">this</span> function. If you <span class="keyword">do</span> use it, note that:</span><br><span class="line">* This function modifies its first argument.</span><br><span class="line">* This function cannot be used on constant strings.</span><br><span class="line">* The identity of the delimiting character is lost.</span><br></pre></td></tr></table></figure>
-<p>实例如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> arg, <span class="keyword">const</span> <span class="keyword">char</span>* argv[] )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* 字符串不能为常量，所以用strdup */</span></span><br><span class="line">    <span class="keyword">char</span>* <span class="built_in">string</span> = strdup ( <span class="string">"/home/yinlijun/project:/home/yinlijun:/home/someone"</span> );</span><br><span class="line">    <span class="keyword">char</span>* p;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 第一个参数设为二级指针，字符串中所有的第二个参数(子串)最后会被替代成“\0” */</span></span><br><span class="line">    <span class="keyword">while</span> ( ( p = strsep ( &amp;<span class="built_in">string</span>, <span class="string">":"</span> ) ) != <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%s\n"</span>, p );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/home/yinlijun/project</span><br><span class="line">/home/yinlijun</span><br><span class="line">/home/someone</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/14/C语言语法详解/setbuf和setvbuf函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/14/C语言语法详解/setbuf和setvbuf函数/" itemprop="url">setbuf和setvbuf函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-14T17:27:26+08:00">
-                2018-12-14
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="http://c.biancheng.net/cpp/html/265.html" target="_blank" rel="noopener">C语言setbuf函数：把缓冲区与流相关联</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;函数setbuf用于将指定缓冲区与特定的文件流相关联，实现操作缓冲区时直接操作文件流的功能。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setbuf</span> <span class="params">( FILE* stream, <span class="keyword">char</span>* buf )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数stream为文件流指针，buf为缓冲区的起始地址。如果参数buf为NULL指针，则为无缓冲，setbuf相当于调用<code>setvbuf(stream, buf, _IONBF, BUFSIZE)</code>。<br>&emsp;&emsp;setbuf和setvbuf函数的实际意义在于：用户打开一个文件后，可以建立自己的文件缓冲区，而不必使用fopen函数打开文件时设定的默认缓冲区。这样就可以让用户自己来控制缓冲区，包括改变缓冲区大小、定时刷新缓冲区、改变缓冲区类型、删除流中默认的缓冲区、为不带缓冲区的流开辟缓冲区等。<br>&emsp;&emsp;在打开文件流后，读取内容之前，可以调用setbuf来设置文件流的缓冲区(而且必须是这样)。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">char</span> outbuf[BUFSIZ];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    setbuf ( <span class="built_in">stdout</span>, outbuf ); <span class="comment">/* 把缓冲区与流相连 */</span></span><br><span class="line">    <span class="built_in">puts</span> ( <span class="string">"This is a test of buffered output.\n"</span> );</span><br><span class="line">    <span class="built_in">puts</span> ( outbuf );</span><br><span class="line">    fflush ( <span class="built_in">stdout</span> ); <span class="comment">/* 刷新 */</span></span><br><span class="line">    <span class="built_in">puts</span> ( outbuf ); <span class="comment">/* 输出 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">This is a <span class="built_in">test</span> of buffered output..</span><br><span class="line">This is a <span class="built_in">test</span> of buffered output..</span><br><span class="line">This is a <span class="built_in">test</span> of buffered output..</span><br><span class="line">This is a <span class="built_in">test</span> of buffered output..</span><br></pre></td></tr></table></figure>
-<p>程序先把outbuf与输出流相连，然后输出一个字符串，这时因为缓冲区已经与流相连，所以outbuf中也保存着这个字符串，紧接着puts函数又输出一遍，所以现在outbuf中保存着两个一样的字符串。刷新输出流之后，再次puts，则又输出两个字符串。</p>
-<hr>
-<h3 id="setbuf函数详解"><a href="#setbuf函数详解" class="headerlink" title="setbuf函数详解"></a>setbuf函数详解</h3><p>&emsp;&emsp;程序输出有两种方式：一种是即时处理方式，另一种是先暂存起来，然后再大块写入的方式，前者往往造成较高的系统负担。因此，C语言通常都允许程序员在进行实际的写操作之前控制产生的输出数据量。这种控制能力一般是通过库函数setbuf实现的。如果buf是一个大小适当的字符数组，那么<code>setbuf(stdout，buf);</code>语句将通知输入/输出库，所有写入到stdout的输出都应该使用buf作为输出缓冲区，直到buf缓冲区被填满或者程序员直接调用fflush(译注：对于由写操作打开的文件，调用fflush将导致输出缓冲区的内容被实际地写入该文件)，buf缓冲区中的内容才实际写入到stdout中。缓冲区的大小由系统头文件<code>stdio.h</code>中的BUFSIZ定义。<br>&emsp;&emsp;下面的程序的作用是把标准输入的内容复制到标准输出中，演示了setbuf库函数最显而易见的用法：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> c;</span><br><span class="line">    <span class="keyword">char</span> buf[BUFSIZ];</span><br><span class="line">    setbuf ( <span class="built_in">stdout</span>, buf );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( ( c = getchar() ) != EOF ) &#123;</span><br><span class="line">        <span class="built_in">putchar</span> ( c );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;遗憾的是，这个程序是错误的，仅仅是因为一个细微的原因。程序中对库函数setbuf的调用，通知了输入/输出库所有字符的标准输出应该首先缓存在buf中。要找到问题出自何处，我们不妨思考一下buf缓冲区最后一次被清空是在什么时候？答案是在main函数结束之后，作为程序交回控制权给操作系统之前C运行库所必须进行的清理工作的一部分。但是，在此之前buf字符数组已经被释放！<br>&emsp;&emsp;要避免这种类型的错误有两种办法。第一种办法是让缓冲数组成为静态数组，既可以直接显式声明buf为静态：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">char</span> buf[BUFSIZ];</span><br></pre></td></tr></table></figure>
-<p>也可以把buf声明完全移到main函数之外。<br>&emsp;&emsp;第二种办法是动态分配缓冲区，在程序中并不主动释放分配的缓冲区(译注：由于缓冲区是动态分配的，所以main函数结束时并不会释放该缓冲区，这样C运行库进行清理工作时就不会发生缓冲区已释放的情况)：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">char</span>* <span class="title">malloc</span><span class="params">()</span></span>;</span><br><span class="line">setbuf ( <span class="built_in">stdout</span>, <span class="built_in">malloc</span> ( BUFSIZ ) );</span><br></pre></td></tr></table></figure>
-<p>如果读者关心一些编程小技巧，也许会注意到这里其实并不需要检查malloc函数调用是否成功。如果malloc函数调用失败，将返回一个null指针。setbuf函数的第二个参数取值可以为null，此时标准输出不需要进行缓冲。这种情况下，程序仍然能够工作，只不过速度较慢而已。</p>
-<hr>
-<h3 id="setvbuf详解"><a href="#setvbuf详解" class="headerlink" title="setvbuf详解"></a>setvbuf详解</h3><p>&emsp;&emsp;函数原型如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">setvbuf</span> <span class="params">( FILE* stream, c​har* buf, <span class="keyword">int</span> type, <span class="keyword">unsigned</span> size )</span></span>;</span><br></pre></td></tr></table></figure>
-<ul>
-<li>type：期望缓冲区的类型，如下所示：</li>
-</ul>
-<ol>
-<li><code>_IOFBF</code>(满缓冲)：当缓冲区为空时，从流读入数据。或者当缓冲区满时，向流写入数据。</li>
-<li><code>_IOLBF</code>(行缓冲)：每次从流中读入一行数据或向流中写入一行数据。</li>
-<li><code>_IONBF</code>(无缓冲)：直接从流中读入数据或直接向流中写入数据，而没有缓冲区。</li>
-</ol>
-<ul>
-<li>size：缓冲区内字节的数量。</li>
-</ul>
-<p>&emsp;&emsp;如果buf的值不为NULL，则setvbuf函数将buf指向的区域作为流的缓冲区，否则分配一个缓冲区。如果setvbuf函数出错，则返回一个非0值。注意如下内容：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">This <span class="keyword">function</span> should be called once the file associated with the stream has</span><br><span class="line">already been opened but before any input or output operation has taken place.</span><br></pre></td></tr></table></figure>
-<p>意思是这个函数应该在打开流后，在任何对该流做输入输出前，立即调用。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    FILE* input, *output;</span><br><span class="line">    <span class="keyword">char</span> bufr[<span class="number">512</span>];</span><br><span class="line">    input = fopen ( <span class="string">"file.in"</span>, <span class="string">"r+b"</span> );</span><br><span class="line">    output = fopen ( <span class="string">"file.out"</span>, <span class="string">"w"</span> );</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* set up input stream for minimal disk access,</span></span><br><span class="line"><span class="comment">       using our own character buffer */</span></span><br><span class="line">    <span class="keyword">if</span> ( setvbuf ( input, bufr, _IOFBF, <span class="number">512</span> ) != <span class="number">0</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"failed to set up buffer for input file\n"</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"buffer set up for input file\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* set up output stream for line buffering using space that</span></span><br><span class="line"><span class="comment">       will be obtained through an indirect call to malloc */</span></span><br><span class="line">    <span class="keyword">if</span> ( setvbuf ( output, <span class="literal">NULL</span>, _IOLBF, <span class="number">132</span> ) != <span class="number">0</span> ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"failed to set up buffer for output file\n"</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"buffer set up for output file\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* perform file I/O here */</span></span><br><span class="line">    <span class="comment">/* close files */</span></span><br><span class="line">    fclose ( input );</span><br><span class="line">    fclose ( output );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/14/C语言语法详解/vsnprintf和vprintf函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/14/C语言语法详解/vsnprintf和vprintf函数/" itemprop="url">vsnprintf和vprintf函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-14T16:35:26+08:00">
-                2018-12-14
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="vsnprintf函数"><a href="#vsnprintf函数" class="headerlink" title="vsnprintf函数"></a>vsnprintf函数</h3><p>&emsp;&emsp;该博客主要来源于<a href="https://baike.baidu.com/item/_vsnprintf" target="_blank" rel="noopener">_vsnprintf</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;<code>_vsnprintf</code>是C语言库函数之一，属于可变参数函数，用于向字符串中打印数据，数据格式由用户自定义。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdarg.h&gt;</span></span></span><br><span class="line"><span class="keyword">int</span> _vsnprintf ( <span class="keyword">char</span>* str, <span class="keyword">size_t</span> size, <span class="keyword">const</span> <span class="keyword">char</span>* format, va_list ap );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>char* str</code>：把生成的格式化的字符串存放在这里。</li>
-<li><code>size_t size</code>：str可接受的最大字符数(非字节数，UNICODE一个字符是两个字节)，防止产生数组越界。</li>
-<li><code>const char* format</code>：指定输出格式的字符串，它决定了你需要提供的可变参数的类型、个数和顺序。</li>
-<li><code>va_list ap</code>：<code>va_list</code>变量(va即<code>variable argument</code>，意思是可变参数)。</li>
-</ul>
-<p>函数功能是将可变参数格式化输出到一个字符数组。用法类似于vsprintf，不过加了size的限制，防止了内存溢出(size为str所指的存储空间的大小)。函数执行成功，则返回写入到字符数组str中的字符个数(不包含终止符)，最大不超过size；执行失败，则返回负值，并置errno。<br>&emsp;&emsp;注意，Linux环境下是<code>vsnprintf</code>，VC6环境下是<code>_vsnprintf</code>。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdarg.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mon_log</span> <span class="params">( <span class="keyword">char</span>* format, ... )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> str_tmp[<span class="number">50</span>];</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    va_list vArgList; <span class="comment">/* 定义一个va_list型的变量，这个变量是指向参数的指针 */</span></span><br><span class="line">    <span class="comment">/* 用va_start宏初始化变量，这个宏的第二个参数是第一个可变参数的前一个参数，是一个固定的参数 */</span></span><br><span class="line">    va_start ( vArgList, format );</span><br><span class="line">    i = vsnprintf ( str_tmp, <span class="number">50</span>, format, vArgList );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"str_tmp is %s\n"</span>, str_tmp );</span><br><span class="line">    va_end ( vArgList ); <span class="comment">/* 用va_end宏结束可变参数的获取 */</span></span><br><span class="line">    <span class="keyword">return</span> i; <span class="comment">/* 返回参数的字符个数中间有逗号间隔 */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = mon_log ( <span class="string">"%s,%d,%d,%d"</span>, <span class="string">"asd"</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, i );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">str_tmp is asd,2,3,4</span><br><span class="line">9</span><br></pre></td></tr></table></figure>
-<h3 id="vprintf函数"><a href="#vprintf函数" class="headerlink" title="vprintf函数"></a>vprintf函数</h3><p>&emsp;&emsp;函数原型如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdarg.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">vprintf</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">char</span>* format, va_list ap )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>vprintf的作用和printf相同，参数format格式也相同，<code>va_list</code>为不定个数的参数列。对于返回值，成功则返回实际输出的字符数，失败则返回<code>-1</code>，错误原因存于errno中。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdarg.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">vpf</span> <span class="params">( <span class="keyword">char</span>* fmt, ... )</span> </span>&#123;</span><br><span class="line">    va_list argptr;</span><br><span class="line">    <span class="keyword">int</span> cnt;</span><br><span class="line">    va_start ( argptr, fmt );</span><br><span class="line">    cnt = <span class="built_in">vprintf</span> ( fmt, argptr );</span><br><span class="line">    va_end ( argptr );</span><br><span class="line">    <span class="keyword">return</span> ( cnt );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> inumber = <span class="number">30</span>;</span><br><span class="line">    <span class="keyword">float</span> fnumber = <span class="number">90.0</span>;</span><br><span class="line">    <span class="keyword">char</span>* <span class="built_in">string</span> = <span class="string">"abc"</span>;</span><br><span class="line">    vpf ( <span class="string">"%d %f %s\n"</span>, inumber, fnumber, <span class="built_in">string</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/13/C语言语法详解/stdint和inttypes头文件/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/13/C语言语法详解/stdint和inttypes头文件/" itemprop="url">stdint和inttypes头文件</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-13T20:25:31+08:00">
-                2018-12-13
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/fangwei1235/article/details/6771117" target="_blank" rel="noopener">关于stdint.h头文件</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;<code>stdint.h</code>是C99引进的一个标准C库的头文件。<code>stdint.h</code>中定义了几种扩展的整数类型和宏，规则如下(其中N可以为8、16、32或64)：<code>intN_t</code>、<code>int_leastN_t</code>、<code>int_fastN_t</code>表示长度为N位的整型数；<code>uintN_t</code>、<code>uint_leastN_t</code>、<code>uint_fastN_t</code>表示长度为N位的无符号整型数。<br>&emsp;&emsp;在<code>stdint.h</code>中的常量，定义了以上各类型数的最大最小值(其中n可以为8、16、32或64)：<code>INTn_MIN</code>、<code>UINTn_MIN</code>、<code>INTn_MAX</code>、<code>UITn_MAX</code>、<code>INT_LEASEn_MIN</code>、<code>INT_LEASEn_MAX</code>、<code>INT_FASTn_MIN</code>或<code>INT_FASTn_MAX</code>。<br>&emsp;&emsp;<code>intN_t</code>格式的宏指一个有N位的整数，例如<code>int16_t</code>指一个16位的有符号的整数；<code>uintN_t</code>格式的宏指定一个有N位的无符号的整数，例如<code>uint32_t</code>指定一个32位的无符号的整数；<code>int_leastN_t</code>格式的宏指定一个至少N位的整数；<code>uint_leastN_t</code>指定一个至少N位的无符号的整数；<code>int_fastN_t</code>指定一个至少N位的快速有符号的整数；<code>intmax_t</code>类型指定一个最大尺寸的有符号整数，而<code>uintmax_t</code>指定一个最大尺寸的无符号整数。<br>&emsp;&emsp;<code>stdint.h</code>可以实现将一个常数扩展为特定整数类型的宏，这些宏通用格式为<code>INTN_C(value)</code>和<code>UINTN_C(value)</code>，其中N是所需类型的位宽度。除此之外，还有<code>INTMAX_C(value)</code>和<code>UINTMAX_C(value)</code>，它们创建指定值的最大宽度常数。<br>&emsp;&emsp;注意大数的输出，<code>int64_t</code>类型的输出为<code>%lld</code>，<code>uint64_t</code>类型的输出为<code>%llu</code>，<code>uint64_t</code>的十六进制输出为<code>%llx</code>，<code>uint64_t</code>的八进制输出为<code>%llo</code>。<code>stdint.h</code>文件如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* ISO C99: 整数类型 &lt;stdint.h&gt; */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _STDINT_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _STDINT_H 1</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;features.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;bits/wchar.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;bits/wordsize.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 准确类型：指定长度的准确类型 */</span></span><br><span class="line"><span class="comment">/* 有符号 */</span></span><br><span class="line"><span class="comment">/* 有一些与&lt;sys/types.h&gt;中的inet代码重叠 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> __int8_t_defined</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __int8_t_defined</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">char</span> <span class="keyword">int8_t</span>; <span class="comment">/* 8位的准确长度类型(int8_t = signed char) */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">short</span> <span class="keyword">int</span>   <span class="keyword">int16_t</span>; <span class="comment">/* 16位的准确长度类型 */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">int</span>         <span class="keyword">int32_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">int64_t</span>; <span class="comment">/* 64位平台上64位的准确类型为long */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">__extension__</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">int64_t</span>; <span class="comment">/* 32位平台上64位的准确类型为“long long” */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 无符号 */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">char</span>      <span class="keyword">uint8_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">short</span> <span class="keyword">int</span> <span class="keyword">uint16_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> __uint32_t_defined</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="keyword">uint32_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __uint32_t_defined</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">uint64_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">__extension__</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">uint64_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 最小类型：指定长度的最小类型 */</span></span><br><span class="line"><span class="comment">/* 有符号 */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">char</span> <span class="keyword">int_least8_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">short</span> <span class="keyword">int</span>   <span class="keyword">int_least16_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">int</span>         <span class="keyword">int_least32_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">int_least64_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">__extension__</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">int_least64_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 无符号 */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">char</span>      <span class="keyword">uint_least8_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">short</span> <span class="keyword">int</span> <span class="keyword">uint_least16_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">int</span>       <span class="keyword">uint_least32_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">uint_least64_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">__extension__</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">uint_least64_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 快速类型：指定长度的最快类型 */</span></span><br><span class="line"><span class="comment">/* 有符号 */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">char</span> <span class="keyword">int_fast8_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64 <span class="comment">/* 64位平台 */</span></span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">int_fast16_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">int_fast32_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">int_fast64_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span> <span class="comment">/* 32位平台 */</span></span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">int</span> <span class="keyword">int_fast16_t</span>; <span class="comment">/* 16位和32位的最快类型均为int */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">int</span> <span class="keyword">int_fast32_t</span>;</span><br><span class="line">__extension__</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">int_fast64_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 无符号 */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">char</span> <span class="keyword">uint_fast8_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">uint_fast16_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">uint_fast32_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">uint_fast64_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="keyword">uint_fast16_t</span>;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="keyword">uint_fast32_t</span>;</span><br><span class="line">__extension__</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">uint_fast64_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64 <span class="comment">/* 通用指针类型：即“void *”型指针的类型，64位平台上为long，32位平台上为int */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> __intptr_t_defined</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">intptr_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __intptr_t_defined</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">uintptr_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> __intptr_t_defined</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">int</span> <span class="keyword">intptr_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __intptr_t_defined</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="keyword">uintptr_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64 <span class="comment">/* 最大类型：指定长度的最大整数类型 */</span></span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">intmax_t</span>; <span class="comment">/* 64位平台上的最大整数类型为long */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">uintmax_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">__extension__</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">intmax_t</span>; <span class="comment">/* 32位平台上的最大整数类型为“long long” */</span></span><br><span class="line">__extension__</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> <span class="keyword">uintmax_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* ISO C99标准指出，在C++实现中这些宏应该只在被请求到的时候才定义 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> !defined __cplusplus || defined __STDC_LIMIT_MACROS</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __INT64_C(c)  c ## L</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __UINT64_C(c) c ## UL</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __INT64_C(c)  c ## LL</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __UINT64_C(c) c ## ULL</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 整数类型的范围 */</span></span><br><span class="line"><span class="comment">/* 有符号整数类型的最小值：-2^(N-1)，其中最小负数“-2^(N-1) = 100...0(二进制数)”没有对应正数，其反数还是自己 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT8_MIN  (-128)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT16_MIN (-32767-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT32_MIN (-2147483647-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT64_MIN (-__INT64_C(9223372036854775807)-1)</span></span><br><span class="line"><span class="comment">/* 有符号整数类型的最大值：2^(N-1)-1 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT8_MAX  (127)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT16_MAX (32767)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT32_MAX (2147483647)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT64_MAX (__INT64_C(9223372036854775807))</span></span><br><span class="line"><span class="comment">/* 无符号整数类型的最大值：2^(N-1)-1，注意有“Min = -MAX - 1” */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT8_MAX  (255)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT16_MAX (65535)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT32_MAX (4294967295U)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT64_MAX (__UINT64_C(18446744073709551615))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 有符号最小类型的最小值 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_LEAST8_MIN  (-128)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_LEAST16_MIN (-32767-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_LEAST32_MIN (-2147483647-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_LEAST64_MIN (-__INT64_C(9223372036854775807)-1)</span></span><br><span class="line"><span class="comment">/* 有符号最小类型的最大值 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_LEAST8_MAX  (127)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_LEAST16_MAX (32767)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_LEAST32_MAX (2147483647)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_LEAST64_MAX (__INT64_C(9223372036854775807))</span></span><br><span class="line"><span class="comment">/* 无符号最小类型的最大值 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT_LEAST8_MAX  (255)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT_LEAST16_MAX (65535)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT_LEAST32_MAX (4294967295U)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT_LEAST64_MAX (__UINT64_C(18446744073709551615))</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST8_MIN (-128) <span class="comment">/* 有符号快速类型的最小值 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST16_MIN (-9223372036854775807L-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST32_MIN (-9223372036854775807L-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST16_MIN (-2147483647-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST32_MIN (-2147483647-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST64_MIN (-__INT64_C(9223372036854775807)-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST8_MAX (127) <span class="comment">/* 有符号快速类型的最大值 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST16_MAX (9223372036854775807L)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST32_MAX (9223372036854775807L)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST16_MAX (2147483647)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST32_MAX (2147483647)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT_FAST64_MAX (__INT64_C(9223372036854775807))</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT_FAST8_MAX (255) <span class="comment">/* 无符号快速类型的最大值 */</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT_FAST16_MAX (18446744073709551615UL)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT_FAST32_MAX (18446744073709551615UL)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT_FAST16_MAX (4294967295U)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT_FAST32_MAX (4294967295U)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT_FAST64_MAX (__UINT64_C(18446744073709551615))</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64 <span class="comment">/* 指针类型(持有“void *”型指针)的范围 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INTPTR_MIN  (-9223372036854775807L-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INTPTR_MAX  (9223372036854775807L)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINTPTR_MAX (18446744073709551615UL)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INTPTR_MIN  (-2147483647-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INTPTR_MAX  (2147483647)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINTPTR_MAX (4294967295U)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INTMAX_MIN  (-__INT64_C(9223372036854775807)-1) <span class="comment">/* 有符号最大类型的最小值 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INTMAX_MAX  (__INT64_C(9223372036854775807)) <span class="comment">/* 符号最大类型的最大值 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINTMAX_MAX (__UINT64_C(18446744073709551615)) <span class="comment">/* 无符号最大类型的最大值 */</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 其他整数类型的范围 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64 <span class="comment">/* ptrdiff_t类型的范围 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PTRDIFF_MIN (-9223372036854775807L-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PTRDIFF_MAX (9223372036854775807L)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PTRDIFF_MIN (-2147483647-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PTRDIFF_MAX (2147483647)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* sig_atomic_t类型的范围 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIG_ATOMIC_MIN (-2147483647-1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIG_ATOMIC_MAX (2147483647)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64 <span class="comment">/* size_t类型的范围 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIZE_MAX (18446744073709551615UL)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIZE_MAX (4294967295U)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> WCHAR_MIN <span class="comment">/* wchar_t类型的范围 */</span></span></span><br><span class="line"><span class="comment">/* 这些常量可能在&lt;wchar.h&gt;也定义了 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> WCHAR_MIN __WCHAR_MIN</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> WCHAR_MAX __WCHAR_MAX</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="comment">/* wint_t类型的范围 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> WINT_MIN (0u)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> WINT_MAX (4294967295u)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* C++ &amp;&amp; limit macros */</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* ISO C99标准指出，在C++实现中这些宏应该只在被请求到的时候才定义 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> !defined __cplusplus || defined __STDC_CONSTANT_MACROS</span></span><br><span class="line"><span class="comment">/* 有符号  */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT8_C(c)  c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT16_C(c) c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT32_C(c) c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT64_C(c) c ## L</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INT64_C(c) c ## LL</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 无符号 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT8_C(c)  c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT16_C(c) c</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT32_C(c) c ## U</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT64_C(c) c ## UL</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINT64_C(c) c ## ULL</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 最大类型 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INTMAX_C(c)  c ## L</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINTMAX_C(c) c ## UL</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INTMAX_C(c)  c ## LL</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UINTMAX_C(c) c ## ULL</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* C++ &amp;&amp; constant macros */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* stdint.h */</span></span></span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="扩展整数类型stdint-h和inttypes-h"><a href="#扩展整数类型stdint-h和inttypes-h" class="headerlink" title="扩展整数类型stdint.h和inttypes.h"></a>扩展整数类型stdint.h和inttypes.h</h3><p>&emsp;&emsp;C语言的基本精神是让实现选择标准类型的长度，但是这种指导思想使可移植代码难以编写。C99中引入了<code>stdint.h</code>和<code>inttypes.h</code>，对整数类型的定义和格式转换进行了规范。这种扩展整数类型的定义非常清晰，从类型名字上就可以看出它的长度，这有利于编写可移植的代码。<code>stint.h</code>对整数类型进行定义，<code>inttypes.h</code>包含了<code>stdint.h</code>，并增加了可移植的格式控制串和转换函数。<br>&emsp;&emsp;<code>stdint.h</code>定义标准的扩展整数类型，包括准确长度类型<code>intN_t</code>、最小长度类型<code>int_leastN_t</code>、快速长度类型<code>int_fastN_t</code>、指针长度类型<code>intptr_t</code>、最大长度类型<code>intmax_t</code>(N为类型宽度)。定义规则如下所示：</p>
-<ul>
-<li>类型的长度用宽度N参数化，如<code>intN_t</code>，N常常为8、16、32和64。</li>
-<li>若要定义某种类型，则该类型的带符号和无符号类型、类型长度都要定义。如果定义<code>int32_t</code>，则有<code>uint32_t</code>类型。</li>
-<li>要用<code>...MIN</code>和<code>...MAX</code>宏定义类型的范围。如<code>INT32_MIN</code>、<code>INT32_MAX</code>和<code>UINT32_MAX</code>。</li>
-<li>在<code>inttypes.h</code>要用<code>PRIcKN</code>和<code>SCNcKN</code>定义打印该类型的printf和scanf格式控制字符串。c表示转换操作符，有d、i、o、u、x或X；K表示种类，为空或者LEAST、FAST、PTR或MAX；N是该类型的宽度。</li>
-</ul>
-<p>&emsp;&emsp;具体解释如下所示：</p>
-<ul>
-<li>准确长度类型：具有准确长度，没有填充位，在<code>stdint.h</code>是可选的。类型<code>intN_t</code>、<code>uintN_t</code>，范围<code>INTN_MIN</code>、<code>INTN_MAX</code>、<code>UINTN_MAX</code>，<code>inttypes.h</code>中的控制字符串<code>PRIcN</code>、<code>SCNcN</code>。</li>
-<li><p>最小长度类型：具有指定长度的最小类型，至少要对<code>N = 8、16、32、64</code>定义这些类型。宏<code>INTN_C</code>(constant)、<code>UINTN_C</code>(constant)用于把传进来的常数扩展成相应类型的常量(即在后面加常量修饰符，如<code>U</code>、<code>L</code>、<code>LL</code>和<code>ULL</code>)。</p>
-</li>
-<li><p>快速长度类型：具有指定最小长度的最快类型(总是当前计算机CPU最佳操作的整型类型)。至少要对<code>N = 8、16、32、64</code>定义这些类型。</p>
-</li>
-<li>指针长度类型：<code>intptr_t</code>、<code>uintptr_t</code>分别是带符号和无符号整数类型，可以放置任何对象指针。范围是<code>INTPTR_MIN</code>、<code>INTPTR_MAX</code>、<code>UINTPTR_MAX</code>。</li>
-<li>最大长度类型：<code>intmax_t</code>、<code>uintmax_t</code>分别是最大带符号和无符号整数类型，所有C语言实现都要定义。宏<code>INTMAX_C</code>、<code>UINTMAX_C</code>用于把传进来的常数扩展成相应类型的常量。</li>
-</ul>
-<p>&emsp;&emsp;GNU实现中，各种扩展整数类型与我们通常使用的整数类型长度一致，即8位使用char类型，16位使用sort类型，32位使用int类型，64位在64位平台使用long类型，在32位平台上使用<code>long long</code>类型，注意32平台上的long一般和int一样大。只有快速类型有点区别，在32位平台上，16位和32位快速类型均使用int(这样才能快速地按字寻址)，64位快速类型使用<code>long long</code>；在64位平台上，16位、32位和64位快速类型均使用long。最大类型与字长度一致，指针类型也与字长度一致。<br>&emsp;&emsp;<code>ptrdiff_t</code>、<code>size_t</code>、<code>wchar_t</code>、<code>wint_t</code>与<code>sig_atomic_t</code>类型的范围也在<code>stdint.h</code>中定义，有<code>PTRDIFF_MIN/PTRDIFF_MAX</code>、<code>SIZE_MAX</code>、<code>WCHAR_MIN/WCHAR_MAX</code>、<code>WINT_MIN/WINT_MAX</code>、<code>SIG_ATOMIC_MIN/SIG_ATOMIC_MAX</code>。在32位平台的GNU实现中，<code>ptrdiff_t</code>一般为int类型(在64位平台上则为long类型)，<code>size_t</code>为<code>unsigned int</code>类型(在64位平台上则为<code>unsigned long</code>类型)，<code>wchar_t</code>一般为int类型，<code>wint_t</code>一般为<code>unsigned int</code>类型，<code>sig_atomic_t</code>通常为int类型。<br>&emsp;&emsp;<code>inttypes.h</code>定义扩展整数类型的printf和scanf格式控制字符串，用于实现可移植的格式化输出或输入。还定义了一些与<code>stdlib.h</code>中对应的基本算术函数和转换函数。imaxabs和imaxdiv函数类似于<code>stdlib.h</code>中的abs和div函数，<code>imaxabs(x)</code>返回最大类型整数x的绝对值，<code>imaxdiv(n, d)</code>计算最大类型整数的除法<code>n/d</code>，得出的商和余数分别放在<code>imaxdiv_t</code>结构的quot和rem成员中。strtoimax和strtoumax函数将字符串转换成最大类型的整数，与<code>stdlib.h</code>中的strtol和strtoul类似。wcstoimax和wcstoumax函数将宽字符串转换成最大类型的整数，与<code>wchar.h</code>中的wcstol和wcstoul类似。代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* ISO C99: 7.8 整数类型的格式转换&lt;inttypes.h&gt; */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _INTTYPES_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _INTTYPES_H 1</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;features.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt; /* 获取类型定义 */</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 获取wchar_t的定义，但我们自己不能定义 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> ____gwchar_t_defined</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __cplusplus</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __gwchar_t wchar_t</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">elif</span> defined __WCHAR_TYPE__</span></span><br><span class="line"><span class="keyword">typedef</span> __WCHAR_TYPE__ <span class="keyword">__gwchar_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __need_wchar_t</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stddef.h&gt;</span></span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">wchar_t</span> <span class="keyword">__gwchar_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ____gwchar_t_defined 1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* ISO C99标准指出，这些宏应该只在被请求到的时候才定义 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> !defined __cplusplus || defined __STDC_FORMAT_MACROS</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __PRI64_PREFIX  <span class="meta-string">"l"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __PRIPTR_PREFIX <span class="meta-string">"l"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __PRI64_PREFIX <span class="meta-string">"ll"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __PRIPTR_PREFIX</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 表示输出格式控制串的宏 */</span></span><br><span class="line"><span class="comment">/* 十进制格式 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRId8  <span class="meta-string">"d"</span> <span class="comment">/* 表示8位准确类型的输出格式控制串 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRId16 <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRId32 <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRId64 __PRI64_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIdLEAST8  <span class="meta-string">"d"</span> <span class="comment">/* 表示8位最小类型的输出格式控制串 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIdLEAST16 <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIdLEAST32 <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIdLEAST64 __PRI64_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIdFAST8 <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIdFAST16 __PRIPTR_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIdFAST32 __PRIPTR_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIdFAST64 __PRI64_PREFIX  <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIi8  <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIi16 <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIi32 <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIi64 __PRI64_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIiLEAST8  <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIiLEAST16 <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIiLEAST32 <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIiLEAST64 __PRI64_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIiFAST8 <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIiFAST16 __PRIPTR_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIiFAST32 __PRIPTR_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIiFAST64 __PRI64_PREFIX  <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="comment">/* 八进制格式 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIo8  <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIo16 <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIo32 <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIo64 __PRI64_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIoLEAST8  <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIoLEAST16 <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIoLEAST32 <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIoLEAST64 __PRI64_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIoFAST8  <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIoFAST16 __PRIPTR_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIoFAST32 __PRIPTR_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIoFAST64 __PRI64_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="comment">/* 无符号整数格式 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIu8  <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIu16 <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIu32 <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIu64 __PRI64_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIuLEAST8  <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIuLEAST16 <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIuLEAST32 <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIuLEAST64 __PRI64_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIuFAST8  <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIuFAST16 __PRIPTR_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIuFAST32 __PRIPTR_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIuFAST64 __PRI64_PREFIX  <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="comment">/* 小写十六进制格式 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIx8  <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIx16 <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIx32 <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIx64 __PRI64_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIxLEAST8  <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIxLEAST16 <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIxLEAST32 <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIxLEAST64 __PRI64_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIxFAST8 <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIxFAST16 __PRIPTR_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIxFAST32 __PRIPTR_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIxFAST64 __PRI64_PREFIX  <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="comment">/* 大写十六进制格式 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIX8  <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIX16 <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIX32 <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIX64 __PRI64_PREFIX <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIXLEAST8  <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIXLEAST16 <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIXLEAST32 <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIXLEAST64 __PRI64_PREFIX <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIXFAST8 <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIXFAST16 __PRIPTR_PREFIX <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIXFAST32 __PRIPTR_PREFIX <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIXFAST64 __PRI64_PREFIX  <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="comment">/* 打印intmax_t和uintmax_t的格式宏 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIdMAX __PRI64_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIiMAX __PRI64_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIoMAX __PRI64_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIuMAX __PRI64_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIxMAX __PRI64_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIXMAX __PRI64_PREFIX <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="comment">/* 打印intptr_t和uintptr_t的格式宏 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIdPTR __PRIPTR_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIiPTR __PRIPTR_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIoPTR __PRIPTR_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIuPTR __PRIPTR_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIxPTR __PRIPTR_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PRIXPTR __PRIPTR_PREFIX <span class="meta-string">"X"</span></span></span><br><span class="line"><span class="comment">/* 表示输入格式控制串的宏 */</span></span><br><span class="line"><span class="comment">/* 有符号十进格式 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNd8  <span class="meta-string">"hhd"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNd16 <span class="meta-string">"hd"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNd32 <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNd64 __PRI64_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNdLEAST8  <span class="meta-string">"hhd"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNdLEAST16 <span class="meta-string">"hd"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNdLEAST32 <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNdLEAST64 __PRI64_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNdFAST8 <span class="meta-string">"hhd"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNdFAST16 __PRIPTR_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNdFAST32 __PRIPTR_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNdFAST64 __PRI64_PREFIX  <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="comment">/* 有符号十进制格式 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNi8  <span class="meta-string">"hhi"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNi16 <span class="meta-string">"hi"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNi32 <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNi64 __PRI64_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNiLEAST8  <span class="meta-string">"hhi"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNiLEAST16 <span class="meta-string">"hi"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNiLEAST32 <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNiLEAST64 __PRI64_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNiFAST8 <span class="meta-string">"hhi"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNiFAST16 __PRIPTR_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNiFAST32 __PRIPTR_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNiFAST64 __PRI64_PREFIX  <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="comment">/* 无符号十进制格式 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNu8  <span class="meta-string">"hhu"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNu16 <span class="meta-string">"hu"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNu32 <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNu64 __PRI64_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNuLEAST8  <span class="meta-string">"hhu"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNuLEAST16 <span class="meta-string">"hu"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNuLEAST32 <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNuLEAST64 __PRI64_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNuFAST8 <span class="meta-string">"hhu"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNuFAST16 __PRIPTR_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNuFAST32 __PRIPTR_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNuFAST64 __PRI64_PREFIX  <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="comment">/* 八进制格式 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNo8  <span class="meta-string">"hho"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNo16 <span class="meta-string">"ho"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNo32 <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNo64 __PRI64_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNoLEAST8  <span class="meta-string">"hho"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNoLEAST16 <span class="meta-string">"ho"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNoLEAST32 <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNoLEAST64 __PRI64_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNoFAST8 <span class="meta-string">"hho"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNoFAST16 __PRIPTR_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNoFAST32 __PRIPTR_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNoFAST64 __PRI64_PREFIX  <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="comment">/* 十六进制格式 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNx8  <span class="meta-string">"hhx"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNx16 <span class="meta-string">"hx"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNx32 <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNx64 __PRI64_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNxLEAST8  <span class="meta-string">"hhx"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNxLEAST16 <span class="meta-string">"hx"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNxLEAST32 <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNxLEAST64 __PRI64_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNxFAST8  <span class="meta-string">"hhx"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNxFAST16 __PRIPTR_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNxFAST32 __PRIPTR_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNxFAST64 __PRI64_PREFIX  <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="comment">/* 输入intmax_t和uintmax_t的格式宏 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNdMAX __PRI64_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNiMAX __PRI64_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNoMAX __PRI64_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNuMAX __PRI64_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNxMAX __PRI64_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="comment">/* 输入intptr_t和uintptr_t的格式宏 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNdPTR __PRIPTR_PREFIX <span class="meta-string">"d"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNiPTR __PRIPTR_PREFIX <span class="meta-string">"i"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNoPTR __PRIPTR_PREFIX <span class="meta-string">"o"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNuPTR __PRIPTR_PREFIX <span class="meta-string">"u"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCNxPTR __PRIPTR_PREFIX <span class="meta-string">"x"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* C++ &amp;&amp; format macros */</span></span></span><br><span class="line"></span><br><span class="line">__BEGIN_DECLS</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> __WORDSIZE == 64</span></span><br><span class="line"><span class="comment">/* 64位平台 */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span> <span class="comment">/* 我们要使用ldiv_t来定义uintmax_t */</span></span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">int</span> quot; <span class="comment">/* 商 */</span></span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">int</span> rem; <span class="comment">/* 余数 */</span></span><br><span class="line">&#125; <span class="keyword">imaxdiv_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span> <span class="comment">/* 32位平台 */</span></span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span> <span class="comment">/* 我们要使用lldiv_t来定义uintmax_t */</span></span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> quot; <span class="comment">/* 商 */</span></span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> <span class="keyword">int</span> rem; <span class="comment">/* 余数 */</span></span><br><span class="line">&#125; <span class="keyword">imaxdiv_t</span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">extern</span> intmax_t <span class="title">imaxabs</span> <span class="params">( <span class="keyword">intmax_t</span> __n )</span> __THROW __<span class="title">attribute__</span> <span class="params">( ( __const__ ) )</span></span>; <span class="comment">/* 计算N的绝对值 */</span></span><br><span class="line"><span class="comment">/* 返回NUMER除以DENOM的商和余数，放在imaxdiv_t结构中 */</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> imaxdiv_t <span class="title">imaxdiv</span> <span class="params">( <span class="keyword">intmax_t</span> __numer, <span class="keyword">intmax_t</span> __denom )</span></span></span><br><span class="line"><span class="function">__THROW __<span class="title">attribute__</span> <span class="params">( ( __const__ ) )</span></span>;</span><br><span class="line"><span class="comment">/* 与strtol类似，但转换成intmax_t */</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> intmax_t <span class="title">strtoimax</span> <span class="params">( __const <span class="keyword">char</span>* __restrict __nptr, <span class="keyword">char</span>** __restrict __endptr, <span class="keyword">int</span> __base )</span> __THROW</span>;</span><br><span class="line"><span class="comment">/* 与strtoul类似，但转换成uintmax_t */</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> uintmax_t <span class="title">strtoumax</span> <span class="params">( __const <span class="keyword">char</span>* __restrict __nptr, <span class="keyword">char</span>** __restrict __endptr, <span class="keyword">int</span> __base )</span> __THROW</span>;</span><br><span class="line"><span class="comment">/* 与wcstol类似，但转换成intmax_t */</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> intmax_t <span class="title">wcstoimax</span> <span class="params">( __const <span class="keyword">__gwchar_t</span>* __restrict __nptr, <span class="keyword">__gwchar_t</span>** __restrict __endptr, <span class="keyword">int</span> __base )</span></span></span><br><span class="line"><span class="function">__THROW</span>;</span><br><span class="line"><span class="comment">/* 与wcstoul类似，但转换成uintmax_t */</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> uintmax_t <span class="title">wcstoumax</span> <span class="params">( __const <span class="keyword">__gwchar_t</span>* __restrict __nptr, <span class="keyword">__gwchar_t</span>** __restrict __endptr, <span class="keyword">int</span> __base )</span></span></span><br><span class="line"><span class="function">__THROW</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 下面是GNU的扩展：是上面4个标准转换函数的外部内联版本，有64位平台和32位平台之分 */</span></span><br><span class="line">__END_DECLS</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* inttypes.h */</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;注意，对于<code>inttypes.h</code>和<code>stdlib.h</code>中的绝对值函数和除法运算函数很容易实现，编译器通常把它们当作内部函数(标准C中允许这样做)，因此在glibc中并没有这些函数的源代码。<br>&emsp;&emsp;strtoimax和strtoumax函数将字符串转换成<code>intmax_t</code>类型的整数，一个为有符号，一个为无符号，其实现都是调用内部函数来完成的，如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* strtoimax.c：将字符串转换成最大整数类型 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;inttypes.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">intmax_t</span> strtoimax ( <span class="keyword">const</span> <span class="keyword">char</span>* __restrict nptr, <span class="keyword">char</span>** __restrict endptr, <span class="keyword">int</span> base ) &#123;</span><br><span class="line">    <span class="keyword">return</span> __strtoll_internal ( nptr, endptr, base, <span class="number">0</span> );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* strtoumax.c：将字符串转换成无符号的最大整数类型 */</span></span><br><span class="line"><span class="keyword">uintmax_t</span> strtoumax ( <span class="keyword">const</span> <span class="keyword">char</span>* __restrict nptr, <span class="keyword">char</span>** __restrict endptr, <span class="keyword">int</span> base ) &#123;</span><br><span class="line">    <span class="keyword">return</span> __strtoull_internal ( nptr, endptr, base, <span class="number">0</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;wcstoimax和wcstoumax函数将宽字符串转换成<code>intmax_t</code>类型的整数，一个为有符号，一个为无符号，其实现也都是调用内部函数来完成的，如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* wcstoimax将宽字符串转换成最大整数类型 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;inttypes.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;wchar.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">intmax_t</span> wcstoimax ( <span class="keyword">const</span> <span class="keyword">wchar_t</span>* __restrict nptr, <span class="keyword">wchar_t</span>** __restrict endptr, <span class="keyword">int</span> base ) &#123;</span><br><span class="line">    <span class="keyword">return</span> __wcstoll_internal ( nptr, endptr, base, <span class="number">0</span> );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* wcstoumax将宽字符串转换成无符号的最大整数类型 */</span></span><br><span class="line"><span class="keyword">uintmax_t</span> wcstoumax ( <span class="keyword">const</span> <span class="keyword">wchar_t</span>* __restrict nptr, <span class="keyword">wchar_t</span>** __restrict endptr, <span class="keyword">int</span> base ) &#123;</span><br><span class="line">    <span class="keyword">return</span> __wcstoull_internal ( nptr, endptr, base, <span class="number">0</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/13/C语言语法详解/printf输出/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="暴徒">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/13/C语言语法详解/printf输出/" itemprop="url">printf输出</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-13T15:32:18+08:00">
-                2018-12-13
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/k346k346/article/details/52252626" target="_blank" rel="noopener">printf详解之终极无惑</a>，内容经过测试和修改，感谢原作者。</p>
-<h3 id="printf输出格式"><a href="#printf输出格式" class="headerlink" title="printf输出格式"></a>printf输出格式</h3><p>&emsp;&emsp;printf格式控制如下所示：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">% - 0 m.n l或h 格式字符</span><br></pre></td></tr></table></figure>
-<p>下面对组成格式的各项进行说明：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>格式</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>%</code></td>
-<td>表示格式说明的起始符号，不可缺少</td>
-</tr>
-<tr>
-<td><code>-</code></td>
-<td>有<code>-</code>表示左对齐输出，如果省略表示右对齐输出</td>
-</tr>
-<tr>
-<td><code>0</code></td>
-<td>有<code>0</code>表示指定空位填0，如果省略表示指定空位不填</td>
-</tr>
-<tr>
-<td><code>m.n</code></td>
-<td><code>m</code>指域宽，即对应的输出项在输出设备上所占的字符数；<code>n</code>指精度，用于说明输出的实型数的小数位数。未指定n时，隐含的精度为<code>n = 6</code>位</td>
-</tr>
-<tr>
-<td><code>l</code>或<code>h</code></td>
-<td><code>l</code>对整型指long型，对实型指double型；<code>h</code>用于将整型的格式字符修正为short型</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>举例如下：</p>
-<ul>
-<li><code>%-md</code>：左对齐，若m比实际少时，按实际输出。</li>
-<li><code>%m.ns</code>：输出m位，取字符串(左起)n位，左补空格。当<code>n &gt; m</code>或<code>m省略</code>时，<code>m = n</code>(e.g. <code>%7.2s</code>输入<code>CHINA</code>，输出<code>(5个空格)CH</code>。</li>
-<li><code>%m.nf</code>：输出浮点数，m为宽度，n为小数点右边数位。</li>
-</ul>
-<p>&emsp;&emsp;格式字符如下所示：<br>&emsp;&emsp;1. <code>d格式</code>：用来输出十进制整数。有以下几种用法：</p>
-<ul>
-<li><code>%d</code>：按整型数据的实际长度输出。</li>
-<li><code>%md</code>：m为指定的输出字段的宽度。如果数据的位数小于m，则左端补以空格；若大于m，则按实际位数输出。</li>
-<li><code>%ld</code>：输出长整型数据。</li>
-</ul>
-<p>&emsp;&emsp;2. <code>o格式</code>：以无符号八进制形式输出整数。对长整型可以用<code>%lo</code>格式输出，可以用<code>%mo</code>格式指定输出字段宽度。例如：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">-1</span>;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%d, %o"</span>, a, a );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果为<code>-1,177777</code>。<code>-1</code>在内存单元中(以补码形式存放)为2(<code>1111111111111111</code>)，转换为八进制数为8(<code>177777</code>)。<br>&emsp;&emsp;3. <code>x格式</code>或<code>%X</code>：以无符号十六进制形式输出整数。对长整型可以用<code>%lx</code>格式输出，可以用<code>%mx</code>格式指定输出字段宽度。<br>&emsp;&emsp;4. <code>u格式</code>：以无符号十进制形式输出整数。对长整型可以用<code>%lu</code>格式输出，可以用<code>%mu</code>格式输出指定字段宽度。<br>&emsp;&emsp;5. <code>c格式</code>：输出一个字符。<br>&emsp;&emsp;6. <code>s格式</code>：用来输出一个字符串。有如下几种用法：</p>
-<ul>
-<li><code>%s</code>：例如<code>printf(&quot;%s&quot;, &quot;CHINA&quot;)</code>输出<code>CHINA</code>字符串(不包括双引号)。</li>
-<li><code>%ms</code>：输出的字符串占m列，如字符串本身长度大于m，则突破获m的限制，将字符串全部输出。若串长小于m，则左补空格。</li>
-<li><code>%-ms</code>：如果串长小于m，则在m列范围内，字符串向左靠，右补空格。</li>
-<li><code>%m.ns</code>：输出占m列，但只取字符串中左端n个字符。这n个字符输出在m列的右侧，左补空格。注意，如果n未指定，默认为0。</li>
-<li><code>%-m.ns</code>：其中m、n含义同上，n个字符输出在m列范围的左侧，右补空格。如果<code>n &gt; m</code>，则自动取n值，即保证n个字符正常输出。注意，如果n未指定，默认为0。如果是<code>sprintf(desc, &quot;%m.ns&quot;, sour)</code>，假如desc空间够的话，会在<code>%m.ns</code>串的结尾自动补<code>nul</code>字符，不同于strncpy。例如<code>sprintf(desc, &quot;%.3s&quot;, &quot;123456&quot;)</code>，如果desc空间大于4字节的话，第4个字节将是<code>nul</code>字符。</li>
-</ul>
-<p>&emsp;&emsp;7. <code>f格式</code>：用来输出实数(包括单、双精度)，以小数形式输出。有以下几种用法：</p>
-<ul>
-<li><code>%f</code>：不指定宽度，整数部分全部输出并输出6位小数。</li>
-<li><code>%m.nf</code>：输出共占m列，其中有n位小数，如果数值宽度小于m，则左端补空格。</li>
-<li><code>%-m.nf</code>：输出共占n列，其中有n位小数，如果数值宽度小于m，则右端补空格。</li>
-</ul>
-<p>&emsp;&emsp;8. <code>e格式</code>或<code>%E</code>：以指数形式输出实数。有以下几种用法：</p>
-<ul>
-<li><code>%e</code>：数字部分(又称尾数)输出6位小数，指数部分占5位或4位。</li>
-<li><code>%m.ne</code>和<code>%-m.ne</code>：<code>m</code>、<code>n</code>和<code>-</code>字符含义与前面相同。此处n指数据的数字部分的小数位数，m表示整个输出数据所占的宽度。</li>
-</ul>
-<p>&emsp;&emsp;9. <code>g格式</code>或<code>%G</code>：自动选f格式或e格式中较短的一种输出，且不输出无意义的零。</p>
-<h3 id="printf输出数字补0"><a href="#printf输出数字补0" class="headerlink" title="printf输出数字补0"></a>printf输出数字补0</h3><p>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">4</span>;</span><br><span class="line"><span class="built_in">printf</span> ( <span class="string">"%03d"</span>, a );</span><br></pre></td></tr></table></figure>
-<p>输出<code>004</code>。也可以用<code>*</code>代替位数，在后面的参数列表中用变量控制输出位数：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">4</span>;</span><br><span class="line"><span class="keyword">int</span> n = <span class="number">3</span>;</span><br><span class="line"><span class="built_in">printf</span> ( <span class="string">"%0*d"</span>, n, a );</span><br></pre></td></tr></table></figure>
-<p>输出<code>004</code>。</p>
-<h3 id="printf格式化short类型"><a href="#printf格式化short类型" class="headerlink" title="printf格式化short类型"></a>printf格式化short类型</h3><p>&emsp;&emsp;从printf函数原理来说，函数根据前面的格式字符串来强硬转换后面的参数，比如遇到<code>%d</code>，就表示要将参数强制转换为int型。如果你传入的参数是short型，short型只要两个字节，那么强制转换为int(四个字节)，是不是就会出错呢？你可以试试看，完全没有错。<br>&emsp;&emsp;函数的参数每一个最少要占一个计算机位长(因为参数要压栈)，所以short型参数压栈时已经扩展为四个字节了(32计算机)，所以即使用char型当整数输出也是可以的。例如：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">printf</span> ( <span class="string">"%d"</span>, ( <span class="keyword">short</span> ) <span class="number">90</span> ); <span class="comment">/* 输出90 */</span></span><br><span class="line"><span class="built_in">printf</span> ( <span class="string">"%d"</span>, <span class="string">'Y'</span> ); <span class="comment">/* 输出89 */</span></span><br></pre></td></tr></table></figure>
-<p>其实也可以用<code>%hd</code>来输出short类型。<code>%hd</code>是格式字符串，用于short类型的格式化输入输出，十进制且有符号。<code>h</code>与<code>l</code>相对应，加<code>h</code>修饰用于short系列，加<code>l</code>修饰用于long系列。一般教科书不提<code>%hd</code>，是因为以前int是16位的，与short一样，short用<code>%d</code>就可以了。可是现在int是32位的，应用到16位的short时就必须用<code>%hd</code>了。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1958,7 +1754,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">934</span>
+                  <span class="site-state-item-count">939</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
