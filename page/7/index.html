@@ -271,6 +271,571 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/12/CC2530和zigbee笔记/OpenWrt实现6Lowpan边缘路由器/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/12/CC2530和zigbee笔记/OpenWrt实现6Lowpan边缘路由器/" itemprop="url">OpenWrt实现6Lowpan边缘路由器</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-12T11:48:09+08:00">
+                2019-03-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>OpenWrt</code>是一个功能强大的开源路由器<code>linux</code>系统，用户可以很方便地对其进行定制和优化。<code>6Lowpan</code>是当前无线传感器网络研究的热门领域，通过对<code>IPv6</code>数据包头进行压缩、解压缩，以及在<code>IP</code>层从添加适用于无线自组网的路由协议<code>RPL</code>，实现了在无线传感器网络中也能直接使用<code>IPv6</code>协议。目前支持<code>6Lowpan</code>协议的开源系统有<code>Contiki</code>和<code>Tinyos</code>，本文使用的是<code>Contki</code>。边缘路由器是指将局域网汇接到广域互联网的一种路由设备。本文实现了将运行<code>OpenWrt</code>系统的路由器增加对<code>6Lowpan</code>的支持，使其成为<code>6Lowpan</code>网络的边缘路由器，最终实现传感器网络节点能够直接访问<code>IPv6</code>互联网。<br>&emsp;&emsp;硬件使用的是<code>TP-link</code>的路由器，具体型号为<code>703N</code>。黑色天线是后来<code>DIY</code>上去的，硬件也改为<code>8M</code>的<code>FLASH</code>和<code>64M</code>的<code>RAM</code>。由于需要安装<code>Python</code>，<code>8M</code>的<code>FLASH</code>还是不够，因此通过<code>USB-Hub</code>连接了一个<code>U</code>盘，把需要安装的软件都装在<code>U</code>盘上。运行<code>Contiki</code>系统的<code>USB</code>小板如下，这个小板上面的两个芯片分别是<code>CC2530</code>无线单片机、型号为<code>CP210x</code>的<code>USB</code>转串口芯片。</p>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/OpenWrt实现6Lowpan边缘路由器/1.png"></p>
+<p>&emsp;&emsp;移植<code>contiki</code>内核完成后，还要添加<code>border-router.c</code>和<code>slip-bridge.c</code>文件，为当前工程添加边缘路由器功能。该节点将成为<code>6Lowpan</code>网络中的根节点，接管其他所有无线传感器网络中向外部发送的<code>IP</code>数据包，并通过串口方式传递给边缘路由器。将程序烧写至<code>USB</code>小板，然后将其连接至电脑<code>USB</code>口，并打开串口调试助手。此时应该可以看到节点开始不停地打印<code>?P</code>，用来向边缘路由器请求网络地址的前缀信息。<br>&emsp;&emsp;先将路由器连接上网络，把<code>USB</code>无线小板也连接到路由器上。通过<code>ssh</code>登录到路由，使用<code>opkg</code>安装所需的软件包：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">opkg update</span><br><span class="line">opkg install kmod-usb-serial-cp210x kmod-ipv6 kmod-tun tunslip6</span><br></pre></td></tr></table></figure>
+<p>安装完毕后，应该就能在<code>/dev/</code>目录下看到<code>ttyUSB0</code>这个设备，说明<code>USB</code>小板已经成功被系统识别为串口了。<br>&emsp;&emsp;<code>tunslip6</code>程序就是用来打通<code>6Lowpan</code>无线传感器网络与真实广域网的桥梁。在运行时，该程序创建一个虚拟网卡<code>tun0</code>，并打开串口利用<code>slip</code>协议与<code>USB</code>小板通信。<code>tunslip6</code>做的事情实际上很简单，即<code>tun0 ip packet &lt;--&gt; serial data packet</code>，把从根节点发过来的数据包进行解包，写入到<code>tun</code>网卡。如果<code>tun</code>网卡接收到了外界的数据包，则把该数据包发送到串口上。在<code>shell</code>上运行如下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tunslip6 aaaa::1/64 -s /dev/ttyUSB0 -B 57600</span><br></pre></td></tr></table></figure>
+<p>该命令为虚拟网口指定网络前缀、相关设备以及串口波特率。成功运行后，<code>USB</code>小板会自动被分配到<code>aaaa::/64</code>的网络地址前缀，根据<code>64</code>位<code>mac</code>地址形成小板的全球唯一的<code>128</code>位<code>IPv6</code>地址。此时<code>shell</code>被<code>tunslip6</code>占用了，不能继续输入。打开另一个终端，输入<code>ifconfig</code>，查看<code>tun</code>网卡是否成功生成：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">tun0 Link encap:UNSPEC HWaddr <span class="number">00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span><span class="number">-00</span></span><br><span class="line">inet6 addr: aaaa::<span class="number">1</span>/<span class="number">64</span> Scope:Global</span><br><span class="line">UP POINTOPOINT RUNNING NOARP MULTICAST MTU:<span class="number">1500</span> Metric:<span class="number">1</span></span><br><span class="line">RX packets:<span class="number">0</span> errors:<span class="number">0</span> dropped:<span class="number">0</span> overruns:<span class="number">0</span> frame:<span class="number">0</span></span><br><span class="line">TX packets:<span class="number">2</span> errors:<span class="number">0</span> dropped:<span class="number">0</span> overruns:<span class="number">0</span> carrier:<span class="number">0</span></span><br><span class="line">collisions:<span class="number">0</span> txqueuelen:<span class="number">500</span></span><br><span class="line">RX bytes:<span class="number">0</span> (<span class="number">0.0</span> B) TX bytes:<span class="number">152</span> (<span class="number">152.0</span> B)</span><br></pre></td></tr></table></figure>
+<p>由于小板的<code>mac</code>地址固化成<code>0x0000000000000001</code>，结合刚才已经设置的<code>aaaa::/64</code>前缀，则小板的<code>IPv6</code>地址应该是<code>aaaa::200:0:0:1</code>，然后对小板进行<code>ping</code>测试。<br>&emsp;&emsp;最后一个问题，无线网里的设备怎么访问外部的<code>ipv6</code>网络？要让无线节点也能直接访问互联网，其实仅仅按照前面的方法搭建起边缘路由器是不够的，有细心的读者会发现我设置<code>tunslip6</code>的时候用的前缀是<code>aaaa::</code>，其实这个前缀是随便填的，因为我这里的网络没有<code>ipv6</code>的环境，无法在路由上获得<code>ipv6</code>地址。如果有<code>ipv6</code>网络支持，并且通过网络管理员获得了一个全球唯一可识别的地址前缀，那么把这个前缀设置给<code>tunslip6</code>，应该就可以使无线传感网的节点具有获得访问互联网的能力。</p>
+<hr>
+<h3 id="通过OpenWrt路由器访问6LowPAN网络"><a href="#通过OpenWrt路由器访问6LowPAN网络" class="headerlink" title="通过OpenWrt路由器访问6LowPAN网络"></a>通过OpenWrt路由器访问6LowPAN网络</h3><p>&emsp;&emsp;现在假设你已经有一个安装好<code>OpenWrt</code>并且带有<code>USB</code>口的无线路由器，那么就把你电脑的网口和路由器的<code>LAN</code>相连，<code>border router</code>节点和路由器的<code>USB</code>口相连。<br>&emsp;&emsp;1. 把你电脑的以太网<code>IP</code>地址设置成<code>192.168.1.100</code>(主要在<code>192.168.1</code>这个网段即可)，不要设默认网关，这样做的好处是如果你用的是笔记本的话，你依然可以通过<code>wifi</code>连上<code>Internet</code>。<br>&emsp;&emsp;2. 使用<code>putty</code>登录到<code>Openwrt</code>路由器，其地址是<code>192.168.1.1</code>，默认用户名是<code>root</code>，密码是<code>admin</code>，并确认安装了以下软件包：</p>
+<ul>
+<li><code>kmod-ipv6</code></li>
+<li><code>kmod-slip</code></li>
+<li><code>kmod-tun</code></li>
+<li><code>kmod-usb-core</code></li>
+<li><code>kmod-usb-serial-cp210x</code> (根据边界路由器使用的芯片进行选择)</li>
+<li><code>kmod-usb-serial</code></li>
+<li><code>kmod-usb2</code></li>
+<li><code>libusb</code></li>
+<li><code>radvd</code></li>
+<li><code>tunslip6</code></li>
+</ul>
+<p>&emsp;&emsp;3. 配置<code>lan</code>口<code>IPv6</code>地址，该地址和后面<code>radvd</code>的配置有关，这里用的是<code>2001:1::1/64</code>。输入<code>vi /etc/config/network</code>修改<code>network</code>的配置文件，只需要找到<code>lan</code>那部分，并添加<code>IPv6</code>地址即可：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">config interface        'lan'</span><br><span class="line">    option type         'bridge'</span><br><span class="line">    option ifname       'eth1.0'</span><br><span class="line">    option proto        'static'</span><br><span class="line">    option ipaddr       '192.168.1.1'</span><br><span class="line">    option netmask      '255.255.255.0'</span><br><span class="line">    option nat          '1'</span><br><span class="line">    option defaultroute '0'</span><br><span class="line">    option peerdns      '0'</span><br><span class="line">    option ip6addr      '2001:1::1/64'</span><br></pre></td></tr></table></figure>
+<p>除了最后一句外，其它配置不要改动，否则会导致<code>OpenWrt</code>路由器无法访问。配置保存后，需要通过<code>/etc/init.d/network restart</code>指令来使配置生效。<br>&emsp;&emsp;4. 启动<code>slip</code>服务。首先通过<code>ls /dev/ttyU*</code>来确认一下<code>border router</code>节点的端口号，一般是<code>/dev/ttyUSB0</code>。然后通过下面的语句启动<code>tunslip6</code>程序，该程序会把<code>border router</code>节点虚拟成<code>tun0</code>网卡：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tunslip6 aaaa::1/64 -B 38400 -s /dev/ttyUSB0</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;5. 配置<code>radvd</code>服务。<code>Radvd</code>是<code>ipv6</code>中的路由宣告服务，只有它工作正常了，才能让电脑知道怎么去访问<code>Contiki</code>节点，否则电脑没有去节点的路由。这时需要使用<code>putty</code>打开另外一个控制台，登陆后输入<code>vi /etc/config/radvd</code>进行编辑。修改后的文件内容如下，这里的<code>2001:1::/64</code>要与前面配置的<code>lan</code>口地址相对应：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">config interface</span><br><span class="line">    option interface          'tun0'</span><br><span class="line">    option ignore             0</span><br><span class="line">    option AdvSendAdvert      1</span><br><span class="line">    option AdvLinkMTU         1280</span><br><span class="line">    option AdvCurHopLimit     128</span><br><span class="line">    option AdvReachableTime   360000</span><br><span class="line">    option MinRtrAdvInterval  100</span><br><span class="line">    option MaxRtrAdvInterval  150</span><br><span class="line">    option AdvDefaultLifetime 200</span><br><span class="line">​</span><br><span class="line">config prefix</span><br><span class="line">    option interface            'tun0'</span><br><span class="line">    list prefix                 'aaaa::/64'</span><br><span class="line">    option AdvOnLink            1</span><br><span class="line">    option AdvAutonomous        1</span><br><span class="line">    option AdvPreferredLifetime 4294967295</span><br><span class="line">    option AdvValidLifetime     4294967295</span><br><span class="line">    option ignore               0</span><br><span class="line">​</span><br><span class="line">config rdnss</span><br><span class="line">    option interface 'tun0'</span><br><span class="line">    list   addr      ''</span><br><span class="line">    option ignore    1</span><br><span class="line">​</span><br><span class="line">config interface</span><br><span class="line">    option interface             'lan'</span><br><span class="line">    option AdvSendAdvert         1</span><br><span class="line">    option AdvManagedFlag        0</span><br><span class="line">    option AdvOtherConfigFlag    0</span><br><span class="line">    option ignore                0</span><br><span class="line">    option MinRtrAdvInterval     5</span><br><span class="line">    option MaxRtrAdvInterval     10</span><br><span class="line">    option AdvDefaultPreference  low</span><br><span class="line">​</span><br><span class="line">config prefix</span><br><span class="line">    option interface     'lan'</span><br><span class="line">    option prefix        '2001:1::/64'</span><br><span class="line">    option AdvOnLink     1</span><br><span class="line">    option AdvAutonomous 1</span><br><span class="line">    option AdvRouterAddr 1</span><br><span class="line">    option ignore        0</span><br><span class="line">​</span><br><span class="line">config route</span><br><span class="line">    option interface 'lan'</span><br><span class="line">    list prefix      ''</span><br><span class="line">    option ignore    1</span><br><span class="line">​</span><br><span class="line">config dnssl</span><br><span class="line">    option interface 'lan'</span><br><span class="line">    list suffix      ''</span><br><span class="line">    option ignore    1</span><br></pre></td></tr></table></figure>
+<p>配置保存后，需要使用<code>/etc/init.d/radvd restart</code>来使配置生效。如果没有问题的话，此时你的电脑应该可以<code>ping</code>通地址<code>aaaa::1</code>了，当然也能<code>ping</code>通其它<code>6LowPan</code>节点。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/12/CC2530和zigbee笔记/IEEE 802.15.4地址变为IPv6地址/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/12/CC2530和zigbee笔记/IEEE 802.15.4地址变为IPv6地址/" itemprop="url">IEEE 802.15.4地址变为IPv6地址</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-12T09:58:01+08:00">
+                2019-03-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="MAC48地址变为IPv6地址"><a href="#MAC48地址变为IPv6地址" class="headerlink" title="MAC48地址变为IPv6地址"></a>MAC48地址变为IPv6地址</h3><p>&emsp;&emsp;在<code>IPv6</code>中，有一种称为无状态自动配置的机制，它可以使用<code>EUI-64</code>地址来自动配置<code>IPv6</code>地址。<code>EUI-64</code>格式即扩展唯一标识符，相当于<code>MAC48</code>地址。所谓无状态自动配置是指在网络中没有<code>DHCP</code>服务器的情况下，允许节点自行配置<code>IPv6</code>地址的机制。<br>&emsp;&emsp;工作原理：自动将<code>48bit</code>的以太网<code>MAC</code>地址扩展成<code>64bit</code>，再挂在一个<code>64bit</code>的前缀后面，组成一个<code>IPv6</code>地址，步骤共有三步：</p>
+<ol>
+<li>将<code>48</code>位的<code>MAC</code>地址从中间分开，插入一个固定数值<code>FFFE</code>(<code>16</code>进制)。</li>
+<li>将第<code>7</code>个比特位反转，如果原来是<code>0</code>就变为<code>1</code>，如果原来是<code>1</code>就变为<code>0</code>。</li>
+<li>加上<code>64</code>位的网络前缀，这就是一个完整的<code>IPv6</code>地址。</li>
+</ol>
+<p>&emsp;&emsp;反转原因：在<code>MAC</code>地址中，第<code>7</code>比特为<code>1</code>表示本地管理，为<code>0</code>表示全球管理；在<code>EUI-64</code>格式中，第<code>7</code>位为<code>1</code>表示全球唯一，为<code>0</code>表示本地唯一。</p>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/IEEE 802.15.4地址变为IPv6地址/1.png" height="294" width="445"></p>
+<p align="center" style="color:green">图1 IPv6和EUI-64地址变化</p>
+
+<p>&emsp;&emsp;1. 原<code>MAC48</code>地址为<code>39-A7-94-07-CB-D0</code>，从中间断开插入<code>FF-FE</code>，变为<code>39-A7-94-FF-FE-07-CB-D0</code>。<br>&emsp;&emsp;2. 第<code>7</code>个比特反转(从左往右数)，变为<code>3B-A7-94-FF-FE-07-CB-D0</code>。<br>&emsp;&emsp;3. 加入网络前缀。若前缀为链路本地地址，则网络前缀为<code>FE-80-00-00-00-00</code>。<code>IPv6</code>地址最终为<code>FE-80-00-00-00-00-00-00-3B-A7-94-FF-FE-07-CB-D0</code>，可简写为<code>FE80::3BA7:94FF:FE07:CBD0</code>。</p>
+<h3 id="IEEE-802-15-4地址变为IPv6地址"><a href="#IEEE-802-15-4地址变为IPv6地址" class="headerlink" title="IEEE 802.15.4地址变为IPv6地址"></a>IEEE 802.15.4地址变为IPv6地址</h3><p>&emsp;&emsp;<code>CC2530</code>符合<code>IEEE 802.15.4</code>标准，在出厂时便有一个<code>IEEE</code>地址。<code>IEEE 802.15.4</code>地址共有<code>8</code>字节(<code>IEEE 802.15.4</code>分为长地址<code>8</code>字节和短地址<code>2</code>字节)。由于<code>CC2530</code>的<code>IEEE</code>地址共有<code>8</code>字节，扩展<code>IPv6</code>地址时便可省略上文提到的步骤<code>1</code>，只执行步骤<code>2</code>和步骤<code>3</code>即可。<br>&emsp;&emsp;使用<code>SmartRF Flash Programmer</code>便可获得<code>CC2530</code>地址，通过<code>CC2530</code>仿真器连接<code>CC2530</code>目标板即可。此时<code>CC2530</code>的<code>IEEE</code>地址为<code>00-12-4B-00-02-6E-7D-AA</code>，那么链路本地地址为<code>FE-80-00-00-00-00-00-00-02-12-4B-00-02-6E-7D-AA</code>，请注意<code>IEEE</code>地址的首字节<code>00</code>被翻转为<code>02</code>，可简写为<code>FE80::212:4B00:26E:7DAA</code>。</p>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/IEEE 802.15.4地址变为IPv6地址/2.jpg" height="251" width="288"></p>
+<p align="center" style="color:green">图2 CC2530的IEEE地址</p>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/12/CC2530和zigbee笔记/Contiki协议栈框架/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/12/CC2530和zigbee笔记/Contiki协议栈框架/" itemprop="url">Contiki协议栈框架</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-12T09:25:02+08:00">
+                2019-03-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="协议栈总体框架"><a href="#协议栈总体框架" class="headerlink" title="协议栈总体框架"></a>协议栈总体框架</h3><p>&emsp;&emsp;<code>Contiki</code>系统为了支持多种硬件平台和软件协议设计了如图<code>1.1</code>所示的层次框架，通过<code>contiki-conf.h</code>的宏定义，用户可以灵活地选择协议类型：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NETSTACK_CONF_NETWORK rime_driver</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NETSTACK_CONF_MAC     csma_driver</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NETSTACK_CONF_RDC     cxmac_driver</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NETSTACK_CONF_RADIO   sx1278_radio_driver</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NETSTACK_CONF_FRAMER  framer_nullmac</span></span><br></pre></td></tr></table></figure>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/Contiki协议栈框架/1.png"></p>
+<p align="center" style="color:green">图1.1 协议栈层次</p>
+
+<p>&emsp;&emsp;<code>Contiki V2.7</code>支持的各层次协议类别如图<code>1.2</code>所示。其中<code>NETSTACK_MAC</code>是一个概念层次，真正处理<code>MAC</code>逻辑是由<code>NETSTACK_RDC</code>(<code>Radio Duty Cycling</code>)完成的；而<code>NETSTACK_RADIO</code>层支持射频驱动，用户可以自由扩展。</p>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/Contiki协议栈框架/2.png" height="207" width="419"></p>
+<p align="center" style="color:green">图1.2 Contiki V2.7支持的协议类型</p>
+
+<h3 id="收发Radio-Packet的调用与时序"><a href="#收发Radio-Packet的调用与时序" class="headerlink" title="收发Radio Packet的调用与时序"></a>收发Radio Packet的调用与时序</h3><h4 id="接收Radio-Packet"><a href="#接收Radio-Packet" class="headerlink" title="接收Radio Packet"></a>接收Radio Packet</h4><p>&emsp;&emsp;图<code>2.1</code>显示了接收<code>Radio Packet</code>的调用逻辑与时序。当射频硬件接收到数据包时，<code>ISR</code>通知<code>rf_process</code>，<code>rf_process</code>自底向顶调用：<code>RDC -&gt; MAC -&gt; NETWORK</code>协议栈的接收函数，最后将数据包提交给应用程序绑定的进程。</p>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/Contiki协议栈框架/3.png"></p>
+<p align="center" style="color:green">图2.1 接收Radio Packet</p>
+
+<h4 id="发送Radio-Packet"><a href="#发送Radio-Packet" class="headerlink" title="发送Radio Packet"></a>发送Radio Packet</h4><p>&emsp;&emsp;如图<code>2.2</code>所举例，<code>process_i</code>需要发送<code>abc</code>(<code>Anonymous best-effort local area Broad Cast</code>)数据包，进程自顶向底调用：<code>MAC -&gt; RDC -&gt; RADIO</code>协议栈的发送函数，最后通过射频硬件以无线电方式传输。</p>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/Contiki协议栈框架/4.png"></p>
+<p align="center" style="color:green">图2.2 发送Radio Packet</p>
+
+<h4 id="CSMA-Carrier-Sense-Multiple-Access-协议原理"><a href="#CSMA-Carrier-Sense-Multiple-Access-协议原理" class="headerlink" title="CSMA(Carrier Sense Multiple Access)协议原理"></a>CSMA(Carrier Sense Multiple Access)协议原理</h4><p>&emsp;&emsp;<code>CSMA</code>协议提供相对可靠的<code>MAC</code>层传输，每次调用<code>RDC</code>层发送数据包后，它根据反馈信息判断是否需要缓存并重传该数据包。<br>&emsp;&emsp;<code>CSMA</code>的关键数据结构如图<code>3.1</code>所示。<code>struct neighbor_queue</code>根据不同的接收地址缓存数据包；<code>struct rdc_buf_list</code>将同一个接收地址的不同<code>PACKETBUF_ATTR_MAC_SEQNO</code>的数据包进行链接；<code>struct queuebuf</code>保存需要重传的数据包头和数据实体；<code>struct qbuf_metadata</code>存储回调函数指针等信息。</p>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/Contiki协议栈框架/5.png"></p>
+<p align="center" style="color:green">图3.1 csma关键数据结构</p>
+
+<p>&emsp;&emsp;<code>CSMA</code>根据<code>RDC</code>层发送数据包的反馈信息选择相应逻辑动作：</p>
+<ul>
+<li><code>MAC_TX_OK</code>：发送成功，回收缓存数据结构和善后工作；</li>
+<li><code>MAC_TX_NOACK</code>：启动<code>ctimer</code>，随机延时后重传，直到发送次数超过<code>MAX</code>；</li>
+<li><code>MAC_TX_COLLISION</code>：继续重传，且发送次数不受限。</li>
+</ul>
+<p>&emsp;&emsp;一个<code>CSMA</code>的典型时序如图<code>3.2</code>所示，当<code>RDC</code>层发送完数据包后，<code>CSMA</code>的回调函数<code>packet_sent</code>根据发送结果选择动作(见上面逻辑描述)。如果需要重传，则根据重传次数选择一个随机时间设置<code>ctimer</code>，当<code>ctimer</code>定时器超时后再次发送该缓存的数据包。</p>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/Contiki协议栈框架/6.png"></p>
+<p align="center" style="color:green">图3.2 csma逻辑与时序</p>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/12/CC2530和zigbee笔记/Contiki的rtimer定时器/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/12/CC2530和zigbee笔记/Contiki的rtimer定时器/" itemprop="url">Contiki的rtimer定时器</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-12T00:11:16+08:00">
+                2019-03-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="rtimer用途"><a href="#rtimer用途" class="headerlink" title="rtimer用途"></a>rtimer用途</h3><p>&emsp;&emsp;<code>Contiki</code>系统引入<code>rtimer</code>可以满足精准定时的需要，一些对时间极为敏感的模块(如<code>MAC</code>协议)依赖于<code>rtimer</code>。和<code>etimer</code>的粗粒度(常见为<code>100Hz</code>)不同，<code>rtimer</code>是细粒度(常见为<code>10kHz</code>)定时器。根据经验，细粒度定时器如果中断频繁特别容易消耗<code>CPU</code>资源，为此<code>Contiki</code>设计<code>rtimer</code>时尽可能地减少中断，大部分应用场合为读取定时器计数值。</p>
+<h3 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h3><p>&emsp;&emsp;<code>Rtimer</code>的数据结构如图<code>1</code>所示，<code>time</code>赋值为下一次定时器超时中断的时刻点，<code>func</code>是定时器超时中断的回调函数，<code>ptr</code>是传递给回调函数的数据指针。</p>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/Contiki的rtimer定时器/1.png"></p>
+<p align="center" style="color:green">图1 rtimer数据结构</p>
+
+<p>&emsp;&emsp;从图<code>1</code>发现，<code>rtimer</code>没有用常见的<code>next</code>指针来挂接后续节点。<code>Contiki</code>为了减少<code>rtimer</code>中断的爆发，只能挂接一个<code>rtimer</code>结构，如图<code>2</code>所示。如果同时挂接<code>2</code>个或以上的<code>rtimer</code>结构，那么最新挂接的有效，其它的<code>rtimer</code>结构将丢失，即图<code>3</code>的解释。</p>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/Contiki的rtimer定时器/2.png"></p>
+<p align="center" style="color:green">图2 只能插入一个rtimer</p>
+
+<p><img src="/2019/03/12/CC2530和zigbee笔记/Contiki的rtimer定时器/3.png"></p>
+<p align="center" style="color:green">图3 挂接2个rtimer时有1个丢失</p>
+
+<h3 id="rtimer中断时序"><a href="#rtimer中断时序" class="headerlink" title="rtimer中断时序"></a>rtimer中断时序</h3><p>&emsp;&emsp;图<code>4</code>展示了<code>rtimer</code>的中断时序，当调用<code>rtimer_arch_schedule</code>时，它设置<code>rtimer</code>定时器的中断间隔时长<code>timeout</code>，中断服务程序<code>rtimer_irq_handler</code>会调用<code>rtimer-&gt;callback</code>回调函数。<br>&emsp;&emsp;需要特别注意<code>2</code>点：中断只允许发生一次，即<code>rtimer_arch_schedule</code>使能中断，而<code>rtimer_irq_handler</code>禁止中断；<code>rtimer-&gt;callback</code>是在中断状态下运行，特别注意防止竞态错误。例如，调用<code>process_poll</code>合法，调用<code>process_post</code>非法。</p>
+<p><img src="/2019/03/12/CC2530和zigbee笔记/Contiki的rtimer定时器/4.png"></p>
+<p align="center" style="color:green">图4 rtimer中断时序</p>
+
+<h3 id="rtimer移植"><a href="#rtimer移植" class="headerlink" title="rtimer移植"></a>rtimer移植</h3><p>&emsp;&emsp;有了上述<code>rtimer</code>的理论，再来移植<code>rtimer</code>就比较容易了，即基于<code>MCU</code>实现<code>rtimer-arch.c</code>和<code>rtimer-arch.h</code>。<br>&emsp;&emsp;需要特别注意，大多数定时器(尤其是<code>8</code>位<code>MCU</code>)位宽为<code>16</code>位，即<code>MAX = 65535</code>，而<code>MAC</code>协议往往需要<code>1</code>秒以上的定时周期，因此<code>rtimer</code>的频率必须小于<code>30kHz</code>。一个比较好的数值是<code>10kHz</code>，它既可以保证比较好的精度(间隔为<code>100us</code>)，又具备<code>6.5</code>秒的满量程，这可以适应大多数的应用需要。<br>&emsp;&emsp;另外，大多数应用需要随机撤销和重启动<code>rtimer</code>，它可以通过添加<code>2</code>个函数来实现：<code>rtimer_arch_disable_irq</code>和<code>rtimer_arch_enable_irq</code>。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/11/CC2530和zigbee笔记/OSAL原理/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1626,819 +2191,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/10/外语/日语五十音图/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/10/外语/日语五十音图/" itemprop="url">日语五十音图</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-10T13:39:23+08:00">
-                2019-03-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/外语/" itemprop="url" rel="index">
-                    <span itemprop="name">外语</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="日语五十音"><a href="#日语五十音" class="headerlink" title="日语五十音"></a>日语五十音</h3><div class="table-container">
-<table>
-<thead>
-<tr>
-<th>あ段</th>
-<th>い段</th>
-<th>う段</th>
-<th>え段</th>
-<th>お段</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>あ ア a</td>
-<td>い イ i</td>
-<td>う ウ u</td>
-<td>え エ e</td>
-<td>お オ o</td>
-</tr>
-<tr>
-<td>か カ ka</td>
-<td>き キ ki</td>
-<td>く ク ku</td>
-<td>け ケ ke</td>
-<td>こ コ ko</td>
-</tr>
-<tr>
-<td>さ サ sa</td>
-<td>し シ shi</td>
-<td>す ス su</td>
-<td>せ セ se</td>
-<td>そ ソ so</td>
-</tr>
-<tr>
-<td>た タ ta</td>
-<td>ち チ chi</td>
-<td>つ ツ tsu</td>
-<td>て テ te</td>
-<td>と ト to</td>
-</tr>
-<tr>
-<td>な ナ na</td>
-<td>に ニ ni</td>
-<td>ぬ ヌ nu</td>
-<td>ね ネ ne</td>
-<td>の ノ no</td>
-</tr>
-<tr>
-<td>は ハ ha</td>
-<td>ひ ヒ hi</td>
-<td>ふ フ fu</td>
-<td>へ ヘ he</td>
-<td>ほ ホ ho</td>
-</tr>
-<tr>
-<td>ま マ ma</td>
-<td>み ミ mi</td>
-<td>む ム mu</td>
-<td>め メ me</td>
-<td>も モ mo</td>
-</tr>
-<tr>
-<td>や ヤ ya</td>
-<td></td>
-<td>ゆ ユ yu</td>
-<td></td>
-<td>よ ヨ yo</td>
-</tr>
-<tr>
-<td>ら ラ ra</td>
-<td>り リ ri</td>
-<td>る ル ru</td>
-<td>れ レ re</td>
-<td>ろ ロ ro</td>
-</tr>
-<tr>
-<td>わ ワ wa</td>
-<td></td>
-<td></td>
-<td></td>
-<td>を ヲ o</td>
-</tr>
-<tr>
-<td>ん ン n</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>が ガ ga</td>
-<td>ぎ ギ gi</td>
-<td>ぐ グ gu</td>
-<td>げ ゲ ge</td>
-<td>ご ゴ go</td>
-</tr>
-<tr>
-<td>ざ ザ za</td>
-<td>じ ジ ji</td>
-<td>ず ズ zu</td>
-<td>ぜ ゼ ze</td>
-<td>ぞ ゾ zo</td>
-</tr>
-<tr>
-<td>だ ダ da</td>
-<td>ぢ ヂ ji</td>
-<td>づ ヅ zu</td>
-<td>で デ de</td>
-<td>ど ド do</td>
-</tr>
-<tr>
-<td>ば バ ba</td>
-<td>び ビ bi</td>
-<td>ぶ ブ bu</td>
-<td>べ ベ be</td>
-<td>ぼ ボ bo</td>
-</tr>
-<tr>
-<td>ぱ パ pa</td>
-<td>ぴ ピ pi</td>
-<td>ぷ プ pu</td>
-<td>ぺ ペ pe</td>
-<td>ぽ ポ po</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>あ段</th>
-<th>う段</th>
-<th>お段</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>きゃ キャ kya</td>
-<td>きゅ キュ kyu</td>
-<td>きょ キョ kyo</td>
-</tr>
-<tr>
-<td>しゃ シャ sya</td>
-<td>しゅ シュ syu</td>
-<td>しょ ショ syo</td>
-</tr>
-<tr>
-<td>ちゃ チャ cya</td>
-<td>ちゅ チュ cyu</td>
-<td>ちょ チョ cyo</td>
-</tr>
-<tr>
-<td>にゃ ニャ nya</td>
-<td>にゅ ニュ nyu</td>
-<td>にょ ニョ nyo</td>
-</tr>
-<tr>
-<td>ひゃ ヒャ hya</td>
-<td>ひゅ ヒュ hyu</td>
-<td>ひょ ヒョ hyo</td>
-</tr>
-<tr>
-<td>みゃ ミャ mya</td>
-<td>みゅ ミュ myu</td>
-<td>みょ ミョ myo</td>
-</tr>
-<tr>
-<td>りゃ リャ rya</td>
-<td>りゅ リュ ryu</td>
-<td>りょ リョ ryo</td>
-</tr>
-<tr>
-<td>ぎゃ ギャ gya</td>
-<td>ぎゅ ギュ gyu</td>
-<td>ぎょ ギョ gyo</td>
-</tr>
-<tr>
-<td>じゃ ジャ ja</td>
-<td>じゅ ジュ ju</td>
-<td>じょ ジョ jo</td>
-</tr>
-<tr>
-<td>びゃ ビャ bya</td>
-<td>びゅ ビュ byu</td>
-<td>びょ ビョ byo</td>
-</tr>
-<tr>
-<td>ぴゃ ピャ pya</td>
-<td>ぴゅ ピュ pyu</td>
-<td>ぴょ ピョ pyo</td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="日语罗马音输入"><a href="#日语罗马音输入" class="headerlink" title="日语罗马音输入"></a>日语罗马音输入</h3><ol>
-<li><code>っ</code>(促音)：假名的罗马字发音的第一个辅音双打，例如<code>ちょっと</code>为<code>chotto</code>。</li>
-<li><code>ん</code>：输入为<code>nn</code>，例如<code>にほん</code>为<code>nihonn</code>。</li>
-<li>小写的<code>あ</code>、<code>い</code>、<code>う</code>、<code>え</code>、<code>お</code>用<code>la</code>、<code>li</code>、<code>lu</code>、<code>le</code>和<code>lo</code>。</li>
-<li>一些特殊单词的拼写：<code>ウォ</code>为<code>who</code>，<code>ティ</code>为<code>thi</code>，<code>ディ</code>是<code>dhi</code>。</li>
-<li><code>ウォークマン</code>中的<code>ー</code>就是<code>-</code>号键。</li>
-</ol>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/08/HTML笔记/网站添加favicon.ico/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/08/HTML笔记/网站添加favicon.ico/" itemprop="url">网站添加favicon.ico</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-08T10:49:06+08:00">
-                2019-03-08
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>favicon.ico</code>图标是网站的缩略标志，可以显示在浏览器标签、地址栏左边和收藏夹。它是展示网站个性的缩略<code>logo</code>标志，也可以说是网站头像。<br>&emsp;&emsp;准备一张长宽一样的图片，然后打开在线工具<code>aTool</code>(<code>http://www.atool.org/ico.php</code>)生成<code>ico</code>图标。点击选择文件，可以浏览你刚刚生成的宽高相同的图片。选择生成的图片尺寸大小，建议采用<code>32 * 32</code>的大小。点击<code>生成favicon.ico图标</code>按钮，即可结束。<br>&emsp;&emsp;点击<code>保存</code>链接即可将图片另存到本地磁盘，然后将文件重命名为<code>favicon.ico</code>，放到网站的根目录，强烈建议放在根目录。然后在网站的每一个页面的<code>head</code>标签内加入如下两行代码。清空浏览器缓存，刷新网页网址即可看到网站的图标。</p>
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">head</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">link</span> <span class="attr">rel</span>=<span class="string">"shortcut icon"</span> <span class="attr">href</span>=<span class="string">"/favicon.ico"</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">link</span> <span class="attr">rel</span>=<span class="string">"bookmark"</span> <span class="attr">href</span>=<span class="string">"/favicon.ico"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">head</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<strong>补充说明</strong>：在线转换之前一定要转换成长宽相等的图片，否则转换成<code>ico</code>之后，图片会被拉伸或者压缩。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/07/HTML笔记/content-type和MIME TYPE/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/07/HTML笔记/content-type和MIME TYPE/" itemprop="url">content-type和MIME TYPE</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-07T19:35:57+08:00">
-                2019-03-07
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;首先，我们要了解浏览器是如何处理内容的。在浏览器中显示的内容有<code>HTML</code>、<code>XML</code>、<code>GIF</code>等，那么浏览器是如何区分它们，决定以什么形式来显示呢？答案是<code>MIME Type</code>，也就是该资源的媒体类型。<br>&emsp;&emsp;媒体类型通常是通过<code>HTTP</code>协议，由<code>Web</code>服务器告知浏览器的，更准确地说，是通过<code>Content-Type</code>来表示的。例如<code>Content-Type: text/HTML</code>表示内容是<code>text/HTML</code>类型，也就是超文本文件。<br>&emsp;&emsp;通常只有一些在互联网上获得广泛应用的格式才会获得一个<code>MIME Type</code>，如果是某个客户端自己定义的格式，一般只能以<code>application/x-</code>开头。<code>XHTML</code>正是一个获得广泛应用的格式。因此在<code>RFC 3236</code>中，说明了<code>XHTML</code>格式文件的<code>MIME Type</code>应该是<code>application/xHTML+XML</code>。<br>&emsp;&emsp;在把输出结果传送到浏览器上时，浏览器必须启动适当的应用程序来处理这个输出文档。这可以通过多种类型<code>MIME</code>(多功能网际邮件扩充协议)来完成。在<code>HTTP</code>中，<code>MIME</code>类型被定义在<code>Content-Type header</code>中。<br>&emsp;&emsp;假如你要传送一个<code>Microsoft Excel</code>文件到客户端，那么这时的<code>MIME</code>类型就是<code>application/vnd.ms-excel</code>。在大多数实际情况中，这个文件然后将传送给<code>Execl</code>来处理(假设我们设定<code>Execl</code>为处理特殊<code>MIME</code>类型的应用程序)。</p>
-<h3 id="多媒体文件格式MIME"><a href="#多媒体文件格式MIME" class="headerlink" title="多媒体文件格式MIME"></a>多媒体文件格式MIME</h3><p>&emsp;&emsp;最早的<code>HTTP</code>协议并没有附加的数据类型信息，所有传送的数据都被客户程序解释为超文本标记语言<code>HTML</code>文档。为了支持多媒体数据类型，<code>HTTP</code>协议中就使用了附加在文档之前的<code>MIME</code>数据类型信息来标识数据类型。<br>&emsp;&emsp;<code>MIME</code>设计的最初目的是为了在发送电子邮件时附加多媒体数据，让邮件客户程序能根据其类型进行处理。当它被<code>HTTP</code>协议支持之后，它的意义就更为显著了，它使得<code>HTTP</code>传输的不仅是普通的文本。<br>&emsp;&emsp;每个<code>MIME</code>类型由两部分组成，前面是数据的大类别，例如声音<code>audio</code>、图像<code>image</code>等，后面定义具体的种类。常见的<code>MIME</code>类型如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>类型</th>
-<th>后缀名</th>
-<th>MIME</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>超文本标记语言文本</td>
-<td><code>.html</code>或<code>.html</code></td>
-<td><code>text/html</code></td>
-</tr>
-<tr>
-<td>普通文本</td>
-<td><code>.txt</code></td>
-<td><code>text/plain</code></td>
-</tr>
-<tr>
-<td><code>RTF</code>文本</td>
-<td><code>.rtf</code></td>
-<td><code>application/rtf</code></td>
-</tr>
-<tr>
-<td><code>GIF</code>图形</td>
-<td><code>.gif</code></td>
-<td><code>image/gif</code></td>
-</tr>
-<tr>
-<td><code>JPEG</code>图形</td>
-<td><code>.jpeg</code>或<code>.jpg</code></td>
-<td><code>image/jpeg</code></td>
-</tr>
-<tr>
-<td><code>au</code>声音文件</td>
-<td><code>.au</code></td>
-<td><code>audio/basic</code></td>
-</tr>
-<tr>
-<td><code>MIDI</code>音乐文件</td>
-<td><code>.mid</code>和<code>.midi</code></td>
-<td><code>audio/midi</code>和<code>audio/x-midi</code></td>
-</tr>
-<tr>
-<td><code>RealAudio</code>音乐文件</td>
-<td><code>.ra</code>和<code>.ram</code></td>
-<td><code>audio/x-pn-realaudio</code></td>
-</tr>
-<tr>
-<td><code>MPEG</code>文件</td>
-<td><code>.mpg</code>和<code>.mpeg</code></td>
-<td><code>video/mpeg</code></td>
-</tr>
-<tr>
-<td><code>AVI</code>文件</td>
-<td><code>.avi</code></td>
-<td><code>video/x-msvideo</code></td>
-</tr>
-<tr>
-<td><code>GZIP</code>文件</td>
-<td><code>.gz</code></td>
-<td><code>application/x-gzip</code></td>
-</tr>
-<tr>
-<td><code>TAR</code>文件</td>
-<td><code>.tar</code></td>
-<td><code>application/x-tar</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>&emsp;&emsp;<code>Internet</code>中有一个专门组织<code>IANA</code>来确认标准的<code>MIME</code>类型，但<code>Internet</code>发展得太快，很多应用程序等不及<code>IANA</code>来确认它们使用的<code>MIME</code>类型为标准类型。因此它们使用在类别中以<code>x-</code>开头的方法标识这个类别还没有成为标准，例如<code>x-gzip</code>、<code>x-tar</code>等。事实上这些类型运用的很广泛，已经成为了事实标准。只要客户机和服务器共同承认这个<code>MIME</code>类型，即使它是不标准的类型也没有关系，客户程序就能根据<code>MIME</code>类型，采用具体的处理手段来处理数据。而<code>Web</code>服务器和浏览器(包括操作系统)中，缺省都设置了标准的和常见的<code>MIME</code>类型，只有对于不常见的<code>MIME</code>类型，才需要同时设置服务器和客户浏览器，以进行识别。<br>&emsp;&emsp;由于<code>MIME</code>类型与文档的后缀相关，因此服务器使用文档的后缀来区分不同文件的<code>MIME</code>类型，服务器中必须定义文档后缀和<code>MIME</code>类型之间的对应关系。而客户程序从服务器上接收数据的时候，它只是从服务器接受数据流，并不了解文档的名字，因此服务器必须使用附加信息来告诉客户程序数据的<code>MIME</code>类型。服务器在发送真正的数据之前，就要先发送标志数据的<code>MIME</code>类型的信息，这个信息使用<code>Content-type</code>关键字进行定义。例如对于<code>HTML</code>文档，服务器将首先发送以下两行<code>MIME</code>标识信息，这个标识并不是真正的数据文件的一部分。</p>
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Content-type: text/html</span><br><span class="line">(空行)</span><br></pre></td></tr></table></figure>
-<p>注意第二行为一个空行，这是必须的。使用这个空行的目的是将<code>MIME</code>信息与真正的数据内容分隔开。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/07/HTML笔记/URL格式/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/07/HTML笔记/URL格式/" itemprop="url">URL格式</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-07T19:19:42+08:00">
-                2019-03-07
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;在<code>WWW</code>上，每一个信息资源都有在网上唯一的地址，该地址就叫<code>URL</code>(<code>Uniform Resource Locator</code>，统一资源定位符)。<code>URL</code>由三部分组成：资源类型、存放资源的主机域名、资源文件名。其一般语法格式为：</p>
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">protocol://hostname[:port]/path/[;parameters][?query]#fragment (带方括号的为可选项)</span><br></pre></td></tr></table></figure>
-<p>例如：</p>
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://www.imailtone.com:80/WebApplication1/WebForm1.aspx?name=tom&amp;;age=20#resume</span><br></pre></td></tr></table></figure>
-<p>格式说明如下：</p>
-<ul>
-<li><code>protocol</code>：指定使用的传输协议，最常用的是<code>HTTP</code>协议，它也是目前<code>WWW</code>应用最广的协议。</li>
-</ul>
-<ol>
-<li><code>file</code>：资源是本地计算机上的文件，格式为<code>file://</code>。</li>
-<li><code>ftp</code>：通过<code>FTP</code>访问资源，格式为<code>FTP://</code>。</li>
-<li><code>gopher</code>：通过Gopher协议访问该资源。</li>
-<li><code>http</code>：通过<code>HTTP</code>访问该资源，格式为<code>HTTP://</code>。</li>
-<li><code>https</code>：通过<code>HTTPS</code>访问该资源，格式为<code>HTTPS://</code>。</li>
-<li><code>mailto</code>：资源为电子邮件地址，通过<code>SMTP</code>访问，格式为<code>mailto://</code>。</li>
-<li><code>MMS</code>：通过支持<code>MMS</code>(流媒体)协议的播放该资源，代表软件是<code>Windows Media Player</code>，格式为<code>MMS://</code>。</li>
-<li><code>ed2k</code>：通过支持<code>ed2k</code>(专用下载链接)协议的<code>P2P</code>软件访问该资源，代表软件是电驴，格式为<code>ed2k://</code>。</li>
-<li><code>news</code>：通过<code>NNTP</code>访问该资源。</li>
-</ol>
-<ul>
-<li><code>hostname</code>：指存放资源的服务器的域名系统(<code>DNS</code>)主机名或<code>IP</code>地址。在主机名前也可以包含连接到服务器所需的用户名和密码，格式为<code>username@password</code>。</li>
-<li><code>:port</code>：它是一个整数，省略时使用方案的默认端口，各种传输协议都有默认的端口号，如http的默认端口为80。有时候出于安全或其他考虑，可以在服务器上对端口进行重定义，即采用非标准端口号，此时URL中就不能省略端口号这一项。</li>
-<li><code>path</code>：由零或多个<code>/</code>符号隔开的字符串，一般用来表示主机上的一个目录或文件地址。</li>
-<li><code>;parameters</code>：这是用于指定特殊参数的可选项。</li>
-<li><code>?query</code>：可选项，用于给动态网页(如使用<code>CGI</code>、<code>ISAPI</code>、<code>PHP/JSP/ASP/ASP.NET</code>等技术制作的网页)传递参数，可以有多个参数，用<code>&amp;</code>符号隔开，每个参数的名和值用<code>=</code>符号隔开。</li>
-<li><code>fragment</code>：用于指定网络资源中的片断。例如一个网页中有多个名词解释，可使用<code>fragment</code>直接定位到某一名词解释。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/6/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><span class="space">&hellip;</span><a class="page-number" href="/page/94/">94</a><a class="extend next" rel="next" href="/page/8/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/6/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><span class="space">&hellip;</span><a class="page-number" href="/page/95/">95</a><a class="extend next" rel="next" href="/page/8/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2484,7 +2241,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">939</span>
+                  <span class="site-state-item-count">943</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
