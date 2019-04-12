@@ -271,6 +271,742 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Linux系统编程/uname函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/Linux系统编程/uname函数/" itemprop="url">uname函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T14:40:07+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;其功能是获取当前内核名称和其它信息。用法如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/utsname.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">int</span> <span class="title">uname</span> <span class="params">( struct utsname *__name )</span> __THROW</span>;</span><br></pre></td></tr></table></figure>
+<p>参数<code>__name</code>指向存放系统信息的缓冲区，原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">utsname</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> sysname[_UTSNAME_SYSNAME_LENGTH]; <span class="comment">/* 当前操作系统名 */</span></span><br><span class="line">    <span class="keyword">char</span> nodename[_UTSNAME_NODENAME_LENGTH]; <span class="comment">/* 网络上的名称 */</span></span><br><span class="line">    <span class="keyword">char</span> release[_UTSNAME_RELEASE_LENGTH]; <span class="comment">/* 当前发布级别 */</span></span><br><span class="line">    <span class="keyword">char</span> version[_UTSNAME_VERSION_LENGTH]; <span class="comment">/* 当前发布版本 */</span></span><br><span class="line">    <span class="keyword">char</span> machine[_UTSNAME_MACHINE_LENGTH]; <span class="comment">/* 当前硬件体系类型 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> _UTSNAME_DOMAIN_LENGTH - 0</span></span><br><span class="line">    <span class="comment">/* Name of the domain of this node on the network */</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">ifdef</span> __USE_GNU</span></span><br><span class="line">        <span class="keyword">char</span> domainname[_UTSNAME_DOMAIN_LENGTH]; <span class="comment">/* 当前域名 */</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">        <span class="keyword">char</span> __domainname[_UTSNAME_DOMAIN_LENGTH];</span><br><span class="line">    <span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>执行成功返回<code>0</code>，失败返回<code>-1</code>，<code>errno</code>被设为<code>EFAULT</code>，表示<code>buf</code>无效。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/utsname.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">utsname</span> <span class="title">testbuff</span>;</span></span><br><span class="line">    <span class="keyword">int</span> fb = <span class="number">0</span>;</span><br><span class="line">    fb = uname ( &amp;testbuff );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( fb &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">        perror ( <span class="string">"uname"</span> );</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( \</span><br><span class="line">            <span class="string">"sysname: %s\n nodename: %s\n release: %s\n version: %s\n machine: %s\n"</span>, \</span><br><span class="line">            testbuff.sysname, \</span><br><span class="line">            testbuff.nodename, \</span><br><span class="line">            testbuff.release, \</span><br><span class="line">            testbuff.version, \</span><br><span class="line">            testbuff.machine );</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> _UTSNAME_DOMAIN_LENGTH - 0</span></span><br><span class="line">    <span class="meta"># <span class="meta-keyword">ifdef</span> __USE_GNU</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">" domainame: %s\n "</span>, testbuff.domainname );</span><br><span class="line">    <span class="meta"># <span class="meta-keyword">else</span></span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">" __domainame: %s\n "</span>, testbuff.__domainname );</span><br><span class="line">    <span class="meta"># <span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Linux系统编程/current指针/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/Linux系统编程/current指针/" itemprop="url">current指针</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T14:35:53+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>current</code>指针的用法<code>1</code>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/sched.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> __<span class="function">init <span class="title">my_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    printk ( <span class="string">"[kernel init] %s %d\n"</span>, __func__, __LINE__ );</span><br><span class="line">    printk ( <span class="string">"[kernel init] %s %d\n"</span>, current-&gt;comm, current-&gt;pid );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> __<span class="function"><span class="built_in">exit</span> <span class="title">my_exit</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    printk ( <span class="string">"[kernel init] %s %d\n"</span>, __func__, __LINE__ );</span><br><span class="line">    printk ( <span class="string">"[kernel init] %s %d\n"</span>, current-&gt;comm, current-&gt;pid );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">module_init ( my_init );</span><br><span class="line">module_exit ( my_exit );</span><br><span class="line">​</span><br><span class="line">MODULE_LICENSE ( <span class="string">"GPL"</span> );</span><br><span class="line">MODULE_AUTHOR ( <span class="string">"Millet"</span> );</span><br><span class="line">MODULE_VERSION ( <span class="string">"MI 3S"</span> );</span><br><span class="line">MODULE_DESCRIPTION ( <span class="string">"test for thread info"</span> );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>current</code>指针的用法<code>2</code>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/sched.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> __<span class="function">init <span class="title">my_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">thread_info</span> *<span class="title">ti</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">mycurrent</span>;</span></span><br><span class="line">    ti = ( struct thread_info * ) ( ( ( <span class="keyword">unsigned</span> <span class="keyword">long</span> ) &amp;a ) &amp; ( ~<span class="number">0x1fff</span> ) );</span><br><span class="line">    mycurrent = ti-&gt;task;</span><br><span class="line">    printk ( <span class="string">"[*kernel init*] %s %d\n"</span>, mycurrent-&gt;comm, mycurrent-&gt;pid );</span><br><span class="line">    printk ( <span class="string">"[kernel init] %s %d\n"</span>, __func__, __LINE__ );</span><br><span class="line">    printk ( <span class="string">"[kernel init] %s %d\n"</span>, current-&gt;comm, current-&gt;pid );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> __<span class="function"><span class="built_in">exit</span> <span class="title">my_exit</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    printk ( <span class="string">"[kernel init] %s %d\n"</span>, __func__, __LINE__ );</span><br><span class="line">    printk ( <span class="string">"[kernel init] %s %d\n"</span>, current-&gt;comm, current-&gt;pid );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">module_init ( my_init );</span><br><span class="line">module_exit ( my_exit );</span><br><span class="line">​</span><br><span class="line">MODULE_LICENSE ( <span class="string">"GPL"</span> );</span><br><span class="line">MODULE_AUTHOR ( <span class="string">"Millet"</span> );</span><br><span class="line">MODULE_VERSION ( <span class="string">"MI 3S"</span> );</span><br><span class="line">MODULE_DESCRIPTION ( <span class="string">"test for thread info"</span> );</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Linux系统编程/Linux内核链表/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/Linux系统编程/Linux内核链表/" itemprop="url">Linux内核链表</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T14:32:07+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>linux</code>内核链表不是在链表节点中包含数据，而是在数据结构中包含链表节点。其在<code>linux</code>内核中的定义为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">autofs</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> *name;</span><br><span class="line">    <span class="keyword">int</span> len;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">list</span>;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用示例如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"linux/fs.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/slab.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/list.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line">MODULE_LICENSE ( <span class="string">"GPL"</span> );</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">student</span> &#123;</span></span><br><span class="line">    <span class="keyword">char</span> name[<span class="number">100</span>];</span><br><span class="line">    <span class="keyword">int</span> num;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">list</span>;</span></span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">student</span> *<span class="title">pstudent</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">student</span> *<span class="title">tmp_student</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">student_list</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">pos</span>;</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mylist_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    INIT_LIST_HEAD ( &amp;student_list );</span><br><span class="line">    pstudent = kmalloc ( <span class="keyword">sizeof</span> ( struct student ) * <span class="number">5</span>, GFP_KERNEL );</span><br><span class="line">    <span class="built_in">memset</span> ( pstudent, <span class="number">0</span>, <span class="keyword">sizeof</span> ( struct student ) * <span class="number">5</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i++ ) &#123;</span><br><span class="line">        <span class="built_in">sprintf</span> ( pstudent[i].name, <span class="string">"Student%d"</span>, i + <span class="number">1</span> );</span><br><span class="line">        pstudent[i].num = i + <span class="number">1</span>;</span><br><span class="line">        list_add ( &amp; ( pstudent[i].<span class="built_in">list</span> ), &amp;student_list );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    list_for_each ( pos, &amp;student_list ) &#123;</span><br><span class="line">        tmp_student = list_entry ( pos, struct student, <span class="built_in">list</span> );</span><br><span class="line">        printk ( <span class="string">"student %d name: %s\n"</span>, tmp_student-&gt;num, tmp_student-&gt;name );</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">mylist_exit</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i++ ) &#123;</span><br><span class="line">        list_del ( &amp; ( pstudent[i].<span class="built_in">list</span> ) );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    kfree ( pstudent );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">module_init ( mylist_init );</span><br><span class="line">module_exit ( mylist_exit );</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Linux系统编程/isatty函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/Linux系统编程/isatty函数/" itemprop="url">isatty函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T14:29:33+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>isatty</code>主要功能是检查设备类型，判断文件描述词是否是为终端机，其函数原型如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">isatty</span> <span class="params">( <span class="keyword">int</span> desc )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>如果参数<code>desc</code>所代表的文件描述符为一终端机则返回<code>1</code>，否则返回<code>0</code>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;io.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> handle;</span><br><span class="line">    handle = fileno ( <span class="built_in">stdout</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( isatty ( handle ) ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Handle %d is a device type\n"</span>, handle );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Handle %d isn't a device type\n"</span>, handle );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/OSSemCreate函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/ucos和ucgui/OSSemCreate函数/" itemprop="url">OSSemCreate函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T14:20:28+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;信号量在创建时，调用<code>OSSemCreate(INT16U cnt)</code>函数，<code>cnt</code>为信号量的初始值。对<code>cnt</code>赋予不同的值，所起到的作用不同。如果<code>Semp = OSSemCreate(0)</code>，表示该信号量等待一个事件或者多个事件的发生。<br>&emsp;&emsp;如果我们想对一个公共资源进行互斥访问，例如让两个任务<code>Task1</code>和<code>Task2</code>都可以调用<code>Fun</code>函数，但不能同时调用，最好定义<code>Semp = OSSemCreate(1)</code>。在各自的任务中都需要调用<code>OSSemPend(Semp, 0, &amp;err)</code>请求此信号量。如果可用，则调用<code>Fun</code>，然后再调用<code>OSSemPost(Semp)</code>释放该信号量，这样就实现了对一个资源的互斥访问。对于<code>OSSemCreate(1)</code>，如果一个任务中有<code>OSSemPend</code>，那么可以执行，执行之后<code>cnt</code>等于<code>0</code>。其他任务的<code>OSSemPend</code>无法获得<code>sem</code>，只能等待，除非任务一有<code>OSSemPost</code>，使其<code>cnt</code>加<code>1</code>，这样其他任务的<code>OSSemPend</code>可以执行。同理，如果一个任务要等待<code>n</code>个事件发生后才能执行，则应定义为<code>Semp = OSSemCreate(n)</code>，然后在这<code>n</code>个任务分别运行时调用<code>OSSemPost(Semp)</code>，直到这<code>n</code>个事件均发生后，这个任务才能运行。<br>&emsp;&emsp;<code>OSSemCreate(cnt)</code>赋初始值<code>cnt</code>，<code>OSSemPend</code>执行一次，<code>cnt</code>减<code>1</code>一次；<code>OSSemPost</code>执行一次，<code>cnt</code>加<code>1</code>一次。<br>&emsp;&emsp;例子<code>1</code>如下所示(<code>OSSemCreate ( 0 );</code>)：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">OS_EVENT *Fun_Semp;</span><br><span class="line">Fun_Semp = OSSemCreate ( <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span>  <span class="title">MyTask</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        OSSemPend ( Fun_Semp, <span class="number">0</span>, &amp;err ); <span class="comment">/* 请求信号量 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">0</span>, ++y, s1, DISP_BGND_BLACK + DISP_FGND_WHITE );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> ); <span class="comment">/* 等待1秒 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span>  <span class="title">YouTask</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        PC_DispStr ( <span class="number">0</span>, ++y, s2, DISP_BGND_BLACK + DISP_FGND_WHITE );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( YouTaskRun == <span class="number">5</span> ) &#123;</span><br><span class="line">            OSSemPost ( Fun_Semp ); <span class="comment">/* 发送信号量 */</span></span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        YouTaskRun++;</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span> ); <span class="comment">/* 等待2秒 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在上例中，<code>MyTask</code>一直在等待信号量，在信号量没有到来之前无法执行。只有在<code>YouTask</code>运行了<code>5</code>次，<code>YouTaskRun</code>等于<code>5</code>之后，<code>OSSemPost(Fun_Semp)</code>发送信号量，<code>MyTask</code>才得以执行。如果按上例所示，<code>MyTask</code>只能执行一次，因为<code>YouTask</code>以后再也不可能使得<code>YouTaskRun</code>等于<code>5</code>了。<code>MyTask</code>也就因为无法得到信号量而不能运行。<br>&emsp;&emsp;例子<code>2</code>如下所示(<code>OSSemCreate ( 1 );</code>)：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">OS_EVENT *Fun_Semp;</span><br><span class="line">Fun_Semp = OSSemCreate ( <span class="number">1</span> );</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span>  <span class="title">MyTask</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        OSSemPend ( Fun_Semp, <span class="number">0</span>, &amp;err ); <span class="comment">/* 请求信号量 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">0</span>, ++y, s1, DISP_BGND_BLACK + DISP_FGND_WHITE );</span><br><span class="line">        OSSemPost ( Fun_Semp ); <span class="comment">/* 发送信号量 */</span></span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> ); <span class="comment">/* 等待1秒 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span>  <span class="title">YouTask</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        OSSemPend ( Fun_Semp, <span class="number">0</span>, &amp;err ); <span class="comment">/* 请求信号量 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">0</span>, ++y, s2, DISP_BGND_BLACK + DISP_FGND_WHITE );</span><br><span class="line">        OSSemPost ( Fun_Semp ); <span class="comment">/* 发送信号量 */</span></span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span> ); <span class="comment">/* 等待2秒 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在上例中，<code>MyTask</code>、<code>YouTask</code>都在等待信号量，由于<code>MyTask</code>优先级高，首先得到信号量开始执行，此时<code>YouTask</code>还在等待信号量。<code>MyTask</code>执行完毕，<code>OSSemPost(Fun_Semp)</code>发送信号量。<code>YouTask</code>得到信号量运行后发送信号量，如此反复。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/ucos互斥信号量/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/29/ucos和ucgui/ucos互斥信号量/" itemprop="url">ucos互斥信号量</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T13:42:29+08:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;在<code>ucos</code>信号量使用过程中，经常会用到二值信号量。而在二值信号量中，最常用的情况就是互斥信号量。互斥信号是本身是一种二进制信号，具有超出<code>ucos</code>提供的一般信号机制的特性。由于其特殊性，<code>ucos</code>的作者组织了一套关于互斥信号量管理的函数。互斥信号量具有以下特点：解决优先级反转问题、实现对资源的独占式访问(二值信号量)。<br>&emsp;&emsp;在应用程序中，使用互斥信号是为了减少优先级翻转问题。当一个高优先级的任务需要的资源被一个低优先级的任务使用时，就会发生优先级翻转。为了解决该问题，内核可以提升低优先级任务的优先级，先于高优先级的任务运行，释放占用的资源。<br>&emsp;&emsp;例如有三个任务可以使用共同的资源，为了访问这个资源，每个任务必须在互斥信号<code>ResourceMutex上</code>等待(<code>pend</code>)。任务<code>1</code>有最高优先级<code>10</code>，任务<code>2</code>优先级为<code>15</code>，任务<code>3</code>优先级为<code>20</code>。一个没有使用的正好在最高优先级之上的优先级<code>9</code>用来作为优先级继承优先级。如main所示，代码<code>(1)</code>中进行<code>ucos</code>初始化，并通过调用<code>OSMutexCreate</code>在代码<code>(2)</code>中创建了一个互斥信号。需要注意的是，<code>OSMutexCreate</code>函数使用<code>PIP</code>作为参数。然后在代码<code>(3)</code>中创建三个任务，在代码<code>(4)</code>中启动<code>ucos</code>。<br>&emsp;&emsp;假设任务运行了一段时间，在某个时间点，任务<code>3</code>最先访问了共同的资源，并得到了互斥信号。任务<code>3</code>运行了一段时间后被任务<code>1</code>抢占，任务<code>1</code>需要使用这个资源，并通过调用<code>OSMutexPend</code>企图获得互斥信号。这种情况下，<code>OSMutexPend</code>会发现一个高优先级的任务需要这个资源，就会把任务<code>3</code>的优先级提高到<code>9</code>，同时强迫进行上下文切换退回到任务<code>3</code>执行。任务<code>3</code>可以继续执行，然后释放占用的共同资源。任务<code>3</code>通过调用<code>OSMutexPost</code>释放占用的<code>mutex</code>信号，<code>OSMutexPost</code>会发现<code>mutex</code>被一个优先级提升的低优先级任务占有，就会把任务<code>3</code>的优先级返回到<code>20</code>。然后把资源释放给任务<code>1</code>使用，执行上下文切换到任务<code>1</code>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">OS_EVENT *ResourceMutex;</span><br><span class="line">OS_STK TaskPrio10Stk[<span class="number">1000</span>];</span><br><span class="line">OS_STK TaskPrio15Stk[<span class="number">1000</span>];</span><br><span class="line">OS_STK TaskPrio20Stk[<span class="number">1000</span>];</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    INT8U err;</span><br><span class="line">    OSInit(); <span class="comment">/*(1)*/</span></span><br><span class="line">    <span class="comment">/* 应用程序初始化 */</span></span><br><span class="line">    ResourceMutex = OSMutexCreate ( <span class="number">9</span>, &amp;err ); <span class="comment">/* (2) */</span></span><br><span class="line">    OSTaskCreate ( TaskPrio10, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;TaskPrio10Stk[<span class="number">999</span>], <span class="number">10</span> ); <span class="comment">/* (3) */</span></span><br><span class="line">    OSTaskCreate ( TaskPrio15, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;TaskPrio15Stk[<span class="number">999</span>], <span class="number">15</span> );</span><br><span class="line">    OSTaskCreate ( TaskPrio20, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;TaskPrio20Stk[<span class="number">999</span>], <span class="number">20</span> );</span><br><span class="line">    <span class="comment">/* Application Initialization */</span></span><br><span class="line">    OSStart(); <span class="comment">/* (4) */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TaskPrio10</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line">    INT8U err;</span><br><span class="line">    pdata = pdata;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">        OSMutexPend ( ResourceMutex, <span class="number">0</span>, &amp;err );</span><br><span class="line">        <span class="comment">/* 访问共享资源 */</span></span><br><span class="line">        OSMutexPost ( ResourceMutex );</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TaskPrio15</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line">    INT8U err;</span><br><span class="line">    pdata = pdata;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">        OSMutexPend ( ResourceMutex, <span class="number">0</span>, &amp;err );</span><br><span class="line">        <span class="comment">/* 访问共享资源 */</span></span><br><span class="line">        OSMutexPost ( ResourceMutex );</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">TaskPrio20</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line">    INT8U err;</span><br><span class="line">    pdata = pdata;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">        OSMutexPend ( ResourceMutex, <span class="number">0</span>, &amp;err );</span><br><span class="line">        <span class="comment">/* 访问共享资源 */</span></span><br><span class="line">        OSMutexPost ( ResourceMutex );</span><br><span class="line">        <span class="comment">/* 应用程序代码 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>ucos</code>互斥信号包含三个元素，<code>flag</code>表示当前<code>mutex</code>是否能够获得(<code>0</code>或<code>1</code>)；<code>priority</code>表示使用这个<code>mutex</code>的任务，以防止一个高优先级的任务需要访问<code>mutex</code>；还包括一个等待这个<code>mutex</code>的任务列表。为了启动<code>ucos</code>的<code>mutex</code>服务，应该在<code>OS_CFG.H</code>中设置<code>OS_MUTEX_EN</code>为<code>1</code>。在使用一个互斥信号之前应该创建它，创建一个<code>mutex</code>信号通过调用<code>OSMutexCreate</code>完成，<code>mutex</code>的初始值总是设置为<code>1</code>，表示资源可以获得。<br>&emsp;&emsp;<code>ucos</code>提供了六种访问互斥信号量的操作：<code>OSMutexCreate</code>、<code>OSMutexDel</code>、<code>OSMutexPend</code>、<code>OSMutexPost</code>、<code>OSMutexAccept</code>和<code>OSMutexQuery</code>，这些函数展示了任务和互斥信号量的关系。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/ucos系统使用原则/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -821,750 +1557,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/ucos消息队列/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/ucos和ucgui/ucos消息队列/" itemprop="url">ucos消息队列</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T11:27:56+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"includes.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> TASK_STK_SIZE 512</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N_MESSAGES    128</span></span><br><span class="line">​</span><br><span class="line">OS_STK StartTaskStk[TASK_STK_SIZE];</span><br><span class="line">OS_STK MyTaskStk[TASK_STK_SIZE];</span><br><span class="line">OS_STK YouTaskStk[TASK_STK_SIZE];</span><br><span class="line">​</span><br><span class="line"><span class="keyword">char</span> *s_flag; <span class="comment">/* 该字符串指示哪个任务在运行 */</span></span><br><span class="line"><span class="keyword">char</span> *ss; <span class="comment">/* 存放接收到的消息指针 */</span></span><br><span class="line"><span class="keyword">char</span> *s100; <span class="comment">/* 存放发送消息的指针 */</span></span><br><span class="line"><span class="keyword">char</span> *s;</span><br><span class="line"><span class="keyword">char</span> *s500;</span><br><span class="line"><span class="keyword">void</span> *MsgGrp[N_MESSAGES]; <span class="comment">/* 定义消息指针数组 */</span></span><br><span class="line"><span class="comment">/* 创建消息队列，首先需要定义一个指针数组(用于存放消息邮箱)，然后把各个消息数据</span></span><br><span class="line"><span class="comment">   缓冲区的首地址存入这个数组中，最后再调用函数OSQCreate来创建消息队列 */</span></span><br><span class="line">INT8U err;</span><br><span class="line">INT8U y = <span class="number">0</span>;</span><br><span class="line">OS_EVENT *Str_Q; <span class="comment">/* 定义事件控制块指针。队列的事件控制块指针用于存放创建的消息队列的指针 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">MyTask</span> <span class="params">( <span class="keyword">void</span> *data )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">StartTask</span> <span class="params">( <span class="keyword">void</span> *data )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">YouTask</span> <span class="params">( <span class="keyword">void</span> *data )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    OSInit();</span><br><span class="line">    PC_DOSSaveReturn();</span><br><span class="line">    PC_VectSet ( uCOS, OSCtxSw );</span><br><span class="line">    Str_Q = OSQCreate ( &amp;MsgGrp[<span class="number">0</span>], N_MESSAGES ); <span class="comment">/* 创建消息队列 */</span></span><br><span class="line">    <span class="comment">/* 函数的第一个参数“&amp;MsgGrp[0]”是“void **start”，是存放消息缓冲区指针数组的地址。</span></span><br><span class="line"><span class="comment">       它是指向指针数组的指针，可以用指针数组的首个元素的地址表示 */</span></span><br><span class="line">    <span class="comment">/* N_MESSAGES是该数组的大小，返回值是消息队列的指针。Str_Q是OS_EVENT型的指针，是事件控制块型的指针 */</span></span><br><span class="line">    OSTaskCreate ( StartTask, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;StartTaskStk[TASK_STK_SIZE - <span class="number">1</span>], <span class="number">0</span> );</span><br><span class="line">    OSStart();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">StartTask</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> OS_CRITICAL_METHOD == 3</span></span><br><span class="line">    OS_CPU_SR cpu_sr;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    INT16S key;</span><br><span class="line">    pdata = pdata;</span><br><span class="line">    OS_ENTER_CRITICAL();</span><br><span class="line">    PC_VectSet ( <span class="number">0x08</span>, OSTickISR );</span><br><span class="line">    PC_SetTickRate ( OS_TICKS_PER_SEC );</span><br><span class="line">    OS_EXIT_CRITICAL();</span><br><span class="line">    OSStatInit();</span><br><span class="line">    OSTaskCreate ( MyTask, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;MyTaskStk[TASK_STK_SIZE - <span class="number">1</span>], <span class="number">3</span> );</span><br><span class="line">    OSTaskCreate ( YouTask, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;YouTaskStk[TASK_STK_SIZE - <span class="number">1</span>], <span class="number">4</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="comment">// s = "How many strings could be geted?";</span></span><br><span class="line">    <span class="comment">// /* 发送消息，以LIFO后进先出的方式发送。第一个参数Str_Q是消息队列的指针，</span></span><br><span class="line">    <span class="comment">//    是OSQCreate的返回值，第二个参数s是消息指针 */</span></span><br><span class="line">    <span class="comment">// OSQPostFront( Str_Q, s );</span></span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        s_flag = <span class="string">"The StartTask is running!"</span>;</span><br><span class="line">        PC_DispStr ( <span class="number">50</span>, ++y, s_flag, DISP_FGND_RED + DISP_BGND_LIGHT_GRAY ); <span class="comment">/* 提示哪个任务在运行 */</span></span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( OSTimeGet() &gt; <span class="number">100</span> &amp;&amp; OSTimeGet() &lt; <span class="number">500</span> ) &#123;</span><br><span class="line">            s100 = <span class="string">"The value of OSTIME is from 100 to 500 NOW!!"</span>;</span><br><span class="line">            OSQPostFront ( Str_Q, s100 ); <span class="comment">/* 发送消息，以LIFO后进先出的方式发送 */</span></span><br><span class="line">            s = <span class="string">"The string belongs to which task."</span>;</span><br><span class="line">            OSQPostFront ( Str_Q, s ); <span class="comment">/* 发送消息，以LIFO方式发送。所以如果要申请消息时，会先得到s，然后才是s100 */</span></span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( OSTimeGet() &gt; <span class="number">1000</span> &amp;&amp; OSTimeGet() &lt; <span class="number">1500</span> ) &#123;</span><br><span class="line">            s500 = <span class="string">"The value of OSTIME is from 1000 to 1500 NOW!!"</span>;</span><br><span class="line">            OSQPostFront ( Str_Q, s500 ); <span class="comment">/* 发送消息 */</span></span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( PC_GetKey ( &amp;key ) == TRUE ) &#123;</span><br><span class="line">            <span class="keyword">if</span> ( key == <span class="number">0x1B</span> ) &#123;</span><br><span class="line">                PC_DOSReturn();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">MyTask</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> OS_CRITICAL_METHOD == 3</span></span><br><span class="line">    OS_CPU_SR cpu_sr;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    pdata = pdata;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        s_flag = <span class="string">"The MyTask is running!"</span>;</span><br><span class="line">        PC_DispStr ( <span class="number">50</span>, ++y, s_flag, DISP_FGND_RED + DISP_BGND_LIGHT_GRAY ); <span class="comment">/* 提示哪个任务在运行 */</span></span><br><span class="line">        <span class="comment">/* 请求消息队列，参数分别是：Str_Q为所请求消息队列的指针，第二个参数为等待时间 */</span></span><br><span class="line">        <span class="comment">/* 0表示无限等待，&amp;err为错误信息，返回值为队列控制块OS_Q成员OSQOut指向的消息(如果队列中有消息可用的话)，</span></span><br><span class="line"><span class="comment">           如果没有消息可用，在使调用OSQPend的任务挂起，使之处于等待状态，并引发一次任务调度。</span></span><br><span class="line"><span class="comment">           因为前面发送消息时使用的是LIFO的方式，所以此处第一次得到的消息是上面最后发送的消息 */</span></span><br><span class="line">        ss = OSQPend ( Str_Q, <span class="number">0</span>, &amp;err );</span><br><span class="line">        PC_DispStr ( <span class="number">3</span>, y, ss, DISP_FGND_BLACK + DISP_BGND_LIGHT_GRAY ); <span class="comment">/* 显示得到的消息 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">0</span>, y, <span class="string">"My"</span>, DISP_FGND_RED + DISP_BGND_LIGHT_GRAY ); <span class="comment">/* 显示是哪一个任务显示的 */</span></span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">YouTask</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> OS_CRITICAL_METHOD == 3</span></span><br><span class="line">    OS_CPU_SR cpu_sr;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    pdata = pdata;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        s_flag = <span class="string">"The YouTask is running!"</span>;</span><br><span class="line">        PC_DispStr ( <span class="number">50</span>, ++y, s_flag, DISP_FGND_RED + DISP_BGND_LIGHT_GRAY ); <span class="comment">/* 提示哪个任务在运行 */</span></span><br><span class="line">        ss = OSQPend ( Str_Q, <span class="number">0</span>, &amp;err ); <span class="comment">/* 请求消息队列 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">3</span>, y, ss, DISP_FGND_BLACK + DISP_BGND_LIGHT_GRAY ); <span class="comment">/* 显示得到的消息 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">0</span>, y, <span class="string">"You"</span>, DISP_FGND_RED + DISP_BGND_LIGHT_GRAY ); <span class="comment">/* 显示是哪一个任务显示的 */</span></span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/ucos内存管理/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/ucos和ucgui/ucos内存管理/" itemprop="url">ucos内存管理</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T11:22:58+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"INCLUDES.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> TASK_STK_SIZE 512</span></span><br><span class="line">​</span><br><span class="line">OS_STK StartTaskStk[TASK_STK_SIZE];</span><br><span class="line">OS_STK MyTaskStk[TASK_STK_SIZE];</span><br><span class="line">OS_STK YouTaskStk[TASK_STK_SIZE];</span><br><span class="line">OS_STK HerTaskStk[TASK_STK_SIZE];</span><br><span class="line">​</span><br><span class="line"><span class="keyword">char</span> *s = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">char</span> *s1 = <span class="string">"Mytask  "</span>;</span><br><span class="line"><span class="keyword">char</span> *s2 = <span class="string">"Youtask "</span>;</span><br><span class="line"><span class="keyword">char</span> *s3 = <span class="string">"Hertask "</span>;</span><br><span class="line">INT8U err; <span class="comment">/* 错误信息 */</span></span><br><span class="line">INT8U y = <span class="number">0</span>; <span class="comment">/* 字符显示位置 */</span></span><br><span class="line">INT8U Times = <span class="number">0</span>;</span><br><span class="line">OS_MEM *IntBuffer; <span class="comment">/* 定义内存控制块指针，创建一个内存分区时，返回值就是它 */</span></span><br><span class="line">INT8U IntPart[<span class="number">8</span>][<span class="number">6</span>]; <span class="comment">/* 划分一个具有8个内存块，每个内存块长度是6个字节的内存分区 */</span></span><br><span class="line">INT8U *IntBlkPtr; <span class="comment">/* 定义内存块指针(INT8U型) */</span></span><br><span class="line"><span class="comment">/* 存放内存分区的状态信息。函数OSMemQuery查询到的动态内存分区状态信息是一个</span></span><br><span class="line"><span class="comment">   SO_MEM_DATA型的数据结构。查询到的内存分区的有关信息就放在这个数据结构中 */</span></span><br><span class="line">OS_MEM_DATA MemInfo;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">StartTask</span> <span class="params">( <span class="keyword">void</span> *data )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">MyTask</span> <span class="params">( <span class="keyword">void</span> *data )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">YouTask</span> <span class="params">( <span class="keyword">void</span> *data )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">HerTask</span> <span class="params">( <span class="keyword">void</span> *data )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    OSInit();</span><br><span class="line">    PC_DOSSaveReturn();</span><br><span class="line">    PC_VectSet ( uCOS, OSCtxSw );</span><br><span class="line">    IntBuffer = OSMemCreate ( IntPart, <span class="number">8</span>, <span class="number">6</span>, &amp;err ); <span class="comment">/* 创建动态内存区 */</span></span><br><span class="line">    OSTaskCreate ( StartTask, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;StartTaskStk[TASK_STK_SIZE - <span class="number">1</span>], <span class="number">0</span> ); <span class="comment">/* 创建起始函数 */</span></span><br><span class="line">    OSStart();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">StartTask</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> OS_CRITICAL_METHOD == 3</span></span><br><span class="line">    OS_CPU_SR cpu_sr;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    INT16S key;</span><br><span class="line">    pdata = pdata;</span><br><span class="line">    OS_ENTER_CRITICAL();</span><br><span class="line">    PC_VectSet ( <span class="number">0x08</span>, OSTickISR );</span><br><span class="line">    PC_SetTickRate ( OS_TICKS_PER_SEC );</span><br><span class="line">    OS_EXIT_CRITICAL();</span><br><span class="line">    OSStatInit();</span><br><span class="line">    OSTaskCreate ( MyTask, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;MyTaskStk[TASK_STK_SIZE - <span class="number">1</span>], <span class="number">3</span> ); <span class="comment">/* 创建任务 */</span></span><br><span class="line">    OSTaskCreate ( YouTask, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;YouTaskStk[TASK_STK_SIZE - <span class="number">1</span>], <span class="number">4</span> );</span><br><span class="line">    OSTaskCreate ( HerTask, ( <span class="keyword">void</span> * ) <span class="number">0</span>, &amp;HerTaskStk[TASK_STK_SIZE - <span class="number">1</span>], <span class="number">5</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( PC_GetKey ( &amp;key ) == TRUE ) &#123;</span><br><span class="line">            <span class="keyword">if</span> ( key == <span class="number">0x1B</span> ) &#123; <span class="comment">/* 如果按下ESC键，则退出UC/OS-II */</span></span><br><span class="line">                PC_DOSReturn();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">MyTask</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> OS_CRITICAL_METHOD == 3</span></span><br><span class="line">    OS_CPU_SR cpu_sr;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    pdata = pdata;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ; ; ) &#123;</span><br><span class="line">        PC_DispStr ( <span class="number">10</span>, ++y, s1, DISP_BGND_BLACK + DISP_FGND_WHITE ); <span class="comment">/* 显示信息 */</span></span><br><span class="line">        IntBlkPtr = OSMemGet ( <span class="comment">/* 请求内存块*/</span></span><br><span class="line">                        IntBuffer, <span class="comment">/* 内存分区的指针 */</span></span><br><span class="line">                        &amp;err <span class="comment">/* 错误信息 */</span></span><br><span class="line">                    );</span><br><span class="line">        OSMemQuery ( <span class="comment">/* 查询内存控制块信息 */</span></span><br><span class="line">            IntBuffer, <span class="comment">/* 带查询内存控制块指针 */</span></span><br><span class="line">            &amp;MemInfo</span><br><span class="line">        );</span><br><span class="line">        <span class="built_in">sprintf</span> ( s, <span class="string">"%0x"</span>, MemInfo.OSFreeList ); <span class="comment">/* 显示头指针，把得到的空闲内存块链表首地址的指针放到指针s所指的空间中 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">30</span>, y, s, DISP_BGND_BLACK + DISP_FGND_WHITE ); <span class="comment">/* 把空闲内存块链表首地址的指针显示出来 */</span></span><br><span class="line">        <span class="built_in">sprintf</span> ( s, <span class="string">"%d"</span>, MemInfo.OSNUsed ); <span class="comment">/* 显示已用的内存块数目 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">40</span>, y, s, DISP_BGND_BLACK + DISP_FGND_WHITE );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( Times &gt;= <span class="number">5</span> ) &#123; <span class="comment">/* 运行六次后 */</span></span><br><span class="line">            OSMemPut ( <span class="comment">/* 释放内存块函数 */</span></span><br><span class="line">                IntBuffer, <span class="comment">/* 内存块所属内存分区的指针 */</span></span><br><span class="line">                IntBlkPtr <span class="comment">/* 待释放内存块指针 */</span></span><br><span class="line">                <span class="comment">/* 此次释放，只能释放最后一次申请到的内存块，前面因为IntBlkPtr被后面的给覆盖掉了，所以释放不了 */</span></span><br><span class="line">            );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        Times++; <span class="comment">/* 运行次数加1 */</span></span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> ); <span class="comment">/* 等待1s */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">YouTask</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> OS_CRITICAL_METHOD == 3</span></span><br><span class="line">    OS_CPU_SR cpu_sr;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    pdata = pdata;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ; ; ) &#123;</span><br><span class="line">        PC_DispStr ( <span class="number">10</span>, ++y, s2, DISP_BGND_BLACK + DISP_FGND_WHITE );</span><br><span class="line">        IntBlkPtr = OSMemGet ( <span class="comment">/* 请求内存块 */</span></span><br><span class="line">                        IntBuffer, <span class="comment">/* 内存分区的指针 */</span></span><br><span class="line">                        &amp;err <span class="comment">/* 错误信息 */</span></span><br><span class="line">                    );</span><br><span class="line">        OSMemQuery ( <span class="comment">/* 查询内存控制块信息 */</span></span><br><span class="line">            IntBuffer, <span class="comment">/* 待查询内存控制块指针 */</span></span><br><span class="line">            &amp;MemInfo</span><br><span class="line">        );</span><br><span class="line">        <span class="built_in">sprintf</span> ( s, <span class="string">"%0x"</span>, MemInfo.OSFreeList ); <span class="comment">/* 显示头指针 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">30</span>, y, s, DISP_BGND_BLACK + DISP_FGND_WHITE );</span><br><span class="line">        <span class="built_in">sprintf</span> ( s, <span class="string">"%d"</span>, MemInfo.OSNUsed ); <span class="comment">/* 显示已用的内存块数目 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">40</span>, y, s, DISP_BGND_BLACK + DISP_FGND_WHITE );</span><br><span class="line">        OSMemPut ( <span class="comment">/* 释放内存块 */</span></span><br><span class="line">            IntBuffer, <span class="comment">/* 内存块所属内存分区的指针 */</span></span><br><span class="line">            IntBlkPtr <span class="comment">/* 待释放内存块指针 */</span></span><br><span class="line">        );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span> ); <span class="comment">/* 等待2s */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">HerTask</span> <span class="params">( <span class="keyword">void</span> *pdata )</span> </span>&#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> OS_CRITICAL_METHOD == 3</span></span><br><span class="line">    OS_CPU_SR cpu_sr;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    pdata = pdata;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ; ; ) &#123;</span><br><span class="line">        PC_DispStr ( <span class="number">10</span>, ++y, s3, DISP_BGND_BLACK + DISP_FGND_WHITE );</span><br><span class="line">        IntBlkPtr = OSMemGet ( <span class="comment">/* 请求内存块 */</span></span><br><span class="line">                        IntBuffer, <span class="comment">/* 内存分区的指针 */</span></span><br><span class="line">                        &amp;err <span class="comment">/* 错误信息 */</span></span><br><span class="line">                    );</span><br><span class="line">        OSMemQuery ( <span class="comment">/* 查询内存控制块信息 */</span></span><br><span class="line">            IntBuffer, <span class="comment">/* 待查询内存控制块指针 */</span></span><br><span class="line">            &amp;MemInfo );</span><br><span class="line">        <span class="built_in">sprintf</span> ( s, <span class="string">"%0x"</span>, MemInfo.OSFreeList ); <span class="comment">/* 显示头指针 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">30</span>, y, s, DISP_BGND_BLACK + DISP_FGND_WHITE );</span><br><span class="line">        <span class="built_in">sprintf</span> ( s, <span class="string">"%d"</span>, MemInfo.OSNUsed ); <span class="comment">/* 显示已用的内存块数目 */</span></span><br><span class="line">        PC_DispStr ( <span class="number">40</span>, y, s, DISP_BGND_BLACK + DISP_FGND_WHITE );</span><br><span class="line">        OSMemPut (</span><br><span class="line">            IntBuffer, <span class="comment">/*内存块所属内存分区的指针 */</span></span><br><span class="line">            IntBlkPtr <span class="comment">/* 待释放内存块指针 */</span></span><br><span class="line">        );</span><br><span class="line">        OSTimeDlyHMSM ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span> ); <span class="comment">/* 等待1s */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/ucos保存局部变量到任务堆栈/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/ucos和ucgui/ucos保存局部变量到任务堆栈/" itemprop="url">ucos保存局部变量到任务堆栈</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T09:49:02+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;1. 没有<code>OS</code>时，任务如何保存局部变量？<br>&emsp;&emsp;在我的知识体系里，我一直以为单片机中就只有一个栈。以<code>stm32</code>为例，在启动文件中有这么一段代码：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">; <span class="function">Amount of <span class="title">memory</span> <span class="params">(in bytes)</span> allocated <span class="keyword">for</span> Stack</span></span><br><span class="line"><span class="function"></span>; Tailor <span class="keyword">this</span> value to your application needs</span><br><span class="line">; &lt;h&gt; Stack Configuration</span><br><span class="line">; &lt;o&gt; Stack Size (in Bytes) &lt;0x0-0xFFFFFFFF:8&gt;</span><br><span class="line">; &lt;/h&gt;</span><br><span class="line"></span><br><span class="line">Stack_Size    EQU    <span class="number">0x00000400</span></span><br><span class="line">AREA   STACK, NOINIT, READWRITE, ALIGN=<span class="number">3</span></span><br><span class="line">Stack_Mem   SPACE   Stack_Size</span><br><span class="line">__initial_sp</span><br></pre></td></tr></table></figure>
-<p>假设<code>STM32</code>的内存有<code>16KB</code>，从启动文件中可以看到，栈的大小为<code>0x400</code>，我称之为<code>系统栈</code>，系统栈的范围为<code>0x20000000</code>至<code>0x20000400</code>。在没有<code>OS</code>的应用中，<code>CPU</code>其实有两个任务，一个是<code>中断任务</code>，一个是<code>main</code>函数中的任务。当函数调用或者发生中断时，就使用系统栈保存局部变量和寄存器状态，也就是<code>SP</code>指向<code>0x20000000</code>至<code>0x20000400</code>。<br>&emsp;&emsp;2. <code>ucos</code>中如何保存局部变量？<br>&emsp;&emsp;其实有没有操作系统都一样，都把任务中的局部变量和当前的寄存器状态保存在栈中。在<code>UCOS</code>中，一个任务就分配一个栈。假设有两个任务，申请分配对应的任务栈如下：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 假设任务1的堆栈地址为0x20000500，那么任务1中的局部变量和寄存器状态将保存在0x20000500至0x20000580 */</span></span><br><span class="line"><span class="keyword">static</span> OS_STK Task1Stk[<span class="number">128</span>];</span><br><span class="line"><span class="comment">/* 假设任务1的堆栈地址为0x20000600，那么任务2中的局部变量和寄存器状态将保存在0x20000600至0x20000700 */</span></span><br><span class="line"><span class="keyword">static</span> OS_STK Task2Stk[<span class="number">256</span>];</span><br></pre></td></tr></table></figure>
-<p>当任务<code>1</code>运行时，系统使用的栈不再是<code>0x20000000</code>至<code>0x20000400</code>，而是<code>0x20000500</code>至<code>0x20000580</code>；任务<code>2</code>运行时，系统中的栈指向<code>0x20000600</code>至<code>0x20000700</code>。那么如何切换<code>SP</code>呢？假设切换到任务<code>1</code>的<code>SP</code>：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">; 保存任务<span class="number">1</span>的SP</span><br><span class="line">LDR  R1, =Task1Stk ; 把SP存在R1中，在任务<span class="number">1</span>中R1等于<span class="number">0x20000500</span>至<span class="number">0x20000580</span></span><br><span class="line">LDR  R1, [R1]</span><br><span class="line">STR  R0, [R1] ; R0 is SP of process being switched out</span><br><span class="line"></span><br><span class="line">; 切换到任务<span class="number">1</span>的SP</span><br><span class="line">MSR  PSP, R0 ; Load PSP with <span class="keyword">new</span> process SP</span><br></pre></td></tr></table></figure>
-<p>就这样，在<code>UCOS</code>中模拟系统栈，生成任务栈，局部变量在任务栈中的分配，而不在系统栈中。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/ucos和ucgui/ucgui仪表盘/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/ucos和ucgui/ucgui仪表盘/" itemprop="url">ucgui仪表盘</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T09:43:31+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"GUI.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdlib.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;math.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stddef.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEG2RAD (3.1415926f/180) <span class="comment">/* 绘制弧度的转化 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> _DrawScale ( <span class="keyword">void</span> ) &#123;</span><br><span class="line">    <span class="keyword">int</span> XSize = LCD_GetXSize(); <span class="comment">/* 取得LCD物理尺寸，这个参数是在“lcdconf.h”里面定义 */</span></span><br><span class="line">    <span class="keyword">int</span> YSize = LCD_GetYSize();</span><br><span class="line">    <span class="keyword">int</span> XMide =  XSize / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> r1 = <span class="number">110</span>; <span class="comment">/* 定义效果图中下面的一条弧的半径 */</span></span><br><span class="line">    <span class="keyword">int</span> r2 = <span class="number">140</span>; <span class="comment">/* 定义效果图中上面的一条弧半径 */</span></span><br><span class="line">    <span class="keyword">int</span> rt = <span class="number">100</span>; <span class="comment">/* 定义效果图中刻度(数字)所在弧的半径 */</span></span><br><span class="line">    <span class="keyword">int</span> step = <span class="number">15</span>;</span><br><span class="line">    <span class="keyword">int</span> r = ( r1 + r2 ) / <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">int</span> c = <span class="number">0</span>;</span><br><span class="line">    GUI_SetPenSize ( r2 - r1 ); <span class="comment">/* 设置线型宽度为30 */</span></span><br><span class="line">    GUI_SetColor ( GUI_RED ); <span class="comment">/* 第一个扇形块填充红色 */</span></span><br><span class="line">    GUI_AA_DrawArc ( XMide, YSize, r, r, <span class="number">45</span>, <span class="number">60</span> );</span><br><span class="line">    GUI_SetColor ( GUI_GREEN ); <span class="comment">/* 第一个扇形块填充红色 */</span></span><br><span class="line">    GUI_AA_DrawArc ( XMide, YSize, r, r, <span class="number">60</span>, <span class="number">75</span> );</span><br><span class="line">    GUI_SetColor ( GUI_WHITE );</span><br><span class="line">    GUI_SetPenSize ( <span class="number">5</span> ); <span class="comment">/* 设置线性宽度为2，绘制上下两条圆弧 */</span></span><br><span class="line">    GUI_AA_DrawArc ( XMide, YSize, r1, r1, <span class="number">45</span>, <span class="number">135</span> ); <span class="comment">/* 绘制下圆弧 */</span></span><br><span class="line">    GUI_AA_DrawArc ( XMide, YSize, r2, r2, <span class="number">45</span>, <span class="number">135</span> ); <span class="comment">/* 绘制上圆弧 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">45</span>; i &lt;= <span class="number">135</span>; i += step ) &#123;</span><br><span class="line">        <span class="keyword">float</span> co = <span class="built_in">cos</span> ( i * DEG2RAD );</span><br><span class="line">        <span class="keyword">float</span> si = <span class="built_in">sin</span> ( i * DEG2RAD );</span><br><span class="line">        <span class="keyword">int</span> x1 = XMide - r1 * co;</span><br><span class="line">        <span class="keyword">int</span> y1 = YSize - r1 * si;</span><br><span class="line">        <span class="keyword">int</span> x2 = XMide - ( r2 - <span class="number">1</span> ) * co;</span><br><span class="line">        <span class="keyword">int</span> y2 = YSize - ( r2 - <span class="number">1</span> ) * si;</span><br><span class="line">        <span class="keyword">int</span> xt = XMide - rt * co;</span><br><span class="line">        <span class="keyword">int</span> yt = YSize - rt * si;</span><br><span class="line">        GUI_SetColor ( GUI_WHITE );</span><br><span class="line">        <span class="comment">/* 绘制刻度线，共4个参数，x1和y1为直线起始坐标，x2和y2为直线终止坐标 */</span></span><br><span class="line">        GUI_AA_DrawLine ( x1, y1, x2, y2 );</span><br><span class="line">        GUI_SetColor ( GUI_GREEN );</span><br><span class="line">        GUI_SetFont ( &amp;GUI_Font8x8 );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( c &lt;= <span class="number">1</span> ) &#123;</span><br><span class="line">            GUI_DispCharAt ( <span class="string">'0'</span> + c * <span class="number">7</span>, xt - <span class="number">4</span>, yt - <span class="number">4</span> );</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            GUI_DispDecAt ( c * <span class="number">7</span>, xt - <span class="number">4</span>, yt - <span class="number">4</span>, <span class="number">2</span> );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        c++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">MainTask</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    GUI_Init();</span><br><span class="line">    _DrawScale();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Python应用代码/定制计时器类/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/Python应用代码/定制计时器类/" itemprop="url">定制计时器类</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T09:07:47+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;基本要求如下所示：</p>
-<ul>
-<li>定制一个计时器的类，<code>start</code>和<code>stop</code>方法代表启动计时和停止计时。</li>
-<li>假设计时器对象<code>t1</code>，<code>print(t1)</code>和直接调用<code>t1</code>均显示结果。</li>
-<li>当计时器未启动或已经停止计时，调用<code>stop</code>方法会给予温馨的提示。</li>
-<li>两个计时器对象可以进行相加，例如<code>t1 + t2</code>。</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> time <span class="keyword">as</span> t</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyTimer</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self)</span>:</span></span><br><span class="line">        self.unit = [<span class="string">"年"</span>, <span class="string">"月"</span>, <span class="string">"日"</span>, <span class="string">"小时"</span>, <span class="string">"分钟"</span>, <span class="string">"秒"</span>]</span><br><span class="line">        self.prompt = <span class="string">"未开始计时！"</span></span><br><span class="line">        self.lasted = []</span><br><span class="line">        self.begin = <span class="number">0</span></span><br><span class="line">        self.end = <span class="number">0</span></span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__str__</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.prompt</span><br><span class="line">​</span><br><span class="line">    __repr__ = __str__</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__add__</span><span class="params">(self, other)</span>:</span></span><br><span class="line">        prompt = <span class="string">"总共运行了"</span></span><br><span class="line">        result = []</span><br><span class="line">        <span class="keyword">for</span> index <span class="keyword">in</span> range(<span class="number">6</span>):</span><br><span class="line">            result.append(self.lasted[index] + other.lasted[index])</span><br><span class="line">            <span class="keyword">if</span> result[index]:</span><br><span class="line">                prompt += (str(result[index]) + self.unit[index])</span><br><span class="line">        <span class="keyword">return</span> prompt</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">start</span><span class="params">(self)</span>:</span>  <span class="comment"># 开始计时</span></span><br><span class="line">        self.begin = t.localtime()</span><br><span class="line">        self.prompt = <span class="string">"提示：请先调用stop()停止计时！"</span></span><br><span class="line">        print(<span class="string">"计时开始！"</span>)</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">stop</span><span class="params">(self)</span>:</span>  <span class="comment"># 停止计时</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> self.begin:</span><br><span class="line">            print(<span class="string">"提示：请先调用start()停止计时！"</span>)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            self.end = t.localtime()</span><br><span class="line">            self.__calc()</span><br><span class="line">            print(<span class="string">"计时结束！"</span>)</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__calc</span><span class="params">(self)</span>:</span>  <span class="comment"># 内部方法，计算运行时间</span></span><br><span class="line">        self.lasted = []</span><br><span class="line">        self.prompt = <span class="string">"总共运行了"</span></span><br><span class="line">        <span class="keyword">for</span> index <span class="keyword">in</span> range(<span class="number">6</span>):</span><br><span class="line">            self.lasted.append(self.end[index] - self.begin[index])</span><br><span class="line">            <span class="keyword">if</span> self.lasted[index]:</span><br><span class="line">                self.prompt += str(self.lasted[index]) + self.unit[index]</span><br><span class="line">        <span class="comment"># 为下一轮计时初始化变量</span></span><br><span class="line">        self.begin = <span class="number">0</span></span><br><span class="line">        self.end = <span class="number">0</span></span><br></pre></td></tr></table></figure>
-<p>验证结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">t1 = MyTimer()</span><br><span class="line">t1  <span class="comment"># 结果为“未开始计时！”</span></span><br><span class="line">t1.stop()  <span class="comment"># 结果为“提示：请先调用start()停止计时！”</span></span><br><span class="line">t1.start()  <span class="comment"># 结果为“计时开始！”</span></span><br><span class="line">t1.stop()  <span class="comment"># 结果为“计时结束！”</span></span><br><span class="line">t1  <span class="comment"># 结果为“总共运行了7秒”</span></span><br><span class="line">t2 = MyTimer()</span><br><span class="line">t2.start()  <span class="comment"># 结果为“计时开始！”</span></span><br><span class="line">t2.stop()  <span class="comment"># 结果为“计时结束！”</span></span><br><span class="line">t2  <span class="comment"># 结果为“总共运行了6秒”</span></span><br><span class="line">t1 + t2  <span class="comment"># 结果为“总共运行了13秒”</span></span><br></pre></td></tr></table></figure>
-<p>注意，这个程序还有个小<code>Bug</code>：有可能出现<code>总共运行了1分钟-30秒</code>，结果中出现负数。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/29/Python应用代码/分割文件/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/29/Python应用代码/分割文件/" itemprop="url">分割文件</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T09:01:54+08:00">
-                2018-12-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;将文件(<code>record.txt</code>)中的数据进行分割并按照以下规律保存起来：</p>
-<ul>
-<li><code>fool</code>的对话单独保存为<code>fool_*.txt</code>(去掉<code>fool:</code>)。</li>
-<li><code>xinz</code>的对话单独保存为<code>xinz_*.txt</code>(去掉<code>xinz:</code>)。</li>
-<li>文件中共有三段对话，分别保存为<code>fool_1.txt</code>、<code>xinz_1.txt</code>、<code>fool_2.txt</code>、<code>xinz_2.txt</code>、<code>fool_3.txt</code>、<code>xinz_3.txt</code>共<code>6</code>个文件(文件中不同的对话间已经使用<code>============</code>分割)。</li>
-</ul>
-<p>&emsp;&emsp;<code>record.txt</code>文件如下所示：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">fool:1111111111</span><br><span class="line">xinz:2222222222</span><br><span class="line">fool:3333333333</span><br><span class="line">==================================</span><br><span class="line">fool:4444444444</span><br><span class="line">xinz:5555555555</span><br><span class="line">fool:6666666666</span><br><span class="line">xinz:7777777777</span><br><span class="line">==================================</span><br><span class="line">fool:8888888888</span><br><span class="line">xinz:9999999999</span><br><span class="line">fool:0000000000</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">save_file</span><span class="params">(boy, girl, count)</span>:</span></span><br><span class="line">    file_name_boy = <span class="string">"fool_"</span> + str(count) + <span class="string">".txt"</span></span><br><span class="line">    file_name_girl = <span class="string">"xinz_"</span> + str(count) + <span class="string">".txt"</span></span><br><span class="line">    boy_file = open(file_name_boy, <span class="string">"w"</span>)</span><br><span class="line">    girl_file = open(file_name_girl, <span class="string">"w"</span>)</span><br><span class="line">    boy_file.writelines(boy)</span><br><span class="line">    girl_file.writelines(girl)</span><br><span class="line">    boy_file.close()</span><br><span class="line">    girl_file.close()</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">split_file</span><span class="params">(file_name)</span>:</span></span><br><span class="line">    f = open(file_name)</span><br><span class="line">    boy = []</span><br><span class="line">    girl = []</span><br><span class="line">    count = <span class="number">1</span></span><br><span class="line">    <span class="keyword">for</span> each_line <span class="keyword">in</span> f:</span><br><span class="line">        <span class="keyword">if</span> each_line[:<span class="number">6</span>] != <span class="string">"======"</span>:</span><br><span class="line">            (role, line_spoken) = each_line.split(<span class="string">":"</span>, <span class="number">1</span>)</span><br><span class="line">            <span class="keyword">if</span> role == <span class="string">"fool"</span>:</span><br><span class="line">                boy.append(line_spoken)</span><br><span class="line">            <span class="keyword">if</span> role == <span class="string">"xinz"</span>:</span><br><span class="line">                girl.append(line_spoken)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            save_file(boy, girl, count)</span><br><span class="line">            boy = []</span><br><span class="line">            girl = []</span><br><span class="line">            count += <span class="number">1</span></span><br><span class="line">    save_file(boy, girl, count)</span><br><span class="line">    f.close()</span><br><span class="line">​</span><br><span class="line">split_file(<span class="string">"record.txt"</span>)</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1615,7 +1607,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">943</span>
+                  <span class="site-state-item-count">949</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

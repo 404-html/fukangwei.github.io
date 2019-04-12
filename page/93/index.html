@@ -271,6 +271,1216 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/09/C语言语法详解/浮点型与零值比较/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/09/C语言语法详解/浮点型与零值比较/" itemprop="url">浮点型与零值比较</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-09T12:23:30+08:00">
+                2018-12-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客从网上整理了浮点型与零值比较有关的内容，感谢分享资料的人们！<br>&emsp;&emsp;如下的判断方法是错误的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">float</span> EPSINON = <span class="number">0.00001</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> ( ( x &gt;= - EPSINON ) &amp;&amp; ( x &lt;= EPSINON ) ) &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;浮点数在内存中的存储机制和整型数是不同的，有舍入误差，在计算机中用近似的方式表示任意浮点数。具体的说，这个实数由一个整数或定点数(即尾数)乘以某个基数(计算机中通常是2)的整数次幂得到，类似于基数为10的科学记数法。所以浮点数在运算中通常伴随着因为无法精确表示而进行的近似或舍入。但是这种设计的好处是可以在固定的长度上存储更大范围的数。<br>&emsp;&emsp;例如，一个指数范围为<code>±4</code>的4位十进制浮点数可以用来表示<code>43210</code>、<code>4.321</code>或<code>0.0004321</code>，但是没有足够的精度来表示<code>432.123</code>和<code>43212.3</code>(必须近似为<code>432.1</code>和<code>43210</code>)。当然，实际使用的位数通常远大于4。所以浮点数不能够判断相等，像<code>if(x == 0)</code>的这样的编码不总是正确的。在判断浮点数相等时，推荐用范围来确定，若x在某一范围内，我们就认为相等。<br>&emsp;&emsp;<code>if ( (x &gt;= - EPSINON) &amp;&amp; (x &lt;= EPSINON) )</code>这样判断是可取的，至于为什么取<code>0.00001</code>，可以自己按实际情况定义。再看下面CSDN上的回答：浮点数是不可以直接比较大小的，因为是非精确存储，只能设置一个精度，然后在允许误差内的就认为是相等的；对浮点型数比较的时候用<code>==</code>是不对的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> EPSIMON 0.000001</span></span><br><span class="line"><span class="built_in">fabs</span> ( ( ( a + b ) + c ) - ( ( b + a ) + c ) ) &lt; EPSIMON</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;C/C++语言中，浮点数常量默认就是<code>double</code>。可以使用<code>f</code>，来明确指定为<code>float</code>型，例如<code>0.5f</code>。浮点数不是不能精确地表示，比如<code>0.5</code>、<code>0.25</code>、<code>0.125</code>等。对于可以精确表示的浮点数来说，<code>==</code>符号也是有意义的。考虑到精度问题，两个实际不等的数值，比如<code>10000000.00000001</code>和<code>10000000</code>在PC当中被表示成为相同的数字了。对于可以确切表示的两个浮点数，<code>a + b</code>和<code>b + a</code>永远是相等的，但<code>(a + b) + c</code>和<code>(a + c) + b</code>就不一定了。<br>&emsp;&emsp;对double类型的数据进行比较也要使用上述方法。例如判断一个数是否在0至100的范围内：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> EPSIMON 1e-10</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">double</span> value = xxx;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> ( ( value - <span class="number">0</span> &gt;= -EPSIMON ) &amp;&amp; ( value &lt;= <span class="number">100</span> + EPSIMON ) ) &#123;</span><br><span class="line">    <span class="comment">/* user code */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/09/C语言语法详解/EOF详解/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/09/C语言语法详解/EOF详解/" itemprop="url">EOF详解</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-09T09:54:08+08:00">
+                2018-12-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="http://www.ruanyifeng.com/blog/2011/11/eof.html" target="_blank" rel="noopener">EOF是什么？</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;EOF是<code>end of file</code>的缩写，表示<code>文字流</code>(stream)的结尾。这里的<code>文字流</code>可以是文件(file)，也可以是标准输入(stdin)。例如下面这段代码就表示，如果不是文件结尾，就把文件的内容复制到屏幕上：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> c;</span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span> ( ( c = fgetc ( fp ) ) != EOF ) &#123;</span><br><span class="line">    <span class="built_in">putchar</span> ( c );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;很自然地就以为，每个文件的结尾处，有一个叫做EOF的特殊字符，读取到这个字符，操作系统就认为文件结束了。但是后来才发现，EOF不是特殊字符，而是一个定义在头文件<code>stdio.h</code>的常量，一般等于<code>-1</code>，即<code>#define EOF (-1)</code>。<br>&emsp;&emsp;于是就困惑了：如果EOF是一个特殊字符，那么假定每个文本文件的结尾都有一个EOF，还是可以做到的，因为文本对应的ASCII码都是正值，不可能有负值。但是二进制文件怎么办呢？怎么处理文件内部包含的<code>-1</code>呢？后来查资料才知道，在Linux系统之中，EOF根本不是一个字符，而是当系统读取到文件结尾，所返回的一个信号值(也就是<code>-1</code>)。至于系统怎么知道文件的结尾，资料上说是通过比较文件的长度。所以处理文件可以写成如下代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> c;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">while</span> ( ( c = fgetc ( fp ) ) != EOF ) &#123;</span><br><span class="line">    <span class="comment">/* do something */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样写有一个问题：fgetc不仅是遇到文件结尾时返回EOF，而且当发生错误时，也会返回EOF。因此C语言又提供了<code>feof</code>函数，用来保证确实是到了文件结尾。上面的代码feof版本的写法如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> c;</span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span> ( !feof ( fp ) ) &#123;</span><br><span class="line">    c = fgetc ( fp );</span><br><span class="line">    <span class="comment">/* do something; */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是这样写也有问题：fgetc读取文件的最后一个字符以后，C语言的feof函数依然返回0，表明没有到达文件结尾；只有当fgetc向后再读取一个字符(即越过最后一个字符)，feof才会返回一个非零值，表示到达文件结尾。因此按照上面的写法，如果一个文件含有n个字符，那么while循环的内部操作会运行<code>n + 1</code>次，所以最保险的写法如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> c = fgetc ( fp );</span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span> ( c != EOF ) &#123;</span><br><span class="line">    <span class="comment">/* do something; */</span></span><br><span class="line">    c = fgetc ( fp );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> ( feof ( fp ) ) &#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\n End of file reached."</span> );</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\n Something went wrong."</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>除了表示文件结尾，EOF还可以表示标准输入的结尾：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> c;</span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span> ( ( c = getchar() ) != EOF ) &#123;</span><br><span class="line">    <span class="built_in">putchar</span> ( c );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是标准输入与文件不一样，无法事先知道输入的长度，必须手动输入一个字符，表示到达EOF。Linux中，在新的一行的开头，按下<code>Ctrl-D</code>就代表EOF(如果在一行的中间按下<code>Ctrl-D</code>，则表示输出<code>标准输入</code>的缓存区，所以这时必须按两次<code>Ctrl-D</code>)；Windows中，先回车再输入<code>Ctrl-Z</code>表示EOF(顺便提一句，Linux中按下<code>Ctrl-Z</code>表示将该进程中断，在后台挂起，用<code>fg</code>命令可以重新切回到前台；按下<code>Ctrl-C</code>表示终止该进程)。<br>&emsp;&emsp;那么如果真的想输入<code>Ctrl-D</code>怎么办？这时必须先按下<code>Ctrl-V</code>，然后就可以输入<code>Ctrl-D</code>，系统就不会认为这是EOF信号。<code>Ctrl-V</code>表示按<code>字面含义</code>解读下一个输入，要是想按<code>字面含义</code>输入<code>Ctrl-V</code>，连续输入两次就行了。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/09/C语言语法详解/原码、反码和补码/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/09/C语言语法详解/原码、反码和补码/" itemprop="url">原码、反码和补码</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-09T00:40:15+08:00">
+                2018-12-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://www.cnblogs.com/zhangziqiu/archive/2011/03/30/ComputerCode.html" target="_blank" rel="noopener">原码, 反码, 补码 详解</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;示例代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span>* p;</span><br><span class="line">    *p = <span class="number">-130</span>;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%d"</span>, *p );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;我们抛开程序的正确性不谈(没有给指针分配空间怎么能对指针进行解引用呢？)，仅仅分析一下程序的输出结果。首先我们需要分析一下<code>-130</code>在内存中的二进制存储方式。这就引出了有符号整数在内存中的存储方式：有符号整数在内存中是以补码形式存储的。<br>&emsp;&emsp;这里给出原码、反码和补码的定义：原码即有符号整数所对应的二进制数；正数的反码和本身一样，负数的反码是对应的原码除符号位以外，其它的数位依次取反；正数的补码和本身一样，负数的补码是对应的反码在末位加1。计算机中存储方式为补码的原因是为了使减法可以当做加法来算。其实，如果不采用补码的形式存储，内存中会出现<code>+0</code>和<code>-0</code>，这一现象可以在下面的例子中看到。举个简单的例子，如果计算机以8位的方式存储有符号整数，则：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th>原码</th>
+<th>反码</th>
+<th>补码</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> 1</td>
+<td>0000_0001</td>
+<td>0000_0001</td>
+<td>0000_0001</td>
+</tr>
+<tr>
+<td>-1</td>
+<td>1000_0001</td>
+<td>1111_1110</td>
+<td>1111_1111</td>
+</tr>
+<tr>
+<td> 0</td>
+<td>0000_0000</td>
+<td>0000_0000</td>
+<td>0000_0000</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>&emsp;&emsp;如果是反码存储的话，<code>-1 + 1 = 1111_1111</code>，<code>1111_1111</code>是<code>1000_0000</code>的反码，也就是<code>-0</code>。<br>&emsp;&emsp;接着来分析这个程序：<code>-130</code>在内存中以补码形式存储，在我的系统中，int类型占4个字节。那么<code>-130</code>的原码为<code>1000_0000_0000_0000_0000_0000_1000_0010</code>，反码为<code>1111_1111_1111_1111_1111_1111_0111_1101</code>，补码为<code>1111_1111_1111_1111_1111_1111_0111_1110</code>。<br>&emsp;&emsp;由于<code>*p</code>的数据类型是char，将<code>-130</code>赋值给<code>*p</code>会将数据从低位截断，结果是<code>0111_1110</code>。那么输出<code>*p</code>的时候，系统会将数据自动补上<code>0</code>，也就输出<code>0000_0000_0000_0000_0000_0000_0111_1110</code>，即<code>126</code>。</p>
+<hr>
+<h3 id="机器数和真值"><a href="#机器数和真值" class="headerlink" title="机器数和真值"></a>机器数和真值</h3><p>&emsp;&emsp;在学习原码、反码和补码之前，需要先了解机器数和真值的概念。</p>
+<h4 id="机器数"><a href="#机器数" class="headerlink" title="机器数"></a>机器数</h4><p>&emsp;&emsp;一个数在计算机中的二进制表示形式叫做这个数的机器数。机器数是带符号的，在计算机用一个数的最高位存放符号，正数为0，负数为1。比如十进制中的数<code>+3</code>，假设计算机字长为8位，转换成二进制就是<code>0000_0011</code>；如果是<code>-3</code>，就是<code>1000_0011</code>。那么这里的<code>0000_0011</code>和<code>1000_0011</code>就是机器数。</p>
+<h4 id="真值"><a href="#真值" class="headerlink" title="真值"></a>真值</h4><p>&emsp;&emsp;因为第一位是符号位，所以机器数的形式值就不等于真正的数值。例如上面的有符号数<code>1000_0011</code>，其最高位1代表负，其真正数值是<code>-3</code>而不是形式值131(<code>1000_0011</code>转换成十进制等于131)。所以为区别起见，将带符号位的机器数对应的真正数值称为机器数的真值。例如<code>0000_0001</code>的真值为<code>+000_0001 = +1</code>，<code>1000_0001</code>的真值为<code>-000_0001 = -1</code>。</p>
+<h3 id="原码、反码和补码的基础概念和计算方法"><a href="#原码、反码和补码的基础概念和计算方法" class="headerlink" title="原码、反码和补码的基础概念和计算方法"></a>原码、反码和补码的基础概念和计算方法</h3><p>&emsp;&emsp;在探求为何机器要使用补码之前，先了解原码、反码和补码的概念。对于一个数，计算机要使用一定的编码方式进行存储。原码、反码和补码是机器存储一个具体数字的编码方式。</p>
+<h4 id="原码"><a href="#原码" class="headerlink" title="原码"></a>原码</h4><p>&emsp;&emsp;原码就是符号位加上真值的绝对值，即用第一位表示符号，其余位表示值。比如如果是8位二进制：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[+1]原 = 0000_0001</span><br><span class="line">[-1]原 = 1000_0001</span><br></pre></td></tr></table></figure>
+<p>第一位是符号位，因为第一位是符号位，所以8位二进制数的取值范围是<code>[1111_1111, 0111_1111]</code>，即<code>[-127, 127]</code>。原码是人脑最容易理解和计算的表示方式。</p>
+<h4 id="反码"><a href="#反码" class="headerlink" title="反码"></a>反码</h4><p>&emsp;&emsp;反码的表示方法是：正数的反码是其本身；负数的反码是在其原码的基础上，符号位不变，其余各个位取反：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[+1] = [0000_0001]原 = [0000_0001]反</span><br><span class="line">[-1] = [1000_0001]原 = [1111_1110]反</span><br></pre></td></tr></table></figure>
+<p>如果一个反码表示的是负数，人脑无法直观地看出来它的数值，通常要将其转换成原码再计算。</p>
+<h4 id="补码"><a href="#补码" class="headerlink" title="补码"></a>补码</h4><p>&emsp;&emsp;补码的表示方法是：正数的补码就是其本身；负数的补码是在其原码的基础上，符号位不变，其余各位取反，最后<code>+1</code>，即在反码的基础上<code>+1</code>。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[+1] = [0000_0001]原 = [0000_0001]反 = [0000_0001]补</span><br><span class="line">[-1] = [1000_0001]原 = [1111_1110]反 = [1111_1111]补</span><br></pre></td></tr></table></figure>
+<p>对于负数，补码表示方式也是人脑无法直观看出其数值的，通常也需要转换成原码再计算其数值。</p>
+<h3 id="为何要使用原码、反码和补码？"><a href="#为何要使用原码、反码和补码？" class="headerlink" title="为何要使用原码、反码和补码？"></a>为何要使用原码、反码和补码？</h3><p>&emsp;&emsp;现在我们知道了计算机有三种编码方式表示一个数。对于正数，三种编码方式的结果都相同：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[+1] = [0000_0001]原 = [0000_0001]反 = [0000_0001]补</span><br></pre></td></tr></table></figure>
+<p>对于负数：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[-1] = [1000_0001]原 = [1111_1110]反 = [1111_1111]补</span><br></pre></td></tr></table></figure>
+<p>可见原码、反码和补码是完全不同的。既然原码才是被人脑直接识别并用于计算表示方式，为何还会有反码和补码呢？<br>&emsp;&emsp;首先因为人脑可以知道第一位是符号位，在计算的时候我们会根据符号位，选择对真值区域的加减。但是对于计算机，加减乘数已经是最基础的运算，要设计得尽量简单。计算机辨别<code>符号位</code>显然会让它的基础电路设计变得十分复杂！于是人们想出了将符号位也参与运算的方法。我们知道，根据运算法则减去一个正数等于加上一个负数，即<code>1 - 1 = 1 + (-1) = 0</code>，所以机器可以只有加法而没有减法，这样计算机运算的设计就更简单了。于是人们开始探索将符号位参与运算，并且只保留加法的方法。</p>
+<p>&emsp;&emsp;首先来看原码，计算十进制的表达式<code>1 - 1 = 0</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1 - 1 = 1 + (-1) = [0000_0001]原 + [1000_0001]原 = [1000_0010]原 = -2</span><br></pre></td></tr></table></figure>
+<p>如果用原码表示，让符号位也参与计算，显然对于减法来说，结果是不正确的。这也就是为何计算机内部不使用原码表示一个数。<br>&emsp;&emsp;为了解决原码做减法的问题，出现了反码：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1 - 1 = 1 + (-1) = [0000_0001]原 + [1000_0001]原 = [0000_0001]反 + [1111_1110]反 = [1111_1111]反 = [1000_0000]原 = -0</span><br></pre></td></tr></table></figure>
+<p>发现用反码计算减法，结果的真值部分是正确的，而唯一的问题其实就出现在<code>0</code>这个特殊的数值上。虽然在人们的理解上<code>+0</code>和“-0”是一样的，但是0带符号是没有任何意义的，而且会有<code>[0000_0000]原</code>和<code>[1000_0000]原</code>两个编码表示0。补码的出现，解决了0的符号以及两个编码的问题：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1 - 1 = 1 + (-1) = [0000_0001]原 + [1000_0001]原 = [0000_0001]补 + [1111_1111]补 = [0000_0000]补 = [0000_0000]原</span><br></pre></td></tr></table></figure>
+<p>这样<code>0</code>用<code>[0000_0000]</code>表示，而以前出现问题的<code>-0</code>则不存在了，而且可以用<code>[1000_0000]</code>表示<code>-128</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(-1) + (-127) = [1000_0001]原 + [1111_1111]原 = [1111_1111]补 + [1000_0001]补 = [1000_0000]补</span><br></pre></td></tr></table></figure>
+<p><code>-1 - 127</code>的结果应该是<code>-128</code>，在用补码运算的结果中，<code>[1000_0000]补</code>就是<code>-128</code>。但是注意因为实际上是使用以前的<code>-0</code>的补码来表示<code>-128</code>，所以<code>-128</code>并没有原码和反码表示。对<code>-128</code>的补码表示<code>[1000_0000]补</code>算出来的原码是<code>[0000_0000]原</code>，这是不正确的。<br>&emsp;&emsp;使用补码不仅仅修复了0的符号以及存在两个编码的问题，而且还能够多表示一个最低数。这就是为什么8位二进制使用原码或反码表示的范围为<code>[-127, +127]</code>，而使用补码表示的范围为<code>[-128, 127]</code>。因为机器使用补码，所以对于编程中常用到的32位int类型，可以表示范围是<code>[-2^31, 2^31 - 1]</code>，因为第一位表示的是符号位，而使用补码表示时又可以多保存一个最小值。</p>
+<h3 id="原码、反码和补码深入理解"><a href="#原码、反码和补码深入理解" class="headerlink" title="原码、反码和补码深入理解"></a>原码、反码和补码深入理解</h3><p>&emsp;&emsp;计算机巧妙地把符号位参与运算，并且将减法变成了加法，背后蕴含了怎样的数学原理呢？将钟表想象成是一个1位的12进制数，如果当前时间是6点，我希望将时间设置成4点，需要怎么做呢？我们可以：</p>
+<ul>
+<li>往回拨2个小时，即<code>6 - 2 = 4</code>。</li>
+<li>往前拨10个小时，即<code>(6 + 10) mod 12 = 4</code>。</li>
+<li>往前拨<code>10 + 12 = 22</code>个小时，即<code>(6 + 22) mod 12 = 4</code>。</li>
+</ul>
+<p>后两种方法中的mod是取模操作，<code>16 mod 12 = 4</code>即用16除以12后的余数是4，所以钟表往回拨(减法)的结果可以用往前拨(加法)替代。<br>&emsp;&emsp;现在的焦点就落在了如何用一个正数来替代一个负数，首先介绍<code>同余</code>的数学概念：两个整数a、b，若它们除以整数m所得的余数相等，则称a和b对于模m同余，记作<code>a ≡ b (mod m)</code>，读作a与b关于模m同余。举例说明，<code>4 mod 12 = 4</code>、<code>16 mod 12 = 4</code>、<code>28 mod 12 = 4</code>，所以4、16和28关于模12同余。<br>&emsp;&emsp;正数进行mod运算是很简单的，但是负数呢？下面是关于mod运算的数学定义：<br>$ x \bmod y = x - y * \lfloor x/y \rfloor $<br>&emsp;&emsp;上面公式的意思是：<code>x mod y</code>等于x减去y乘上x与y的商的下界。以<code>-3 mod 2</code>举例：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">-3 mod 2</span><br><span class="line">= -3 - 2 * floor(-3/2)</span><br><span class="line">= -3 - 2 * floor(-1.5)</span><br><span class="line">= -3 - 2 * (-2)</span><br><span class="line">= -3 + 4 = 1</span><br></pre></td></tr></table></figure>
+<p>同理如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(-2) mod 12 = 12 - 2 = 10</span><br><span class="line">(-4) mod 12 = 12 - 4 = 8</span><br><span class="line">(-5) mod 12 = 12 - 5 = 7</span><br></pre></td></tr></table></figure>
+<p>结合同余的概念，实际上：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(-2) mod 12 = 10</span><br><span class="line">10 mod 12 = 10</span><br></pre></td></tr></table></figure>
+<p>即<code>-2</code>与<code>10</code>是同余的。要实现用正数替代负数，只需要运用同余数的两个定理：</p>
+<ul>
+<li>反身性：<code>a ≡ a (mod m)</code>。</li>
+<li>线性运算定理：如果<code>a ≡ b (mod m)</code>，<code>c ≡ d (mod m)</code>，那么<code>a ± c ≡ b ± d (mod m)</code>，<code>a * c ≡ b * d (mod m)</code>。</li>
+</ul>
+<p>如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">7 ≡ 7 (mod 12)</span><br><span class="line">(-2) ≡ 10 (mod 12)</span><br><span class="line">7 - 2 ≡ 7 + 10 (mod 12)</span><br></pre></td></tr></table></figure>
+<p>现在为一个负数找到了它的正数同余数，但是并不是<code>7 - 2 = 7 + 10</code>，而是<code>7 - 2 ≡ 7 + 10 (mod 12)</code>，即计算结果的余数相等。<br>&emsp;&emsp;接下来回到二进制的问题上，看一下<code>2 - 1 = 1</code>的问题：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2 - 1 = 2 + (-1) = [0000_0010]原 + [1000_0001]原 = [0000_0010]反 + [1111_1110]反</span><br></pre></td></tr></table></figure>
+<p>先到这一步，<code>-1</code>的反码表示是<code>1111_1110</code>，如果这里将<code>1111_1110</code>认为是原码，则<code>[1111 1110]原</code>为<code>-126</code>，这里将符号位除去，即认为是<code>126</code>。发现有如下规律：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(-1) mod 127 = 126</span><br><span class="line">126 mod 127 = 126</span><br></pre></td></tr></table></figure>
+<p>即：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(-1) ≡ 126 (mod 127)</span><br><span class="line">2 - 1 ≡ 2 + 126 (mod 127)</span><br></pre></td></tr></table></figure>
+<p><code>2 - 1</code>与<code>2 + 126</code>的余数结果是相同的！而这个余数，正式我们的期望的计算结果<code>2 - 1 = 1</code>。<br>&emsp;&emsp;所以说一个数的反码，实际上是这个数对于一个模的同余数，而这个模并不是我们的二进制，而是所能表示的最大值。这就和钟表一样，转了一圈后总能找到在可表示范围内的一个正确的数值。而<code>2 + 126</code>很显然相当于钟表转过了一轮，而因为符号位是参与计算的，正好和溢出的最高位形成正确的运算结果。<br>&emsp;&emsp;既然反码可以将减法变成加法，那么现在计算机使用的补码呢？如下所示：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2 - 1 = 2 + (-1) = [0000_0010]原 + [1000_0001]原 = [0000_0010]补 + [1111_1111]补</span><br></pre></td></tr></table></figure>
+<p>如果把<code>[1111_1111]</code>当成原码，去除符号位，则<code>[0111_1111]原</code>为127。其实，在反码的基础上<code>+1</code>，只是相当于增加了模的值：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(-1) mod 128 = 127</span><br><span class="line">127 mod 128 = 127</span><br><span class="line">2 - 1 ≡ 2 + 127 (mod 128)</span><br></pre></td></tr></table></figure>
+<p>此时表盘相当于每128个刻度转一轮，所以用补码表示的运算结果最小值和最大值应该是<code>[-128, 128]</code>。但由于0的特殊情况，没有办法表示128，所以补码的取值范围是<code>[-128, 127]</code>。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/08/C语言语法详解/字长和数据类型/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/08/C语言语法详解/字长和数据类型/" itemprop="url">字长和数据类型</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-08T23:17:41+08:00">
+                2018-12-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="http://home.eeworld.com.cn/my/space-uid-272231-blogid-36027.html" target="_blank" rel="noopener">Linux内核可移植性(三) — 字长和数据类型</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;处理器通用寄存器的大小和它的字长是相同的。一般情况下，对于一个的体系结构来说，它各个部件的宽度(比如说内存总线)，最少要和它的字长一样大；而地址空间的大小也等于字长，至少Linux支持的体系结构中都是这样的(不过实际上可寻址的内存空间也可能会比字长小一些，比如一个64位的体系结构虽然可能会提供64位的指针，但可能只会用48位来寻址。此外，如果支持Intel的PAE，那么实际的物理内存也有比字长还大的可能)。C语言定义的long类型总对等于机器的字长，而int类型有时会比字长小。例如Alpha是64位机，所以它的寄存器、指针和long类型都是64位长度的，而int类型是32位的。Alpha机每一次可以访问和操作一个64位长的数据。</p>
+<h3 id="字、双字的含义"><a href="#字、双字的含义" class="headerlink" title="字、双字的含义"></a>字、双字的含义</h3><p>&emsp;&emsp;有些操作系统和处理器不把它们的标准字长称作字，相反出于历史原因和某种主观的命名习惯，它们用字来代表一些固定长度的数据类型。例如一些系统根据长度把数据划分为字节(<code>byte</code>，8位)、字(<code>word</code>，16位)、双字(<code>double words</code>，32位)和四字(<code>quad words</code>，64位)，而实际上该机是32位的。<br>&emsp;&emsp;对于支持的每一种体系结构，Linux都要将<code>asm/types.h</code>中的<code>BITS_PER_LONG</code>定义为C语言long类型的长度，也就是系统的字长。下表是Linux支持的体系结构和它们的字长的对照表：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>体系结构</th>
+<th>描述</th>
+<th>字长</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>alpha</td>
+<td>Digital Alpha</td>
+<td>64位</td>
+</tr>
+<tr>
+<td>arm</td>
+<td>Arm and StrongArm</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>cris</td>
+<td>CRIS</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>h8300</td>
+<td>H8/300</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>i386</td>
+<td>Intel x86</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>ia64</td>
+<td>IA-64</td>
+<td>64位</td>
+</tr>
+<tr>
+<td>m32r</td>
+<td>M32xxx</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>m68k</td>
+<td>motorola 68k</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>m68knommu</td>
+<td>M68k without MMU</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>mips</td>
+<td>MIPS</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>mips64</td>
+<td>64位MIPS</td>
+<td>64位</td>
+</tr>
+<tr>
+<td>parisc</td>
+<td>HP PA_RISC</td>
+<td>32位或64位</td>
+</tr>
+<tr>
+<td>ppc</td>
+<td>PowerPC</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>ppc64</td>
+<td>POWER</td>
+<td>64位</td>
+</tr>
+<tr>
+<td>s390</td>
+<td>IBM S/390</td>
+<td>32位或64位</td>
+</tr>
+<tr>
+<td>sh</td>
+<td>Hitachi SH</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>sparc</td>
+<td>SPARC</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>sparc64</td>
+<td>UltraSPARC</td>
+<td>64位</td>
+</tr>
+<tr>
+<td>um</td>
+<td>Usermode Linux</td>
+<td>32位或64位</td>
+</tr>
+<tr>
+<td>v850</td>
+<td>v850</td>
+<td>32位</td>
+</tr>
+<tr>
+<td>x86_64</td>
+<td>x86-64</td>
+<td>64位</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>&emsp;&emsp;C语言虽然规定了变量的最小长度，但是没有规定变量具体的标准长度，它们可以根据实现变化(唯一的例外是char，它的长度总是8位)。C语言的标准数据类型长度随体系结构变化这一特性不断引起争议。好的一面是标准数据类型可以充分利用不同体系结构变化的字长而无需明确定义长度。C语言中long类型的长度就被确保为机器的字长。不好的一面是在编程时不能对标准的C数据类型进行大小的假定，没有什么能够保障int一定和long的长度是相同的(事实上对于Linux支持的64位体系结构来说，long和int长度是不同的，int是32位的，而long是64位的。但对于我们所熟悉的32位体系结构而言，两种数据类型都是32位的)。<br>&emsp;&emsp;情况其实还会更加复杂，因为用户空间使用的数据类型和内核空间的数据类型不一定要相互关联。sparc64体系结构就提供了32位的用户空间，其中指针、int和long的长度都是32位。而在内核空间，它的int长度是32位，指针和long的长度却是64。<br>&emsp;&emsp;牢记以下准则：</p>
+<ul>
+<li><code>ANSI C</code>标准规定，一个char的长度一定是8位。</li>
+<li>尽管没有规定int类型的长度是32位，但在Linux当前所有支持的体系结构中，它都是32位的。</li>
+<li>short类型也类似，在当前所有支持的体系结构中，虽然没有明文规定，但是它都是16位的(<code>although no rule explicitly decrees that</code>)。</li>
+<li>决不应该假定指针和long的长度，在Linux当前支持的体系结构中，它们就可以在32位和64位中变化。</li>
+<li>由于不同的体系结构long的长度不同，绝对不应该假设<code>sizeof(int) == sizeof(long)</code>。类似地，也不要假设指针和int长度相等。</li>
+</ul>
+<h3 id="不透明类型"><a href="#不透明类型" class="headerlink" title="不透明类型"></a>不透明类型</h3><p>&emsp;&emsp;不透明数据类型隐藏了它们内部格式或结构，支持它们的语言不是很多。作为替代，开发者们利用typedef声明一个类型，把它叫做不透明类型，希望其他人别去把它重新转化回对应的那个标准C类型。通常开发者们在定义一套特别的接口时才会用到它们。例如用来保存进程标识符的<code>pid_t</code>类型，该类型的实际长度被隐藏起来了，尽管任何人都可以偷偷撩开它的面纱，发现它就是一个int。如果所有代码都不显式地利用它的长度(显式地利用长度这里指直接使用int类型的长度，比如说在编程时使用<code>sizeof(int)</code>而不是<code>sizeof(pid_t)</code>)，那么改变时就不会引起什么争议，这种改变确实可能会出现：在老版本的Unix系统中，pid_t的定义是short类型。<br>&emsp;&emsp;另外一个不透明数据类型的例子是<code>atomic_t</code>，它放置的是一个可以进行原子操作的整型值。尽管这种类型就是一个int，但利用不透明类型可以帮助确保这些数据只在特殊的有关原子操作的函数中才会被使用。不透明类型还帮助我们隐藏了类型的长度，但是该类型也并不总是完整的32位，比如在32位SPARC体系下长度被限制。<br>&emsp;&emsp;内核还用到了其他一些不透明类型，包括<code>dev_t</code>、<code>gid_t</code>和<code>uid_t</code>等。处理不透明类型时的原则是：</p>
+<ul>
+<li>不要假设该类型的长度。</li>
+<li>不要将该类型转化回其对应的C标准类型使用。</li>
+<li>编程时要保证在该类型实际存储空间和格式发生变化时代码不受影响。</li>
+</ul>
+<h3 id="指定数据类型"><a href="#指定数据类型" class="headerlink" title="指定数据类型"></a>指定数据类型</h3><p>&emsp;&emsp;内核中还有一些数据虽然无需用不透明的类型表示，但它们被定义成了指定的数据类型。jiffy数目和在中断控制时用到的flags参数就是两个例子，它们都应该被存放在<code>unsigned long</code>类型中。<br>&emsp;&emsp;当存放和处理这些特别的数据时，一定要搞清楚它们对应的类型后再使用。把它们存放在其他如<code>unsigned int</code>等类型中是一种常见错误。在32位机上这没什么问题，可是64位机上就会捅娄子了。</p>
+<h3 id="长度明确的类型"><a href="#长度明确的类型" class="headerlink" title="长度明确的类型"></a>长度明确的类型</h3><p>&emsp;&emsp;作为一个程序员，你往往需要在程序中使用长度明确的数据。像操作硬件设备、进行网络通信和操作二进制文件时，通常都必须满足它们明确的内部要求。例如一块声卡可能用的是32位寄存器，一个网络包有一个16位字段，一个可执行文件有8位的cookie。在这些情况下，数据对应的类型应该长度明确。<br>&emsp;&emsp;内核在<code>asm/typs.h</code>中定义了这些长度明确的类型，而该文件又被包含在文件<code>linux/types.h</code>中。长度明确的数据类型如下所示：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>s8</td>
+<td>带符号字节</td>
+</tr>
+<tr>
+<td>u8</td>
+<td>无符号字节</td>
+</tr>
+<tr>
+<td>s16</td>
+<td>带符号16位整数</td>
+</tr>
+<tr>
+<td>u16</td>
+<td>无符号16位整数</td>
+</tr>
+<tr>
+<td>s32</td>
+<td>带符号32位整数</td>
+</tr>
+<tr>
+<td>u32</td>
+<td>无符号32位整数</td>
+</tr>
+<tr>
+<td>s64</td>
+<td>带符号64位整数</td>
+</tr>
+<tr>
+<td>u64</td>
+<td>无符号64位整数</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>这些长度明确的类型大部分都是通过typedef对标准的C类型进行映射得到的。在一个64位机上，它们看起来像：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">char</span>    s8;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">char</span>  u8;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">short</span>   s16;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">short</span> u16;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">int</span>     s32;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">int</span>   u32;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">long</span>    s64;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span>  u64;</span><br></pre></td></tr></table></figure>
+<p>而在32位机上，它们可能定义成：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">char</span>        s8;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">char</span>      u8;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">short</span>       s16;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">short</span>     u16;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">int</span>         s32;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">int</span>       u32;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">long</span> <span class="keyword">long</span>   s64;</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> u64;</span><br></pre></td></tr></table></figure>
+<p>上述的这些类型只能在内核内使用，不可以在用户空间出现(比如在头文件中的某个用户可见结构中出现)，这个限制是为了保护命名空间。不过内核对应这些不可见变量同时也定义了对应的用户可见的变量类型，这些类型与上面类型所不同的是增加了两个下画线前缀。例如无符号32位整形对应的用户空间可见类型就是<code>__u32</code>，该类型除了名字有区别外，与u32相同。在内核中你可以任意使用这两个名字，但是如果是用户可见的类型，那你必须使用下画线前缀的版本名，防止污染用户空间的命名空间。</p>
+<h3 id="char型的符号问题"><a href="#char型的符号问题" class="headerlink" title="char型的符号问题"></a>char型的符号问题</h3><p>&emsp;&emsp;C标准表示char类型可以带符号也可以不带符号，由具体的编译器、处理器或由它们两者共同决定到底char是带符号合适还是不带符号合适。大部分体系结构上，char默认是带符号的，它可以自<code>-128</code>到<code>127</code>之间取值。而也有一些例外，比如ARM体系结构上，char就是不带符号的，它的取值范围是<code>0</code>至<code>255</code>。<br>&emsp;&emsp;举例来说，如果默认的char不带符号，那么如下代码会把255而不是<code>-1</code>赋予i：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> i = <span class="number">-1</span>;</span><br></pre></td></tr></table></figure>
+<p>而在另一种机器上，假设默认char带符号，就会确切地把<code>-1</code>赋予i。如果程序员本意是把<code>-1</code>保存在i中，那么前面的代码就该修改成：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">signed</span> <span class="keyword">char</span> i = <span class="number">-1</span>;</span><br></pre></td></tr></table></figure>
+<p>另外，如果程序员确实希望存储255，那么代码应该如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsigned</span> <span class="keyword">char</span> i = <span class="number">255</span>;</span><br></pre></td></tr></table></figure>
+<p>如果你在自己的代码中使用了char类型，那么要保证在带符号和不带符号的情况下代码都没问题。如果你能明确要用的是哪一个，那么就直接声明它。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/08/C语言语法详解/C语言协程实现/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/08/C语言语法详解/C语言协程实现/" itemprop="url">C语言协程实现</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-08T14:34:40+08:00">
+                2018-12-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="http://www.yeolar.com/note/2013/02/17/coroutines/" target="_blank" rel="noopener">谈谈协程和C语言的协程</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;先看这段代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">int</span> num;</span><br><span class="line">    <span class="keyword">int</span> state;</span><br><span class="line">&#125; task;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> crBegin(state) \</span></span><br><span class="line">    <span class="keyword">switch</span> (state) &#123; <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> crReturn(state, ret) \</span></span><br><span class="line">    (state) = __LINE__; <span class="keyword">return</span> (ret); <span class="keyword">case</span> __LINE__:</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> crEnd() \</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cb</span> <span class="params">( task* t )</span> </span>&#123;</span><br><span class="line">    crBegin ( t-&gt;state );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        t-&gt;num = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> ( t-&gt;i = <span class="number">0</span>; t-&gt;i &lt; <span class="number">20</span>; t-&gt;i++ ) &#123;</span><br><span class="line">            crReturn ( t-&gt;state, t-&gt;num );</span><br><span class="line">            t-&gt;num += <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    crEnd();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    task t;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    t.state = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d "</span>, cb ( &amp;t ) );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>它会输出5组1至20的数字。把宏展开再看一下cb函数，如下所示(代码做了一些调整)：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cb</span> <span class="params">( task* t )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">switch</span> ( t-&gt;state ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">                t-&gt;num = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">for</span> ( t-&gt;i = <span class="number">0</span>; t-&gt;i &lt; <span class="number">20</span>; t-&gt;i++ ) &#123;</span><br><span class="line">                    t-&gt;state = __LINE__ + <span class="number">3</span>;</span><br><span class="line">                    <span class="keyword">return</span> t-&gt;num;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">case</span> __LINE__:</span><br><span class="line">                    t-&gt;num += <span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这其实是switch的一个技巧，通过switch实现了一种断点的效果，类似于Python的yield。它是一个非常简单的C语言协程实现。</p>
+<h3 id="协程的概念"><a href="#协程的概念" class="headerlink" title="协程的概念"></a>协程的概念</h3><p>&emsp;&emsp;我们再看看Wiki上对协程的解释：与子例程一样，协程也是一种程序组件。相对子例程而言，协程更为一般和灵活，但在实践中使用没有子例程那样广泛。协程源自<code>Simula</code>和<code>Modula-2</code>语言，但也有其他语言支持。协程更适合于用来实现彼此熟悉的程序组件，如合作式多任务、迭代器、无限列表和管道。因为相对于子例程协程可以有多个入口和出口点，可以用协程来实现任何的子例程。事实上，正如Knuth所说：<code>子例程是协程的特例</code>。<br>&emsp;&emsp;每当子例程被调用时，执行从被调用子例程的起始处开始；然而，接下来的每次协程被调用时，从协程返回的位置接着执行。<br>&emsp;&emsp;因为子例程只返回一次，要返回多个值就要通过集合的形式。这在有些语言(例如Forth)中很方便，而其他语言(例如C语言)只允许单一的返回值，所以就需要引用一个集合。相反地，因为协程可以返回多次，返回多个值只需要在后继的协程调用中返回附加的值即可。在后继调用中返回附加值的协程常被称为产生器。<br>&emsp;&emsp;子例程容易实现于堆栈之上，因为子例程将调用的其他子例程作为下级。相反地，协程对等地调用其他协程，最好的实现是用continuations(由有垃圾回收的堆实现)以跟踪控制流程。<br>&emsp;&emsp;在当今的主流编程环境里，线程是协程的合适的替代者，线程提供了用来管理同时执行(实际上是线程的不断切换)的代码段实时交互的功能。因为要解决大量困难的问题，线程包括了许多强大和复杂的功能并导致了困难的学习曲线。当需要的只是一个协程时，使用线程就过于技巧了。然而不像其他的替代者，在支持C语言的环境中，线程也是广泛有效的，对很多程序员也比较熟悉，并被很好地实现、文档化和支持。</p>
+<h3 id="C语言的协程"><a href="#C语言的协程" class="headerlink" title="C语言的协程"></a>C语言的协程</h3><p>&emsp;&emsp;关于C语言的协程编程，PuTTY的作者<code>Simon Tatham</code>写有一篇很棒的文章，其译文如下所示。<br>&emsp;&emsp;设计大型程序一直都是件困难的事情，其中常常会遇到的一个难题是：一段生成数据的代码和一段处理这些数据的代码，让哪一个做调用函数，哪一个做被调函数。下面是用于游程编码的解码器代码和解析器代码，都很简单：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> ( <span class="number">1</span> ) &#123; <span class="comment">/* Decompression code */</span></span><br><span class="line">    c = getchar();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( c == EOF ) &#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( c == <span class="number">0xFF</span> ) &#123;</span><br><span class="line">        len = getchar();</span><br><span class="line">        c = getchar();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> ( len-- ) &#123;</span><br><span class="line">            emit ( c );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        emit ( c );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">emit ( EOF );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">while</span> ( <span class="number">1</span> ) &#123; <span class="comment">/* Parser code */</span></span><br><span class="line">    c = getchar();​</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( c == EOF ) &#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( <span class="built_in">isalpha</span> ( c ) ) &#123;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">            add_to_token ( c );</span><br><span class="line">            c = getchar();</span><br><span class="line">        &#125; <span class="keyword">while</span> ( <span class="built_in">isalpha</span> ( c ) );</span><br><span class="line"></span><br><span class="line">        got_token ( WORD );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    add_to_token ( c );</span><br><span class="line">    got_token ( PUNCT );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第一段每次调用emit生成一个字符；第二段每次调用getchar消费一个字符。只要能想办法在调用emit和getchar时能让二者互相传数据，那么就能很容易地将这两段代码连到一起，从而将解码器的输出直接送进解析器。<br>&emsp;&emsp;很多现代操作系统中，在两个进程或线程之间使用管道就可以实现。解码器中的emit向管道中写入数据，解析器的getchar在管道的另一端读出数据，简单可靠，但是却不轻量也不易移植，而且也不值得为这么简单的任务将程序拆分成几个线程。本文将给出一个极具创造性的方法来解决这种结构问题。<br>&emsp;&emsp;传统的方法是改写管道任意一端的代码，使其能够被调用。下面给出了如何对上面两段代码进行改写的例子：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">decompressor</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> repchar;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> replen;​</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( replen &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">        replen--;</span><br><span class="line">        <span class="keyword">return</span> repchar;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    c = getchar();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( c == EOF ) &#123;</span><br><span class="line">        <span class="keyword">return</span> EOF;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( c == <span class="number">0xFF</span> ) &#123;</span><br><span class="line">        replen = getchar();</span><br><span class="line">        repchar = getchar();</span><br><span class="line">        replen--;</span><br><span class="line">        <span class="keyword">return</span> repchar;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> c;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">parser</span> <span class="params">( <span class="keyword">int</span> c )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">enum</span> &#123;</span><br><span class="line">        START, IN_WORD</span><br><span class="line">    &#125; state;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> ( state ) &#123;</span><br><span class="line">        <span class="keyword">case</span> IN_WORD:</span><br><span class="line">            <span class="keyword">if</span> ( <span class="built_in">isalpha</span> ( c ) ) &#123;</span><br><span class="line">                add_to_token ( c );</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            got_token ( WORD );</span><br><span class="line">            state = START;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* fall through */</span></span><br><span class="line">        <span class="keyword">case</span> START:</span><br><span class="line">            add_to_token ( c );</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> ( <span class="built_in">isalpha</span> ( c ) ) &#123;</span><br><span class="line">                state = IN_WORD;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                got_token ( PUNCT );</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;当然了，你不必将两段程序都进行改写，只要改一段就行了。如果你将解码器改成上面那样，它每次调用会返回一个字符，那么只要将解析器中对getchar的调用替换成对decompressor的调用就好了。相反地，如果你像上面那样改写了解析器，对每个输入字符调用一次，那么就可以将解码器中调用的emit换成parser。别把两个函数都改写成被调函数，除非你是想受罪。<br>&emsp;&emsp;其实这里已经暴露出一个问题：这两个改写过的函数都比原来的要难看。把这两个过程写成调用函数要比被调函数更易读。如果单单通过看代码来推断解析器所要解析的语法或者解码器所要处理的压缩格式，那么原来的两段代码都比改写后的代码要清晰些，所以我们最好是能不改写任何一段代码。</p>
+<h3 id="Knuth的协程"><a href="#Knuth的协程" class="headerlink" title="Knuth的协程"></a>Knuth的协程</h3><p>&emsp;&emsp;在《计算机程序设计艺术》一书中，<code>Donald Knuth</code>给出了一个解决这类问题的方法。他的方法是彻底抛弃栈的概念，别再考虑要有一个调用函数和一个被调函数，试着将它们想象成平等的，相互合作的。<br>&emsp;&emsp;用专业术语来说就是：将传统的<code>调用</code>原语用个稍微不同的<code>调用</code>来代替。这个新的<code>调用</code>能够将返回值保存在其它地方，而不是栈上，并且还能够跳转到由另一个已保存的返回值所指定的地址上。这样，解码器每次生成一个新的字符，就保存自己的程序计数器并跳转到上次离开解析器时的地址上；而对解析器来说，它每次需要一个新字符时，它保存自己的程序计数器并跳转到上一次离开解码器的地址上。程序可以这样在两个函数之间切换所需要的次数。<br>&emsp;&emsp;理论上是不错，但在实际中，我们却只能用汇编语言这么做，因为通用的高级语言没有一个支持协程调用原语。类似于C这样的语言全都要依赖于基于栈的结构，因此在函数间传递控制时，必须要有一个调用函数和一个被调函数。所以如果你想写可移植的代码，这个技术和使用Unix管道的方法一样不可行。</p>
+<h3 id="基于栈的协程"><a href="#基于栈的协程" class="headerlink" title="基于栈的协程"></a>基于栈的协程</h3><p>&emsp;&emsp;我们真正要的是找到C语言中能摹仿Knuth的协程调用原语的能力。我们必须接受这个现实：在C语言中，必须要有调用函数和被调函数。调用函数对我们来说没有任何问题，我们完全按照原算法写代码就行，无论什么时候，如果它生成(或者需要)一个字符，那就调用另外一个函数。<br>&emsp;&emsp;问题是出在被调函数上。对于被调函数，我们希望有一个<code>能从返回处再继续</code>的函数，也就是说从这个函数返回后，当再次调用它时，能从上次返回语句之后的位置继续运行。例如，我们希望能写出这样一个函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">function</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        <span class="keyword">return</span> i; <span class="comment">/* won't work, but wouldn't it be nice */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>连续对它调用10次，它能分别返回0到9。<br>&emsp;&emsp;我们该怎样实现呢？其实我们可以利用goto语句跳转到函数中的任意一点。如果我们在函数中加入一个状态变量，就可以这样实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">function</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> i, state = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> ( state ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">goto</span> LABEL0;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">            <span class="keyword">goto</span> LABEL1;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">LABEL0: <span class="comment">/* start of function */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        state = <span class="number">1</span>; <span class="comment">/* so we will come back to LABEL1 */</span></span><br><span class="line">        <span class="keyword">return</span> i;</span><br><span class="line">LABEL1:; <span class="comment">/* resume control straight after the return */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">`</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;这个方法是可行的。我们在所有可能需要恢复执行的位置都加上标签：起始位置加一个，还有所有return语句之后都加一个。我们在状态变量中保存每次调用这个函数时的状态，这样它就能在下次调用时告诉我们应该跳到哪个标签上。每次返回前，更新状态变量，指向到正确的标签；不论调用多少次，针对状态变量的switch语句都能找到我们要跳转到的位置。<br>&emsp;&emsp;但这还是难看得很。最糟糕的部分是所有的标签都需要手工维护，还必须保证函数中的标签和开头switch语句中的一致。每次新增一个return语句，就必须想一个新的标签名并将其加到switch语句中；每次删除return语句时，同样也必须删除对应的标签。这使得维护代码的工作量增加了一倍。</p>
+<h3 id="Duff的装置"><a href="#Duff的装置" class="headerlink" title="Duff的装置"></a>Duff的装置</h3><p>&emsp;&emsp;C语言中著名的Duff装置利用了一个事实：switch的case语句即使放在switch的一个子块中，仍然是合法的。<code>Tom Duff</code>利用这一点给出了一个优化的输出循环：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">switch</span> ( count % <span class="number">8</span> ) &#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        *to = *from++;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">7</span>:</span><br><span class="line">        *to = *from++;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">6</span>:</span><br><span class="line">        *to = *from++;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">5</span>:</span><br><span class="line">        *to = *from++;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">4</span>:</span><br><span class="line">        *to = *from++;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">3</span>:</span><br><span class="line">        *to = *from++;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">2</span>:</span><br><span class="line">        *to = *from++;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">        *to = *from++;</span><br><span class="line">    &#125; <span class="keyword">while</span> ( ( count -= <span class="number">8</span> ) &gt; <span class="number">0</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们可以把这个技巧用在协程上。不用switch语句来决定要跳转到哪里去执行，而是直接利用switch语句本身来实现跳转：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">function</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> i, state = <span class="number">0</span>;​</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> ( state ) &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>: <span class="comment">/* start of function */</span></span><br><span class="line">            <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">                state = <span class="number">1</span>; <span class="comment">/* so we will come back to "case 1" */</span></span><br><span class="line">                <span class="keyword">return</span> i;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">case</span> <span class="number">1</span>:; <span class="comment">/* resume control straight after the return */</span></span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>现在看到希望了，我们要做的事情就是精心构造抽取出几个宏来，将这种看起来不伦不类的实现用一些看起来更结构化的语句隐藏起来：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> crBegin        static int state = 0; switch(state) &#123; case 0:</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> crReturn(i, x) do &#123; state = i; return x; case i:; &#125; while (0)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> crFinish       &#125;</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">function</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> i;</span><br><span class="line">    crBegin;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        crReturn ( <span class="number">1</span>, i );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    crFinish;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意，使用<code>do ... while(0)</code>是为了确保crReturn出现在<code>if-else</code>之间时不需要使用大括号将它包裹起来。<br>&emsp;&emsp;好了，这基本上就是我们想要的了。我们可以使用crReturn将函数返回，并能够在下次调用时从返回的位置之后继续执行。当然必须要遵守几条规则：</p>
+<ul>
+<li>函数体要嵌在crBegin和crFinish之间。</li>
+<li>所有需要跨crReturn使用的局部变量都要定义成static变量。</li>
+<li>不能把crReturn放在其他switch语句中。</li>
+</ul>
+<p>不过这几条规则对我们并没有太大限制。</p>
+<p>&emsp;&emsp;现在就剩下一个问题了，就是crReturn的第一个参数。就像在上一节中我们每增加一个新的标签都要考虑防止标签名重复一样，现在必须保证crReturn的第一个参数不能相同。其实就算重名的话，后果也不严重。编译器能够发现这个错误，因此不会在运行时导致严重后果，但我们还是要避免这个问题。这个问题是能够解决的，<code>ANSI C</code>提供了<code>__LINE__</code>宏，这个宏展开后是当前代码行的行号，接下来我们就修改一下crReturn：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> crReturn(x) do &#123; state = __LINE__; return x; \</span></span><br><span class="line">    <span class="keyword">case</span> __LINE__:; &#125; <span class="keyword">while</span> (<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="评估"><a href="#评估" class="headerlink" title="评估"></a>评估</h3><p>&emsp;&emsp;现在我们有了这个东西，就可以用它再来改写一下原来那两段代码了：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">decompressor</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> c, len;</span><br><span class="line">    crBegin;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        c = getchar();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ( c == EOF ) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ( c == <span class="number">0xFF</span> ) &#123;</span><br><span class="line">            len = getchar();</span><br><span class="line">            c = getchar();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">while</span> ( len-- ) &#123;</span><br><span class="line">                crReturn ( c );</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            crReturn ( c );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    crReturn ( EOF );</span><br><span class="line">    crFinish;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">parser</span> <span class="params">( <span class="keyword">int</span> c )</span> </span>&#123;</span><br><span class="line">    crBegin;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="comment">/* first char already in c */</span></span><br><span class="line">        <span class="keyword">if</span> ( c == EOF ) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ( <span class="built_in">isalpha</span> ( c ) ) &#123;</span><br><span class="line">            <span class="keyword">do</span> &#123;</span><br><span class="line">                add_to_token ( c );</span><br><span class="line">                crReturn();</span><br><span class="line">            &#125; <span class="keyword">while</span> ( <span class="built_in">isalpha</span> ( c ) );</span><br><span class="line"></span><br><span class="line">            got_token ( WORD );</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        add_to_token ( c );</span><br><span class="line">        got_token ( PUNCT );</span><br><span class="line">        crReturn();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    crFinish;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;我们已经把解码器和解析器都改写成了被调函数，它们不需要像上次那样的大规模的重构工作了，每个函数的结构完全是原来算法的翻版。读代码的人能够推出解析器所能识别的语法，也能推出解码器所使用的压缩格式，与读那两段使用状态机来实现的代码比起来，这要容易多了。一旦你适应了这种新的代码形式，就会发现这两段代码的控制流程相当直观：解码器产生出一个字符时，它就调用crReturn将这个字符传给调用函数，并等待当需要下一个字符时再次被调用；当解析器需要一个字符时，它就通过crReturn返回，并等待下一次被调用时通过参数c传入新的字符。<br>&emsp;&emsp;不过，代码中还是有一处小小的结构调整：getchar(其实，在改写的代码中是crReturn)放在了parser的循环的结尾，而不是开头，这是因为在进入函数时，第一个字符已经通过c传进来了。我们应该能接受这个结构上的小改动，要是你真的对此感觉强烈，可以这样认为：在开始向parser送入数据之前，它需要一次初始化调用。当然和前面一样，我们不必把两个函数都用协程的宏改写。改一个就足够了，另一个可以作为它的调用函数。<br>&emsp;&emsp;我们已经实现了文章开始时的目标：一个可移植的<code>ANSI C</code>方法，解决数据在生产者和消费者之间的传递问题，而不必把代码用状态机重写。我们用switch语句的一个很少用到的特性，结合C语言的预处理器，构造出一个隐式的状态机，进而实现了我们的目标。</p>
+<h3 id="编程规范"><a href="#编程规范" class="headerlink" title="编程规范"></a>编程规范</h3><p>&emsp;&emsp;显然，这个技巧跟每本编程规范书中的内容都相悖。如果你在公司的代码中这样用，你很有可能会受到指责，并因为这种不遵守纪律的行为而被警告：你的宏定义中大括号没有匹配完整，在子代码块中包含了未用到的case，还有crReturn中乱七八糟的不完整的内容…写出这样不负责任的代码，不炒了你才怪。你应该为此感到羞愧。<br>&emsp;&emsp;我要声明将编程规范用在这里是不对的。文章里给出的示例代码不是很长，也不很复杂，即便以状态机的方式改写还是能够看懂的。但是随着代码越来越长，改写的难度将越来越大，改写对直观性造成的损失也变得相当相当大。<br>&emsp;&emsp;想一想，一个函数如果包含这样的小代码块：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> STATE1:</span><br><span class="line"><span class="comment">/* perform some activity */</span></span><br><span class="line"><span class="keyword">if</span> ( condition ) &#123;</span><br><span class="line">    state = STATE2;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    state = STATE3;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于看代码的人说，这和包含下面小代码块的函数没有多大区别：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">LABEL1:</span><br><span class="line"><span class="comment">/* perform some activity */</span></span><br><span class="line"><span class="keyword">if</span> ( condition ) &#123;</span><br><span class="line">    <span class="keyword">goto</span> LABEL2;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">goto</span> LABEL3;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>一个是调用函数，另一个是被调函数。是的，这两个函数的结构在视觉上是一样的，而对于函数中实现的算法，两个函数都一样不利于查看。因为你使用协程的宏而炒你鱿鱼的人，一样会因为你写的函数是由小块的代码和goto语句组成而吼着炒了你。只是这次他们没有冤枉你，因为像那样设计的函数会严重扰乱算法的结构。<br>&emsp;&emsp;编程规范的目标就是为了代码清晰。如果将一些重要的东西，像switch、return以及case语句，隐藏到起<code>障眼</code>作用的宏中，从编程规范的角度讲，可以说你扰乱了程序的语法结构，并且违背了代码清晰这一要求。但是我们这样做是为了突出程序的算法结构，而算法结构恰恰是看代码的人更想了解的。任何编程规范，如果非要牺牲算法清晰度来换取语法的清晰度，都应该进行修改。如果你的上司因为使用了这一技巧而解雇你，那么在保安把你往外拖的时候要不断告诉他这一点。</p>
+<h3 id="提炼及编码"><a href="#提炼及编码" class="headerlink" title="提炼及编码"></a>提炼及编码</h3><p>&emsp;&emsp;在正规的应用程序中，这个协程的实现很少能用得上，因为它用到了静态变量，因此是不可重入的，也不能支持多线程。理想情况下，在一个实际的应用程序中，你会希望能在几个不同的上下文中调用同一个函数，并且每次在某个上下文中调用这个函数时，都能在这个上下文中上一次返回的位置之后恢复执行。<br>&emsp;&emsp;这非常容易实现。我们给函数增加一个新的参数，一个指向上下文结构体的指针；我们将所有的局部变量还有协程用到的状态变量都声明成结构体中的元素。<br>&emsp;&emsp;这确实有点难看，因为你突然不能用i作为循环计数，而要用<code>ctx-&gt;i</code>；事实上，所有重要的变量都成了协程上下文结构体中的成员。但是这解决了重入的问题，并且没影响到函数的结构。<br>&emsp;&emsp;当然，要是C语言支持Pascal语言的with语句，我们就可以将这个间接的引用隐藏掉，但是很遗憾。而对于C++语言，我们可以把协程的两个函数设计成类的成员函数，所有的局部变量设计成类的成员变量，从而将作用域的问题隐藏掉。<br>&emsp;&emsp;这里引用的C语言头文件实现了一套预定义的协程使用的宏。文件中定义了两套宏函数，前缀分别是scr和ccr。scr宏是一套简单的实现，用于可以使用静态变量的情况；ccr宏更高级一些，能支持重入。在头文件的注释中有完整的说明。这个头文件是MIT许可的，所以你可以任意使用，没有任何限制。如果你发现MIT对你的使用方式有限制，可以给我发邮件，我会考虑给你授权。以下是coroutine.h头文件：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* coroutine.h</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* Coroutine mechanics, implemented on top of standard ANSI C. See</span></span><br><span class="line"><span class="comment">* http://www.chiark.greenend.org.uk/~sgtatham/coroutines.html for</span></span><br><span class="line"><span class="comment">* a full discussion of the theory behind this.</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* To use these macros to define a coroutine, you need to write a</span></span><br><span class="line"><span class="comment">* function that looks something like this.</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* [Simple version using static variables (scr macros)]</span></span><br><span class="line"><span class="comment">* int ascending (void) &#123;</span></span><br><span class="line"><span class="comment">*     static int i;</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">*     scrBegin;</span></span><br><span class="line"><span class="comment">*     for (i = 0; i &lt; 10; i++) &#123;</span></span><br><span class="line"><span class="comment">*         scrReturn(i);</span></span><br><span class="line"><span class="comment">*     &#125;</span></span><br><span class="line"><span class="comment">*     scrFinish(-1);</span></span><br><span class="line"><span class="comment">* &#125;</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* [Re-entrant version using an explicit context structure (ccr macros)]</span></span><br><span class="line"><span class="comment">* int ascending (ccrContParam) &#123;</span></span><br><span class="line"><span class="comment">*     ccrBeginContext;</span></span><br><span class="line"><span class="comment">*     int i;</span></span><br><span class="line"><span class="comment">*     ccrEndContext(foo);</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">*     ccrBegin(foo);</span></span><br><span class="line"><span class="comment">*     for (foo-&gt;i = 0; foo-&gt;i &lt; 10; foo-&gt;i++) &#123;</span></span><br><span class="line"><span class="comment">*         ccrReturn(foo-&gt;i);</span></span><br><span class="line"><span class="comment">*     &#125;</span></span><br><span class="line"><span class="comment">*     ccrFinish(-1);</span></span><br><span class="line"><span class="comment">* &#125;</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* In the static version, you need only surround the function body</span></span><br><span class="line"><span class="comment">* with `scrBegin' and `scrFinish', and then you can do `scrReturn'</span></span><br><span class="line"><span class="comment">* within the function and on the next call control will resume</span></span><br><span class="line"><span class="comment">* just after the scrReturn statement. Any local variables you need</span></span><br><span class="line"><span class="comment">* to be persistent across an `scrReturn' must be declared static.</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* In the re-entrant version, you need to declare your persistent</span></span><br><span class="line"><span class="comment">* variables between `ccrBeginContext' and `ccrEndContext'. These</span></span><br><span class="line"><span class="comment">* will be members of a structure whose name you specify in the</span></span><br><span class="line"><span class="comment">* parameter to `ccrEndContext'.</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* The re-entrant macros will malloc() the state structure on first</span></span><br><span class="line"><span class="comment">* call, and free() it when `ccrFinish' is reached. If you want to</span></span><br><span class="line"><span class="comment">* abort in the middle, you can use `ccrStop' to free the state</span></span><br><span class="line"><span class="comment">* structure immediately (equivalent to an explicit return() in a</span></span><br><span class="line"><span class="comment">* caller-type routine).</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* A coroutine returning void type may call `ccrReturnV',</span></span><br><span class="line"><span class="comment">* `ccrFinishV' and `ccrStopV', or `scrReturnV', to avoid having to</span></span><br><span class="line"><span class="comment">* specify an empty parameter to the ordinary return macros.</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* Ground rules:</span></span><br><span class="line"><span class="comment">*  - never put `ccrReturn' or `scrReturn' within an explicit `switch'.</span></span><br><span class="line"><span class="comment">*  - never put two `ccrReturn' or `scrReturn' statements on the same source line.</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* The caller of a static coroutine calls it just as if it were an ordinary function:</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* void main(void) &#123;</span></span><br><span class="line"><span class="comment">*     int i;</span></span><br><span class="line"><span class="comment">*     do &#123;</span></span><br><span class="line"><span class="comment">*         i = ascending();</span></span><br><span class="line"><span class="comment">*         printf("got number %d\n", i);</span></span><br><span class="line"><span class="comment">*     &#125; while (i != -1);</span></span><br><span class="line"><span class="comment">* &#125;</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* The caller of a re-entrant coroutine must provide a context variable:</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* void main(void) &#123;</span></span><br><span class="line"><span class="comment">*     ccrContext z = 0;</span></span><br><span class="line"><span class="comment">*     do &#123;</span></span><br><span class="line"><span class="comment">*         printf("got number %d\n", ascending (&amp;z));</span></span><br><span class="line"><span class="comment">*     &#125; while (z);</span></span><br><span class="line"><span class="comment">* &#125;</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* Note that the context variable is set back to zero when the</span></span><br><span class="line"><span class="comment">* coroutine terminates (by crStop, or by control reaching</span></span><br><span class="line"><span class="comment">* crFinish). This can make the re-entrant coroutines more useful</span></span><br><span class="line"><span class="comment">* than the static ones, because you can tell when they have finished.</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* If you need to dispose of a crContext when it is non-zero (that</span></span><br><span class="line"><span class="comment">* is, if you want to stop calling a coroutine without suffering a</span></span><br><span class="line"><span class="comment">* memory leak), the caller should call `ccrAbort(ctx)' where `ctx'</span></span><br><span class="line"><span class="comment">* is the context variable.</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* This mechanism could have been better implemented using GNU C</span></span><br><span class="line"><span class="comment">* and its ability to store pointers to labels, but sadly this is</span></span><br><span class="line"><span class="comment">* not part of the ANSI C standard and so the mechanism is done by</span></span><br><span class="line"><span class="comment">* case statements instead. That's why you can't put a crReturn()</span></span><br><span class="line"><span class="comment">* inside a switch() statement.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">* coroutine.h is copyright 1995,2000 Simon Tatham.</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* Permission is hereby granted, free of charge, to any person</span></span><br><span class="line"><span class="comment">* obtaining a copy of this software and associated documentation</span></span><br><span class="line"><span class="comment">* files (the "Software"), to deal in the Software without</span></span><br><span class="line"><span class="comment">* restriction, including without limitation the rights to use,</span></span><br><span class="line"><span class="comment">* copy, modify, merge, publish, distribute, sublicense, and/or</span></span><br><span class="line"><span class="comment">* sell copies of the Software, and to permit persons to whom the</span></span><br><span class="line"><span class="comment">* Software is furnished to do so, subject to the following</span></span><br><span class="line"><span class="comment">* conditions:</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* The above copyright notice and this permission notice shall be</span></span><br><span class="line"><span class="comment">* included in all copies or substantial portions of the Software.</span></span><br><span class="line"><span class="comment">*</span></span><br><span class="line"><span class="comment">* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,</span></span><br><span class="line"><span class="comment">* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES</span></span><br><span class="line"><span class="comment">* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND</span></span><br><span class="line"><span class="comment"> * NONINFRINGEMENT.  IN NO EVENT SHALL SIMON TATHAM BE LIABLE FOR</span></span><br><span class="line"><span class="comment">* ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF</span></span><br><span class="line"><span class="comment">* CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN</span></span><br><span class="line"><span class="comment">* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> COROUTINE_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COROUTINE_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* scr macros for static coroutines */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> scrBegin     static int scrLine = 0; switch(scrLine) &#123; case 0:;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> scrFinish(z) &#125; return (z)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> scrFinishV   &#125; return</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> scrReturn(z) \</span></span><br><span class="line">    <span class="keyword">do</span> &#123; \</span><br><span class="line">        scrLine=__LINE__; \</span><br><span class="line">    <span class="keyword">return</span> (z); <span class="keyword">case</span> __LINE__:; \</span><br><span class="line">    &#125; <span class="keyword">while</span> (<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> scrReturnV \</span></span><br><span class="line">    <span class="keyword">do</span> &#123; \</span><br><span class="line">        scrLine=__LINE__; \</span><br><span class="line">        <span class="keyword">return</span>; <span class="keyword">case</span> __LINE__:; \</span><br><span class="line">    &#125; <span class="keyword">while</span> (<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* ccr macros for re-entrant coroutines */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ccrContParam void **ccrParam</span></span><br><span class="line">​<span class="meta">#<span class="meta-keyword">define</span> ccrBeginContext    struct ccrContextTag &#123; int ccrLine</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ccrEndContext(x) &#125; *x = (struct ccrContextTag *)*ccrParam</span></span><br><span class="line"></span><br><span class="line">​<span class="meta">#<span class="meta-keyword">define</span> ccrBegin(x) <span class="meta-keyword">if</span>(!x) &#123;x = *ccrParam = malloc(sizeof(*x)); x-&gt;ccrLine = 0;&#125; \</span></span><br><span class="line">    <span class="keyword">if</span> (x) <span class="keyword">switch</span>(x-&gt;ccrLine) &#123; <span class="keyword">case</span> <span class="number">0</span>:;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ccrFinish(z) &#125; free(*ccrParam); *ccrParam = 0; return (z)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ccrFinishV   &#125; free(*ccrParam); *ccrParam = 0; return</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ccrReturn(z) \</span></span><br><span class="line">    <span class="keyword">do</span> &#123; \</span><br><span class="line">        ((struct ccrContextTag *)*ccrParam)-&gt;ccrLine = __LINE__; \</span><br><span class="line">    <span class="keyword">return</span> (z); <span class="keyword">case</span> __LINE__:; \</span><br><span class="line">    &#125; <span class="keyword">while</span> (<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ccrReturnV \</span></span><br><span class="line">    <span class="keyword">do</span> &#123; \</span><br><span class="line">        ((struct ccrContextTag *)*ccrParam)-&gt;ccrLine = __LINE__; \</span><br><span class="line">    <span class="keyword">return</span>; <span class="keyword">case</span> __LINE__:; \</span><br><span class="line">    &#125; <span class="keyword">while</span> (<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ccrStop(z) do&#123; free(*ccrParam); *ccrParam = 0; return (z); &#125;while(0)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ccrStopV   do&#123; free(*ccrParam); *ccrParam = 0; return; &#125;while(0)</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ccrContext    void *</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ccrAbort(ctx) do &#123; free (ctx); ctx = 0; &#125; while (0)</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* COROUTINE_H */</span></span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/08/C语言语法详解/可重入和不可重入函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/08/C语言语法详解/可重入和不可重入函数/" itemprop="url">可重入和不可重入函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-08T13:38:20+08:00">
+                2018-12-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">C语言语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/einsteinlike/article/details/45538493" target="_blank" rel="noopener">printf为什么有重入和性能上的问题？</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;不可重入函数不可以在它还没有返回就再次被调用，例如printf、malloc、free等都是不可重入函数。因为中断可能在任何时候发生，例如在printf执行过程中，因此不能在中断处理函数里调用printf，否则printf将会被重入。<br>&emsp;&emsp;不可重入函数指的是该函数在被调用还没有结束以前，再次被调用可能会产生错误。可重入函数不存在这样的问题。<br>&emsp;&emsp;函数不可重入大多数是因为在函数中引用了全局变量。例如printf会引用全局变量stdout，malloc、free会引用全局的内存分配表。常见的不可重入函数有：</p>
+<ul>
+<li>printf：引用全局变量stdout。</li>
+<li>malloc：全局内存分配表。</li>
+<li>free：全局内存分配表。</li>
+</ul>
+<p>&emsp;&emsp;在unix里面通常都有加上<code>_r</code>后缀的同名可重入函数版本。如果实在没有，不妨在可预见的发生错误的地方尝试加上保护锁等同步机制。下面引用一段别人的解释：<br>&emsp;&emsp;这主要在多任务环境中使用，一个可重入的函数简单来说，就是<code>可以被中断的函数</code>。你可以在这个函数执行的任何时候中断它的运行，在OS的调度下去执行另外一段代码而不会出现什么错误。而不可重入的函数由于使用了一些系统资源，比如全局变量区、中断向量表等，所以它如果被中断，可能出现问题，所以这类函数是不能运行在多任务环境下的。<br>&emsp;&emsp;把一个不可重入函数变成可重入的唯一方法是用可重入规则来重写它。其实很简单，只要遵守了几条很容易理解的规则，那么写出来的函数就是可重入的。</p>
+<ul>
+<li>不要使用全局变量，因为别的代码很可能覆盖这些变量值。</li>
+<li>在和硬件发生交互的时候，切记执行类似disinterrupt之类的操作，就是关闭硬件中断。完成交互记得打开中断，在有些系列上，这叫做<code>进入/退出核心</code>，或者用<code>OS_ENTER_KERNAL</code>和<code>OS_EXIT_KERNAL</code>来描述。</li>
+<li>不能调用任何不可重入的函数。</li>
+<li>谨慎使用堆栈，最好先在使用前先<code>OS_ENTER_KERNAL</code>。</li>
+</ul>
+<p>&emsp;&emsp;可重入函数的示例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">strcpy</span> <span class="params">( <span class="keyword">char</span>* lpszDest, <span class="keyword">char</span>* lpszSrc )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> ( *lpszDest++ = *lpszSrc++ );</span><br><span class="line">    ​*dest = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;非可重入函数示例1：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span> cTemp; <span class="comment">/* 全局变量 */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SwapChar1</span> <span class="params">( <span class="keyword">char</span>* lpcX, <span class="keyword">char</span>* lpcY )</span> </span>&#123;</span><br><span class="line">    cTemp = *lpcX;</span><br><span class="line">    *lpcX = *lpcY;</span><br><span class="line">    lpcY = cTemp; <span class="comment">/* 访问了全局变量，在分享内存的多个线程中可能造成问题 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;非可重入函数示例2：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SwapChar2</span> <span class="params">( <span class="keyword">char</span>* lpcX, <span class="keyword">char</span>* lpcY )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">char</span> cTemp; <span class="comment">/* 静态局部变量 */</span></span><br><span class="line">    cTemp = *lpcX;</span><br><span class="line">    *lpcX = *lpcY;</span><br><span class="line">    lpcY = cTemp; <span class="comment">/* 使用了静态局部变量，在分享内存的多个线程中可能造成问题 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;如何写出可重入的函数？在函数体内不访问那些全局变量，不使用静态局部变量，坚持只使用局部变量，写出的函数就将是可重入的。如果必须访问全局变量，记住利用互斥信号量来保护全局变量。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/08/C语言语法详解/柔性数组/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -908,916 +2118,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/06/C语言语法详解/ctype头文件/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/06/C语言语法详解/ctype头文件/" itemprop="url">ctype头文件</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-06T17:38:46+08:00">
-                2018-12-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客从网上整理了ctype.h文件有关的内容，感谢分享资料的人们！<br>&emsp;&emsp;ctype.h提供了几个有用的测试和转换函数：</p>
-<ul>
-<li><code>int isalnum(int c)</code>：该函数检查传递的字符是否是字母或数字。</li>
-<li><code>int isalpha(int c)</code>：该函数是否传递的字符是字母。</li>
-<li><code>int iscntrl(int c)</code>：该函数是否传递的字符是控制字符。</li>
-<li><code>int isdigit(int c)</code>：该函数是否传递的字符是十进制数字。</li>
-<li><code>int isgraph(int c)</code>：该函数是否传递的字符的图形表示，使用的语言环境。</li>
-<li><code>int islower(int c)</code>：该函数检查传递的字符是否是小写字母。</li>
-<li><code>int isprint(int c)</code>：该函数检查传递的字符是否是可打印的。</li>
-<li><code>int ispunct(int c)</code>：该函数检查传递的字符是否是标点符号。</li>
-<li><code>int isspace(int c)</code>：该函数检查传递的字符是否是空白。</li>
-<li><code>int isupper(int c)</code>：该函数检查传递的字符是否是大写字母。</li>
-<li><code>int isxdigit(int c)</code>：该函数检查传递的字符是否是十六进制数字。</li>
-</ul>
-<p>&emsp;&emsp;该库还包含两个转换函数：</p>
-<ul>
-<li><code>int tolower(int c)</code>：这个函数转换大写字母为小写。</li>
-<li><code>int toupper(int c)</code>：这个函数小写字母转换为大写。</li>
-</ul>
-<p>&emsp;&emsp;字符类说明如下所示：</p>
-<ul>
-<li><code>Digits</code>: A set of whole numbers <code>0 1 2 3 4 5 6 7 8 9</code></li>
-<li><code>Hexadecimal digits</code>: This is the set of <code>0 1 2 3 4 5 6 7 8 9 A B C D E F a b c d e f</code></li>
-<li><code>Lowercase letters</code>: This is a set of <code>a b c d e f g h i j k l m n o p q r s t u v w x y z</code></li>
-<li><code>Uppercase letters</code>: A set of whole numbers <code>A B C D E F G H I J K L M N O P Q R S T U V W X Y Z</code></li>
-<li><code>Letters</code>: This is a set of lowercase letters and uppercase letters</li>
-<li><code>Alphanumeric characters</code>: This is a set of Digits, Lowercase letters and Uppercase letters</li>
-<li><code>Punctuation characters</code>: This is a set of <code>! &quot; # $ % &amp; &#39; ( ) * + , - . / : ; &lt; = &gt; ? @ [ ] ^ _ ` { | } ~</code></li>
-<li><code>Graphical characters</code>: This is a set of Alphanumeric characters and Punctuation characters</li>
-<li><code>Space characters</code>: This is a set of tab, newline, vertical tab, form feed, carriage return, and space</li>
-<li><code>Printable characters</code>: This is a set of Alphanumeric characters, Punctuation characters and Space characters</li>
-<li><code>Control characters</code>: In ASCII, these characters have octal codes 000 through 037, and 177 (DEL)</li>
-<li><code>Blank characters</code>: These are space and tab</li>
-<li><code>Alphabetic characters</code>: This is a set of Lowercase letters and Uppercase letters</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/06/C语言语法详解/GetMemory错误讲解/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/06/C语言语法详解/GetMemory错误讲解/" itemprop="url">GetMemory错误讲解</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-06T14:54:53+08:00">
-                2018-12-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客从网上整理了GetMemory错误有关的内容，感谢分享资料的人们！<br>&emsp;&emsp;错误程序如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GetMemory</span> <span class="params">( <span class="keyword">char</span>* p )</span> </span>&#123;</span><br><span class="line">    p = ( <span class="keyword">char</span>* ) <span class="built_in">malloc</span> ( <span class="number">100</span> );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Test</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span>* str = <span class="literal">NULL</span>;</span><br><span class="line">    GetMemory ( str );</span><br><span class="line">    <span class="built_in">strcpy</span> ( str, <span class="string">"hello world"</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%s"</span>, str );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这是一个考验对指针理解的题目，上面的程序在运行之后：调用GetMemory(str)后，str并未产生变化，依然是NULL；<code>strcpy(str, &quot;hello world&quot;);</code>程序运行到这里将产生错误；使用malloc可能会出错，应该在后面判断内存是否申请成功；动态创建的内存没释放。修改方法如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GetMemory</span> <span class="params">( <span class="keyword">char</span>** p )</span> </span>&#123;</span><br><span class="line">    *p = ( <span class="keyword">char</span>* ) <span class="built_in">malloc</span> ( <span class="number">100</span> );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Test</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span>* str = <span class="literal">NULL</span>;</span><br><span class="line">    GetMemory = ( &amp;str );</span><br><span class="line">    <span class="built_in">strcpy</span> ( str, <span class="string">"hello world"</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( str );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;错误程序如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">char</span>* <span class="title">GetMemory</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> p[] = <span class="string">"hello world"</span>;</span><br><span class="line">    <span class="keyword">return</span> p;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Test</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span>* str = <span class="literal">NULL</span>;</span><br><span class="line">    str = GetMemory();</span><br><span class="line">    <span class="built_in">printf</span> ( str );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>上述代码中的p数组为函数的局部自动变量，在函数返回后，内存已经被释放。这是许多程序员常犯的错误，其根源在于不理解变量的生存期。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/06/C语言语法详解/ungetc函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/06/C语言语法详解/ungetc函数/" itemprop="url">ungetc函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-06T13:45:47+08:00">
-                2018-12-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="http://c.biancheng.net/cpp/html/269.html" target="_blank" rel="noopener">C语言ungetc函数：把字符退回到输入流</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;ungetc的功能是把一个字符退回到输入流中，其函数原型为：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ungetc</span> <span class="params">( <span class="keyword">char</span> c, FILE* stream )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>其中c是要写入的字符，stream是文件流指针。若函数返回字符c，表示操作成功，返回EOF表示操作失败。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctype.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> ch;</span><br><span class="line">    <span class="keyword">int</span> result = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Enter an integer: "</span> );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( ( ( ch = getchar() ) != EOF ) &amp;&amp; <span class="built_in">isdigit</span> ( ch ) ) &#123;</span><br><span class="line">        result = result * <span class="number">10</span> + ch - <span class="string">'0'</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( ch != EOF ) &#123;</span><br><span class="line">        ungetc ( ch, <span class="built_in">stdin</span> );</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Number = %d\nNextcharacter in stream = '%c'"</span>, result, getchar() );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Enter an <span class="built_in">integer</span>: 521a</span><br><span class="line">Number = 521</span><br><span class="line">Nextcharacter <span class="keyword">in</span> stream = <span class="string">'a'</span></span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/06/C语言语法详解/getch和ungetch函数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/06/C语言语法详解/getch和ungetch函数/" itemprop="url">getch和ungetch函数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-06T13:06:07+08:00">
-                2018-12-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://blog.csdn.net/hungry_bug/article/details/52996083" target="_blank" rel="noopener">getch与ungetch两个函数有什么用途呢？</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;程序中往往回出现这样的情况：程序不能确定它已经读入的输入是否足够，除非超前多读入一些输入。例如，把读入一些字符以合成一个数字的情况：看到一个非数字字符之前，已经读入的数的完整性是不能确定的。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 函数getop是用来获取下一个运算符或操作数。该函数实现起来比较容易。它需要跳过空格与制表符。如果下一个字符不是数字</span></span><br><span class="line"><span class="comment">   或小数点，则返回；否则把这些字符串收集起来(其中可能包含小数点)，并返回NUMBER，以标识数已经收集起来了 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctype.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getch</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ungetch</span> <span class="params">( <span class="keyword">int</span> )</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getop</span> <span class="params">( <span class="keyword">char</span> s[] )</span> </span>&#123; <span class="comment">/* 获取下一个运算符或数字操作数 */</span></span><br><span class="line">    <span class="keyword">int</span> i, c;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( ( s[<span class="number">0</span>] = c = getch() == <span class="string">' '</span> || c == <span class="string">'\t'</span> ) ) <span class="comment">/* 跳过空格或制表符 */</span></span><br><span class="line">        ;</span><br><span class="line"></span><br><span class="line">    s[<span class="number">1</span>] = <span class="string">'\0'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( !<span class="built_in">isdigit</span> ( c ) &amp;&amp; c != <span class="string">'.'</span> ) &#123;</span><br><span class="line">        <span class="keyword">return</span> c; <span class="comment">/* 不是数字 */</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    i = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( <span class="built_in">isdigit</span> ( c ) ) <span class="comment">/* 收集整数部分 */</span></span><br><span class="line">        <span class="keyword">while</span> ( ( <span class="built_in">isdigit</span> ( s[i++] = c = getch() ) ) )</span><br><span class="line">            ;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( c == <span class="string">'.'</span> ) <span class="comment">/* 收集小数部分 */</span></span><br><span class="line">        <span class="keyword">while</span> ( ( <span class="built_in">isdigit</span> ( s[i++] = c = getch() ) ) )</span><br><span class="line">            ;</span><br><span class="line"></span><br><span class="line">    s[i] = <span class="string">'\0'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( c != EOF ) &#123;</span><br><span class="line">        ungetch ( c ); <span class="comment">/* 反读不需要的字符 */</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> NUMBER;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;由于程序要超前读入一个字符，这样就导致最后有一个字符不属于当前所要读入的数。如果能<code>反读</code>不需要的字符，该问题就可以得到解决。每当程序多读入一个字符时，就把它压回到输入中，对代码其余部分而言就好像没有读入该字符一样。我们可以编写一对互相协作的函数来比较方便地模拟反取字符操作。<br>&emsp;&emsp;getch函数用于读取下一个待处理的字符，而ungetch函数则用于把字符放回到输入中。这样，此后在调用getch函数时，在读入新的输入之前先返回ungetch函数放回的那个字符。<br>&emsp;&emsp;getch和ungetch的协同工作原理为：ungetch函数是把要压回的字符放到一个共享缓冲区(字符数组)中，当该缓冲区不空时，getch函数就从缓冲区中读取字符；当缓冲区为空时，getch函数调用getchar函数直接从输入中读取字符。注意，这里还要增加一个下标变量来标记缓冲区中当前字符的位置。<br>&emsp;&emsp;由于缓冲区与下标变量是提供getch与ungetch函数共享的，并且在两次调用之前必须保持值不变，因此它们必须是这两个函数的外部变量。可以按照下列方式编写getch和ungetch函数及其共享变量：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctype.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BUFSIZE 100</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">char</span> buf[BUFSIZE]; <span class="comment">/* 用于ungetch函数的缓冲区 */</span></span><br><span class="line"><span class="keyword">int</span> bufp = <span class="number">0</span>; <span class="comment">/* buf中下一个空闲位置 */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getch</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">// 取一个字符(可能是压回的字符)</span></span><br><span class="line">    <span class="keyword">return</span> ( bufp &gt; <span class="number">0</span> ) ? buf[--bufp] : getchar();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ungetch</span> <span class="params">( <span class="keyword">int</span> c )</span> </span>&#123; <span class="comment">// 把字符c压回到输入中</span></span><br><span class="line">    <span class="keyword">if</span> ( bufp &gt;= BUFSIZE ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"ungetch: too many charachters\n"</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        buf[bufp++] = c;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<strong>补充说明</strong>：getch和ungetch函数不是标准的库函数，因此不具有移植性。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/06/C语言语法详解/布尔类型/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/06/C语言语法详解/布尔类型/" itemprop="url">布尔类型</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-06T12:55:28+08:00">
-                2018-12-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="https://www.cnblogs.com/pharen/archive/2012/02/06/2340257.html" target="_blank" rel="noopener">C语言的布尔类型</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;C89没有定义布尔类型，通常以0为假，非0为真。所以我们经常使用逻辑变量的做法：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 定义一个int类型变量，当变量值为0时表示false，值为1时表示true */</span></span><br><span class="line"><span class="keyword">int</span> flag;</span><br><span class="line">flag = <span class="number">0</span>;</span><br><span class="line">...</span><br><span class="line">flag = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> ( flag ) &#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>但这种做法不直观，而且没有明确flag一定是布尔值。所以我们又借助C语言的宏定义：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 宏定义布尔类型 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BOOL int</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> TRUE 1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> FALSE 0</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 定义一个布尔变量 */</span></span><br><span class="line">BOOL flag = FALSE;</span><br></pre></td></tr></table></figure>
-<p>或者使用枚举类型，如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> &#123;</span><br><span class="line">    <span class="literal">false</span> = <span class="number">0</span>,</span><br><span class="line">    <span class="literal">true</span> = <span class="number">1</span></span><br><span class="line">&#125; <span class="keyword">bool</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">bool</span> flag = <span class="literal">true</span>;</span><br></pre></td></tr></table></figure>
-<p>这种方法虽然直观，但依然有缺陷。<br>&emsp;&emsp;C99提供了<code>_Bool</code>型，所以布尔类型可以声明为<code>_Bool flag</code>。<code>_Bool</code>依然仍是整数类型，但与一般整型不同的是，<code>_Bool</code>变量只能赋值为0或1，非0的值都会被存储为1。C99还提供了一个头文件<code>stdbool.h</code>，它定义了bool类型<code>_Bool</code>，true代表1，false代表0。只要导入<code>stdbool.h</code>，就能非常方便地操作布尔类型了。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdbool.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 计算“n!”，n的值在main中定义 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n = <span class="number">10</span>; <span class="comment">/* 计算叠乘数 */</span></span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">1</span>; <span class="comment">/* 用来存放叠乘的结果 */</span></span><br><span class="line">    <span class="keyword">bool</span> flag = <span class="literal">false</span>; <span class="comment">/* 叠乘标记 */</span></span><br><span class="line">    <span class="keyword">int</span> num = n; <span class="comment">/* 循环次数 */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> ( !flag ) &#123;</span><br><span class="line">        sum = sum * ( num-- );</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* 当“num = 1”时结束循环 */</span></span><br><span class="line">        <span class="keyword">if</span> ( num == <span class="number">1</span> ) &#123;</span><br><span class="line">            flag = <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%d的叠乘值为%d\n"</span>, n, sum );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/06/C语言语法详解/goto语句/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/06/C语言语法详解/goto语句/" itemprop="url">goto语句</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-06T12:42:02+08:00">
-                2018-12-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/C语言语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">C语言语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;该博客主要来源于<a href="http://c.biancheng.net/cpp/html/42.html" target="_blank" rel="noopener">C语言goto语句以及用goto语句构成循环</a>，内容经过测试和修改，感谢原作者。<br>&emsp;&emsp;goto语句是一种无条件转移语句，其使用格式为：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">goto</span> 语句标号;</span><br></pre></td></tr></table></figure>
-<p>其中，标号是一个有效的标识符，这个标识符加上一个<code>:</code>一起出现在函数内某处。执行goto语句后，程序将跳转到该标号处并执行其后的语句。<br>&emsp;&emsp;注意，标号必须与goto语句同处于一个函数中，goto不能跳到函数体外的函数，即goto有局部作用域，需要在同一个栈内。通常goto语句与if条件语句连用，当满足某一条件时，程序跳到标号处运行。goto语句可以往后跳，也可以往前跳。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i, sum = <span class="number">0</span>;</span><br><span class="line">    i = <span class="number">1</span>;</span><br><span class="line">loop:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ( i &lt;= <span class="number">100</span> ) &#123;</span><br><span class="line">        sum = sum + i;</span><br><span class="line">        i++;</span><br><span class="line">        <span class="keyword">goto</span> loop;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%d\n"</span>, sum );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;goto语句不经常使用，主要因为它将使程序层次不清且不易读，但在多层嵌套退出时，用goto语句则比较合理。在错误处理方面，goto语句要好于结构化的语句，如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 结构化的语句 */</span></span><br><span class="line"><span class="keyword">if</span> (do_something() != ERR) &#123;</span><br><span class="line">    <span class="keyword">if</span> (do_something2() != ERR) &#123;</span><br><span class="line">        <span class="keyword">if</span> (do_something3() != ERR) &#123;</span><br><span class="line">            <span class="keyword">if</span> (do_something4() != ERR) &#123;</span><br><span class="line">                ...</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 换成goto语句 */</span></span><br><span class="line"><span class="keyword">if</span> (do_something() == ERR)  <span class="comment">// 一行</span></span><br><span class="line">    <span class="keyword">goto</span> error;             <span class="comment">// |</span></span><br><span class="line"><span class="keyword">if</span> (do_something2() == ERR) <span class="comment">// |</span></span><br><span class="line">    <span class="keyword">goto</span> error;             <span class="comment">// |</span></span><br><span class="line"><span class="keyword">if</span> (do_something3() == ERR) <span class="comment">// |</span></span><br><span class="line">    <span class="keyword">goto</span> error;             <span class="comment">// V</span></span><br><span class="line"><span class="keyword">if</span> (do_something4() == ERR) <span class="comment">// 使用普通的平铺形式</span></span><br><span class="line">    <span class="keyword">goto</span> error;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1868,7 +2168,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">943</span>
+                  <span class="site-state-item-count">949</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

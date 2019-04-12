@@ -271,6 +271,908 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/opencv和图像处理/mixChannels函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/30/opencv和图像处理/mixChannels函数/" itemprop="url">mixChannels函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T15:45:32+08:00">
+                2018-12-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/opencv和图像处理/" itemprop="url" rel="index">
+                    <span itemprop="name">opencv和图像处理</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;Copies specified channels from input arrays to the specified channels of output arrays.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">mixChannels</span> <span class="params">(<span class="keyword">const</span> Mat *src, <span class="keyword">int</span> nsrc, Mat *dst, <span class="keyword">int</span> ndst, <span class="keyword">const</span> <span class="keyword">int</span> *fromTo, <span class="keyword">size_t</span> npairs)</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>src</code>: Input array or vector of matrices. All the matrices must have the same size and the same depth.</li>
+<li><code>nsrc</code>: Number of matrices in <code>src</code>.</li>
+<li><code>dst</code>: Output array or vector of matrices. All the matrices must be allocated. Their size and depth must be the same as in <code>src[0]</code>.</li>
+<li><code>ndst</code>: Number of matrices in <code>dst</code>.</li>
+<li><code>fromTo</code>: Array of index pairs specifying which channels are copied and where. <code>fromTo[k * 2]</code> is a <code>0-based</code> index of the input channel in <code>src</code>. <code>fromTo[k * 2 + 1]</code> is an index of the output channel in <code>dst</code>. The continuous channel numbering is used: the first input image channels are indexed from <code>0</code> to <code>src[0].channels() - 1</code>, the second input image channels are indexed from <code>src[0].channels()</code> to <code>src[0].channels() + src[1].channels() - 1</code>, and so on. The same scheme is used for the output image channels. As a special case, when <code>fromTo[k * 2]</code> is negative, the corresponding output channel is filled with <code>zero</code>.</li>
+<li><code>npairs</code>: Number of index pairs in fromTo.</li>
+</ul>
+<p>&emsp;&emsp;In the example below, the code splits a <code>4-channel</code> RGBA image into a <code>3-channel</code> BGR (with R and B channels swapped) and a separate <code>alpha-channel</code> image:<br>&emsp;&emsp;example one:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/highgui/highgui.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/imgproc/imgproc.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="function">Mat <span class="title">rgba</span> <span class="params">( <span class="number">3</span>, <span class="number">4</span>, CV_8UC4, Scalar ( <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span> ) )</span></span>;</span><br><span class="line">    <span class="function">Mat <span class="title">bgr</span> <span class="params">( rgba.rows, rgba.cols, CV_8UC3 )</span></span>;</span><br><span class="line">    <span class="function">Mat <span class="title">alpha</span> <span class="params">( rgba.rows, rgba.cols, CV_8UC1 )</span></span>;</span><br><span class="line">    <span class="comment">/* forming an array of matrices is a quite efficient operation,</span></span><br><span class="line"><span class="comment">       because the matrix data is not copied, only the headers */</span></span><br><span class="line">    Mat out[] = &#123; bgr, alpha &#125;;</span><br><span class="line">    <span class="comment">/* rgba[0] -&gt; bgr[2], rgba[1] -&gt; bgr[1],</span></span><br><span class="line"><span class="comment">       rgba[2] -&gt; bgr[0], rgba[3] -&gt; alpha[0] */</span></span><br><span class="line">    <span class="keyword">int</span> from_to[] = &#123; <span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">3</span> &#125;;</span><br><span class="line">    mixChannels ( &amp;rgba, <span class="number">1</span>, out, <span class="number">2</span>, from_to, <span class="number">4</span> );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"rgba:"</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; rgba &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"bgr:"</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; bgr &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"alpha:"</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; alpha &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>result:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">rgba:</span><br><span class="line">[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>;</span><br><span class="line">  <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>;</span><br><span class="line">  <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]</span><br><span class="line">bgr:</span><br><span class="line">[<span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>;</span><br><span class="line">  <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>;</span><br><span class="line">  <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>]</span><br><span class="line">alpha:</span><br><span class="line">[<span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>;</span><br><span class="line">  <span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>;</span><br><span class="line">  <span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>]</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;example two:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/highgui/highgui.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/imgproc/imgproc.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="function">Mat <span class="title">rgba</span> <span class="params">( <span class="number">3</span>, <span class="number">4</span>, CV_8UC4, Scalar ( <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span> ) )</span></span>;</span><br><span class="line">    <span class="function">Mat <span class="title">bgr</span> <span class="params">( rgba.rows, rgba.cols, CV_8UC3 )</span></span>;</span><br><span class="line">    <span class="function">Mat <span class="title">alpha</span> <span class="params">( rgba.rows, rgba.cols, CV_8UC1 )</span></span>;</span><br><span class="line">    <span class="function">Mat <span class="title">a</span> <span class="params">( rgba.rows, rgba.cols, CV_8UC1 )</span></span>;</span><br><span class="line">    <span class="function">Mat <span class="title">b</span> <span class="params">( rgba.rows, rgba.cols, CV_8UC1 )</span></span>;</span><br><span class="line">    <span class="function">Mat <span class="title">c</span> <span class="params">( rgba.rows, rgba.cols, CV_8UC1 )</span></span>;;</span><br><span class="line">    <span class="function">Mat <span class="title">d</span> <span class="params">( rgba.rows, rgba.cols, CV_8UC1 )</span></span>;</span><br><span class="line">    Mat out[] = &#123; a, b, c, d &#125;;</span><br><span class="line">    <span class="keyword">int</span> from_to[] = &#123;<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">3</span>&#125;;</span><br><span class="line">    mixChannels ( &amp;rgba, <span class="number">1</span>, out, <span class="number">4</span>, from_to, <span class="number">4</span> );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"rgba: "</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; rgba &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"a: "</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; a &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"b: "</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; b &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"c: "</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; c &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"d: "</span> &lt;&lt; <span class="built_in">endl</span> &lt;&lt; d &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>result:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">rgba:</span><br><span class="line">[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>;</span><br><span class="line">  <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>;</span><br><span class="line">  <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>]</span><br><span class="line">a:</span><br><span class="line">[<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>;</span><br><span class="line">  <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>;</span><br><span class="line">  <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>]</span><br><span class="line">b:</span><br><span class="line">[<span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>;</span><br><span class="line">  <span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>;</span><br><span class="line">  <span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>]</span><br><span class="line">c:</span><br><span class="line">[<span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>;</span><br><span class="line">  <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>;</span><br><span class="line">  <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>]</span><br><span class="line">d:</span><br><span class="line">[<span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>;</span><br><span class="line">  <span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>;</span><br><span class="line">  <span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>, <span class="number">4</span>]</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/opencv和图像处理/compare函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/30/opencv和图像处理/compare函数/" itemprop="url">compare函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T14:42:07+08:00">
+                2018-12-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/opencv和图像处理/" itemprop="url" rel="index">
+                    <span itemprop="name">opencv和图像处理</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>compare</code>函数原型如下(定义在头文件<code>core.hpp</code>中)：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">compare</span> <span class="params">(InputArray src1, InputArray src2, OutputArray dst, <span class="keyword">int</span> cmpop)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>函数作用是按照指定的操作<code>cmpop</code>，比较输入的<code>src1</code>和<code>src2</code>中的元素，输出结果到<code>dst</code>中。</p>
+<ul>
+<li><code>src1</code>：原始图像<code>1</code>(必须是单通道)或者一个数值，比如是一个<code>Mat</code>或者一个单纯的数字<code>n</code>。</li>
+<li><code>src2</code>：原始图像<code>2</code>(必须是单通道)或者一个数值，比如是一个<code>Mat</code>或者一个单纯的数字<code>n</code>。</li>
+<li><code>dst</code>：结果图像，类型是<code>CV_8UC1</code>，即单通道<code>8</code>位图，大小和<code>src1</code>和<code>src2</code>中最大的那个一样。比较结果为真的地方值是<code>255</code>，否则为<code>0</code>。</li>
+<li><code>cmpop</code>：操作类型，有以下几种：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum</span> &#123;</span><br><span class="line">    CMP_EQ = <span class="number">0</span>, <span class="comment">/* 相等     */</span></span><br><span class="line">    CMP_GT = <span class="number">1</span>, <span class="comment">/* 大于     */</span></span><br><span class="line">    CMP_GE = <span class="number">2</span>, <span class="comment">/* 大于等于 */</span></span><br><span class="line">    CMP_LT = <span class="number">3</span>, <span class="comment">/* 小于     */</span></span><br><span class="line">    CMP_LE = <span class="number">4</span>, <span class="comment">/* 小于等于 */</span></span><br><span class="line">    CMP_NE = <span class="number">5</span>  <span class="comment">/* 不相等   */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>从参数的要求可以看出，<code>compare</code>函数只对以下三种情况进行比较：<br>&emsp;&emsp;1. <code>array</code>和<code>array</code>：此时输入的<code>src1</code>和<code>src2</code>必须是相同大小的单通道图，否则没办法进行比较了。计算过程就是：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dst(i) = src1(i) cmpop src2(i)</span><br></pre></td></tr></table></figure>
+<p>也就是对<code>src1</code>和<code>src2</code>逐像素进行比较。<br>&emsp;&emsp;2. <code>array</code>和<code>scalar</code>：此时<code>array</code>仍然要求是单通道图，大小无所谓，因为<code>scalar</code>只是一个单纯的数字而已。比较过程是把<code>array</code>中的每个元素逐个和<code>scalar</code>进行比较，所以此时的<code>dst</code>大小和<code>array</code>是一样的。计算过程如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dst(i) = src1(i) cmpop scalar</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;3. <code>scalar</code>和<code>array</code>：这个就是上面的反过程了，只是比较运算符<code>cmpop</code>左右的参数顺序不一样了而已。计算过程如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dst(i) = scalar cmpop src2(i)</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;当需要从一幅图像中找出那些特定像素值的像素时，可以用这个函数。类似于<code>threshold</code>函数，但是<code>threshold</code>函数是对某个区间内的像素值进行操作，<code>compare</code>函数则可以只是对某一个单独的像素值进行操作。例如要从图像中找出像素值为<code>50</code>的像素点，可以这样做：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cv::Mat result;</span><br><span class="line">cv::compare ( image, <span class="number">50</span>, result, cv::CMP_EQ );</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/opencv和图像处理/OpenCV使用总结/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/30/opencv和图像处理/OpenCV使用总结/" itemprop="url">OpenCV使用总结</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T14:31:59+08:00">
+                2018-12-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/opencv和图像处理/" itemprop="url" rel="index">
+                    <span itemprop="name">opencv和图像处理</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="saturate-cast的作用"><a href="#saturate-cast的作用" class="headerlink" title="saturate_cast的作用"></a>saturate_cast的作用</h3><p>&emsp;&emsp;<code>saturate_cast</code>用于防止数据溢出，其大致原理如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( data &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">    data = <span class="number">0</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> ( data &gt; <span class="number">255</span> ) &#123;</span><br><span class="line">    data = <span class="number">255</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>示例代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; src1.rows; i++ ) &#123;</span><br><span class="line">    <span class="keyword">const</span> uchar *src1_ptr = src1.ptr&lt;uchar&gt; ( i );</span><br><span class="line">    <span class="keyword">const</span> uchar *src2_ptr = src2.ptr&lt;uchar&gt; ( i );</span><br><span class="line">    uchar *dst_ptr  = dst.ptr&lt;uchar&gt; ( i );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> j = <span class="number">0</span>; j &lt; src1.cols * nChannels; j++ ) &#123;</span><br><span class="line">        <span class="comment">/* 加入保护 */</span></span><br><span class="line">        dst_ptr[j] = saturate_cast&lt;uchar&gt; ( src1_ptr[j] * alpha + src2_ptr[j] * beta + gama );</span><br><span class="line">        <span class="comment">// dst_ptr[j] = ( src1_ptr[j] * alpha + src2_ptr[j] * beta + gama ); /* 未加入保护 */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="opencv矩阵赋值函数"><a href="#opencv矩阵赋值函数" class="headerlink" title="opencv矩阵赋值函数"></a>opencv矩阵赋值函数</h3><p>&emsp;&emsp;<code>opencv</code>矩阵赋值函数<code>copyTo</code>、<code>clone</code>以及重载运算符<code>=</code>之间实现的功能相似，都是给不同的矩阵赋值功能。<br>&emsp;&emsp;<code>copyTo</code>是深拷贝，但是否申请新的内存空间，取决于<code>dst</code>矩阵头中的大小信息是否与<code>src</code>一至。若一致，则只深拷贝并不申请新的空间，否则先申请空间后，再进行拷贝。<code>clone</code>是完全的深拷贝，在内存中申请新的空间。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Mat A  = Mat::ones ( <span class="number">4</span>, <span class="number">5</span>, CV_32F );</span><br><span class="line">Mat B = A.clone(); <span class="comment">/* clone是完全的深拷贝，在内存中申请新的空间，与A独立 */</span></span><br><span class="line">Mat C;</span><br><span class="line">A.copyTo ( C ); <span class="comment">/* 此处的C矩阵大小与A大小不一致，则申请新的内存空间，并完成拷贝，等同于clone */</span></span><br><span class="line">Mat D = A.col ( <span class="number">1</span> );</span><br><span class="line"><span class="comment">/* 此处D矩阵大小与A.col(0)大小一致，因此不会申请空间，而是直接进行拷贝，相当于把A的第1列赋值给第二列 */</span></span><br><span class="line">A.col ( <span class="number">0</span> ).copyTo ( D );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;对于重载运算符<code>=</code>，被赋值的矩阵和赋值矩阵之间空间共享，改变任一个矩阵的值，会同时影响到另一个矩阵。当矩阵作为函数的返回值时，其功能和重载运算符<code>=</code>相同。赋值运算符会给矩阵空间增加一次计数，所以函数变量返回后，函数内部申请的变量空间并不会被撤销，在主函数中仍可以正常使用传递后的参数。</p>
+<h3 id="CV-IMAGE-ELEM宏"><a href="#CV-IMAGE-ELEM宏" class="headerlink" title="CV_IMAGE_ELEM宏"></a>CV_IMAGE_ELEM宏</h3><p>&emsp;&emsp;该宏用于提取像素值，其原型如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CV_IMAGE_ELEM ( image, elemtype, row, col )</span><br></pre></td></tr></table></figure>
+<p>参数<code>image</code>是<code>IplImage *</code>型指针；<code>elemtype</code>是数据类型，经常为<code>uchar</code>；<code>row</code>和<code>col</code>分别是数据矩阵的行和列。其实现如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CV_IMAGE_ELEM( image, elemtype, row, col ) \</span></span><br><span class="line">    (((elemtype *)((image)-&gt;imageData + (image)-&gt;widthStep * (row)))[(col)])</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;对于单通道的灰度图像，访问像素时使用：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CV_IMAGE_ELEM ( image, uchar, i, j );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;对于三通道的彩色图像，访问像素时使用：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">CV_IMAGE_ELEM ( image, uchar, i, j * <span class="number">3</span> );</span><br><span class="line">CV_IMAGE_ELEM ( image, uchar, i, j * <span class="number">3</span> + <span class="number">1</span> );</span><br><span class="line">CV_IMAGE_ELEM ( image, uchar, i, j * <span class="number">3</span> + <span class="number">2</span> );</span><br></pre></td></tr></table></figure>
+<p>值得注意的是，初学者容易将<code>i</code>和<code>j</code>写反了，这样就出现了访问出界的错误：<code>i</code>的上限是<code>img-&gt;height</code>，而<code>j</code>的上限是<code>img-&gt;width</code>。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/opencv和图像处理/getTickCount和getTickFrequency函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/30/opencv和图像处理/getTickCount和getTickFrequency函数/" itemprop="url">getTickCount和getTickFrequency函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T14:24:20+08:00">
+                2018-12-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/opencv和图像处理/" itemprop="url" rel="index">
+                    <span itemprop="name">opencv和图像处理</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>GetTickcount</code>函数返回从操作系统启动到当前所经的计时周期数，<code>getTickFrequency</code>函数返回每秒的计时周期数。<br>&emsp;&emsp;下面的代码返回执行<code>do something</code>所耗的时间，单位为<code>秒</code>：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">double</span> t = ( <span class="keyword">double</span> ) getTickCount();</span><br><span class="line"><span class="comment">/* do something */</span></span><br><span class="line">t = ( ( <span class="keyword">double</span> ) getTickCount() - t ) / getTickFrequency();</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;代码示例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cv.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">double</span> t1 = ( <span class="keyword">double</span> ) getTickCount();</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"t1 = "</span> &lt;&lt; t1 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10000</span>; i++ ) &#123;</span><br><span class="line">        sum += i;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">double</span> t2 = ( <span class="keyword">double</span> ) getTickCount();</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"t2 = "</span> &lt;&lt; t2 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">double</span> time = ( t2 - t1 ) / getTickFrequency();</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"Time = "</span> &lt;&lt; time &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    int64 e1 = getTickCount();</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"e1 = "</span> &lt;&lt; e1 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">int</span> sum1 = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10000</span>; i++ ) &#123;</span><br><span class="line">        sum1 += i;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    int64 e2 = getTickCount();</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"e2 = "</span> &lt;&lt; e2 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">double</span> time1 = ( e2 - e1 ) / getTickFrequency();</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"time1 = "</span> &lt;&lt; time1 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">t1 = <span class="number">9.83253e+14</span></span><br><span class="line">t2 = <span class="number">9.83253e+14</span></span><br><span class="line">Time = <span class="number">0.000276486</span></span><br><span class="line">e1 = <span class="number">983253219316861</span></span><br><span class="line">e2 = <span class="number">983253219387079</span></span><br><span class="line">time1 = <span class="number">7.0218e-05</span></span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="使用OpenCV检测程序效率"><a href="#使用OpenCV检测程序效率" class="headerlink" title="使用OpenCV检测程序效率"></a>使用OpenCV检测程序效率</h3><p>&emsp;&emsp;<code>cv2.getTickCount</code>函数返回从参考点到这个函数被执行的时钟数。所以当你在一个函数执行前后都调用它的话，你就会得到这个函数的执行时间(时钟数)。<br>&emsp;&emsp;<code>cv2.getTickFrequency</code>返回时钟频率，或者说每秒钟的时钟数。所以你可以按照下面的方式得到一个函数运行了多少秒：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line">​</span><br><span class="line">img1 = cv2.imread(<span class="string">'timg1.jpg'</span>)</span><br><span class="line">e1 = cv2.getTickCount()</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">5</span>, <span class="number">49</span>, <span class="number">2</span>):</span><br><span class="line">    img1 = cv2.medianBlur(img1, i)</span><br><span class="line">​</span><br><span class="line">e2 = cv2.getTickCount()</span><br><span class="line">t = (e2 - e1) / cv2.getTickFrequency()</span><br><span class="line">print(t)</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/opencv和图像处理/图像归一化处理/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/30/opencv和图像处理/图像归一化处理/" itemprop="url">图像归一化处理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T14:13:33+08:00">
+                2018-12-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/opencv和图像处理/" itemprop="url" rel="index">
+                    <span itemprop="name">opencv和图像处理</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;在许多图像处理系统中，对图像进行归一化都是必备的预处理过程。一般而言，对于灰度图像(或彩色通道的每个颜色分量)进行灰度归一化就是：使其像素的灰度值分布在<code>[0, 1]</code>之间，避免图像对比度不足(图像像素亮度分布不平衡)从而对后续处理带来干扰。<br>&emsp;&emsp;一种常见的图像归一化原理是<code>y = (x - MinValue)/(MaxValue - MinValue)</code>，其中<code>x</code>、<code>y</code>分别为归一化前、归一化后的值，<code>MaxValue</code>、<code>MinValue</code>分别为原始图像灰度的最大值和最小值。<br>&emsp;&emsp;<code>opencv</code>使用<code>normalize</code>函数进行归一化处理，其函数原型如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">normalize</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    InputArray src, OutputArray dst, <span class="keyword">double</span> alpha = <span class="number">1</span>, doublebeta = <span class="number">0</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> norm_type = NORM_L2, <span class="keyword">int</span> dtype = <span class="number">-1</span>, InputArray mask = noArray())</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>src</code>：输入数组。</li>
+<li><code>dst</code>：输出数组，支持原地运算。</li>
+<li><code>alpha</code>：<code>range normalization</code>模式的最小值。</li>
+<li><code>beta</code>：<code>range normalization</code>模式的最大值，不用于<code>norm normalization</code>(范数归一化)模式。</li>
+<li><code>normType</code>：归一化的类型，可以有以下的取值：</li>
+</ul>
+<ol>
+<li><code>NORM_MINMAX</code>：数组的数值被平移或缩放到一个指定的范围，线性归一化，一般较常用。</li>
+<li><code>NORM_INF</code>：此类型的定义没有查到，根据<code>OpenCV</code>的对应项，可能是归一化数组的<code>C-范数</code>(绝对值的最大值)。</li>
+<li><code>NORM_L1</code>：归一化数组的<code>L1-范数</code>(绝对值的和)。</li>
+<li><code>NORM_L2</code>：归一化数组的<code>L2-范数</code>(欧几里德距离)。</li>
+</ol>
+<ul>
+<li><code>dtype</code>：<code>dtype</code>为负数时，输出数组的<code>type</code>与输入数组的<code>type</code>相同；否则，输出数组与输入数组只是通道数相同，而<code>tpye = CV_MAT_DEPTH(dtype)</code>。</li>
+<li><code>mask</code>：操作掩膜，用于指示函数是否仅仅对指定的元素进行操作。</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/数据结构和算法/最长回文子串/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/30/数据结构和算法/最长回文子串/" itemprop="url">最长回文子串</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T14:03:46+08:00">
+                2018-12-30
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;输入一个字符串，求出其中最长的回文子串。子串的含义是在原串中连续出现的字符串片段。在判断时，应该忽略所有标点符号和空格且忽略大小写，但输出应保持原样(在回文串的首部和尾部不要输出多余字符)。输入字符长度不超过<code>5000</code>，且占据单独的一行。应该输出最长回文串，如果有多个，输出起始位置最靠左的。样例输入<code>Confuciuss say:Madam,I&#39;m Adam.</code>，样例输出<code>Madam,I&#39;m Adam</code>。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctype.h&gt; /* 用到isalpha、touuper等函数 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAXN 5010</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">char</span> buf[MAXN], s[MAXN]; <span class="comment">/* 分别是原数组，经过预处理以后的数组 */</span></span><br><span class="line"><span class="keyword">int</span> pos[MAXN]; <span class="comment">/* 用于保存s[i]在buf中的位置 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n, m = <span class="number">0</span>, max = <span class="number">0</span>, x, y;</span><br><span class="line">    <span class="keyword">int</span> i, j, k;</span><br><span class="line">    <span class="comment">/* 从标准输入流中读取一整行的内容放在buf中(包括换行符) */</span></span><br><span class="line">    fgets ( buf, <span class="keyword">sizeof</span> ( buf ), <span class="built_in">stdin</span> );</span><br><span class="line">    n = <span class="built_in">strlen</span> ( buf );</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 构造一个新的字符串，把标点符号过滤掉，顺便把小写字母变为大写 */</span></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( <span class="built_in">isalpha</span> ( buf[i] ) ) &#123;</span><br><span class="line">            pos[m] = i; <span class="comment">/* 保存s[m]在buf的位置 */</span></span><br><span class="line">            s[m++] = <span class="built_in">toupper</span> ( buf[i] );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 遍历字符串s，以i为"中间"位置，然后根据j的值不断向两边扩展 */</span></span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; m; i++ ) &#123;</span><br><span class="line">        <span class="comment">/* 这个for循环遍历的子串长度为奇数 */</span></span><br><span class="line">        <span class="comment">/* “i - j &gt;= 0”表示i到j的距离不能上溢；“i + j &lt; m”表示i再加j个位置没有超过字符串s的总长 */</span></span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">0</span>; i - j &gt;= <span class="number">0</span> &amp;&amp; i + j &lt; m; j++ ) &#123;</span><br><span class="line">            <span class="keyword">if</span> ( s[i - j] != s[i + j] ) &#123;</span><br><span class="line">                <span class="keyword">break</span>; <span class="comment">/* 如果左右对应位置不匹配 */</span></span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( j * <span class="number">2</span> + <span class="number">1</span> &gt; max ) &#123;</span><br><span class="line">                max = j * <span class="number">2</span> + <span class="number">1</span>; <span class="comment">/* 更新max */</span></span><br><span class="line">                x = pos[i - j]; <span class="comment">/* 记录子串范围 */</span></span><br><span class="line">                y = pos[i + j];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 这个for循环遍历的子串长度为偶数 */</span></span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">0</span>; i - j &gt;= <span class="number">0</span> &amp;&amp; i + j &lt; m; j++ ) &#123;</span><br><span class="line">            <span class="comment">/* 中间点i取子串长度的中点，导致两边长度不均，右边的距离应该再加1 */</span></span><br><span class="line">            <span class="keyword">if</span> ( s[i - j] != s[i + j + <span class="number">1</span>] ) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( j * <span class="number">2</span> + <span class="number">2</span> &gt; max ) &#123;</span><br><span class="line">                max = j * <span class="number">2</span> + <span class="number">2</span>;</span><br><span class="line">                x = pos[i - j];</span><br><span class="line">                y = pos[i + j + <span class="number">1</span>];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = x; i &lt;= y; i++ ) &#123; <span class="comment">/* 把最长回文子串输出 */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%c"</span>, buf[i] );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/数据结构和算法/6174问题/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -748,767 +1650,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/数据结构和算法/选择排序/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/30/数据结构和算法/选择排序/" itemprop="url">选择排序</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T12:30:11+08:00">
-                2018-12-30
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;选择排序(<code>Selection sort</code>)是一种简单直观的排序算法。它的工作原理是每一次从待排序的数据元素中选出最小(或最大)的一个元素，存放在序列的起始位置，直到全部待排序的数据元素排完。选择排序是先确定位置，然后再去寻找应该占有该位置的对象。该算法适用于数据元素比较大的场合。思想如下所示：<br>&emsp;&emsp;<code>n</code>个记录的文件的直接选择排序可经过<code>n - 1</code>趟直接选择排序得到有序结果：</p>
-<ul>
-<li>初始状态：无序区为<code>R[1..n]</code>，有序区为空。</li>
-<li>第<code>1</code>趟排序：在无序区<code>R[1..n]</code>中选出关键字最小的记录<code>R[k]</code>，将它与无序区的第<code>1</code>个记录<code>R[1]</code>交换，使<code>R[1..1]</code>和R<code>[2..n]</code>分别变为记录个数增加<code>1</code>个的新有序区和记录个数减少<code>1</code>个的新无序区。</li>
-<li>第<code>i</code>趟排序：第<code>i</code>趟排序开始时，当前有序区和无序区分别为<code>R[1..i-1]</code>和<code>R[i..n]</code>。该趟排序从当前无序区中选出关键字最小的记录<code>R[k]</code>，将它与无序区的第<code>1</code>个记录<code>R</code>交换，使<code>R[1..i]</code>和<code>R</code>分别变为记录个数增加<code>1</code>个的新有序区和记录个数减少<code>1</code>个的新无序区。</li>
-</ul>
-<p>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdlib.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;math.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAX_SIZE 101</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SWAP(x, y, t)  ((t) = (x), (x) = (y), (y) = (t))</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sort</span> <span class="params">( <span class="keyword">int</span>[], <span class="keyword">int</span> )</span></span>;   <span class="comment">/* selection sort */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i, n;</span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">list</span>[MAX_SIZE];</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Enter the number of numbers to generate: "</span> );</span><br><span class="line">    <span class="built_in">scanf</span> ( <span class="string">"%d"</span>, &amp;n );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( n &lt; <span class="number">1</span> || n &gt; MAX_SIZE ) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"Improper value of n\n"</span> );</span><br><span class="line">        <span class="built_in">exit</span> ( <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123; <span class="comment">/* randomly generate numbers */</span></span><br><span class="line">        <span class="built_in">list</span>[i] = rand() % <span class="number">100</span>;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d "</span>, <span class="built_in">list</span>[i] );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    sort ( <span class="built_in">list</span>, n );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\nSorted array:\n"</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123; <span class="comment">/* print out sorted numbers */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d "</span>, <span class="built_in">list</span>[i] );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\n"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sort</span> <span class="params">( <span class="keyword">int</span> <span class="built_in">list</span>[], <span class="keyword">int</span> n )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i, j, min, temp;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n - <span class="number">1</span>; i++ ) &#123;</span><br><span class="line">        min = i;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( j = i + <span class="number">1</span>; j &lt; n; j++ )</span><br><span class="line">            <span class="keyword">if</span> ( <span class="built_in">list</span>[j] &lt; <span class="built_in">list</span>[min] ) &#123;</span><br><span class="line">                min = j;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">        SWAP ( <span class="built_in">list</span>[i], <span class="built_in">list</span>[min], temp );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/数据结构和算法/计数排序/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/30/数据结构和算法/计数排序/" itemprop="url">计数排序</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T12:09:43+08:00">
-                2018-12-30
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;计数排序比较适合数值跨度比较小的数组，也就是最大值减去最小值得到的值尽量小的数组。在数组元素比较多的情况下，用计数排序效率较高，同时计数排序算法具有稳定性。计数排序的时间复杂度为<code>O(n)</code>，它是用来排序<code>0</code>到<code>100</code>之间的数字的最好的算法。算法的步骤如下：</p>
-<ol>
-<li>找出待排序的数组中最大和最小的元素。</li>
-<li>统计数组中每个值为<code>i</code>的元素出现的次数，存入数组<code>C</code>的第<code>i</code>项。</li>
-<li>对所有的计数累加(从<code>C</code>中的第一个元素开始，每一项和前一项相加)。</li>
-<li>反向填充目标数组：将每个元素<code>i</code>放在新数组的第<code>C(i)</code>项，每放一个元素就将<code>C(i)</code>减去<code>1</code>。</li>
-</ol>
-<p>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* run this program using the console pauser or add</span></span><br><span class="line"><span class="comment">  your own getch, system("pause") or input loop */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print_arry</span> <span class="params">( <span class="keyword">int</span> *arr, <span class="keyword">int</span> n )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%d "</span>, arr[i] );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\n"</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">count_sort</span> <span class="params">( <span class="keyword">int</span> *arr, <span class="keyword">int</span> *sorted_arr, <span class="keyword">int</span> n )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> *count_arr = ( <span class="keyword">int</span> * ) <span class="built_in">malloc</span> ( <span class="keyword">sizeof</span> ( <span class="keyword">int</span> ) * <span class="number">100</span> );</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++ ) &#123; <span class="comment">/* 初始化计数数组 */</span></span><br><span class="line">        count_arr[i] = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123; <span class="comment">/* 统计i的次数 */</span></span><br><span class="line">        count_arr[arr[i]]++;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">1</span>; i &lt; <span class="number">100</span>; i++ ) &#123; <span class="comment">/* 对所有的计数累加 */</span></span><br><span class="line">        count_arr[i] += count_arr[i - <span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 逆向遍历源数组(保证稳定性)，根据计数数组中对应的值填充到先的数组中 */</span></span><br><span class="line">    <span class="keyword">for</span> ( i = n; i &gt; <span class="number">0</span>; i-- ) &#123;</span><br><span class="line">        sorted_arr[count_arr[arr[i - <span class="number">1</span>]] - <span class="number">1</span>] = arr[i - <span class="number">1</span>];</span><br><span class="line">        count_arr[arr[i - <span class="number">1</span>]]--;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">free</span> ( count_arr );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n, i;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"待排序数组的大小 n = "</span> );</span><br><span class="line">    <span class="built_in">scanf</span> ( <span class="string">"%d"</span>, &amp;n );</span><br><span class="line">    <span class="keyword">int</span> *arr = ( <span class="keyword">int</span> * ) <span class="built_in">malloc</span> ( <span class="keyword">sizeof</span> ( <span class="keyword">int</span> ) * n );</span><br><span class="line">    <span class="keyword">int</span> *sorted_arr = ( <span class="keyword">int</span> * ) <span class="built_in">malloc</span> ( <span class="keyword">sizeof</span> ( <span class="keyword">int</span> ) * n );</span><br><span class="line">    srand ( time ( <span class="number">0</span> ) );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; n; i++ ) &#123;</span><br><span class="line">        arr[i] = rand() % <span class="number">100</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"随机生成数值为0~99的数组...\n"</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"初始化数组: "</span> );</span><br><span class="line">    print_arry ( arr, n );</span><br><span class="line">    count_sort ( arr, sorted_arr, n );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"排序后的数组: "</span> );</span><br><span class="line">    print_arry ( sorted_arr, n );</span><br><span class="line">    <span class="built_in">free</span> ( arr );</span><br><span class="line">    <span class="built_in">free</span> ( sorted_arr );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/数据结构和算法/寻找链表中间节点/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/30/数据结构和算法/寻找链表中间节点/" itemprop="url">寻找链表中间节点</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T12:04:03+08:00">
-                2018-12-30
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;链表(特别是单链表)的定位是链表这种数据结构的一个软肋所在，定位某一个元素不得不通过遍历的方式获得。如果要寻找一个单链表的中间节点，普通的方法就是先遍历得到链表的长度，然后再通过长度遍历得到链表的中间节点。当然有一些链表通过一个特殊的头节点记录链表的长度的情况，可能要简单一些。前一段时间，在看链表归并排序的时候，就不得不面临着寻找链表中间节点的问题。这里给出一种实现方式，如下所示：</p>
-<ol>
-<li>使用两个指针进行遍历，快指针每次步进<code>2</code>，慢指针每次步进<code>1</code>。</li>
-<li>当快指针到达链表尾部的时候，慢指针指向的就是链表的中点。</li>
-</ol>
-<p>&emsp;&emsp;这个算法的思想和经典问题<code>判定链表中是否存在环</code>的思想是一致的：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstdlib&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">NODE</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> value;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">NODE</span> *<span class="title">next</span>;</span></span><br><span class="line">​</span><br><span class="line">    _NODE ( <span class="keyword">int</span> value ) : value ( value ), next ( <span class="literal">NULL</span> ) &#123;&#125;;</span><br><span class="line">&#125; NODE, *PTRNODE;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">createList</span> <span class="params">( PTRNODE &amp;head, <span class="keyword">int</span> *val, <span class="keyword">int</span> size )</span> </span>&#123;</span><br><span class="line">    PTRNODE curNode = <span class="literal">NULL</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= size; i++ ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( head == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">            head = <span class="keyword">new</span> NODE ( val[i] );</span><br><span class="line">            curNode = head;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            PTRNODE newNode = <span class="keyword">new</span> NODE ( val[i] );</span><br><span class="line">            curNode-&gt;next = newNode;</span><br><span class="line">            curNode = curNode-&gt;next;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">display</span> <span class="params">( PTRNODE head )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( head == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PTRNODE curNode = head;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( curNode != <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( curNode-&gt;next != <span class="literal">NULL</span> ) &#123;</span><br><span class="line">            <span class="built_in">cout</span> &lt;&lt; curNode-&gt;value &lt;&lt; <span class="string">"-&gt;"</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">cout</span> &lt;&lt; curNode-&gt;value;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        curNode = curNode-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getMid</span> <span class="params">( PTRNODE head )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( head == <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PTRNODE ptrOneStep = head;</span><br><span class="line">    PTRNODE ptrTwoStep = head-&gt;next;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( ptrTwoStep != <span class="literal">NULL</span> &amp;&amp; ptrTwoStep-&gt;next != <span class="literal">NULL</span> ) &#123;</span><br><span class="line">        ptrOneStep = ptrOneStep-&gt;next;</span><br><span class="line">        ptrTwoStep = ptrTwoStep-&gt;next-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ptrOneStep-&gt;value;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span> </span>&#123;</span><br><span class="line">    PTRNODE head = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">int</span> count;</span><br><span class="line">    <span class="keyword">int</span> *val;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"please input node number: "</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cin</span> &gt;&gt; count;</span><br><span class="line">    val = <span class="keyword">new</span> <span class="keyword">int</span>[count + <span class="number">1</span>];</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= count; i++ ) &#123;</span><br><span class="line">        val[i] = i;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    createList ( head, val, count );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"list is: "</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    display ( head );</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"mid val is: "</span> &lt;&lt; getMid ( head ) &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">delete</span>[] val;</span><br><span class="line">    system ( <span class="string">"PAUSE"</span> );</span><br><span class="line">    <span class="keyword">return</span> EXIT_SUCCESS;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/数据结构和算法/骰子问题/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/30/数据结构和算法/骰子问题/" itemprop="url">骰子问题</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T11:54:55+08:00">
-                2018-12-30
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;把<code>n</code>个骰子扔在地上，所有骰子朝上一面的点数之和为<code>S</code>。输入<code>n</code>，打印出<code>S</code>的所有可能的值出现的概率。<br>&emsp;&emsp;设<code>n</code>个骰子某次投掷点数和为s的出现次数是<code>F(n, s)</code>，那么<code>F(n, s)</code>等于<code>n - 1</code>个骰子投掷的点数和为<code>s - 1</code>至<code>s - 6</code>时的次数的总和：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">F(n, s) = F(n - <span class="number">1</span>, s - <span class="number">1</span>) + F(n - <span class="number">1</span>, s - <span class="number">2</span>) + ... + F(n - <span class="number">1</span>, s - <span class="number">6</span>)</span><br></pre></td></tr></table></figure>
-<p>代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;math.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstdlib&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">CountNumber</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">int</span> s)</span> </span>&#123; <span class="comment">/* 计算n个骰子某次投掷点数和为s的出现次数 */</span></span><br><span class="line">    <span class="keyword">if</span> (s &lt; n || s &gt; <span class="number">6</span> * n) &#123; <span class="comment">/* n个骰子点数之和范围在n到6n之间，否则数据不合法 */</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> (n == <span class="number">1</span>) &#123; <span class="comment">/* 当有一个骰子时，一次骰子点数为s(1 &lt;= s &lt;= 6)的次数当然是1 */</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        <span class="keyword">return</span> CountNumber(n - <span class="number">1</span>, s - <span class="number">6</span>) + CountNumber(n - <span class="number">1</span>, s - <span class="number">5</span>) +</span><br><span class="line">        CountNumber(n - <span class="number">1</span>, s - <span class="number">4</span>) + CountNumber(n - <span class="number">1</span>, s - <span class="number">3</span>) +</span><br><span class="line">        CountNumber(n - <span class="number">1</span>, s - <span class="number">2</span>) + CountNumber(n - <span class="number">1</span>, s - <span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">listDiceProbability</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> nTotal = <span class="built_in">pow</span>((<span class="keyword">double</span>)<span class="number">6</span>, n);</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> (i = n; i &lt;= <span class="number">6</span> * n; i++) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"P(s = %d) = %d/%d\n"</span>, i, CountNumber(n, i), nTotal);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    listDiceProbability(<span class="number">3</span>);</span><br><span class="line">    system(<span class="string">"pause"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<hr>
-<p>&emsp;&emsp;计算将产生一个范围为<code>1</code>至<code>6</code>的值，模拟掷骰子：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Compute the largest number returned by the random number</span></span><br><span class="line"><span class="comment"> * generator that will produce a six as the value of the die</span></span><br><span class="line"><span class="comment"> * 计算将产生6作为骰子值的随机数生成函数所返回的最大值</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAX_OK_RAND (int)( ( ( (long)RAND_MAX + 1 ) / 6 ) * 6 - 1 )</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">throw_die</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">int</span> is_seeded = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> value;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !is_seeded ) &#123;</span><br><span class="line">        is_seeded = <span class="number">1</span>;</span><br><span class="line">        srand ( ( <span class="keyword">unsigned</span> <span class="keyword">int</span> ) time ( <span class="literal">NULL</span> ) );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        value = rand();</span><br><span class="line">    &#125; <span class="keyword">while</span> ( value &gt; MAX_OK_RAND );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> value % <span class="number">6</span> + <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/数据结构和算法/卷积/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/30/数据结构和算法/卷积/" itemprop="url">卷积</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T11:47:29+08:00">
-                2018-12-30
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="序列卷积"><a href="#序列卷积" class="headerlink" title="序列卷积"></a>序列卷积</h3><p>&emsp;&emsp;代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MATRIX_DIM 1024</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> FILTER 32</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">float</span> a_in[FILTER];</span><br><span class="line">    <span class="keyword">float</span> b_in[MATRIX_DIM];</span><br><span class="line">    <span class="keyword">float</span> c_in[MATRIX_DIM + FILTER - <span class="number">1</span>];</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; MATRIX_DIM; i++ ) &#123;</span><br><span class="line">        b_in[i] = i;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; MATRIX_DIM + FILTER - <span class="number">1</span>; i++ ) &#123;</span><br><span class="line">        c_in[i] = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; FILTER; i++ ) &#123;</span><br><span class="line">        a_in[i] = i * <span class="number">1.0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> j = <span class="number">0</span>; j &lt; MATRIX_DIM + FILTER - <span class="number">1</span> ; j++ ) &#123;</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> k = <span class="number">0</span>; k &lt; MATRIX_DIM; k++ ) &#123;</span><br><span class="line">            <span class="keyword">if</span> ( ( j - k ) &gt;= <span class="number">0</span> &amp;&amp; ( j - k ) &lt; FILTER ) &#123;</span><br><span class="line">                c_in[j] += a_in[j - k] * b_in[k];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="二维卷积"><a href="#二维卷积" class="headerlink" title="二维卷积"></a>二维卷积</h3><p>&emsp;&emsp;假设有如下二维数组：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">    <span class="number">1</span> <span class="number">2</span> <span class="number">3</span>      <span class="number">2</span> <span class="number">2</span> <span class="number">2</span></span><br><span class="line">A = <span class="number">1</span> <span class="number">2</span> <span class="number">3</span>  B = <span class="number">1</span> <span class="number">1</span> <span class="number">1</span></span><br><span class="line">    <span class="number">1</span> <span class="number">2</span> <span class="number">3</span>      <span class="number">3</span> <span class="number">3</span> <span class="number">3</span></span><br></pre></td></tr></table></figure>
-<p>当使用<code>A</code>和<code>B</code>进行卷积时，首先需要将<code>B</code>旋转<code>180</code>度，如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">3</span> <span class="number">3</span> <span class="number">3</span></span><br><span class="line"><span class="number">1</span> <span class="number">1</span> <span class="number">1</span></span><br><span class="line"><span class="number">2</span> <span class="number">2</span> <span class="number">2</span></span><br></pre></td></tr></table></figure>
-<p>然后将<code>A</code>进行填零，与<code>B</code>进行卷积运算。最终可得如下结果：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">2</span>   <span class="number">6</span>  <span class="number">12</span>  <span class="number">10</span>   <span class="number">6</span></span><br><span class="line"><span class="number">3</span>   <span class="number">9</span>  <span class="number">18</span>  <span class="number">15</span>   <span class="number">9</span></span><br><span class="line"><span class="number">6</span>  <span class="number">18</span>  <span class="number">36</span>  <span class="number">30</span>  <span class="number">18</span></span><br><span class="line"><span class="number">4</span>  <span class="number">12</span>  <span class="number">24</span>  <span class="number">20</span>  <span class="number">12</span></span><br><span class="line"><span class="number">3</span>   <span class="number">9</span>  <span class="number">18</span>  <span class="number">15</span>   <span class="number">9</span></span><br></pre></td></tr></table></figure>
-<p>但在图像处理中一般只选择与<code>A</code>维数相同的矩阵：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"> <span class="number">9</span>  <span class="number">18</span>  <span class="number">15</span></span><br><span class="line"><span class="number">18</span>  <span class="number">36</span>  <span class="number">30</span></span><br><span class="line"><span class="number">12</span>  <span class="number">24</span>  <span class="number">20</span></span><br></pre></td></tr></table></figure>
-<p>代码如下所示：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N1 512</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> M1 512</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N2 3</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> M2 3</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* x相当于矩阵A，y相当于J矩阵B，z相当于矩阵full时的输出，z2相当于矩阵与A维数相同时的输出 */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">conv2</span> <span class="params">( <span class="keyword">unsigned</span> <span class="keyword">char</span> x[N1][M1], <span class="keyword">int</span> y[N2][M2],</span></span></span><br><span class="line"><span class="function"><span class="params">             <span class="keyword">float</span> z[N1 + N2 - <span class="number">1</span>][M1 + M2 - <span class="number">1</span>], <span class="keyword">float</span> z2[N1][M1] )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i, j;</span><br><span class="line">    <span class="keyword">int</span> n, m;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; N1 + N2 - <span class="number">1</span>; i++ )</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; M1 + M2 - <span class="number">1</span>; j++ ) &#123;</span><br><span class="line">            <span class="keyword">float</span> temp = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">for</span> ( m = <span class="number">0</span>; m &lt; N1; m++ )</span><br><span class="line">                <span class="keyword">for</span> ( n = <span class="number">0</span>; n &lt; M1; n++ )</span><br><span class="line">                    <span class="keyword">if</span> ( ( i - m ) &gt;= <span class="number">0</span> &amp;&amp; ( i - m ) &lt; N2 &amp;&amp; ( j - n ) &gt;= <span class="number">0</span> &amp;&amp; ( j - n ) &lt; M2 ) &#123;</span><br><span class="line">                        temp += x[m][n] * y[i - m][j - n];</span><br><span class="line">                    &#125;</span><br><span class="line">​</span><br><span class="line">            z[i][j] = temp;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; N1; i++ )</span><br><span class="line">        <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; M1; j++ ) &#123;</span><br><span class="line">            z2[i][j] = z[i + ( N2 - <span class="number">1</span> ) / <span class="number">2</span>][j + ( M2 - <span class="number">1</span> ) / <span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2018/12/30/数据结构和算法/出现奇数次的数/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/12/30/数据结构和算法/出现奇数次的数/" itemprop="url">出现奇数次的数</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-30T10:50:53+08:00">
-                2018-12-30
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;有一个数组，其中有一个数出现的次数是奇数个，找出这个单着的数。比如<code>[2 1 3 2 1]</code>，<code>3</code>是答案。有如下三种解决方案：</p>
-<ul>
-<li>暴力搜索：每个数都和其他数比较，找不到相同的，就得到了结果，时间复杂度为<code>O(n^2)</code>。</li>
-<li>排序搜索：先给序列排个序，之后从前往后一对一对的找，直到不是成对的为止，时间复杂度为<code>O(nlgn)</code>。</li>
-<li>异或计算：最简单的方法，时间复杂度为<code>O(n)</code>。</li>
-</ul>
-<p>&emsp;&emsp;直接看思路三，对异或(<code>^</code>)操作的解释为，相同为<code>0</code>，相异为<code>1</code>，例如<code>1^0 = 1，1^1 = 0</code>。这样，两个相同的数异或就为<code>0</code>，任何数和<code>0</code>异或为自己(<code>1^0 = 1</code>，<code>0^0 = 0</code>)。对于本题<code>[2 1 3 2 1]</code>，都异或一下，相同的(<code>2^2</code>、<code>1^1</code>)为<code>0</code>，剩下的<code>3</code>和<code>0</code>异或为自身<code>3</code>(注意，异或具有交换律)。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a[<span class="number">5</span>] = &#123;<span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>, <span class="number">1</span>&#125;;</span><br><span class="line">    <span class="keyword">int</span> aim = a[<span class="number">0</span>];</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">1</span>; i &lt; <span class="number">5</span>; i++ ) &#123;</span><br><span class="line">        aim = aim ^ a[i];</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Result:"</span>, aim );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>异或在这方面挺好，再来个应用：不用第三个数直接交换两个数：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt; /* 方案1 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">swap</span> <span class="params">( <span class="keyword">int</span> *a, <span class="keyword">int</span> *b )</span> </span>&#123;</span><br><span class="line">    *a = *a ^ *b;</span><br><span class="line">    *b = *a ^ *b;</span><br><span class="line">    *a = *a ^ *b;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">3</span>, b = <span class="number">5</span>;</span><br><span class="line">    swap ( &amp;a, &amp;b );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%d\n%d"</span>, a, b );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*-------------------------*/</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt; /* 方案2 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">swap</span> <span class="params">( <span class="keyword">int</span> *a, <span class="keyword">int</span> *b )</span> </span>&#123;</span><br><span class="line">    *a = *a + *b;</span><br><span class="line">    *b = *a - *b;</span><br><span class="line">    *a = *a - *b;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">3</span>, b = <span class="number">5</span>;</span><br><span class="line">    swap ( &amp;a, &amp;b );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"%d\n%d"</span>, a, b );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1559,7 +1700,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">943</span>
+                  <span class="site-state-item-count">949</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
