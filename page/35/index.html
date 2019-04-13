@@ -271,6 +271,783 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/07/C语言应用代码/Quake-III浮点开方函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/07/C语言应用代码/Quake-III浮点开方函数/" itemprop="url">Quake-III浮点开方函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-07T10:03:49+08:00">
+                2019-02-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>QUAKE</code>的开发商<code>ID SOFTWARE</code>遵守<code>GPL</code>协议，公开了<code>QUAKE-III</code>的源代码，让世人有幸目睹<code>Carmack</code>传奇的<code>3D</code>引擎的源码，名称为<code>quake3-1.32b-source.zip</code>。<br>&emsp;&emsp;我们知道，越底层的函数，调用越频繁。<code>3D</code>引擎归根到底还是数学运算，那么找到最底层的数学运算函数(<code>game/code/q_math.c</code>)，必然是精心编写的。在<code>game/code/q_math.c</code>里发现了这样一段代码，它的作用是将一个数开平方并取倒，经测试这段代码比<code>(float)(1.0 / sqrt(x))</code>快<code>4</code>倍：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">float</span> <span class="title">Q_rsqrt</span> <span class="params">( <span class="keyword">float</span> number )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> i;</span><br><span class="line">    <span class="keyword">float</span> x2, y;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">float</span> threehalfs = <span class="number">1.5F</span>;</span><br><span class="line">    x2 = number * <span class="number">0.5F</span>;</span><br><span class="line">    y = number;</span><br><span class="line">    i = * ( <span class="keyword">long</span> * ) &amp;y; <span class="comment">/* evil floating point bit level hacking */</span></span><br><span class="line">    i = <span class="number">0x5f3759df</span> - ( i &gt;&gt; <span class="number">1</span> ); <span class="comment">/* what the fuck? */</span></span><br><span class="line">    y = * ( <span class="keyword">float</span> * ) &amp;i;</span><br><span class="line">    y = y * ( threehalfs - ( x2 * y * y ) ); <span class="comment">/* 1st iteration */</span></span><br><span class="line">    <span class="comment">// y = y * ( threehalfs - ( x2 * y * y ) ); // 2nd iteration, this can be removed</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> Q3_VM</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __linux__</span></span><br><span class="line">    assert ( !isnan ( y ) ); <span class="comment">/* bk010122 - FPE? */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="keyword">return</span> y;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;这个简洁的函数最核心的部分就是标注了<code>what the fuck?</code>的一句<code>i = 0x5f3759df - ( i &gt;&gt; 1 );</code>，再加上<code>y = y * ( threehalfs - ( x2 * y * y ) );</code>，两句话就完成了开方运算！而且注意到，核心那句是定点移位运算，速度极快！特别在很多没有乘法指令的<code>RISC</code>结构<code>CPU</code>上，这样做是极其高效的。<br>&emsp;&emsp;算法的原理其实不复杂，就是牛顿迭代法，用$x - \frac{f(x)}{f’(x)}$来不断的逼近$f(x) = a$的根。简单来说比如求平方根：</p>
+<p>\begin{equation}<br>f(x) = x^2 = a \\<br>f’(x) = 2x \\<br>\frac{f(x)}{f’(x)} = \frac{x}{2}<br>\end{equation}</p>
+<p>把$f(x)$代入$x - \frac{f(x)}{f’(x)}$后有$(x+\frac{a}{x})/2$。现在我们令<code>a</code>为<code>5</code>，选一个猜测值(比如<code>2</code>)，那么可以这么算：<code>5/2 = 2.5；(2.5 + 2)/2 = 2.25；5/2.25 = xxx；(2.25 + xxx)/2 = xxxx</code>。这样反复迭代下去，结果必定收敛于<code>sqrt(5)</code>。但是卡马克(<code>quake3</code>作者)真正厉害的地方是，他选择了一个神秘的常数<code>0x5f3759df</code>来计算那个猜测值。就是加注释的那一行，那一行算出的值非常接近<code>1/sqrt(n)</code>，这样只需要<code>2</code>次牛顿迭代就可以达到所需要的精度。<br>&emsp;&emsp;普渡大学的数学家<code>Chris Lomont</code>采用暴力的方法，找到一个比卡马克数字要好上那么一丁点的数字，这个数字就是<code>0x5f375a86</code>。<code>Lomont</code>为此写下一篇论文<code>Fast Inverse Square Root</code>。论文下载地址为<code>http://www.math.purdue.edu/~clomont/Math/Papers/2003/InvSqrt.pdf</code>和<code>http://www.matrix67.com/data/InvSqrt.pdf</code>。最精简的<code>1/sqrt</code>函数如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">float</span> <span class="title">InvSqrt</span> <span class="params">( <span class="keyword">float</span> x )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">float</span> xhalf = <span class="number">0.5f</span> * x;</span><br><span class="line">    <span class="keyword">int</span> i = * ( <span class="keyword">int</span> * ) &amp;x; <span class="comment">/* get bits for floating VALUE */</span></span><br><span class="line">    i = <span class="number">0x5f375a86</span> - ( i &gt;&gt; <span class="number">1</span> ); <span class="comment">/* gives initial guess y0 */</span></span><br><span class="line">    x = * ( <span class="keyword">float</span> * ) &amp;i; <span class="comment">/* convert bits BACK to float */</span></span><br><span class="line">    x = x * ( <span class="number">1.5f</span> - xhalf * x * x ); <span class="comment">/* Newton step, repeating increases accuracy */</span></span><br><span class="line">    <span class="keyword">return</span> x;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/07/C语言应用代码/统计关键字出现次数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/07/C语言应用代码/统计关键字出现次数/" itemprop="url">统计关键字出现次数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-07T09:56:43+08:00">
+                2019-02-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctype.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAXWORD 100 <span class="comment">/* 关键字最大的个数 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">key</span> &#123;</span> <span class="comment">/* 结构体数组，关键字按顺序排列 */</span></span><br><span class="line">    <span class="keyword">char</span> *word;</span><br><span class="line">    <span class="keyword">int</span> count;</span><br><span class="line">&#125; keytab[] = &#123;</span><br><span class="line">    <span class="string">"auto"</span>, <span class="number">0</span>,</span><br><span class="line">    <span class="string">"break"</span>, <span class="number">0</span>,</span><br><span class="line">    <span class="string">"case"</span>, <span class="number">0</span>,</span><br><span class="line">    <span class="string">"char"</span>, <span class="number">0</span>,</span><br><span class="line">    <span class="string">"const"</span>, <span class="number">0</span>,</span><br><span class="line">    <span class="string">"continue"</span>, <span class="number">0</span>,</span><br><span class="line">    <span class="string">"default"</span>, <span class="number">0</span>,</span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">    <span class="string">"unsigned"</span>, <span class="number">0</span>,</span><br><span class="line">    <span class="string">"void"</span>, <span class="number">0</span>,</span><br><span class="line">    <span class="string">"volatile"</span>, <span class="number">0</span>,</span><br><span class="line">    <span class="string">"while"</span>, <span class="number">0</span></span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 关键字的个数等于数组的长度除以单个元素的长度 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NKEYS (sizeof keytab / sizeof(struct key))</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getword</span> <span class="params">( <span class="keyword">char</span> *, <span class="keyword">int</span> )</span></span>; <span class="comment">/* 从输入中读取下一个字符或单词 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">binsearch</span> <span class="params">( <span class="keyword">char</span> *, struct key *, <span class="keyword">int</span> )</span></span>; <span class="comment">/* 在tab[0]到tab[n-1]中查找单词 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> n;</span><br><span class="line">    <span class="keyword">char</span> word[MAXWORD];</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( getword ( word, MAXWORD ) != EOF ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( <span class="built_in">isalpha</span> ( word[<span class="number">0</span>] ) ) <span class="comment">/* word的第一个单词为字母 */</span></span><br><span class="line">            <span class="keyword">if</span> ( ( n = binsearch ( word, keytab, NKEYS ) ) &gt;= <span class="number">0</span> ) &#123;</span><br><span class="line">                keytab[n].count++; <span class="comment">/* 在结构体中查找成功，关键字计数加1 */</span></span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( n = <span class="number">0</span>; n &lt; NKEYS; n++ ) &#123; <span class="comment">/* 统计结束，打印结果 */</span></span><br><span class="line">        <span class="keyword">if</span> ( keytab[n].count &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">"%4d %s\n"</span>, keytab[n].count, keytab[n].word );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* binsearch: find word in tab[0]...tab[n-1] */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">binsearch</span> <span class="params">( <span class="keyword">char</span> *word, struct key tab[], <span class="keyword">int</span> n )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> cond;</span><br><span class="line">    <span class="keyword">int</span> low, high, mid;</span><br><span class="line">    low = <span class="number">0</span>;</span><br><span class="line">    high = n - <span class="number">1</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( low &lt;= high ) &#123;</span><br><span class="line">        mid = ( low + high ) / <span class="number">2</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( ( cond = <span class="built_in">strcmp</span> ( word, tab[mid].word ) ) &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">            high = mid - <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> ( cond &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">            low = mid + <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> mid;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* getword从输入中读取下一个单词，单词可以是字母开头的字母和数字串，也可以是一个非空白字符串。</span></span><br><span class="line"><span class="comment">   函数返回值可能是单词的第一个字符、文件结束符EOF或字符本身(如果该字符不是字母字符本身) */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getword</span> <span class="params">( <span class="keyword">char</span> *word, <span class="keyword">int</span> lim )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> c, getch ( <span class="keyword">void</span> );</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">ungetch</span> <span class="params">( <span class="keyword">int</span> )</span></span>;</span><br><span class="line">    <span class="keyword">char</span> *w = word;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="built_in">isspace</span> ( c = getch() ) ) <span class="comment">/* c跳过空白符 */</span></span><br><span class="line">        ;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( c != EOF ) &#123;</span><br><span class="line">        *w++ = c;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !<span class="built_in">isalpha</span> ( c ) ) &#123; <span class="comment">/* c不是字母 */</span></span><br><span class="line">        *w = <span class="string">'\0'</span>;</span><br><span class="line">        <span class="keyword">return</span> c;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ; --lim &gt; <span class="number">0</span>; w++ ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( !<span class="built_in">isalnum</span> ( *w = getch() ) ) &#123; <span class="comment">/* 输入不是字母或数字时，该单词结束 */</span></span><br><span class="line">            ungetch ( *w );</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    *w = <span class="string">'\0'</span>; <span class="comment">/* 字符串结束符“\0” */</span></span><br><span class="line">    <span class="keyword">return</span> word[<span class="number">0</span>]; <span class="comment">/* 返回值是单词的第一个字符 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> BUFSIZE 100</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">char</span> buf[BUFSIZE];</span><br><span class="line"><span class="keyword">int</span> bufp = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">getch</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> ( bufp &gt; <span class="number">0</span> ) ? buf[--bufp] : getchar();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ungetch</span> <span class="params">( <span class="keyword">int</span> c )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( bufp &gt;= BUFSIZE ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"ungetch: too many characters\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        buf[bufp++] = c;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$ ./main &lt; main.c</span><br><span class="line">   1 auto</span><br><span class="line">   2 <span class="built_in">break</span></span><br><span class="line">   1 <span class="keyword">case</span></span><br><span class="line">   9 char</span><br><span class="line">   1 const</span><br><span class="line">   1 <span class="built_in">continue</span></span><br><span class="line">   1 default</span><br><span class="line">   1 unsigned</span><br><span class="line">   6 void</span><br><span class="line">   1 volatile</span><br><span class="line">   4 <span class="keyword">while</span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/07/C语言应用代码/绘制三角函数曲线/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/07/C语言应用代码/绘制三角函数曲线/" itemprop="url">绘制三角函数曲线</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-07T09:45:03+08:00">
+                2019-02-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="cos曲线"><a href="#cos曲线" class="headerlink" title="cos曲线"></a>cos曲线</h3><p>&emsp;&emsp;在屏幕上用<code>*</code>显示<code>0°</code>至<code>360°</code>的<code>cos</code>曲线：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;math.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> x;</span><br><span class="line">    <span class="keyword">double</span> y;</span><br><span class="line">    <span class="keyword">int</span> m;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( y = <span class="number">1</span>; y &gt;= <span class="number">-1</span>; y = y - <span class="number">0.1</span> ) &#123;</span><br><span class="line">        x = <span class="built_in">acos</span> ( y ) * <span class="number">10</span>;</span><br><span class="line">        m = <span class="number">62</span> - x;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; x; i++ ) &#123;</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">" "</span> );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"*"</span> );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = x; i &lt; m; i++ ) &#123;</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">" "</span> );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"*\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="sin曲线"><a href="#sin曲线" class="headerlink" title="sin曲线"></a>sin曲线</h3><p>&emsp;&emsp;在屏幕上用<code>*</code>显示<code>0°</code>至<code>360°</code>的<code>sin</code>曲线：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;math.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> x;</span><br><span class="line">    <span class="keyword">int</span> m;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">double</span> y;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( y = <span class="number">1</span>; y &gt;= <span class="number">0.1</span>; y = y - <span class="number">0.1</span> ) &#123;</span><br><span class="line">        x = <span class="built_in">asin</span> ( y ) * <span class="number">10</span>;</span><br><span class="line">        m = <span class="number">31</span> - x;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; x; i++ ) &#123;</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">" "</span> );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"*"</span> );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( ; i &lt; m; i++ ) &#123;</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">" "</span> );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"*\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"*"</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">31</span>; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">" "</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"*"</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">31</span>; i &lt; <span class="number">62</span>; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">" "</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"*\n"</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( y = <span class="number">-0.1</span>; y &gt;= <span class="number">-1</span>; y = y - <span class="number">0.1</span> ) &#123;</span><br><span class="line">        x = - <span class="built_in">asin</span> ( y ) * <span class="number">10</span>;</span><br><span class="line">        m = <span class="number">31</span> - x;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; x + <span class="number">32</span>; i++ ) &#123;</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">" "</span> );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"*"</span> );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = x; i &lt; m; i++ ) &#123;</span><br><span class="line">            <span class="built_in">printf</span> ( <span class="string">" "</span> );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"*\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/06/Qt语法详解/Qt之QFontDialog/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/06/Qt语法详解/Qt之QFontDialog/" itemprop="url">Qt之QFontDialog</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-06T20:55:52+08:00">
+                2019-02-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">Qt语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>QFontDialog</code>类提供了可以选择字体的对话框窗口部件，继承了<code>QDialog</code>，其头文件为<code>qfontdialog.h</code>。静态公有成员如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QFont <span class="title">getFont</span> <span class="params">( <span class="keyword">bool</span> *ok, <span class="keyword">const</span> QFont &amp;initial, QWidget *parent = <span class="number">0</span>, <span class="keyword">const</span> <span class="keyword">char</span> *name = <span class="number">0</span> )</span></span>;</span><br><span class="line"><span class="function">QFont <span class="title">getFont</span> <span class="params">( <span class="keyword">bool</span> *ok, QWidget *parent = <span class="number">0</span>, <span class="keyword">const</span> <span class="keyword">char</span> *name = <span class="number">0</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>实例如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> ok;</span><br><span class="line">QFont font = QFontDialog::getFont ( &amp;ok, QFont ( <span class="string">"Helvetica [Cronyx]"</span>, <span class="number">10</span> ), <span class="keyword">this</span> );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( ok ) &#123;</span><br><span class="line">    <span class="comment">/* font被设置为用户选择的字体 */</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">/* 用户取消这个对话框，font被设置为初始值，在这里就是“Helvetica [Cronyx], 10” */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对话框也可以被用来直接设置窗口部件的字体：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">myWidget.setFont ( QFontDialog::getFont ( <span class="number">0</span>, myWidget.font() ) );</span><br></pre></td></tr></table></figure>
+<p>如果用户点击<code>OK</code>，它们选择的字体将被<code>myWidget</code>使用，并且如果点击<code>Cancel</code>，最初的字体被使用。</p>
+<p><img src="/2019/02/06/Qt语法详解/Qt之QFontDialog/1.png" height="196" width="513"></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">QFont QFontDialog::getFont (</span><br><span class="line">    <span class="keyword">bool</span> *ok, <span class="keyword">const</span> QFont &amp;initial,</span><br><span class="line">    QWidget *parent = <span class="number">0</span>, <span class="keyword">const</span> <span class="keyword">char</span> *name = <span class="number">0</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>该函数执行一个模式字体对话框并且返回一个字体。如果用户点击<code>OK</code>，被选择的字体将被返回，并且如果点击<code>Cancel</code>，<code>initial</code>字体被返回。对话框的父对象为<code>parent</code>、名称为<code>name</code>。<code>initial</code>是初始选择的字体。如果<code>ok</code>参数为非零，则用户点击<code>OK</code>，<code>*ok</code>被设置为真，并且如果用户点击<code>Cancel</code>，就被设置为假。这个静态函数没有完整的<code>QFontDialog</code>对象灵活，但是更容易使用。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> ok;</span><br><span class="line">QFont font = QFontDialog::getFont ( &amp;ok, <span class="keyword">this</span> );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( ok ) &#123;</span><br><span class="line">    <span class="comment">/* font被设置为用户选择的字体 */</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">/* 用户取消这个对话框，font被设置为默认应用程序字体，QApplication::font */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/06/单片机/STM32之RTC/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/06/单片机/STM32之RTC/" itemprop="url">STM32之RTC</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-06T20:29:56+08:00">
+                2019-02-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;先熟悉一下几个知识点：</p>
+<ul>
+<li><code>STM32</code>的实时时钟<code>RTC</code>是一个独立的定时器。</li>
+<li><code>RTC</code>模块和其时钟配置系统(<code>RCC_BDCR</code>寄存器)是在后备区域。当系统复位或断电的时候，后备区域依然自动计时。我们可以在后备区域放一些关键的数据。</li>
+<li><code>RTC</code>的部分区域可由<code>VCC</code>来供电，也可以由备用电源来供电。</li>
+</ul>
+<p>&emsp;&emsp;<code>RTC</code>时钟框图可以分为完全独立的两个部分：第一个是<code>APB1</code>接口部分，用来<code>RTC</code>相关的寄存器；第二个是<code>RTC</code>核心。对于第一部分，这里涉及到寄存器<code>RTC_CRL</code>中的<code>RSF</code>位，这位是寄存器的同步标志。对于第二部分，这里分为两个模块：一是<code>RTC</code>预分频器模块；二是一个<code>32</code>位的可编程计数器。</p>
+<p><img src="/2019/02/06/单片机/STM32之RTC/1.png" height="300" width="365"></p>
+<p>&emsp;&emsp;下面开始分析第二部分，先给大家介绍下后备区域的几个特别重要的寄存器：</p>
+<ul>
+<li><code>RTC_DIV</code>：<code>RTC</code>预分频器余数寄存器。这个寄存器的作用是来获得比秒钟更加准确的时钟(例如<code>0.1s</code>、<code>0.01s</code>)，该寄存器是自减的，用来保存还需要多少个时钟周期获得一个秒信号。这里加上一个公式<code>fTR_CLK = fRTCCLK/(PRL[19:0] + 1)</code>。<code>RTC_DIV</code>寄存器的值是由<code>RTC_PRL</code>(<code>RTC</code>预分频器装载寄存器)提供的，而<code>RTC_DIV</code>寄存器的时钟频率是由<code>RTCCLK</code>提供的。比如我们把<code>RTC_PRL</code>值设为<code>32767</code>，则<code>RTC_DIV</code>寄存器的值也为<code>32767</code>，它和<code>RTCCLK</code>的时钟频率是一样的。<code>RTCCLK</code>的时钟周期是<code>1/32768</code>(<code>s</code>)，也就是每一个<code>RTCCLK</code>的时钟周期，<code>RTC_DIV</code>自减<code>1</code>，直至到<code>1s</code>钟后，被硬件重新装载，也就是<code>1s</code>钟减<code>32768</code>次。那它到底是怎么提供<code>0.1s</code>，甚至是<code>0.01s</code>的呢？举个例子就明白了。比如我想要得到<code>1.12</code>秒的这个时间，就要求<code>RTC_DIV</code>自减<code>0.12 / (1 / 32768)</code>次。</li>
+<li><code>RTC_PRL</code>：<code>RTC</code>预分频装载寄存器。这个寄存器有两个作用：一是提供给<code>RTC_DIV</code>的重新装载值，二是设置时钟分频系数。对于设置时钟分频系数，比如我们使用<code>32.768KHz</code>的晶振作为时钟输入，那么我们配置这个寄存器值为<code>32767</code>，就可以得到<code>1s</code>钟的计数频率(<code>32768 / (32767 + 1)</code>，单位是<code>Hz</code>)。</li>
+<li><code>RTC_CNT</code>：它是<code>RTC</code>计数器寄存器。这个寄存器较简单，用来记录秒钟值。如果之前对<code>RTC_CR</code>的相关中断允许位配置的话，<code>RTC_CNT</code>寄存器可以产生一个溢出中断。</li>
+<li><code>RTC_ALR</code>：它是<code>RTC</code>闹钟寄存器，用来标记闹钟产生时间。如果<code>RTC_CNT</code>的值和<code>RTC_ALR</code>的值相等，并使能中断的话(在<code>RTC_CR</code>中配置)，会产生一个闹钟中断。</li>
+</ul>
+<p>&emsp;&emsp;给大家理一遍思路：首先外部加进来一个时钟信号<code>RTCCLK</code>(<code>32.768K</code>)，然后设置<code>RTC_PRL</code>的分频系数为<code>32767</code>，得到一个秒时钟信号<code>TR_CLK</code>(<code>1Hz</code>)。当<code>TR_CLK</code>每过一个时钟周期，产生一个<code>RTC_Second</code>(秒钟中断)，同时<code>RTC_CNT</code>计数器(记录秒值)加<code>1</code>。如果要求更精准的时间，还可以在<code>RTC_CR</code>寄存器的<code>RSF</code>位被置为<code>1</code>时去读<code>RTC_DIV</code>的值。<br>&emsp;&emsp;如果想显示时间，就要先设置一个基础时间，然后让系统在基础时间上进行自加。<br>&emsp;&emsp;第一步：设置一个基础时间。在对时钟进行配置时(在初始化函数<code>RTC_Init</code>中配置)，里面有个<code>RTC_Set</code>函数，此函数会对你设置的年月日时分秒进行计算，算出从<code>1970</code>年到你设置那个时刻总共是多少秒，然后把算出来的这个秒值赋给<code>RTC_CNT</code>计数器作为初值。<br>&emsp;&emsp;第二步：系统自己更新时间(自加)。在更新函数<code>RTC_Get</code>中，首先会读取<code>RTC_CNT</code>计数器中的值，然后经过一番计算，计算出年月日时分秒和星期，分别赋值给那些时间的结构体变量。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/06/Linux系统编程/exit和_exit的区别/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/06/Linux系统编程/exit和_exit的区别/" itemprop="url">exit和_exit的区别</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-06T19:51:39+08:00">
+                2019-02-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;在<code>Linux</code>的标准库中，有一套称作高级<code>I/O</code>的函数，例如<code>printf</code>、<code>fopen</code>、<code>fread</code>、<code>fwrite</code>，也被称作<code>缓冲I/O</code>。其特征是对应每一个打开的文件，在内存中都有一片缓冲区，每次读文件会多读若干条记录，这样下次读文件时就可以直接从内存的缓存中取出；每次写文件时也仅仅是写入到内存的缓冲区，等待满足一定的条件(达到一定的数量或者遇到特定字符，例如换行和文件结束符<code>EOF</code>)，再将缓冲区的内容一次性的写入文件，这样就大大增加了文件读写的速度，但也为我们编程带来了一点点麻烦。如果有些数据，我们认为已经写入了文件，实际上因为没有满足特定的条件，它们还只是保存在缓冲区内，这时用<code>_exit</code>函数直接将程序关闭，缓冲区中的数据就会丢失；反之，如果想保证数据的完整性，就一定要使用<code>exit</code>函数。<br>&emsp;&emsp;<code>exit</code>函数与<code>_exit</code>函数最大的区别就在于：<code>exit</code>函数在调用<code>exit</code>系统调用之前要检查文件的打开情况，把文件缓冲区中的内容写回文件，就是图中的<code>清理I/O缓冲</code>一项。<br>&emsp;&emsp;<code>exit</code>函数定义在<code>stdlib.h</code>中，而<code>_exit</code>定义在<code>unistd.h</code>中。<code>exit</code>和<code>_exit</code>都用于正常终止一个函数，但<code>_exit</code>直接是一个<code>sys_exit</code>系统调用，而<code>exit</code>则通常是普通函数库中的一个函数。它会先执行一些清除操作，例如调用执行各终止处理函数、关闭所有标准<code>IO</code>等，然后调用<code>sys_exit</code>。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123; <span class="comment">/* 程序1 */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"this is a test function!\n"</span> )</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"test exit"</span> );</span><br><span class="line">    <span class="built_in">exit</span> ( <span class="number">0</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123; <span class="comment">/* 程序2 */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"this is a test function!\n"</span> )</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"test exit"</span> );</span><br><span class="line">    _exit ( <span class="number">0</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序<code>1</code>输出两句话，而程序<code>2</code>只输出一句话。其原因就是程序<code>2</code>的<code>printf ( &quot;test exit&quot; );</code>没有加上特殊的字符，这时的文件是存放在缓冲区的。输出函数要写入数据到缓冲区，首先进行系统调用，然后系统会打开显示设备的缓冲区。<code>exit</code>的作用就是结束并清理，先检查缓冲区，把没有写入的数据写入到文件；而<code>_exit</code>是立刻关闭文件，文件缓冲区的内容也就消失了，这时就不可能输出到显示设备了。</p>
+<p><img src="/2019/02/06/Linux系统编程/exit和_exit的区别/1.png" height="264" width="224"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/06/深度学习/占位符和feed_dict/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -809,907 +1586,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/06/CC2530和zigbee笔记/获取自身和父节点网络与MAC地址/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/06/CC2530和zigbee笔记/获取自身和父节点网络与MAC地址/" itemprop="url">获取自身和父节点网络与MAC地址</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-06T18:23:33+08:00">
-                2019-02-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;实验内容：协调器上电后建立网路，路由器自动加入网络。然后路由器调用相关的<code>API</code>函数获取本身的网络地址、<code>MAC</code>地址，父节点网络地址和父节点<code>MAC</code>地址，然后通过串口将其发送到<code>PC</code>端的串口调试助手。<br>&emsp;&emsp;获取本身的网络地址、<code>MAC</code>地址，父节点网络地址和父节点<code>MAC</code>地址的<code>API</code>函数如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">uinit16 <span class="title">NLME_GetShortAddr</span> <span class="params">( <span class="keyword">void</span> )</span></span>; <span class="comment">/* 返回该节点的网络地址 */</span></span><br><span class="line"><span class="function">byte *<span class="title">NLME_GetExtAddr</span> <span class="params">( <span class="keyword">void</span> )</span></span>; <span class="comment">/* 返回指向该节点MAC地址的指针 */</span></span><br><span class="line"><span class="function">uint16 <span class="title">NLME_GetCoordShortAddr</span> <span class="params">( <span class="keyword">void</span> )</span></span>; <span class="comment">/* 函数返回父节点的网络地址 */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">NLME_GetCoordExtAdd</span> <span class="params">( byte *buf )</span></span>; <span class="comment">/* 该函数的参数是指向存放父节点的MAC地址的缓冲区的指针 */</span></span><br></pre></td></tr></table></figure>
-<p>此外，<code>ZigBee</code>可以已知节点的网络地址查询节点的<code>IEEE</code>地址或已知节点的<code>IEEE</code>地址查询该节点的网络地址。<br>&emsp;&emsp;协调器程序设计(<code>Coordinator.c</code>)：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"OSAL.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"AF.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ZDApp.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ZDObject.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ZDProfile.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Coordinator.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"DebugTrace.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> !defined(WIN32)</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"OnBoard.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"hal_lcd.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"hal_led.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"hal_key.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"hal_uart.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">const</span> cId_t GenericApp_ClusterList[GENERICAPP_MAX_CLUSTERS] = &#123;</span><br><span class="line">    GENERICAPP_CLUSTERID</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 简单设备描述符(描述一个ZigBee设备节点) */</span></span><br><span class="line"><span class="keyword">const</span> SimpleDescriptionFormat_t GenericApp_SimpleDesc = &#123;</span><br><span class="line">    GENERICAPP_ENDPOINT,</span><br><span class="line">    GENERICAPP_PROFID,</span><br><span class="line">    GENERICAPP_DEVICEID,</span><br><span class="line">    GENERICAPP_DEVICE_VERSION,</span><br><span class="line">    GENERICAPP_FLAGS,</span><br><span class="line">    GENERICAPP_MAX_CLUSTERS,</span><br><span class="line">    ( cId_t * ) GenericApp_ClusterList,</span><br><span class="line">    <span class="number">0</span>,</span><br><span class="line">    ( cId_t * ) <span class="literal">NULL</span></span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line">endPointDesc_t GenericApp_epDesc; <span class="comment">/* 节点描述符 */</span></span><br><span class="line">byte GenericApp_TaskID; <span class="comment">/* 任务优先级 */</span></span><br><span class="line">byte GenericApp_TransID; <span class="comment">/* 数据发送序列号 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GenericApp_Init</span> <span class="params">( byte task_id )</span> </span>&#123; <span class="comment">/* 任务初始化函数 */</span></span><br><span class="line">    GenericApp_TaskID = task_id; <span class="comment">/* 初始化任务优先级(任务优先级有协议栈的操作系统OSAL分配) */</span></span><br><span class="line">    GenericApp_TransID = <span class="number">0</span>; <span class="comment">/* 发送数据包的序号初始化为0 */</span></span><br><span class="line">    <span class="comment">/* 对节点描述符进行初始化 */</span></span><br><span class="line">    GenericApp_epDesc.endPoint = GENERICAPP_ENDPOINT;</span><br><span class="line">    GenericApp_epDesc.task_id = &amp;GenericApp_TaskID;</span><br><span class="line">    GenericApp_epDesc.simpleDesc = ( SimpleDescriptionFormat_t * ) &amp;GenericApp_SimpleDesc;</span><br><span class="line">    GenericApp_epDesc.latencyReq = noLatencyReqs;</span><br><span class="line">    <span class="comment">/* afRegister对节点的描述符进行注册。注册后，才能使用OSAL提供的系统服务 */</span></span><br><span class="line">    afRegister ( &amp;GenericApp_epDesc );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function">UINT16 <span class="title">GenericApp_ProcessEvent</span> <span class="params">( byte task_id, UINT16 events )</span> </span>&#123; <span class="comment">/* 消息处理函数 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;路由器程序设计(<code>Enddevice.c</code>)：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"OSAL.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"AF.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ZDApp.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ZDObject.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ZDProfile.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Coordinator.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"DebugTrace.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> !defined(WIN32)</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"OnBoard.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"hal_lcd.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"hal_led.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"hal_key.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"hal_uart.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SHOW_INFO_EVENT 0x01</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">const</span> cId_t GenericApp_ClusterList[GENERICAPP_MAX_CLUSTERS] = &#123;</span><br><span class="line">    GENERICAPP_CLUSTERID</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">const</span> SimpleDescriptionFormat_t GenericApp_SimpleDesc = &#123; <span class="comment">/* 初始化端口描述符 */</span></span><br><span class="line">    GENERICAPP_ENDPOINT,</span><br><span class="line">    GENERICAPP_PROFID,</span><br><span class="line">    GENERICAPP_DEVICEID,</span><br><span class="line">    GENERICAPP_DEVICE_VERSION,</span><br><span class="line">    GENERICAPP_FLAGS,</span><br><span class="line">    <span class="number">0</span>,</span><br><span class="line">    ( cId_t * ) <span class="literal">NULL</span>,</span><br><span class="line">    GENERICAPP_MAX_CLUSTERS,</span><br><span class="line">    ( cId_t * ) GenericApp_ClusterList</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line">endPointDesc_t GenericApp_epDesc; <span class="comment">/* 节点描述符 */</span></span><br><span class="line">byte GenericApp_TaskID; <span class="comment">/* 任务优先级 */</span></span><br><span class="line">byte GenericApp_TransID; <span class="comment">/* 数据发送序列号 */</span></span><br><span class="line">devStates_t GenericApp_NwkState; <span class="comment">/* 保存节点状态 */</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ShowInfo</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">To_string</span> <span class="params">( uint8 *dest, <span class="keyword">char</span> *src, uint8 length )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">RFTXBUF</span> &#123;</span></span><br><span class="line">    uint8 myNWK[<span class="number">4</span>];</span><br><span class="line">    uint8 myMAC[<span class="number">16</span>];</span><br><span class="line">    uint8 pNWK[<span class="number">4</span>];</span><br><span class="line">    uint8 pMAC[<span class="number">16</span>];</span><br><span class="line">&#125; RFTX;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GenericApp_Init</span> <span class="params">( byte task_id )</span> </span>&#123; <span class="comment">/* 任务初始化函数 */</span></span><br><span class="line">    GenericApp_TaskID = task_id; <span class="comment">/* 初始化任务优先级 */</span></span><br><span class="line">    GenericApp_NwkState = DEV_INIT; <span class="comment">/* 初始化为DEV_INIT，表示节点没有连接到ZigBee网络 */</span></span><br><span class="line">    GenericApp_TransID = <span class="number">0</span>; <span class="comment">/* 发送数据包的序列号初始化为0 */</span></span><br><span class="line">    <span class="comment">/* 对节点描述符进行初始化 */</span></span><br><span class="line">    GenericApp_epDesc.endPoint = GENERICAPP_ENDPOINT;</span><br><span class="line">    GenericApp_epDesc.task_id = &amp;GenericApp_TaskID;</span><br><span class="line">    GenericApp_epDesc.simpleDesc = ( SimpleDescriptionFormat_t * ) &amp;GenericApp_SimpleDesc;</span><br><span class="line">    GenericApp_epDesc.latencyReq = noLatencyReqs;</span><br><span class="line">    <span class="comment">/* afRegister函数将节点描述符进行注册，注册后才可以使用OSAL提供的系统服务 */</span></span><br><span class="line">    afRegister ( &amp;GenericApp_epDesc );</span><br><span class="line">    halUARTCfg_t uartConfig;</span><br><span class="line">    uartConfig.configured = TRUE;</span><br><span class="line">    uartConfig.baudRate  = HAL_UART_BR_115200;</span><br><span class="line">    uartConfig.flowControl = FALSE;</span><br><span class="line">    uartConfig.callBackFunc = <span class="literal">NULL</span>;</span><br><span class="line">    HalUARTOpen ( <span class="number">0</span>, &amp;uartConfig );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function">UINT16 <span class="title">GenericApp_ProcessEvent</span> <span class="params">( byte task_id, UINT16 events )</span> </span>&#123; <span class="comment">/* 消息处理函数 */</span></span><br><span class="line">    afIncomingMSGPacket_t *MSGpkt;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( events &amp; SYS_EVENT_MSG ) &#123;</span><br><span class="line">        MSGpkt = ( afIncomingMSGPacket_t * ) osal_msg_receive ( GenericApp_TaskID );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">while</span> ( MSGpkt ) &#123;</span><br><span class="line">            <span class="keyword">switch</span> ( MSGpkt-&gt;hdr.event ) &#123;</span><br><span class="line">                <span class="keyword">case</span> ZDO_STATE_CHANGE:</span><br><span class="line">                    <span class="comment">/* 读取节点的设备类型 */</span></span><br><span class="line">                    GenericApp_NwkState = ( devStates_t ) ( MSGpkt-&gt;hdr.status );</span><br><span class="line">​</span><br><span class="line">                    <span class="keyword">if</span> ( GenericApp_NwkState == DEV_ROUTER ) &#123;</span><br><span class="line">                        HalLedBlink ( HAL_LED_1, <span class="number">0</span>, <span class="number">50</span>, <span class="number">500</span> ); <span class="comment">/* LED1闪烁 */</span></span><br><span class="line">                        osal_set_event ( GenericApp_TaskID, SHOW_INFO_EVENT );</span><br><span class="line">                    &#125;</span><br><span class="line">​</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">                <span class="keyword">default</span>:</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            osal_msg_deallocate ( ( uint8 * ) MSGpkt );</span><br><span class="line">            MSGpkt = ( afIncomingMSGPacket_t * ) osal_msg_receive ( GenericApp_TaskID );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">return</span> ( events ^ SYS_EVENT_MSG );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( events &amp; SHOW_INFO_EVENT ) &#123;</span><br><span class="line">        HalLedBlink ( HAL_LED_2, <span class="number">0</span>, <span class="number">50</span>, <span class="number">500</span> );</span><br><span class="line">        ShowInfo();</span><br><span class="line">        osal_start_timerEx ( GenericApp_TaskID, SHOW_INFO_EVENT, <span class="number">5000</span> );</span><br><span class="line">        <span class="keyword">return</span> ( events ^ SHOW_INFO_EVENT ); <span class="comment">/* 清除事件标志 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">ShowInfo</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    RFTX rftx;</span><br><span class="line">    uint8 buf[<span class="number">8</span>];</span><br><span class="line">    uint8 changline[<span class="number">2</span>] = &#123;<span class="number">0x0A</span>, <span class="number">0x0D</span>&#125;;</span><br><span class="line">    uint16 nwk;</span><br><span class="line">    nwk = NLME_GetShortAddr();</span><br><span class="line">    To_string ( rftx.myNWK, ( uint8 * ) &amp;nwk, <span class="number">2</span> );</span><br><span class="line">    To_string ( rftx.myMAC, NLME_GetExtAddr(), <span class="number">8</span> );</span><br><span class="line">    nwk = NLME_GetCoordShortAddr();</span><br><span class="line">    To_string ( rftx.pNWK, ( uint8 * ) &amp;nwk, <span class="number">2</span> );</span><br><span class="line">    NLME_GetCoordExtAddr ( buf );</span><br><span class="line">    To_string ( rftx.pMAC, buf, <span class="number">8</span> );</span><br><span class="line">    HalUARTWrite ( <span class="number">0</span>, <span class="string">"NWK:"</span>, osal_strlen ( <span class="string">"NWK:"</span> ) );</span><br><span class="line">    HalUARTWrite ( <span class="number">0</span>, rftx.myNWK, <span class="number">4</span> );</span><br><span class="line">    HalUARTWrite ( <span class="number">0</span>, <span class="string">"  MAC:"</span>, osal_strlen ( <span class="string">"  MAC:"</span> ) );</span><br><span class="line">    HalUARTWrite ( <span class="number">0</span>, rftx.myMAC, <span class="number">16</span> );</span><br><span class="line">    HalUARTWrite ( <span class="number">0</span>, <span class="string">"  p-NWK:"</span>, osal_strlen ( <span class="string">"  p-NWK:"</span> ) );</span><br><span class="line">    HalUARTWrite ( <span class="number">0</span>, rftx.pNWK, <span class="number">4</span> );</span><br><span class="line">    HalUARTWrite ( <span class="number">0</span>, <span class="string">"  p-MAC:"</span>, osal_strlen ( <span class="string">"  p-MAC:"</span> ) );</span><br><span class="line">    HalUARTWrite ( <span class="number">0</span>, rftx.pMAC, <span class="number">16</span> );</span><br><span class="line">    HalUARTWrite ( <span class="number">0</span>, changline, <span class="number">2</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">To_string</span> <span class="params">( uint8 *dest, <span class="keyword">char</span> *src, uint8 length )</span> </span>&#123;</span><br><span class="line">    uint8 *xad;</span><br><span class="line">    uint8 i = <span class="number">0</span>;</span><br><span class="line">    uint8 ch;</span><br><span class="line">    xad = src + length - <span class="number">1</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; length; i++, xad-- ) &#123;</span><br><span class="line">        ch = ( *xad &gt;&gt; <span class="number">4</span> ) &amp; <span class="number">0x0F</span>;</span><br><span class="line">        dest[i &lt;&lt; <span class="number">1</span>] = ch + ( ( ch &lt; <span class="number">10</span> ) ? <span class="string">'0'</span> : <span class="string">'7'</span> );</span><br><span class="line">        ch = *xad &amp; <span class="number">0x0F</span>;</span><br><span class="line">        dest[ ( i &lt;&lt; <span class="number">1</span> ) + <span class="number">1</span>] = ch + ( ( ch &lt; <span class="number">10</span> ) ? <span class="string">'0'</span> : <span class="string">'7'</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/02/06/CC2530和zigbee笔记/获取自身和父节点网络与MAC地址/1.png"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/06/软件与硬件问题/安装SQLite/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/06/软件与硬件问题/安装SQLite/" itemprop="url">安装SQLite</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-06T18:02:14+08:00">
-                2019-02-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="Linux下的安装"><a href="#Linux下的安装" class="headerlink" title="Linux下的安装"></a>Linux下的安装</h3><p>&emsp;&emsp;使用如下命令进行安装：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install sqlite sqlite3</span><br></pre></td></tr></table></figure>
-<p>执行命令<code>sqlite -version</code>，查看<code>sqlite</code>的版本。<br>&emsp;&emsp;使用如下命令，创建一个名为<code>test.db</code>的数据库：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlite3 test.db</span><br></pre></td></tr></table></figure>
-<p>你可以输入<code>.help</code>命令查看帮助信息。<br>&emsp;&emsp;如下命令用于创建一个名字叫<code>mytabel</code>的数据表，该数据表定义了三个字段，分别为<code>id</code>、<code>name</code>、<code>age</code>：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> mytable(<span class="keyword">id</span>, <span class="keyword">name</span>, age);</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;执行如下命令，用于向数据表中插入数据：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mytable(<span class="keyword">id</span>, <span class="keyword">name</span>, age) <span class="keyword">values</span>(<span class="number">1</span>, <span class="string">"张三"</span>, <span class="string">"21"</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mytable(<span class="keyword">id</span>, <span class="keyword">name</span>, age) <span class="keyword">values</span>(<span class="number">2</span>, <span class="string">"李四"</span>, <span class="string">"23"</span>);</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;使用如下命令来查询数据表：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> mytable;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1|张三|21</span><br><span class="line">2|李四|23</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;执行命令<code>.mode column</code>，设置为列显示模式：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.mode column</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> mytable;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1 张三 21</span><br><span class="line">2 李四 23</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;执行命令<code>.header on</code>，可以显示数据表的字段：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.header on</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> mytable;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">id    name  age</span><br><span class="line"><span class="comment">----- ----- -----</span></span><br><span class="line">1     张三  21</span><br><span class="line">2     李四  23</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;执行命令<code>.exit</code>，用于退出数据库。<br>&emsp;&emsp;使用命令<code>.databases</code>查看数据库信息，执行结果如下：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">seq name file</span><br><span class="line"><span class="comment">--- ---- -----------------</span></span><br><span class="line">0   main /home/fkw/test.db</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;执行命令<code>.tables</code>，查看该数据库内的表信息，执行结果为<code>mytable</code>。<br>&emsp;&emsp;执行如下命令来安装可视化工具：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install sqlitebrowser</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="Windows上安装SQLite"><a href="#Windows上安装SQLite" class="headerlink" title="Windows上安装SQLite"></a>Windows上安装SQLite</h3><p>&emsp;&emsp;请访问<code>SQLite</code>下载页面(<code>http://www.sqlite.org/download.html</code>)，从<code>Windows</code>区下载预编译的二进制文件。需要下载<code>sqlite-shell-win32-*.zip</code>和<code>sqlite-dll-win32-*.zip</code>压缩文件。创建文件夹<code>C:\sqlite</code>，并在此文件夹下解压上面两个压缩文件，将得到<code>sqlite3.def</code>、<code>sqlite3.dll</code>和<code>sqlite3.exe</code>文件。添加<code>C:\sqlite</code>到<code>PATH</code>环境变量，最后在命令提示符下，使用<code>sqlite3</code>命令，将显示如下结果：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">C:\&gt;sqlite3</span><br><span class="line">SQLite version 3.7.15.2 2013-01-09 11:53:05</span><br><span class="line">Enter <span class="string">".help"</span> <span class="keyword">for</span> instructions</span><br><span class="line">Enter SQL statements terminated with a <span class="string">";"</span></span><br><span class="line">sqlite&gt;</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="嵌入式Linux移植sqlite3"><a href="#嵌入式Linux移植sqlite3" class="headerlink" title="嵌入式Linux移植sqlite3"></a>嵌入式Linux移植sqlite3</h3><p>&emsp;&emsp;下载<code>sqlite</code>最新版本，网址为<code>http://www.sqlite.org/download.html</code>。然后执行如下命令：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">tar xvzf sqlite-autoconf-3070900.tar.gz –C /opt/  <span class="comment"># 解压源码包到“/opt”目录下</span></span><br><span class="line">mkdir /opt/build  <span class="comment"># 建立“make install”目录</span></span><br><span class="line"><span class="built_in">cd</span> /opt/sqlite-autoconf-3070900  <span class="comment"># 进入解压出得文件夹中</span></span><br><span class="line">./configure -host=arm-linux -prefix=/opt/build  <span class="comment"># 执行configure命令，生成Makefile文件</span></span><br><span class="line">make  <span class="comment"># 生成Makefile文件后，执行make命令</span></span><br><span class="line">make install  <span class="comment"># 执行安装命令</span></span><br></pre></td></tr></table></figure>
-<p>完成之后可以发现，之前所建目录<code>/opt/build</code>下生成<code>bin</code>、<code>include</code>、<code>lib</code>、<code>share</code>四个目录(<code>/opt/build/</code>目录就是<code>arm</code>版本的<code>sqlite3</code>库文件位置)。主要用到的文件有<code>./bin/sqlite3</code>、<code>./include/sqlite3.h</code>以及<code>./lib/</code>下的库文件。<code>./include/sqlite3.h</code>定义了<code>sqlite</code>的<code>API</code>接口，它会在有关<code>sqlite</code>的<code>c</code>文件交叉编译时用到。<code>./lib/</code>文件夹下是有关<code>sqlite</code>的静态链接库和动态链接库，查看该文件夹：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ls lib/</span><br><span class="line">libsqlite3.a   libsqlite3.la   libsqlite3.so   libsqlite3.so.0   libsqlite3.so.0.8.6   pkgconfig</span><br></pre></td></tr></table></figure>
-<p><code>libsqlite3.so</code>和<code>libsqlite3.so.0</code>都是<code>libsqlite3.so.0.8.6</code>的软链接文件。真正需要下载到开发板<code>/lib</code>目录下的动态库是<code>libsqlite3.so.0.8.6</code>。下载到开发板后，还需对它建立软链接文件，因为可执行程序寻找的动态链接库的名字为<code>libsqlite3.so.0</code>。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ln -s /lib/libsqlite3.so.0.8.6 /lib/libsqlite3.so.0</span><br></pre></td></tr></table></figure>
-<p>至此，<code>sqlite</code>的移植工作已经完成。<br>&emsp;&emsp;<code>./bin</code>文件夹下的<code>sqlite3</code>是<code>sqlite</code>可执行应用程序，下载到开发板的<code>/bin</code>或者<code>/usr/bin</code>目录下，并添加文件可执行权限。在开发板上执行命令：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chmod +x sqlite3</span><br></pre></td></tr></table></figure>
-<p>直接输入<code>sqlite3</code>命令：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ sqlite3</span><br><span class="line">SQLite version 3.7.9 2011-11-01 00:52:41</span><br><span class="line">Enter <span class="string">".help"</span> <span class="keyword">for</span> instructions</span><br><span class="line">Enter SQL statements terminated with a <span class="string">";"</span></span><br><span class="line">sqlite&gt;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>test_sqlite.c</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sqlite3.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 执行到sqlite3_exec的回调函数 */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">callback</span> <span class="params">( <span class="keyword">void</span> *NotUsed, <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv, <span class="keyword">char</span> **azColName )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; argc; i++ ) &#123;</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"%s = %s\n"</span>, azColName[i], argv[i] ? argv[i] : <span class="string">"NULL"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"\n"</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    sqlite3 *db; <span class="comment">/* sqlite里最常用的是“sqlite3 *”类型 */</span></span><br><span class="line">    <span class="keyword">char</span> *zErrMsg = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> rc;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( argc != <span class="number">3</span> ) &#123; <span class="comment">/* 可执行程序有三个参数 */</span></span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"Usage: %s DATABASE SQL-STATEMENT\n"</span>, argv[<span class="number">0</span>] );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    rc = sqlite3_open ( argv[<span class="number">1</span>], &amp;db );</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* main第一个参数是可执行文件名，第二个参数是打开或创建的数据库文件名 */</span></span><br><span class="line">    <span class="keyword">if</span> ( rc ) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"Can't open database: %s\n"</span>, sqlite3_errmsg ( db ) );</span><br><span class="line">        sqlite3_close ( db ); <span class="comment">/* 打开或创建数据库失败就关闭数据库 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    rc = sqlite3_exec ( db, argv[<span class="number">2</span>], callback, <span class="number">0</span>, &amp;zErrMsg );</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* main第三个参数argv[2]传入到上面这条执行sql语句，查询数据库 */</span></span><br><span class="line">    <span class="keyword">if</span> ( rc != SQLITE_OK ) &#123; <span class="comment">/* SQLITE_OK表示操作正常 */</span></span><br><span class="line">        <span class="built_in">fprintf</span> ( <span class="built_in">stderr</span>, <span class="string">"SQL error: %s\n"</span>, zErrMsg );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    sqlite3_close ( db ); <span class="comment">/* 关闭数据库 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>动态编译命令为：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">arm-linux-gcc -o <span class="built_in">test</span> test_sqlite.c -I /opt/build/include/ -L /opt/build/lib -lsqlite3</span><br></pre></td></tr></table></figure>
-<p>下载到开发板上执行(也要给<code>test</code>添加执行权限)：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ ./<span class="built_in">test</span> xyz.db <span class="string">"create table tbl0(name varchar(10), number smallint);"</span></span><br><span class="line">$ ./<span class="built_in">test</span> xyz.db <span class="string">"insert into tbl0 values('cyc', 1);"</span></span><br><span class="line">$ ./<span class="built_in">test</span> xyz.db <span class="string">"insert into tbl0 values('dzy', 2);"</span></span><br><span class="line">$ ./<span class="built_in">test</span> xyz.db <span class="string">"select * from tbl0;"</span></span><br><span class="line">name = cyc</span><br><span class="line">number = 1</span><br><span class="line">name = dzy</span><br><span class="line">number = 2</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/06/Qt语法详解/Qt之QLable/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/06/Qt语法详解/Qt之QLable/" itemprop="url">Qt之QLable</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-06T17:14:43+08:00">
-                2019-02-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li><code>setText( string )</code>：设置<code>label</code>显示的文本。</li>
-<li><code>move(x, y)</code>：移动<code>label</code>到指定位置。</li>
-<li><code>setWindowTitle( string )</code>：设置窗体的标题。</li>
-<li><code>resize(x, y)</code>：设置<code>label</code>的大小。</li>
-<li><code>show()</code>：在屏幕上显示出来。</li>
-<li><code>QLabel( string )</code>：新建一个<code>label</code>控件并设置显示内容。</li>
-</ul>
-<h3 id="播放gif动画以及显示logo"><a href="#播放gif动画以及显示logo" class="headerlink" title="播放gif动画以及显示logo"></a>播放gif动画以及显示logo</h3><p>&emsp;&emsp;代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"mywidget.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ui_mywidget.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QPixmap&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QMovie&gt;</span></span></span><br><span class="line">​</span><br><span class="line">MyWidget::MyWidget ( QWidget *parent ) : QWidget ( parent ), ui ( <span class="keyword">new</span> Ui::MyWidget ) &#123;</span><br><span class="line">    ui-&gt;setupUi ( <span class="keyword">this</span> );</span><br><span class="line">    ui-&gt;label-&gt;setPixmap ( QPixmap ( <span class="string">"C:/logo.png"</span> ) ); <span class="comment">/* 显示logo图片 */</span></span><br><span class="line">    QMovie *movie = <span class="keyword">new</span> QMovie ( <span class="string">"C:/donghua.gif"</span> ); <span class="comment">/*　添加gif动画　*/</span></span><br><span class="line">    ui-&gt;label-&gt;setMovie ( movie ); <span class="comment">/* 在标签中添加动画 */</span></span><br><span class="line">    movie-&gt;start(); <span class="comment">/* 开始播放 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">MyWidget::~MyWidget() &#123;</span><br><span class="line">    <span class="keyword">delete</span> ui;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="具有简单HTML样式的标签"><a href="#具有简单HTML样式的标签" class="headerlink" title="具有简单HTML样式的标签"></a>具有简单HTML样式的标签</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QApplication&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QLabel&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span> </span>&#123;</span><br><span class="line">    <span class="function">QApplication <span class="title">app</span> <span class="params">( argc, argv )</span></span>;</span><br><span class="line">    QLabel *label = <span class="keyword">new</span> QLabel ( <span class="string">"&lt;h2&gt;&lt;font color='red'&gt;Hello&lt;/font&gt;, world!&lt;h2&gt;"</span> );</span><br><span class="line">    label-&gt;show();</span><br><span class="line">    <span class="keyword">return</span> app.exec();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/02/06/Qt语法详解/Qt之QLable/1.png"></p>
-<p>&emsp;&emsp;<code>QLabel</code>是<code>QT</code>界面中的标签类，它从<code>QFrame</code>下继承了一些方法。例如设置它的外观、文字、对齐方式：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">QLabel *label = <span class="keyword">new</span> QLabel ( <span class="keyword">this</span> );</span><br><span class="line">​</span><br><span class="line">label-&gt;setFrameStyle ( QFrame::Panel | QFrame::Sunken );</span><br><span class="line">label-&gt;setText ( <span class="string">"first line\nsecond line"</span> );</span><br><span class="line">label-&gt;setAlignment ( Qt::AlignBottom | Qt::AlignRight );</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/06/Qt语法详解/Qt之QMovie/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/06/Qt语法详解/Qt之QMovie/" itemprop="url">Qt之QMovie</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-06T16:54:57+08:00">
-                2019-02-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>QMovie</code>类用于播放动画，在刷新页面的时候，可以使用<code>QMovie</code>来实现等待界面。<code>QMovie</code>类用于显示简单的动画，没有声音。<br>&emsp;&emsp;首先将一个文件的名称或者一个指针传递给<code>QMovie</code>的构造函数，构建出一个<code>QMovie</code>对象，传递的文件需要包含文件的格式。可以调用函数<code>isValid</code>在动画开始播放前检测该动画是否有效。调用函数<code>start</code>函数开始播放动画，<code>QMovie</code>将进入运行状态，并发射<code>started</code>和<code>stateChanged</code>信号。调用函数<code>state</code>可获取当前动画的播放状态。用<code>QLabel</code>显示动画如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">QLabel label;</span><br><span class="line">QMovie *movie = <span class="keyword">new</span> QMovie ( <span class="string">"animations/fire.gif"</span> );</span><br><span class="line">label.setMovie ( movie );</span><br><span class="line">movie-&gt;start();</span><br></pre></td></tr></table></figure>
-<p>每当一个动画用于新的框架中，<code>QMovie</code>将会发出<code>update</code>信号；若动画的帧发生变化，<code>QMovie</code>将会发出<code>resized</code>信号。调用函数<code>currentImage</code>或者<code>currentPixmap</code>可获取当前帧副本。每当动画播放完毕，<code>QMovie</code>将会发出<code>finished</code>信号。若在播放动画的过程中出现任何的错误，<code>QMovie</code>将发出信号<code>error</code>。</p>
-<p><img src="/2019/02/06/Qt语法详解/Qt之QMovie/1.png"></p>
-<p>&emsp;&emsp;<code>QMovie</code>相当强大，它可以调用函数<code>setSpeed</code>来设置动画的播放速率，<code>setPaused(true)</code>将暂停播放动画，然后发出<code>stateChanged</code>信号。再次向函数<code>setPaused</code>传递参数<code>false</code>，动画将重新播放。停止播放动画可调用函数<code>stop</code>。<code>QMovie</code>可以通过调用<code>setCacheMode</code>指示缓存帧的动画。使用<code>frameCount</code>来获取动画的帧数。<br>&emsp;&emsp;部分<code>QMovie</code>函数详解：</p>
-<ul>
-<li><code>setSpeed</code>：动画的播放速率是用原始的动画速率百分比衡量，默认的速度是<code>100%</code>：</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Movie <span class="title">movie</span> <span class="params">( <span class="string">"racecar.gif"</span> )</span></span>;</span><br><span class="line">movie.setSpeed ( <span class="number">200</span> ); <span class="comment">/* 2 * speed */</span></span><br></pre></td></tr></table></figure>
-<p>这里动画的播放速率将会是原始速率的<code>2</code>倍。</p>
-<ul>
-<li><code>backgroundColor</code>：该函数将返回动画的背景色，如果没有指定背景色，那么函数将返回一个无效的<code>QColor</code>。</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">QColor QMovie::backgroundColor() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>可以调用下面的函数设置动画的背景色：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> QMovie::setBackgroundColor ( <span class="keyword">const</span> QColor &amp;color );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>isValid</code>：如果动画有效，将返回<code>true</code>，否则返回<code>false</code>。</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> QMovie::isValid() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/06/Qt应用示例/Qt之线程同步/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/06/Qt应用示例/Qt之线程同步/" itemprop="url">Qt之线程同步</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-06T16:46:00+08:00">
-                2019-02-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt应用示例/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt应用示例</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QtCore&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QDebug&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> DataSize = <span class="number">10</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> BufferSize = <span class="number">5</span>;</span><br><span class="line"><span class="keyword">char</span> buffer[BufferSize];</span><br><span class="line">​</span><br><span class="line"><span class="function">QSemaphore <span class="title">freeBytes</span> <span class="params">( BufferSize )</span></span>;</span><br><span class="line">QSemaphore usedBytes;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Producer</span> :</span> <span class="keyword">public</span> QThread &#123; <span class="comment">/* 生产者线程类 */</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> Producer::run() &#123;</span><br><span class="line">    qsrand ( QTime ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span> ).secsTo ( QTime::currentTime() ) );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; DataSize; ++i ) &#123;</span><br><span class="line">        freeBytes.acquire();</span><br><span class="line">        buffer[i % BufferSize] = <span class="string">"ACGT"</span>[ ( <span class="keyword">int</span> ) qrand() % <span class="number">4</span>];</span><br><span class="line">        qDebug() &lt;&lt; QString ( <span class="string">"producer: %1"</span> ).arg ( buffer[i % BufferSize] );</span><br><span class="line">        usedBytes.release();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Consumer</span> :</span> <span class="keyword">public</span> QThread &#123; <span class="comment">/* 消费者线程类 */</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> Consumer::run() &#123;</span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; DataSize; ++i ) &#123;</span><br><span class="line">        usedBytes.acquire();</span><br><span class="line">        qDebug() &lt;&lt; QString ( <span class="string">"consumer: %1"</span> ).arg ( buffer[i % BufferSize] );</span><br><span class="line">        freeBytes.release();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span> </span>&#123;</span><br><span class="line">    <span class="function">QCoreApplication <span class="title">app</span> <span class="params">( argc, argv )</span></span>;</span><br><span class="line">    Producer producer;</span><br><span class="line">    Consumer consumer;</span><br><span class="line">    producer.start();</span><br><span class="line">    consumer.start();</span><br><span class="line">    producer.wait();</span><br><span class="line">    consumer.wait();</span><br><span class="line">    <span class="keyword">return</span> app.exec();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/02/06/Qt应用示例/Qt之线程同步/1.png" height="266" width="247"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/06/Qt应用示例/Qt之自定义菜单/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/06/Qt应用示例/Qt之自定义菜单/" itemprop="url">Qt之自定义菜单</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-06T15:59:02+08:00">
-                2019-02-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt应用示例/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt应用示例</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>mainwindow.h</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MAINWINDOW_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAINWINDOW_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QMainWindow&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">namespace</span> Ui &#123;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">MainWindow</span>;</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MainWindow</span> :</span> <span class="keyword">public</span> QMainWindow &#123;</span><br><span class="line">    Q_OBJECT</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">MainWindow</span> <span class="params">( QWidget *parent = <span class="number">0</span> )</span></span>;</span><br><span class="line">    ~MainWindow();</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    Ui::MainWindow *ui;</span><br><span class="line"><span class="keyword">private</span> slots:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">setText</span> <span class="params">( <span class="keyword">const</span> QString &amp;<span class="built_in">string</span> )</span></span>; <span class="comment">/* 向编辑器中添加文本 */</span></span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">// MAINWINDOW_H</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>myaction.h</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MYACTION_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MYACTION_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QWidgetAction&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">QLineEdit</span>;</span> <span class="comment">/* 前置声明 */</span></span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyAction</span> :</span> <span class="keyword">public</span> QWidgetAction &#123;</span><br><span class="line">    Q_OBJECT</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">MyAction</span> <span class="params">( QObject *parent = <span class="number">0</span> )</span></span>;</span><br><span class="line"><span class="keyword">protected</span>:</span><br><span class="line">    <span class="comment">/* 声明函数，该函数是QWidgetAction类中的虚函数 */</span></span><br><span class="line">    <span class="function">QWidget *<span class="title">createWidget</span> <span class="params">( QWidget *parent )</span></span>;</span><br><span class="line">signals:</span><br><span class="line">    <span class="comment">/* 新建信号，用于在按下回车键时，将行编辑器中的内容发射出去 */</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">getText</span> <span class="params">( <span class="keyword">const</span> QString &amp;<span class="built_in">string</span> )</span></span>;</span><br><span class="line"><span class="keyword">private</span> slots:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">sendText</span><span class="params">()</span></span>; <span class="comment">/* 新建槽，它用来与行编辑器的按下回车键信号关联 */</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    QLineEdit *lineEdit; <span class="comment">/* 定义行编辑器对象的指针 */</span></span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">// MYACTION_H</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>myaction.cpp</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"myaction.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QLineEdit&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QSplitter&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QLabel&gt;</span></span></span><br><span class="line">​</span><br><span class="line">MyAction::MyAction ( QObject *parent ) : QWidgetAction ( parent ) &#123;</span><br><span class="line">    lineEdit = <span class="keyword">new</span> QLineEdit; <span class="comment">/* 创建行编辑器 */</span></span><br><span class="line">    <span class="comment">/* 将行编辑器的按下回车键信号与我们的发送文本槽关联 */</span></span><br><span class="line">    connect ( lineEdit, SIGNAL ( returnPressed() ), <span class="keyword">this</span>, SLOT ( sendText() ) );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 创建部件(当使用该类的对象并将其添加到一个部件上时，就会自动调用createWidget函数) */</span></span><br><span class="line">QWidget *MyAction::createWidget ( QWidget *parent ) &#123;</span><br><span class="line">    <span class="comment">/* 这里使用inherits函数判断父部件是否是菜单或者工具栏。</span></span><br><span class="line"><span class="comment">       如果是，则创建该父部件的子部件，并且返回子部件；如果不是，则直接返回0 */</span></span><br><span class="line">    <span class="keyword">if</span> ( parent-&gt;inherits ( <span class="string">"QMenu"</span> ) || parent-&gt;inherits ( <span class="string">"QToolBar"</span> ) ) &#123;</span><br><span class="line">        QSplitter *splitter = <span class="keyword">new</span> QSplitter ( parent );</span><br><span class="line">        QLabel *label = <span class="keyword">new</span> QLabel;</span><br><span class="line">        label-&gt;setText ( tr ( <span class="string">"插入文本："</span> ) );</span><br><span class="line">        splitter-&gt;addWidget ( label );</span><br><span class="line">        splitter-&gt;addWidget ( lineEdit );</span><br><span class="line">        <span class="keyword">return</span> splitter;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MyAction::sendText() &#123; <span class="comment">/* 发送文本 */</span></span><br><span class="line">    <span class="function">emit <span class="title">getText</span> <span class="params">( lineEdit-&gt;text() )</span></span>; <span class="comment">/* 发射信号，将行编辑器中的内容发射出去 */</span></span><br><span class="line">    lineEdit-&gt;clear(); <span class="comment">/* 清空行编辑器中的内容 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>mainwindow.cpp</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"mainwindow.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ui_mainwindow.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"myaction.h"</span></span></span><br><span class="line">​</span><br><span class="line">MainWindow::MainWindow ( QWidget *parent ) : QMainWindow ( parent ), ui ( <span class="keyword">new</span> Ui::MainWindow ) &#123;</span><br><span class="line">    ui-&gt;setupUi ( <span class="keyword">this</span> );</span><br><span class="line">    MyAction *action = <span class="keyword">new</span> MyAction; <span class="comment">/* 创建MyAction */</span></span><br><span class="line">    QMenu *editMenu = ui-&gt;menuBar-&gt;addMenu ( tr ( <span class="string">"编辑(&amp;E)"</span> ) );</span><br><span class="line">    editMenu-&gt;addAction ( action ); <span class="comment">/* 添加菜单并且加入我们的action */</span></span><br><span class="line">    <span class="comment">/* 将action的getText信号和这里的setText槽进行关联 */</span></span><br><span class="line">    connect ( action, SIGNAL ( getText ( QString ) ), <span class="keyword">this</span>, SLOT ( setText ( QString ) ) );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">MainWindow::~MainWindow() &#123;</span><br><span class="line">    <span class="keyword">delete</span> ui;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::setText ( <span class="keyword">const</span> QString &amp;<span class="built_in">string</span> ) &#123; <span class="comment">/* 插入文本 */</span></span><br><span class="line">    ui-&gt;textEdit-&gt;setText ( <span class="built_in">string</span> ); <span class="comment">/* 将获取的文本添加到编辑器中 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/02/06/Qt应用示例/Qt之自定义菜单/1.png" height="194" width="238"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/34/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/34/">34</a><span class="page-number current">35</span><a class="page-number" href="/page/36/">36</a><span class="space">&hellip;</span><a class="page-number" href="/page/95/">95</a><a class="extend next" rel="next" href="/page/36/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/34/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/34/">34</a><span class="page-number current">35</span><a class="page-number" href="/page/36/">36</a><span class="space">&hellip;</span><a class="page-number" href="/page/96/">96</a><a class="extend next" rel="next" href="/page/36/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1755,7 +1636,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">949</span>
+                  <span class="site-state-item-count">955</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

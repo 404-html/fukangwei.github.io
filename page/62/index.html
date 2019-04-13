@@ -271,6 +271,1159 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/03/Qt语法详解/Qt之QHostInfo/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/03/Qt语法详解/Qt之QHostInfo/" itemprop="url">Qt之QHostInfo</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-03T18:40:10+08:00">
+                2019-01-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">Qt语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>QHostInfo</code>类为主机名查找提供了静态函数。<code>QHostInfo</code>利用操作系统提供的查询机制来查询与特定主机名相关联的主机的<code>IP</code>地址，或者与一个<code>IP</code>地址相关联的主机名。这个类提供了两个静态的函数：一个以异步方式工作，一旦找到主机就发射一个信号；另一个以阻塞方式工作，并且最终返回一个<code>QHostInfo</code>对象。<br>&emsp;&emsp;要使用异步方式查询主机的<code>IP</code>地址，调用<code>lookupHost</code>即可。该函数包含<code>3</code>个参数，依次是主机名或<code>IP</code>地址、接收的对象、接收的槽函数，并返回一个查询<code>ID</code>。以查询<code>ID</code>为参数，通过调用<code>abortHostLookup</code>函数的来中止查询。当获得查询结果后就会调用槽函数，查询结果被存储到<code>QHostInfo</code>对象中。可通过调用<code>addresses</code>函数来获得主机的<code>IP</code>地址列表，同时可通过调用<code>hostName</code>函数来获得查询的主机名。</p>
+<h3 id="查询本机主机名"><a href="#查询本机主机名" class="headerlink" title="查询本机主机名"></a>查询本机主机名</h3><p>&emsp;&emsp;代码如下所示：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">QString strLocalHostName = QHostInfo::localHostName();</span><br><span class="line">qDebug() &lt;&lt; <span class="string">"Local Host Name:"</span> &lt;&lt; strLocalHostName;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Local Host Name:<span class="string">"Wang-PC"</span></span><br></pre></td></tr></table></figure>
+<h3 id="查询主机信息"><a href="#查询主机信息" class="headerlink" title="查询主机信息"></a>查询主机信息</h3><p>&emsp;&emsp;1. 异步方式。使用<code>lookupHost</code>，实际的查询在一个单独的线程中完成，利用操作系统的方法来执行名称查找。</p>
+<ul>
+<li>根据主机名查询主机信息：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> nID = QHostInfo::lookupHost ( <span class="string">"qt-project.org"</span>, <span class="keyword">this</span>, SLOT ( lookedUp ( QHostInfo ) ) );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::lookedUp ( <span class="keyword">const</span> QHostInfo &amp;host ) &#123;</span><br><span class="line">    <span class="keyword">if</span> ( host.error() != QHostInfo::NoError ) &#123;</span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"Lookup failed:"</span> &lt;&lt; host.errorString();</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    foreach ( <span class="keyword">const</span> QHostAddress &amp;address, host.addresses() ) &#123;</span><br><span class="line">        <span class="comment">/* 输出IPV4、IPv6地址 */</span></span><br><span class="line">        <span class="keyword">if</span> ( address.protocol() == QAbstractSocket::IPv4Protocol ) &#123;</span><br><span class="line">            qDebug() &lt;&lt; <span class="string">"Found IPv4 address:"</span> &lt;&lt; address.toString();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> ( address.protocol() == QAbstractSocket::IPv6Protocol ) &#123;</span><br><span class="line">            qDebug() &lt;&lt; <span class="string">"Found IPv6 address:"</span> &lt;&lt; address.toString();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            qDebug() &lt;&lt; <span class="string">"Found other address:"</span> &lt;&lt; address.toString();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Found IPv4 address: <span class="string">"5.254.113.102"</span></span><br><span class="line">Found IPv4 address: <span class="string">"178.32.152.214"</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>根据<code>IP</code>地址查询主机信息：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> nID = QHostInfo::lookupHost ( <span class="string">"5.254.113.102"</span>, <span class="keyword">this</span>, SLOT ( lookedUp ( QHostInfo ) ) );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::lookedUp ( <span class="keyword">const</span> QHostInfo &amp;host ) &#123;</span><br><span class="line">    <span class="keyword">if</span> ( host.error() != QHostInfo::NoError ) &#123;</span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"Lookup failed:"</span> &lt;&lt; host.errorString();</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"Found hostName:"</span> &lt;&lt; host.hostName();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Found hostName: <span class="string">"webredirects.cloudns.NET"</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;2. 阻塞方式。如果要使用阻塞查找，则使用<code>QHostInfo::fromName</code>函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">QHostInfo host = QHostInfo::fromName ( <span class="string">"5.254.113.102"</span> );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( host.error() != QHostInfo::NoError ) &#123;</span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"Lookup failed:"</span> &lt;&lt; host.errorString();</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">qDebug() &lt;&lt; <span class="string">"Found hostName:"</span> &lt;&lt; host.hostName();</span><br></pre></td></tr></table></figure>
+<p>这种情况下，名称查询的执行与调用者处于相同的线程中。这对于非<code>GUI</code>应用程序或在一个单独的、非<code>GUI</code>线程中做名称查找是比较有用的(在<code>GUI</code>线程中调用这个函数可能会导致用户界面冻结)。</p>
+<h3 id="中止查询"><a href="#中止查询" class="headerlink" title="中止查询"></a>中止查询</h3><p>&emsp;&emsp;<code>lookupHost</code>查询主机信息时，会返回一个查询<code>ID</code>。以此<code>ID</code>为参数，通过调用<code>abortHostLookup</code>来中止查询：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">QHostInfo::abortHostLookup ( nId );</span><br></pre></td></tr></table></figure>
+<h3 id="错误处理"><a href="#错误处理" class="headerlink" title="错误处理"></a>错误处理</h3><p>&emsp;&emsp;如果查询失败，<code>error</code>返回发生错误的类型，<code>errorString</code>返回一个能够读懂的查询错误描述。枚举变量<code>QHostInfo::HostInfoError</code>如下所示：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>常量</th>
+<th>值</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>QHostInfo::NoError</code></td>
+<td><code>0</code></td>
+<td>查找成功</td>
+</tr>
+<tr>
+<td><code>QHostInfo::HostNotFound</code></td>
+<td><code>1</code></td>
+<td>没有发现主机对应的<code>IP</code>地址</td>
+</tr>
+<tr>
+<td><code>QHostInfo::UnknownError</code></td>
+<td><code>2</code></td>
+<td>未知错误</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/03/Qt语法详解/Qt之QActionGroup/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/03/Qt语法详解/Qt之QActionGroup/" itemprop="url">Qt之QActionGroup</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-03T17:21:25+08:00">
+                2019-01-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">Qt语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;The <code>QActionGroup</code> class groups actions together.</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Header</th>
+<th>Inherits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>QActionGroup</code></td>
+<td><code>QObject</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="Properties"><a href="#Properties" class="headerlink" title="Properties"></a>Properties</h3><ul>
+<li><code>enabled</code>: bool</li>
+<li><code>exclusive</code>: bool</li>
+<li><code>visible</code>: bool</li>
+</ul>
+<h3 id="Public-Functions"><a href="#Public-Functions" class="headerlink" title="Public Functions"></a>Public Functions</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">                 QActionGroup(QObject * parent)</span><br><span class="line">                 ~QActionGroup()</span><br><span class="line">QList&lt;QAction *&gt; actions() <span class="keyword">const</span></span><br><span class="line"><span class="function">QAction *        <span class="title">addAction</span><span class="params">(QAction * action)</span></span></span><br><span class="line"><span class="function">QAction *        <span class="title">addAction</span><span class="params">(<span class="keyword">const</span> QString &amp; text)</span></span></span><br><span class="line"><span class="function">QAction *        <span class="title">addAction</span><span class="params">(<span class="keyword">const</span> QIcon &amp; icon, <span class="keyword">const</span> QString &amp; text)</span></span></span><br><span class="line"><span class="function">QAction *        <span class="title">checkedAction</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"><span class="keyword">bool</span>             <span class="title">isEnabled</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"><span class="keyword">bool</span>             <span class="title">isExclusive</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"><span class="keyword">bool</span>             <span class="title">isVisible</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span>             <span class="title">removeAction</span><span class="params">(QAction * action)</span></span></span><br></pre></td></tr></table></figure>
+<h3 id="Public-Slots"><a href="#Public-Slots" class="headerlink" title="Public Slots"></a>Public Slots</h3><ul>
+<li><code>void setDisabled ( bool );</code></li>
+<li><code>void setEnabled ( bool );</code></li>
+<li><code>void setExclusive ( bool );</code></li>
+<li><code>void setVisible ( bool );</code></li>
+</ul>
+<h3 id="Signals"><a href="#Signals" class="headerlink" title="Signals"></a>Signals</h3><ul>
+<li><code>void hovered ( QAction *action );</code></li>
+<li><code>void triggered ( QAction *action );</code></li>
+</ul>
+<h3 id="Detailed-Description"><a href="#Detailed-Description" class="headerlink" title="Detailed Description"></a>Detailed Description</h3><p>&emsp;&emsp;The <code>QActionGroup</code> class groups actions together.<br>&emsp;&emsp;In some situations it is useful to group <code>QAction</code> objects together. For example, if you have a <code>Left</code> <code>Align</code> action, a <code>Right</code> <code>Align</code> action, a <code>Justify</code> action, and a <code>Center</code> action, only one of these actions should be active at any one time. One simple way of achieving this is to group the actions together in an action group.<br>&emsp;&emsp;Here’s a example:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">alignmentGroup = <span class="keyword">new</span> QActionGroup ( <span class="keyword">this</span> );</span><br><span class="line">alignmentGroup-&gt;addAction ( leftAlignAct );</span><br><span class="line">alignmentGroup-&gt;addAction ( rightAlignAct );</span><br><span class="line">alignmentGroup-&gt;addAction ( justifyAct );</span><br><span class="line">alignmentGroup-&gt;addAction ( centerAct );</span><br><span class="line">leftAlignAct-&gt;setChecked ( <span class="literal">true</span> );</span><br></pre></td></tr></table></figure>
+<p>Here we create a new action group. Since the action group is exclusive by default, only one of the actions in the group is checked at any one time.<br>&emsp;&emsp;A <code>QActionGroup</code> emits an <code>triggered()</code> signal when one of its actions is chosen. Each action in an action group emits its <code>triggered()</code> signal as usual.<br>&emsp;&emsp;As stated above, an action group is exclusive by default; it ensures that only one checkable action is active at any one time. If you want to group checkable actions without making them exclusive, you can turn of exclusiveness by calling <code>setExclusive(false)</code>.<br>&emsp;&emsp;Actions can be added to an action group using <code>addAction()</code>, but it is usually more convenient to specify a group when creating actions; this ensures that actions are automatically created with a parent. Actions can be visually separated from each other by adding a separator action to the group; create an action and use QAction’s <code>setSeparator()</code> function to make it considered a separator. Action groups are added to widgets with the <code>QWidget::addActions()</code> function.</p>
+<h3 id="Property-Documentation"><a href="#Property-Documentation" class="headerlink" title="Property Documentation"></a>Property Documentation</h3><p>&emsp;&emsp;<code>enabled</code>(bool): This property holds whether the action group is <code>enabled</code>. Each action in the group will be <code>enabled</code> or <code>disabled</code> unless it has been explicitly <code>disabled</code>. Access functions:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">isEnabled</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setEnabled</span> <span class="params">( <span class="keyword">bool</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>exclusive</code>(bool): This property holds whether the action group does <code>exclusive</code> checking. If <code>exclusive</code> is <code>true</code>, only one checkable action in the action group can ever be <code>active</code> at any time. If the user chooses another checkable action in the group, the one they chose becomes <code>active</code> and the one that was <code>active</code> becomes <code>inactive</code>. Access functions:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">isExclusive</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setExclusive</span> <span class="params">( <span class="keyword">bool</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>visible</code>(bool): This property holds whether the action group is <code>visible</code>. Each action in the action group will match the <code>visible</code> state of this group unless it has been explicitly <code>hidden</code>. Access functions:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">isVisible</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setVisible</span> <span class="params">( <span class="keyword">bool</span> )</span></span>;</span><br></pre></td></tr></table></figure>
+<h3 id="Member-Function-Documentation"><a href="#Member-Function-Documentation" class="headerlink" title="Member Function Documentation"></a>Member Function Documentation</h3><ul>
+<li><code>QActionGroup::QActionGroup(QObject * parent)</code>: Constructs an action group for the <code>parent</code> object. The action group is <code>exclusive</code> by default. Call <code>setExclusive(false)</code> to make the action group <code>non-exclusive</code>.</li>
+<li><code>QActionGroup::~QActionGroup()</code>: Destroys the action group.</li>
+<li><code>QList&lt;QAction *&gt; QActionGroup::actions() const</code>: Returns the list of this groups’s <code>actions</code>. This may be empty.</li>
+<li><code>QAction * QActionGroup::addAction(QAction * action)</code>: Adds the <code>action</code> to this group, and returns it. Normally an <code>action</code> is added to a group by creating it with the group as its parent, so this function is not usually used.</li>
+<li><code>QAction * QActionGroup::addAction(const QString &amp; text)</code>: Creates and returns an action with <code>text</code>. The newly created action is a child of this action group. Normally an action is added to a group by creating it with the group as parent, so this function is not usually used.</li>
+<li><code>QAction * QActionGroup::addAction(const QIcon &amp; icon, const QString &amp; text)</code>: Creates and returns an action with <code>text</code> and an <code>icon</code>. The newly created action is a child of this action group. Normally an action is added to a group by creating it with the group as its parent, so this function is not usually used.</li>
+<li><code>QAction * QActionGroup::checkedAction() const</code>: Returns the currently <code>checked</code> action in the group, or <code>0</code> if <code>none</code> are <code>checked</code>.</li>
+<li><code>void QActionGroup::hovered(QAction * action) [signal]</code>: This <code>signal</code> is emitted when the given <code>action</code> in the action group is highlighted by the user; for example, when the user pauses with the cursor over a menu option, toolbar button, or presses an action’s shortcut key combination.</li>
+<li><code>void QActionGroup::removeAction(QAction * action)</code>: Removes the <code>action</code> from this group. The <code>action</code> will have no parent as a result.</li>
+<li><code>void QActionGroup::setDisabled(bool b) [slot]</code>: This is a convenience function for the <code>enabled</code> property, that is useful for <code>signals--slots</code> connections. If <code>b</code> is <code>true</code>, the action group is <code>disabled</code>; otherwise it is <code>enabled</code>.</li>
+<li><code>void QActionGroup::triggered(QAction * action) [signal]</code>: This <code>signal</code> is emitted when the given <code>action</code> in the action group is <code>activated</code> by the user; for example, when the user clicks a menu option, toolbar button, or presses an action’s shortcut key combination. Connect to this <code>signal</code> for command actions.</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/03/Qt语法详解/Qt之QReadWriteLock/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/03/Qt语法详解/Qt之QReadWriteLock/" itemprop="url">Qt之QReadWriteLock</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-03T16:28:02+08:00">
+                2019-01-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">Qt语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;The <code>QReadWriteLock</code> class provides <code>read-write</code> locking. The header file is <code>QReadWriteLock</code>. <strong>Note</strong>: All functions in this class are <code>thread-safe</code>.</p>
+<h3 id="Public-Types"><a href="#Public-Types" class="headerlink" title="Public Types"></a>Public Types</h3><ul>
+<li><code>enum</code>: RecursionMode { <code>Recursive</code>, <code>NonRecursive</code> }</li>
+</ul>
+<h3 id="Public-Functions"><a href="#Public-Functions" class="headerlink" title="Public Functions"></a>Public Functions</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">     QReadWriteLock()</span><br><span class="line">     QReadWriteLock(RecursionMode recursionMode)</span><br><span class="line">     ~QReadWriteLock()</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lockForRead</span><span class="params">()</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lockForWrite</span><span class="params">()</span></span></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">tryLockForRead</span><span class="params">()</span></span></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">tryLockForRead</span><span class="params">(<span class="keyword">int</span> timeout)</span></span></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">tryLockForWrite</span><span class="params">()</span></span></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">tryLockForWrite</span><span class="params">(<span class="keyword">int</span> timeout)</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">unlock</span><span class="params">()</span></span></span><br></pre></td></tr></table></figure>
+<h3 id="Detailed-Description"><a href="#Detailed-Description" class="headerlink" title="Detailed Description"></a>Detailed Description</h3><p>&emsp;&emsp;The <code>QReadWriteLock</code> class provides <code>read-write</code> locking.<br>&emsp;&emsp;A <code>read-write</code> lock is a synchronization tool for protecting resources that can be accessed for <code>reading</code> and <code>writing</code>. This type of lock is useful if you want to allow multiple threads to have simultaneous <code>read-only</code> access, but as soon as one thread wants to write to the resource, all other threads must be blocked until the <code>writing</code> is complete.<br>&emsp;&emsp;In many cases, <code>QReadWriteLock</code> is a direct competitor to <code>QMutex</code>. <code>QReadWriteLock</code> is a good choice if there are many concurrent reads and <code>writing</code> occurs infrequently. Example:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">QReadWriteLock lock;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> ReaderThread::run() &#123;</span><br><span class="line">    ...</span><br><span class="line">    lock.lockForRead();</span><br><span class="line">    read_file();</span><br><span class="line">    lock.unlock();</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> WriterThread::run() &#123;</span><br><span class="line">    ...</span><br><span class="line">    lock.lockForWrite();</span><br><span class="line">    write_file();</span><br><span class="line">    lock.unlock();</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>To ensure that writers aren’t blocked forever by readers, readers attempting to obtain a lock will not succeed if there is a blocked writer waiting for access, even if the lock is currently only accessed by other readers. Also, if the lock is accessed by a writer and another writer comes in, that writer will have priority over any readers that might also be waiting.<br>&emsp;&emsp;Like <code>QMutex</code>, a <code>QReadWriteLock</code> can be recursively locked by the same thread when constructed in <code>QReadWriteLock::RecursionMode</code>. In such cases, <code>unlock()</code> must be called the same number of times <code>lockForWrite()</code> or <code>lockForRead()</code> was called. Note that the lock type cannot be changed when trying to lock recursively, i.e. it is not possible to lock for <code>reading</code> in a thread that already has locked for <code>writing</code> (and vice versa).</p>
+<h3 id="Member-Type-Documentation"><a href="#Member-Type-Documentation" class="headerlink" title="Member Type Documentation"></a>Member Type Documentation</h3><ul>
+<li><code>enum</code>: <code>QReadWriteLock::RecursionMode</code></li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>QReadWriteLock::Recursive</code></td>
+<td><code>1</code></td>
+<td>In this mode, a thread can lock the same <code>QReadWriteLock</code> multiple times and the mutex won’t be unlocked until a corresponding number of <code>unlock()</code> calls have been made.</td>
+</tr>
+<tr>
+<td><code>QReadWriteLock::NonRecursive</code></td>
+<td><code>0</code></td>
+<td>In this mode, a thread may only lock a <code>QReadWriteLock</code> once.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="Member-Function-Documentation"><a href="#Member-Function-Documentation" class="headerlink" title="Member Function Documentation"></a>Member Function Documentation</h3><ul>
+<li><code>QReadWriteLock::QReadWriteLock()</code>: Constructs a <code>QReadWriteLock</code> object in <code>NonRecursive</code> mode.</li>
+<li><code>QReadWriteLock::QReadWriteLock(RecursionMode recursionMode)</code>: Constructs a <code>QReadWriteLock</code> object in the given <code>recursionMode</code>.</li>
+<li><code>QReadWriteLock::~QReadWriteLock()</code>: Destroys the <code>QReadWriteLock</code> object. <strong>Warning</strong>: Destroying a <code>read-write</code> <code>lock</code> that is in use may result in undefined behavior.</li>
+<li><code>void QReadWriteLock::lockForRead()</code>: Locks the <code>lock</code> for <code>reading</code>. This function will block the current thread if any thread (including the current) has locked for <code>writing</code>.</li>
+<li><code>void QReadWriteLock::lockForWrite()</code>: Locks the <code>lock</code> for <code>writing</code>. This function will block the current thread if another thread has locked for <code>reading</code> or <code>writing</code>.</li>
+<li><code>bool QReadWriteLock::tryLockForRead()</code>: <code>Attempts</code> to <code>lock</code> for <code>reading</code>. If the lock was obtained, this function returns <code>true</code>, otherwise it returns <code>false</code> instead of waiting for the lock to become available, i.e. it does not block. The lock attempt will fail if another thread has locked for <code>writing</code>. If the lock was obtained, the lock must be unlocked with <code>unlock()</code> before another thread can successfully lock it.</li>
+<li><code>bool QReadWriteLock::tryLockForRead(int timeout)</code>: This is an overloaded function. <code>Attempts</code> to <code>lock</code> for <code>reading</code>. This function returns <code>true</code> if the lock was obtained; otherwise it returns <code>false</code>. If another thread has locked for <code>writing</code>, this function will wait for at most <code>timeout</code> milliseconds for the lock to become available. <strong>Note</strong>: Passing a negative number as the <code>timeout</code> is equivalent to calling <code>lockForRead()</code>, i.e. this function will wait forever until lock can be locked for <code>reading</code> when <code>timeout</code> is negative. If the lock was obtained, the lock must be unlocked with <code>unlock()</code> before another thread can successfully lock it.</li>
+<li><code>bool QReadWriteLock::tryLockForWrite()</code>: <code>Attempts</code> to <code>lock</code> for <code>writing</code>. If the lock was obtained, this function returns <code>true</code>; otherwise, it returns <code>false</code> immediately. The lock attempt will fail if another thread has locked for <code>reading</code> or <code>writing</code>. If the lock was obtained, the lock must be unlocked with <code>unlock()</code> before another thread can successfully lock it.</li>
+<li><code>bool QReadWriteLock::tryLockForWrite(int timeout)</code>: This is an overloaded function. <code>Attempts</code> to <code>lock</code> for <code>writing</code>. This function returns <code>true</code> if the lock was obtained; otherwise it returns <code>false</code>. If another thread has locked for <code>reading</code> or <code>writing</code>, this function will wait for at most <code>timeout</code> milliseconds for the lock to become available. <strong>Note</strong>: Passing a negative number as the <code>timeout</code> is equivalent to calling <code>lockForWrite()</code>, i.e. this function will wait forever until lock can be locked for <code>writing</code> when <code>timeout</code> is negative. If the lock was obtained, the lock must be unlocked with <code>unlock()</code> before another thread can successfully lock it.</li>
+<li><code>void QReadWriteLock::unlock()</code>: <code>Unlocks</code> the lock. Attempting to unlock a lock that is not locked is an error, and will result in program termination.</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/03/Qt语法详解/Qt之QSemaphore/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/03/Qt语法详解/Qt之QSemaphore/" itemprop="url">Qt之QSemaphore</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-03T15:47:32+08:00">
+                2019-01-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">Qt语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;The <code>QSemaphore</code> class provides a general counting semaphore. The header file is <code>QSemaphore</code>. <strong>Note</strong>: All functions in this class are <code>thread-safe</code>.</p>
+<h3 id="Public-Functions"><a href="#Public-Functions" class="headerlink" title="Public Functions"></a>Public Functions</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">     QSemaphore(<span class="keyword">int</span> n = <span class="number">0</span>)</span><br><span class="line">     ~QSemaphore()</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">acquire</span><span class="params">(<span class="keyword">int</span> n = <span class="number">1</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span>  <span class="title">available</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">release</span><span class="params">(<span class="keyword">int</span> n = <span class="number">1</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">tryAcquire</span><span class="params">(<span class="keyword">int</span> n = <span class="number">1</span>)</span></span></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">tryAcquire</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">int</span> timeout)</span></span></span><br></pre></td></tr></table></figure>
+<h3 id="Detailed-Description"><a href="#Detailed-Description" class="headerlink" title="Detailed Description"></a>Detailed Description</h3><p>&emsp;&emsp;The <code>QSemaphore</code> class provides a general counting semaphore. A semaphore is a generalization of a mutex. While a mutex can only be locked once, it’s possible to acquire a semaphore multiple times. Semaphores are typically used to protect a certain number of identical resources. Semaphores support two fundamental operations, <code>acquire()</code> and <code>release()</code>:</p>
+<ul>
+<li><code>acquire(n)</code> tries to acquire <code>n</code> resources. If there aren’t that many resources available, the call will block until this is the case.</li>
+<li><code>release(n)</code> releases <code>n</code> resources.</li>
+</ul>
+<p>&emsp;&emsp;There’s also a <code>tryAcquire()</code> function that returns immediately if it cannot acquire the resources, and an <code>available()</code> function that returns the number of available resources at any time. Example:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QSemaphore <span class="title">sem</span> <span class="params">( <span class="number">5</span> )</span></span>; <span class="comment">/* sem.available() = 5 */</span></span><br><span class="line">​</span><br><span class="line">sem.acquire ( <span class="number">3</span> ); <span class="comment">/* sem.available() = 2 */</span></span><br><span class="line">sem.acquire ( <span class="number">2</span> ); <span class="comment">/* sem.available() = 0 */</span></span><br><span class="line">sem.release ( <span class="number">5</span> ); <span class="comment">/* sem.available() = 5 */</span></span><br><span class="line">sem.release ( <span class="number">5</span> ); <span class="comment">/* sem.available() = 10 */</span></span><br><span class="line">​</span><br><span class="line">sem.tryAcquire ( <span class="number">1</span> ); <span class="comment">/* sem.available() = 9, returns true */</span></span><br><span class="line">sem.tryAcquire ( <span class="number">250</span> ); <span class="comment">/* sem.available() = 9, returns false */</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;A typical application of semaphores is for controlling access to a circular buffer shared by a producer thread and a consumer thread. The Semaphores example shows how to use <code>QSemaphore</code> to solve that problem.<br>&emsp;&emsp;A <code>non-computing</code> example of a semaphore would be dining at a restaurant. A semaphore is initialized with the number of chairs in the restaurant. As people arrive, they want a seat. As seats are filled, <code>available()</code> is decremented. As people leave, the <code>available()</code> is incremented, allowing more people to enter. If a party of <code>10</code> people want to be seated, but there are only <code>9</code> seats, those <code>10</code> people will wait, but a party of <code>4</code> people would be seated (taking the available seats to <code>5</code>, making the party of <code>10</code> people wait longer).</p>
+<h3 id="Member-Function-Documentation"><a href="#Member-Function-Documentation" class="headerlink" title="Member Function Documentation"></a>Member Function Documentation</h3><ul>
+<li><code>QSemaphore::QSemaphore(int n = 0)</code>: Creates a new semaphore and initializes the number of resources it guards to <code>n</code> (by default, <code>0</code>).</li>
+<li><code>QSemaphore::~QSemaphore()</code>: Destroys the semaphore. Warning: Destroying a semaphore that is in use may result in undefined behavior.</li>
+<li><code>void QSemaphore::acquire(int n = 1)</code>: Tries to <code>acquire</code> <code>n</code> resources guarded by the semaphore. If <code>n</code> &gt; <code>available()</code>, this call will block until enough resources are available.</li>
+<li><code>int QSemaphore::available() const</code>: Returns the number of resources currently <code>available</code> to the semaphore. This number can never be negative.</li>
+<li><code>void QSemaphore::release(int n = 1)</code>: <code>Releases</code> <code>n</code> resources guarded by the semaphore. This function can be used to <code>&quot;create&quot;</code> resources as well. For example:</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QSemaphore <span class="title">sem</span> <span class="params">( <span class="number">5</span> )</span></span>; <span class="comment">/* a semaphore that guards 5 resources */</span></span><br><span class="line">sem.acquire ( <span class="number">5</span> ); <span class="comment">/* acquire all 5 resources */</span></span><br><span class="line">sem.release ( <span class="number">5</span> ); <span class="comment">/* release the 5 resources */</span></span><br><span class="line">sem.release ( <span class="number">10</span> ); <span class="comment">/* "create" 10 new resources */</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>bool QSemaphore::tryAcquire(int n = 1)</code>: Tries to <code>acquire</code> <code>n</code> resources guarded by the semaphore and returns <code>true</code> on success. If <code>available()</code> &lt; <code>n</code>, this call immediately returns <code>false</code> without acquiring any resources. Example:</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QSemaphore <span class="title">sem</span> <span class="params">( <span class="number">5</span> )</span></span>; <span class="comment">/* sem.available() = 5 */</span></span><br><span class="line">sem.tryAcquire ( <span class="number">250</span> ); <span class="comment">/* sem.available() = 5, returns false */</span></span><br><span class="line">sem.tryAcquire ( <span class="number">3</span> ); <span class="comment">/* sem.available() = 2, returns true */</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>bool QSemaphore::tryAcquire(int n, int timeout)</code>: Tries to <code>acquire</code> <code>n</code> resources guarded by the semaphore and returns <code>true</code> on success. If <code>available()</code> &lt; <code>n</code>, this call will wait for at most <code>timeout</code> milliseconds for resources to become <code>available</code>. <strong>Note</strong>: Passing a negative number as the <code>timeout</code> is equivalent to calling <code>acquire()</code>, i.e. this function will wait forever for resources to become available if <code>timeout</code> is negative. Example:</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QSemaphore <span class="title">sem</span> <span class="params">( <span class="number">5</span> )</span></span>; <span class="comment">/* sem.available() = 5 */</span></span><br><span class="line"><span class="comment">/* sem.available() = 5, waits 1000 milliseconds and returns false */</span></span><br><span class="line">sem.tryAcquire ( <span class="number">250</span>, <span class="number">1000</span> );</span><br><span class="line"><span class="comment">/* sem.available() = 2, returns true without waiting */</span></span><br><span class="line">sem.tryAcquire ( <span class="number">3</span>, <span class="number">30000</span> );</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/03/Qt语法详解/Qt之QTime/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/03/Qt语法详解/Qt之QTime/" itemprop="url">Qt之QTime</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-03T14:16:18+08:00">
+                2019-01-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">Qt语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;在<code>Qt</code>中，可以利用<code>QTime</code>类来控制时间，这里介绍一下<code>QTime</code>的成员函数的用法：</p>
+<ul>
+<li><code>QTime::QTime()</code>：默认构造函数，构造一个时、分、秒都为<code>0</code>的时间，例如<code>00:00:00.000</code>(午夜)。</li>
+<li><code>QTime::QTime(int h, int m, int s = 0, int ms = 0)</code>：构造一个用户指定时、分、秒的时间，参数有效值范围：<code>h</code>为<code>0</code>至<code>23</code>，<code>m</code>为<code>0</code>至<code>59</code>，<code>ms</code>为<code>0</code>至<code>999</code>。</li>
+<li><code>QTime QTime::addMSecs(int ms) const</code>：返回一个当前时间对象之后或之前<code>ms</code>毫秒的时间对象(之前还是之后要看<code>ms</code>的符号，如果为正，就是之后，否则是之前)：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QTime <span class="title">time</span> <span class="params">( <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span> )</span></span>;</span><br><span class="line">QTime newTime1 = time.addMSecs ( <span class="number">1000</span> );</span><br><span class="line">QTime newTime2 = time.addMSecs ( <span class="number">-1000</span> );</span><br></pre></td></tr></table></figure>
+<p><code>newTime1</code>是一个比<code>time</code>所指定时间(<code>03:00:00.000</code>)延后<code>1000</code>毫秒(即<code>1</code>秒)的时间(<code>03:00:01.000</code>)，而<code>newTime2</code>则提前<code>1000</code>毫秒(<code>02:59:59.000</code>)。</p>
+<ul>
+<li><code>QTime QTime::addSecs(int nsecs) const</code>：与<code>addMSecs</code>相同，只是<code>nsecs</code>单位为秒，即返回一个当前时间对象之前或之后的时间对象。</li>
+<li><code>int QTime::elapsed() const</code>：返回最后一次调用<code>start</code>或<code>restart</code>到现在已经经过的毫秒数。如果超过<code>24</code>小时，则计数器置<code>0</code>。</li>
+<li><code>int QTime::hour() const</code>：返回时间对象的小时，取值范围为<code>0</code>至<code>23</code>。</li>
+<li><code>int QTime::minute() const</code>：返回时间对象的分钟，取值范围为<code>0</code>至<code>59</code>。</li>
+<li><code>int QTime::second() const</code>：返回时间对象的秒，取值范围为<code>0</code>至<code>59</code>。</li>
+<li><code>int QTime::msec() const</code>：返回时间对象的毫秒，取值范围为<code>0</code>至<code>999</code>。</li>
+<li><code>bool QTime::isNull() const</code>：如果时间对象等于<code>00:00:00.000</code>，就返回<code>true</code>，否则返回<code>false</code>。</li>
+<li><code>bool QTime::isValid() const</code>：如果时间对象是有效的，就返回<code>true</code>，否则返回<code>false</code>(就是说时、分、秒、毫秒的数值都在其取值范围之内)。</li>
+<li><code>int QTime::msecsTo(const QTime &amp;t) const</code>：返回当前时间对象到<code>t</code>所指定的时间之间的毫秒数。如果<code>t</code>早于当前时间对象的时间，则返回的值是负值。因为一天的时间是<code>86400000</code>毫秒，所以返回值范围是<code>-86400000</code>至<code>86400000</code>。</li>
+<li><code>int QTime::secsTo(const QTime &amp;t) const</code>：与<code>msecsTo</code>基本相同，只是返回的是秒数，返回值的有效范围是<code>-86400</code>至<code>86400</code>。</li>
+<li><code>int QTime::restart()</code>：设置当前时间对象的值为当前系统时间，并且返回从最后一次调用<code>start</code>或<code>restart</code>到现在的毫秒数。如果超过<code>24</code>小时，则计数器置<code>0</code>。</li>
+<li><code>bool QTime::setHMS(int h, int m, int s, int ms = 0)</code>：设置当前时间对象的时、分、秒和毫秒。如果给定的参数值有效，就返回<code>true</code>，否则返回<code>false</code>。</li>
+<li><code>void QTime::start()</code>：设置当前时间对象的值为当前系统时间，这个函数实际上是结合<code>restart</code>和<code>elapsed</code>来计数的。</li>
+<li><code>QString QTime::toString(const QString &amp;format) const</code>：按照参数<code>format</code>指定的格式用字符串形式输出当前时间对象的时间。参数<code>format</code>用来指定时、分、秒、毫秒的输出格式，例如<code>hh:mm:ss.zzz AP/ap</code>。</li>
+</ul>
+<ol>
+<li><code>h</code>表示小时，范围是<code>0</code>至<code>23</code>；<code>hh</code>用两位数表示小时，不足两位的前面用<code>0</code>补足，例如<code>0</code>点为<code>00</code>，<code>3</code>点为<code>03</code>，<code>11</code>点为<code>11</code>。</li>
+<li><code>m</code>表示分钟，范围是<code>0</code>至<code>59</code>；<code>mm</code>用两位数表示分钟，不足两位的前面用<code>0</code>补足。</li>
+<li><code>s</code>表示秒，范围是<code>0</code>至<code>59</code>；<code>ss</code>用两位数表示秒，不足两位的前面用<code>0</code>补足。</li>
+<li><code>z</code>表示毫秒，范围是<code>0</code>至<code>999</code>；<code>zzz</code>用三位数表示毫秒，不足三位的前面用<code>0</code>补足。</li>
+<li><code>AP</code>表示用<code>AM/PM</code>显示，<code>ap</code>表示用<code>ap/pm</code>显示。</li>
+</ol>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QTime <span class="title">time</span> <span class="params">( <span class="number">14</span>, <span class="number">3</span>, <span class="number">9</span>, <span class="number">42</span> )</span></span>; <span class="comment">/* 设置时间为“14:03:09.042” */</span></span><br><span class="line">QString i = time.toString ( <span class="string">"hh:mm:ss.zzz"</span> ); <span class="comment">/* 结果为“14:03:09.042” */</span></span><br><span class="line">QString j = time.toString ( <span class="string">"h:m:s.z"</span> ); <span class="comment">/* 结果为“14:3:9.42” */</span></span><br><span class="line">QString m = time.toString ( <span class="string">"h:m:s.z AP"</span> ); <span class="comment">/* 结果为“2:3:9.42 PM” */</span></span><br><span class="line">QString n = time.toString ( <span class="string">"h:m:s.z ap"</span> ); <span class="comment">/* 结果为“2:3:9.42 pm” */</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>QString QTime::toString(Qt::DateFormat f = Qt::TextDate) const</code>：按照参数<code>format</code>指定的格式用字符串形式输出当前时间对象的时间。<code>f</code>可选值如下：</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>可选值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Qt::TextDate</code></td>
+<td>格式为<code>HH:MM:SS</code></td>
+</tr>
+<tr>
+<td><code>Qt::ISODate</code></td>
+<td><code>ISO 8601</code>标准的时间表示格式，同样也为<code>HH:MM:SS</code></td>
+</tr>
+<tr>
+<td><code>Qt::LocalDate</code></td>
+<td>字符串格式依赖系统本地设置</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>&emsp;&emsp;静态成员函数如下：</p>
+<ul>
+<li><code>QTime QTime::currentTime()</code>：返回当前的系统时间。</li>
+<li><code>QTime QTime::fromString(const QString &amp;string, Qt::DateFormat format = Qt::TextDate)</code>：使用参数<code>format</code>指定的格式，根据参数<code>string</code>指定的时间返回一个时间对象。如果<code>string</code>指定的时间不合法，则返回一个无效的时间对象。<code>format</code>可选值如下：</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>可选值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Qt::TextDate</code></td>
+<td>格式为<code>HH:MM:SS</code></td>
+</tr>
+<tr>
+<td><code>Qt::ISODate</code></td>
+<td><code>ISO 8601</code>标准的时间表示格式，同样也为<code>HH:MM:SS</code></td>
+</tr>
+<tr>
+<td><code>Qt::LocalDate</code></td>
+<td>字符串格式依赖系统本地设置</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li><code>QTime QTime::fromString(const QString &amp;string, const QString &amp;format)</code>：使用参数<code>format</code>指定的格式，根据参数<code>string</code>指定的时间返回一个时间对象。如果<code>string</code>指定的时间不合法，则返回一个无效的时间对象。<code>format</code>的格式参考<code>QString QTime::toString(const QString &amp;format) const</code>。</li>
+<li><code>bool QTime::isValid(int h, int m, int s, int ms = 0)</code>：如果参数所指定的时间是合法的，就返回<code>true</code>，否则返回<code>false</code>。</li>
+</ul>
+<p>&emsp;&emsp;静态成员函数不依赖于对象，可以通过类直接调用。例如获取当前系统时间的小时部分不需要定义<code>QTime</code>对象：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> hour = QTime::currentTime().hour();</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/03/Qt语法详解/Qt之QSharedMemory/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/03/Qt语法详解/Qt之QSharedMemory/" itemprop="url">Qt之QSharedMemory</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-03T12:28:04+08:00">
+                2019-01-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">Qt语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>Qt</code>提供了<code>QSharedMemory</code>类来访问共享内存，实现共享内存的操作。</p>
+<h3 id="创建QSharedMemory类对象"><a href="#创建QSharedMemory类对象" class="headerlink" title="创建QSharedMemory类对象"></a>创建QSharedMemory类对象</h3><p>&emsp;&emsp;利用<code>QSharedMemory</code>类创建实例对象时，必须为该共享内存指定关键字(即为该共享内存起一个名字)。只有当共享内存被设置了关键字之后，才可以执行创建(<code>create</code>)、关联(<code>attach</code>)等操作。为共享内存指定关键字有两种方法：</p>
+<ul>
+<li>通过构造函数<code>QSharedMemory::QSharedMemory ( const QString &amp; key, QObject * parent =0 )</code>为实例对象传入关键字：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SharedMemory *sharememory;</span><br><span class="line">sharememory = newQSharedMemory ( <span class="string">"QSharedMemoryExample"</span> );</span><br></pre></td></tr></table></figure>
+<ul>
+<li>通过构造函数<code>QSharedMemory::QSharedMemory (QObject * parent = 0 )</code>构造实例对象，之后调用<code>setKey</code>函数为该实例对象设置关键字：</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">QSharedMemory *sharememory;</span><br><span class="line">sharememory = <span class="keyword">new</span> QSharedMemory();</span><br><span class="line">sharememory-&gt;setKey ( <span class="string">"QSharedMemoryExample"</span> );</span><br></pre></td></tr></table></figure>
+<h3 id="创建共享内存"><a href="#创建共享内存" class="headerlink" title="创建共享内存"></a>创建共享内存</h3><p>&emsp;&emsp;如下代码为<code>QSharedMemory</code>类实例对象创建一个空间大小为<code>size</code>的共享内存，该内存空间默认的访问方式为可读可写。共享内存创建成功返回<code>true</code>，否则返回<code>false</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> QSharedMemory::create ( <span class="keyword">int</span> size, AccessMode mode = ReadWrite );</span><br></pre></td></tr></table></figure>
+<p><code>QSharedMemory</code>类定义一个枚举类变量<code>AccessMode</code>，指定了两种共享内存的访问方式：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">QSharedMemory::ReadOnly <span class="comment">/* 只读方式访问共享内存 */</span></span><br><span class="line">QSharedMemory::ReadWrite  <span class="comment">/* 读写方式访问共享内存 */</span></span><br></pre></td></tr></table></figure>
+<h3 id="关联共享内存"><a href="#关联共享内存" class="headerlink" title="关联共享内存"></a>关联共享内存</h3><p>&emsp;&emsp;如下代码将以关键字<code>key</code>命名的共享内存和当前程序进行关联，共享内存默认的访问方式为可读可写。如果程序和共享内存关联成功，返回<code>true</code>，否则返回<code>false</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> QSharedMemory::attach ( AccessMode mode = ReadWrite );</span><br></pre></td></tr></table></figure>
+<h3 id="分离共享内存"><a href="#分离共享内存" class="headerlink" title="分离共享内存"></a>分离共享内存</h3><p>&emsp;&emsp;如下代码解除共享内存和程序的关联，即调用该函数后，程序不可以再访问共享内存：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> QSharedMemory::detach ();</span><br></pre></td></tr></table></figure>
+<p>如果该共享内存被多个程序实例所关联，当最后一个程序实例和共享内存解除关联后，该共享内存将由操作系统自动释放掉。分离操作成功，则返回<code>true</code>；如果返回<code>false</code>，通常意味着该共享内存和程序分离失败，可能其他程序当前正在访问该共享内存。</p>
+<h3 id="判断共享内存的关联状态"><a href="#判断共享内存的关联状态" class="headerlink" title="判断共享内存的关联状态"></a>判断共享内存的关联状态</h3><p>&emsp;&emsp;函数<code>isAttached</code>用来判断程序(调用该函数的程序)是否和共享内存进行关联，如果是，就返回<code>true</code>，否则返回<code>false</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> QSharedMemory::isAttached () <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="设置-获取共享内存的关键字"><a href="#设置-获取共享内存的关键字" class="headerlink" title="设置/获取共享内存的关键字"></a>设置/获取共享内存的关键字</h3><p>&emsp;&emsp;<code>Qt</code>应用程序通过关键字来辨识共享内存。<code>key</code>函数用来获取共享内存的关键字，如果没有指定实例对象的关键字，或者共享内存的关键字是由<code>nativeKey</code>函数指定的话，则返回<code>NULL</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">QString QSharedMemory::key () <span class="keyword">const</span>; <span class="comment">/* 获取共享内存关键字 */</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>setKey</code>函数用来为共享内存段设定关键字(为共享内存命名)，如果参数<code>key</code>的值和构造函数或者之前指定的关键字相同的话，则该函数将不做任何操作，直接返回：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> QSharedMemory::setKey ( <span class="keyword">const</span> QString &amp;key ); <span class="comment">/* 设定共享内存关键字 */</span></span><br></pre></td></tr></table></figure>
+<h3 id="锁定-解锁共享内存"><a href="#锁定-解锁共享内存" class="headerlink" title="锁定/解锁共享内存"></a>锁定/解锁共享内存</h3><p>&emsp;&emsp;为了保证共享内存中数据的完整性，当一个进程在读写共享内存的时候，其他进程不允许对该共享区域进行访问。<code>QSharedMemory</code>类提供了<code>lock</code>函数和<code>unlock</code>函数来实现这一共享内存访问机制。某一程序对共享内存进行读写操作之前，需要调用<code>lock</code>函数锁定该共享内存，之后独享共享内存中的数据，并对数据进行读写等操作；共享内存访问完毕，调用<code>unlock</code>函数，释放共享内存的使用权限。<br>&emsp;&emsp;如果共享内存资源当前处于释放状态，进程调用<code>lock</code>函数将共享内存中的资源锁定，并返回<code>true</code>，其他进程将不能访问该共享内存：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> QSharedMemory::lock (); <span class="comment">/* 锁定共享内存 */</span></span><br></pre></td></tr></table></figure>
+<p>如果共享内存被其他进程占用时，则该函数会一直处于阻塞状态，直到其他进程使用完毕，并且释放共享内存资源。<br>&emsp;&emsp;如果共享内存资源被当前进程所占有，调用<code>unlock</code>函数将解锁该共享资源，并返回<code>true</code>。如果当前进程没有占用该资源，或者共享内存被其他进程访问，则不做任何操作，并返回<code>false</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> QSharedMemory::unlock (); <span class="comment">/* 解锁共享内存 */</span></span><br></pre></td></tr></table></figure>
+<h3 id="错误原因"><a href="#错误原因" class="headerlink" title="错误原因"></a>错误原因</h3><p>&emsp;&emsp;当共享内存出错时，调用<code>error</code>函数显示相应的错误代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SharedMemoryError QSharedMemory::error () <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;当共享内存出错时，调用<code>errorString</code>函数，以文本形式显示错误原因：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">QString QSharedMemory::errorString () <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="获取共享内存的地址"><a href="#获取共享内存的地址" class="headerlink" title="获取共享内存的地址"></a>获取共享内存的地址</h3><p>&emsp;&emsp;在程序关联共享内存的前提下，调用<code>constData</code>或<code>data</code>函数返回共享内存中数据的起始地址。如果没有关联共享内存，则返回<code>0</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">void</span> *QSharedMemory::constData () <span class="keyword">const</span>;</span><br><span class="line"><span class="keyword">void</span> *QSharedMemory::data ();</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">void</span> *QSharedMemory::data () <span class="keyword">const</span>; <span class="comment">/* 重载函数 */</span></span><br></pre></td></tr></table></figure>
+<h3 id="获取共享内存的大小"><a href="#获取共享内存的大小" class="headerlink" title="获取共享内存的大小"></a>获取共享内存的大小</h3><p>&emsp;&emsp;调用<code>size</code>函数将返回程序所关联的共享内存的大小(字节)。如果没有关联的共享内存，则返回<code>0</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> QSharedMemory::size () <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/03/Qt语法详解/QT之paintEvent事件/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -944,960 +2097,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/03/Qt语法详解/Qt之QVariant/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/03/Qt语法详解/Qt之QVariant/" itemprop="url">Qt之QVariant</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-03T08:16:15+08:00">
-                2019-01-03
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>QVariant</code>类是一个最为普遍的<code>Qt</code>数据类型的联合。因为<code>C++</code>禁止没有构造函数和析构函数的联合体，许多继承的<code>Qt</code>类不能够在联合体当中使用(联合体当中的变量共用一个存储区)。没有了联合变量，我们在物体属性以及数据库的工作等方面受到很多的困扰。一个<code>QVariant</code>对象在一个时间内只保留一种类型的值。我们可以使用<code>canConvert</code>来查询是否能够转换当前的类型。转换类型一般以<code>toT</code>命名。<br>&emsp;&emsp;摘录了一个<code>example</code>来说明<code>QVariant</code>的使用方法：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QDataStream <span class="title">out</span> <span class="params">( ... )</span></span>;</span><br><span class="line"><span class="function">QVariant <span class="title">v</span> <span class="params">( <span class="number">123</span> )</span></span>;                    <span class="comment">/* The variant now contains an int */</span></span><br><span class="line"><span class="keyword">int</span> x = v.toInt();                     <span class="comment">/* x = 123 */</span></span><br><span class="line">out &lt;&lt; v;                              <span class="comment">/* Writes a type tag and an int to out */</span></span><br><span class="line">v = QVariant ( <span class="string">"hello"</span> );              <span class="comment">/* The variant now contains a QByteArray */</span></span><br><span class="line">v = QVariant ( tr ( <span class="string">"hello"</span> ) );       <span class="comment">/* The variant now contains a QString */</span></span><br><span class="line"><span class="keyword">int</span> y = v.toInt();                     <span class="comment">/* y = 0 since v cannot be converted to an int */</span></span><br><span class="line">QString s = v.toString();              <span class="comment">/* s = tr("hello") */</span></span><br><span class="line">out &lt;&lt; v;                              <span class="comment">/* Writes a type tag and a QString to out */</span></span><br><span class="line">...</span><br><span class="line"><span class="function">QDataStream <span class="title">in</span> <span class="params">( ... )</span></span>;                <span class="comment">/* opening the previously written stream */</span></span><br><span class="line">in &gt;&gt; v;                               <span class="comment">/* Reads an Int variant */</span></span><br><span class="line"><span class="keyword">int</span> z = v.toInt();                     <span class="comment">/* z = 123 */</span></span><br><span class="line">qDebug ( <span class="string">"Type is %s"</span>, v.typeName() ); <span class="comment">/* prints "Type is int" */</span></span><br><span class="line">v = v.toInt() + <span class="number">100</span>;                   <span class="comment">/* The variant now hold the value 223 */</span></span><br><span class="line">v = QVariant ( QStringList() );</span><br></pre></td></tr></table></figure>
-<p>你甚至可以存储<code>QList&lt;QVariant&gt;</code>和<code>QMap&lt;QString, QVariant&gt;</code>，所以可以构造任意复杂的数据类型，这是非常强大而且又有用的。<code>QVariant</code>也支持<code>null</code>值，可以定义一个没有任何值的类型，然而也要注意<code>QVariant</code>类型只能在它们有值的时候被强制转换：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">QVariant x, y ( QString() ), z ( QString ( <span class="string">""</span> ) );</span><br><span class="line">x.convert ( QVariant::Int );</span><br><span class="line"><span class="comment">// x.isNull() == true</span></span><br><span class="line"><span class="comment">// y.isNull() == true, z.isNull() == false</span></span><br></pre></td></tr></table></figure>
-<p>因为<code>QVariant</code>是<code>QtCore</code>库的一部分，它不能够提供定义在<code>QtGui</code>当中的类型的转换，例如<code>QColor</code>、<code>QImage</code>和<code>QPixmap</code>等。换句话说，没有<code>toColor</code>这样的函数。但是你可以使用<code>QVariant::value</code>或者<code>qVariantValue</code>这两个模板函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">QVariant variant;</span><br><span class="line">QColor color = variant.value&lt;QColor&gt;();</span><br></pre></td></tr></table></figure>
-<p>反向转换(例如把<code>QColor</code>转成<code>QVariant</code>)是自动完成的，这也包含了<code>GUI</code>相关的那些数据类型：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">QColor color = palette().background().color();</span><br><span class="line">QVariant variant = color;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/02/Qt语法详解/Qt之正则表达式/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/02/Qt语法详解/Qt之正则表达式/" itemprop="url">Qt之正则表达式</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-02T21:39:17+08:00">
-                2019-01-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"widget.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ui_widget.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QDebug&gt;</span></span></span><br><span class="line">​</span><br><span class="line">Widget::Widget ( QWidget *parent ) : QWidget ( parent ), ui ( <span class="keyword">new</span> Ui::Widget ) &#123;</span><br><span class="line">    ui-&gt;setupUi ( <span class="keyword">this</span> );</span><br><span class="line">    <span class="function">QRegExp <span class="title">rx</span> <span class="params">( <span class="string">"^\\d\\d?$"</span> )</span></span>; <span class="comment">/* 两个字符都必须为数字，第二个字符可以没有 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx.indexIn ( <span class="string">"a1"</span> ); <span class="comment">/* 结果为“-1”，不是数字开头 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx.indexIn ( <span class="string">"5"</span> ); <span class="comment">/* 结果为0 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx.indexIn ( <span class="string">"5b"</span> ); <span class="comment">/* 结果为“-1”，第二个字符不是数字 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx.indexIn ( <span class="string">"12"</span> ); <span class="comment">/* 结果为0 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx.indexIn ( <span class="string">"123"</span> ); <span class="comment">/* 结果为“-1”，超过了两个字符 */</span></span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"*******************"</span>; <span class="comment">/* 输出分割符，为了显示清晰 */</span></span><br><span class="line">    rx.setPattern ( <span class="string">"\\b(mail|letter)\\b"</span> ); <span class="comment">/* 匹配“mail”或者“letter”单词 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx.indexIn ( <span class="string">"emailletter"</span> ); <span class="comment">/* 结果为“-1”，“mail”不是一个单词 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx.indexIn ( <span class="string">"my mail"</span> ); <span class="comment">/* 返回3 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx.indexIn ( <span class="string">"my email letter"</span> ); <span class="comment">/* 返回9 */</span></span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"*******************"</span>;</span><br><span class="line">    rx.setPattern ( <span class="string">"M(?!ail)"</span> ); <span class="comment">/* 匹配字符“M”，其后面不能跟有“ail”字符 */</span></span><br><span class="line">    QString str1 = <span class="string">"this is M"</span>;</span><br><span class="line">    str1.replace ( rx, <span class="string">"Mail"</span> ); <span class="comment">/* 使用“Mail”替换匹配到的字符 */</span></span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"str1: "</span> &lt;&lt; str1; <span class="comment">/* 结果为“this is Mail” */</span></span><br><span class="line">    QString str2 = <span class="string">"my M,your Ms,his Mail"</span>;</span><br><span class="line">    str2.replace ( rx, <span class="string">"Mail"</span> );</span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"str2: "</span> &lt;&lt; str2; <span class="comment">/* 结果为“my Mail,your Mails,his Mail” */</span></span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"*******************"</span>;</span><br><span class="line">    <span class="comment">/* 一个字符串如果一行写不完，换行后两行都需要加双引号 */</span></span><br><span class="line">    QString str3 = <span class="string">"One Eric another Eirik, and an Ericsson. "</span></span><br><span class="line">                   <span class="string">"How many Eiriks, Eric?"</span>;</span><br><span class="line">    <span class="function">QRegExp <span class="title">rx2</span> <span class="params">( <span class="string">"\\bEi?ri[ck]\\b"</span> )</span></span>; <span class="comment">/* 匹配“Eric”或者“Eirik” */</span></span><br><span class="line">    <span class="keyword">int</span> pos = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( pos &gt;= <span class="number">0</span> ) &#123;</span><br><span class="line">        pos = rx2.indexIn ( str3, pos );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( pos &gt;= <span class="number">0</span> ) &#123;</span><br><span class="line">            ++pos; <span class="comment">/* 从匹配的字符的下一个字符开始匹配 */</span></span><br><span class="line">            ++count; <span class="comment">/* 匹配到的数目加1 */</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    qDebug() &lt;&lt; <span class="string">"count: "</span> &lt;&lt; count; <span class="comment">/* 结果为3 */</span></span><br><span class="line">    <span class="function">QRegExp <span class="title">rx3</span> <span class="params">( <span class="string">"*.txt"</span> )</span></span>;</span><br><span class="line">    rx3.setPatternSyntax ( QRegExp::Wildcard );</span><br><span class="line">    qDebug() &lt;&lt; rx3.exactMatch ( <span class="string">"README.txt"</span> ); <span class="comment">/* 结果为true */</span></span><br><span class="line">    qDebug() &lt;&lt; rx3.exactMatch ( <span class="string">"welcome.txt.bak"</span> ); <span class="comment">/* 结果为false */</span></span><br><span class="line">    <span class="function">QRegExp <span class="title">rx4</span> <span class="params">( <span class="string">"(\\d+)"</span> )</span></span>;</span><br><span class="line">    QString str4 = <span class="string">"Offsets: 12 14 99 231 7"</span>;</span><br><span class="line">    QStringList <span class="built_in">list</span>;</span><br><span class="line">    <span class="keyword">int</span> pos2 = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( ( pos2 = rx4.indexIn ( str4, pos2 ) ) != <span class="number">-1</span> ) &#123;</span><br><span class="line">        <span class="built_in">list</span> &lt;&lt; rx4.cap ( 1 ); /* 第一个捕获到的文本 */</span><br><span class="line">        pos2 += rx4.matchedLength(); /* 上一个匹配的字符串的长度 */</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    qDebug() &lt;&lt; <span class="built_in">list</span>; /* 结果“12,14,99,231,7” */</span><br><span class="line">    QRegExp rxlen ( "(\\d+)(?:\\s*)(cm|inch)" );</span><br><span class="line">    <span class="keyword">int</span> pos3 = rxlen.indexIn ( "Length: 189cm" );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( pos3 &gt; <span class="number">-1</span> ) &#123;</span><br><span class="line">        QString value = rxlen.cap ( <span class="number">1</span> ); <span class="comment">/* 结果为189 */</span></span><br><span class="line">        QString unit = rxlen.cap ( <span class="number">2</span> ); <span class="comment">/* 结果为cm */</span></span><br><span class="line">        QString <span class="built_in">string</span> = rxlen.cap ( <span class="number">0</span> ); <span class="comment">/* 结果为189cm */</span></span><br><span class="line">        qDebug() &lt;&lt; value &lt;&lt; unit &lt;&lt; <span class="built_in">string</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="function">QRegExp <span class="title">rx5</span> <span class="params">( <span class="string">"\\b(\\w+)\\W+\\1\\b"</span> )</span></span>;</span><br><span class="line">    rx5.setCaseSensitivity ( Qt::CaseInsensitive ); <span class="comment">/* 设置不区分大小写 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx5.indexIn ( <span class="string">"Hello--hello"</span> ); <span class="comment">/* 结果为0 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx5.cap ( <span class="number">1</span> ); <span class="comment">/* 结果为Hello */</span></span><br><span class="line">    <span class="function">QRegExp <span class="title">rx6</span> <span class="params">( <span class="string">"\\b你好\\b"</span> )</span></span>; <span class="comment">/* 匹配中文 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx6.indexIn ( <span class="string">"你好"</span> ); <span class="comment">/* 结果为0 */</span></span><br><span class="line">    qDebug() &lt;&lt; rx6.cap ( <span class="number">0</span> ); <span class="comment">/* 整个字符串完全匹配，使用“cap(0)”捕获，结果为“你好” */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">Widget::~Widget() &#123;</span><br><span class="line">    <span class="keyword">delete</span> ui;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/02/Qt语法详解/Qt之QTextFrame/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/02/Qt语法详解/Qt之QTextFrame/" itemprop="url">Qt之QTextFrame</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-02T21:05:02+08:00">
-                2019-01-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;The <code>QTextFrame</code> class represents a frame in a <code>QTextDocument</code>.</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Header</th>
-<th>Inherits</th>
-<th>Inherited By</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>QTextFrame</code></td>
-<td><code>QTextObject</code></td>
-<td><code>QTextTable</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p><strong>Note</strong>: All functions in this class are reentrant.</p>
-<h3 id="Public-Types"><a href="#Public-Types" class="headerlink" title="Public Types"></a>Public Types</h3><ul>
-<li><code>class</code>: iterator</li>
-<li><code>typedef</code>: Iterator</li>
-</ul>
-<h3 id="Public-Functions"><a href="#Public-Functions" class="headerlink" title="Public Functions"></a>Public Functions</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">                    QTextFrame(QTextDocument * document)</span><br><span class="line">                    ~QTextFrame()</span><br><span class="line"><span class="function">iterator            <span class="title">begin</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line">QList&lt;QTextFrame *&gt; childFrames() const</span><br><span class="line"><span class="function">iterator            <span class="title">end</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function">QTextCursor         <span class="title">firstCursorPosition</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span>                 <span class="title">firstPosition</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function">QTextFrameFormat    <span class="title">frameFormat</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function">QTextCursor         <span class="title">lastCursorPosition</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span>                 <span class="title">lastPosition</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function">QTextFrame *        <span class="title">parentFrame</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span>                <span class="title">setFrameFormat</span><span class="params">(<span class="keyword">const</span> QTextFrameFormat &amp; format)</span></span></span><br></pre></td></tr></table></figure>
-<h3 id="Detailed-Description"><a href="#Detailed-Description" class="headerlink" title="Detailed Description"></a>Detailed Description</h3><p>&emsp;&emsp;The <code>QTextFrame</code> class represents a frame in a <code>QTextDocument</code>.<br>&emsp;&emsp;Text frames provide structure for the text in a document. They are used as generic containers for other document elements. Frames are usually created by using <code>QTextCursor::insertFrame()</code>.<br>&emsp;&emsp;Frames can be used to create hierarchical structures in rich text documents. Each document has a root frame (<code>QTextDocument::rootFrame()</code>), and each frame beneath the root frame has a parent frame and a (possibly empty) list of child frames. The parent frame can be found with <code>parentFrame()</code>, and the <code>childFrames()</code> function provides a list of child frames.<br>&emsp;&emsp;Each frame contains at least one text block to enable text cursors to insert new document elements within. As a result, the <code>QTextFrame::iterator</code> class is used to traverse both the blocks and child frames within a given frame. The first and last child elements in the frame can be found with <code>begin()</code> and <code>end()</code>.<br>&emsp;&emsp;A frame also has a format (specified using <code>QTextFrameFormat</code>) which can be set with <code>setFormat()</code> and read with <code>format()</code>.<br>&emsp;&emsp;Text cursors can be obtained that point to the first and last valid cursor positions within a frame; use the <code>firstCursorPosition()</code> and <code>lastCursorPosition()</code> functions for this. The frame’s extent in the document can be found with <code>firstPosition()</code> and <code>lastPosition()</code>.<br>&emsp;&emsp;You can iterate over a frame’s contents using the <code>QTextFrame::iterator</code> class: this provides <code>read-only</code> access to its internal list of text blocks and child frames.</p>
-<h3 id="Member-Type-Documentation"><a href="#Member-Type-Documentation" class="headerlink" title="Member Type Documentation"></a>Member Type Documentation</h3><ul>
-<li><code>typedef QTextFrame::Iterator</code>: <code>Qt-style</code> synonym for <code>QTextFrame::iterator</code>.</li>
-</ul>
-<h3 id="Member-Function-Documentation"><a href="#Member-Function-Documentation" class="headerlink" title="Member Function Documentation"></a>Member Function Documentation</h3><ul>
-<li><code>QTextFrame::QTextFrame(QTextDocument * document)</code>: Creates a new empty frame for the text document.</li>
-<li><code>QTextFrame::~QTextFrame()</code>: Destroys the frame, and removes it from the document’s layout.</li>
-<li><code>iterator QTextFrame::begin() const</code>: Returns an iterator pointing to the <code>first</code> document element inside the frame. Please see the document <code>STL-style-Iterators</code> for more information.</li>
-<li><code>QList&lt;QTextFrame *&gt; QTextFrame::childFrames() const</code>: Returns a (possibly empty) list of the frame’s <code>child</code> frames.</li>
-<li><code>iterator QTextFrame::end() const</code>: Returns an iterator pointing to the position past the <code>last</code> document element inside the frame. Please see the document <code>STL-Style</code> Iterators for more information.</li>
-<li><code>QTextCursor QTextFrame::firstCursorPosition() const</code>: Returns the <code>first</code> cursor position inside the frame.</li>
-<li><code>int QTextFrame::firstPosition() const</code>: Returns the <code>first</code> document position inside the frame.</li>
-<li><code>QTextFrameFormat QTextFrame::frameFormat() const</code>: Returns the frame’s <code>format</code>.</li>
-<li><code>QTextCursor QTextFrame::lastCursorPosition() const</code>: Returns the <code>last</code> cursor position inside the frame.</li>
-<li><code>int QTextFrame::lastPosition() const</code>: Returns the <code>last</code> document position inside the frame.</li>
-<li><code>QTextFrame * QTextFrame::parentFrame() const</code>: Returns the frame’s <code>parent</code> frame. If the frame is the root frame of a document, this will return <code>0</code>.</li>
-<li><code>void QTextFrame::setFrameFormat(const QTextFrameFormat &amp; format)</code>: Sets the frame’s <code>format</code>.</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/02/Qt语法详解/Qt之textEdit总结/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/02/Qt语法详解/Qt之textEdit总结/" itemprop="url">Qt之textEdit总结</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-02T20:18:03+08:00">
-                2019-01-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ul>
-<li><code>QString str = ui-&gt;textedit-&gt;toPlainText()</code>：获取普通文本。</li>
-<li><code>QString str = ui-&gt;textedit-&gt;toHtml()</code>：获取富文本，即获取的是<code>HTML</code>字符串。</li>
-<li><code>ui-&gt;textedit-&gt;setPlainText ( &quot;123&quot; )</code>：设置普通文本。</li>
-<li><code>ui-&gt;textedit-&gt;setHtml ( &quot;&lt;b&gt;123&lt;/b&gt;&quot; );</code>：设置富文本。</li>
-<li><code>ui.messageTextEdit-&gt;textCursor().insertText ( message + &quot;\n&quot; )</code>：向<code>QTextEdit</code>当前光标位置添加一行字符串<code>message</code>。</li>
-<li><code>QString content = ui.contentTextEdit-&gt;append ( message + &quot;\n&quot; )</code>：向<code>QTextEdit</code>末尾追加一行字符串<code>message</code>。</li>
-<li><code>ui.textBrowser_2-&gt;moveCursor ( QTextCursor::End )</code>：光标移到末尾。</li>
-<li><code>setVisible( bool )</code>：控件的显示和隐藏。</li>
-<li><code>textEdit-&gt;document()-&gt;isModified()</code>：判断<code>textEdit</code>中的文本是否被改变。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/02/Qt语法详解/Qt之QStack/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/02/Qt语法详解/Qt之QStack/" itemprop="url">Qt之QStack</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-02T19:05:18+08:00">
-                2019-01-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="QStack-Class"><a href="#QStack-Class" class="headerlink" title="QStack Class"></a>QStack Class</h3><p>&emsp;&emsp;The <code>QStack</code> class is a template class that provides a <code>stack</code>.</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Header</th>
-<th>Inherits</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>QStack</code></td>
-<td><code>QVector&lt;T&gt;</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p><strong>Note</strong>: All functions in this class are reentrant.</p>
-<h3 id="Public-Functions"><a href="#Public-Functions" class="headerlink" title="Public Functions"></a>Public Functions</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">          QStack()</span><br><span class="line">          ~QStack()</span><br><span class="line"><span class="function">T         <span class="title">pop</span><span class="params">()</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span>      <span class="title">push</span><span class="params">(<span class="keyword">const</span> T &amp; t)</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span>      <span class="title">swap</span><span class="params">(QStack&lt;T&gt; &amp; other)</span></span></span><br><span class="line"><span class="function">T &amp;       <span class="title">top</span><span class="params">()</span></span></span><br><span class="line"><span class="function"><span class="keyword">const</span> T &amp; <span class="title">top</span><span class="params">()</span> <span class="keyword">const</span></span></span><br></pre></td></tr></table></figure>
-<h3 id="Detailed-Description"><a href="#Detailed-Description" class="headerlink" title="Detailed Description"></a>Detailed Description</h3><p>&emsp;&emsp;The <code>QStack</code> class is a template class that provides a stack. <code>QStack&lt;T&gt;</code> is one of Qt’s generic container classes. It implements a stack data structure for items of a same type.<br>&emsp;&emsp;A stack is a last in, first out (<code>LIFO</code>) structure. Items are added to the top of the stack using <code>push()</code> and retrieved from the top using <code>pop()</code>. The <code>top()</code> function provides access to the topmost item without removing it. Example:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">QStack&lt;<span class="keyword">int</span>&gt; <span class="built_in">stack</span>;</span><br><span class="line"><span class="built_in">stack</span>.push ( <span class="number">1</span> );</span><br><span class="line"><span class="built_in">stack</span>.push ( <span class="number">2</span> );</span><br><span class="line"><span class="built_in">stack</span>.push ( <span class="number">3</span> );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">while</span> ( !<span class="built_in">stack</span>.isEmpty() ) &#123;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="built_in">stack</span>.pop() &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>The example will output <code>3, 2, 1</code> in that order.<br>&emsp;&emsp;<code>QStack</code> inherits from <code>QVector</code>. All of QVector’s functionality also applies to <code>QStack</code>. For example, you can use <code>isEmpty()</code> to test whether the stack is empty, and you can traverse a <code>QStack</code> using QVector’s iterator classes (for example, <code>QVectorIterator</code>). But in addition, <code>QStack</code> provides three convenience functions that make it easy to implement LIFO semantics: <code>push()</code>, <code>pop()</code>, and <code>top()</code>.<br>&emsp;&emsp;QStack’s value type must be an assignable data type. This covers most data types that are commonly used, but the compiler won’t let you, for example, store a <code>QWidget</code> as a value; instead, store a <code>QWidget *</code>.</p>
-<h3 id="Member-Function-Documentation"><a href="#Member-Function-Documentation" class="headerlink" title="Member Function Documentation"></a>Member Function Documentation</h3><ul>
-<li><code>QStack::QStack()</code>: Constructs an empty stack.</li>
-<li><code>QStack::~QStack()</code>: Destroys the stack. References to the values in the stack, and all iterators over this stack, become invalid.</li>
-<li><code>T QStack::pop()</code>: Removes the top item from the stack and returns it. This function assumes that the stack isn’t empty.</li>
-<li><code>void QStack::push(const T &amp; t)</code>: Adds element <code>t</code> to the top of the stack. This is the same as <code>QVector::append()</code>.</li>
-<li><code>void QStack::swap(QStack&lt;T&gt; &amp; other)</code>: Swaps stack <code>other</code> with this stack. This operation is very fast and never fails.</li>
-<li><code>T &amp; QStack::top()</code>: Returns a reference to the stack’s <code>top</code> item. This function assumes that the stack isn’t empty. This is the same as <code>QVector::last()</code>.</li>
-<li><code>const T &amp; QStack::top() const</code>: This is an overloaded function.</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/02/Qt语法详解/Qt之QColorDialog/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/02/Qt语法详解/Qt之QColorDialog/" itemprop="url">Qt之QColorDialog</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-02T18:26:25+08:00">
-                2019-01-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;这是<code>Qt</code>提供的颜色选择对话框，使用头文件<code>QColorDialog</code>。<code>Qt</code>提供了<code>getColor</code>函数，可以直接获得选择的颜色：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">QColor color = QColorDialog::getColor ( Qt::white, <span class="keyword">this</span> );</span><br><span class="line">QString msg = QString ( <span class="string">"r: %1, g: %2, b: %3"</span> ).arg (</span><br><span class="line">    QString::number ( color.red() ),</span><br><span class="line">    QString::number ( color.green() ),</span><br><span class="line">    QString::number ( color.blue() ) );</span><br><span class="line">QMessageBox::information ( <span class="literal">NULL</span>, <span class="string">"Selected color"</span>, msg );</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>QColorDialog</code>的<code>getColor</code>函数有两个参数，第一个是<code>QColor</code>类型，是对话框打开时默认选择的颜色；第二个是它的<code>parent</code>。代码第二行是把<code>QColor</code>的<code>R</code>、<code>G</code>、<code>B</code>三个值转换为字符串；最后一行代码使用消息对话框把拼接的字符串输出。<br>&emsp;&emsp;<code>getColor</code>还有一个重载函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">QColorDialog::getColor (</span><br><span class="line">    <span class="keyword">const</span> QColor &amp;initial, QWidget *parent,</span><br><span class="line">    <span class="keyword">const</span> QString &amp;title, ColorDialogOptions options = <span class="number">0</span> );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>initial</code>：对话框打开时的默认选中的颜色。</li>
-<li><code>parent</code>：设置对话框的父组件。</li>
-<li><code>title</code>：设置对话框的<code>title</code>。</li>
-<li><code>options</code>：它是<code>QColorDialog::ColorDialogOptions</code>类型，可以设置对话框的一些属性，例如是否显示<code>Alpha</code>值。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/61/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/61/">61</a><span class="page-number current">62</span><a class="page-number" href="/page/63/">63</a><span class="space">&hellip;</span><a class="page-number" href="/page/95/">95</a><a class="extend next" rel="next" href="/page/63/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" href="/page/61/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/61/">61</a><span class="page-number current">62</span><a class="page-number" href="/page/63/">63</a><span class="space">&hellip;</span><a class="page-number" href="/page/96/">96</a><a class="extend next" rel="next" href="/page/63/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -1943,7 +2147,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">949</span>
+                  <span class="site-state-item-count">955</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
