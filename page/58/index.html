@@ -271,6 +271,765 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/16/深度学习/CNN与SVM联用/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/16/深度学习/CNN与SVM联用/" itemprop="url">CNN与SVM联用</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-16T13:31:51+08:00">
+                2019-01-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;本文演示如何使用卷积神经网络来提取手写数字图片特征，并使用<code>SVM</code>进行分类。该实验使用了<code>UCI</code>手写数字数据集，其中前<code>256</code>维是<code>16 * 16</code>的图片，后<code>10</code>维是<code>one hot</code>编码的标签，即<code>1000000000</code>代表<code>0</code>，<code>0010000000</code>代表<code>2</code>。<br>&emsp;&emsp;使用<code>CNN</code>提取特征的原因如下：</p>
+<ul>
+<li>由于卷积和池化计算的性质，使得图像中的平移部分对于最后的特征向量是没有影响的。从这一角度说，提取到的特征更不容易过拟合。</li>
+<li>可以利用不同的卷积、池化和最后输出的特征向量的大小控制整体模型的拟合能力。在过拟合时可以降低特征向量的维数，在欠拟合时可以提高卷积层的输出维数。</li>
+</ul>
+<p>&emsp;&emsp;算法流程如下：</p>
+<ol>
+<li>整理训练网络的数据。</li>
+<li>建立卷积神经网络。</li>
+<li>将数据代入进行训练。</li>
+<li>保存训练好的模型。</li>
+<li>把数据代入模型获得特征向量。</li>
+<li>用特征向量送入<code>SVM</code>进行训练。</li>
+<li>使用<code>SVM</code>进行预测，获得结果。</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> random</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> svm</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line">​</span><br><span class="line">start = time.clock()</span><br><span class="line">​</span><br><span class="line">right0 = <span class="number">0.0</span>  <span class="comment"># 记录预测为1，且实际为1的结果数</span></span><br><span class="line">error0 = <span class="number">0</span>  <span class="comment"># 记录预测为1，但实际为0的结果数</span></span><br><span class="line">right1 = <span class="number">0.0</span>  <span class="comment"># 记录预测为0，且实际为0的结果数</span></span><br><span class="line">error1 = <span class="number">0</span>  <span class="comment"># 记录预测为0，但实际为1的结果数</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">weight_variable</span><span class="params">(shape)</span>:</span>  <span class="comment"># 初始化权值向量</span></span><br><span class="line">    initial = tf.truncated_normal(shape, stddev=<span class="number">0.1</span>)</span><br><span class="line">    <span class="keyword">return</span> tf.Variable(initial)</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">bias_variable</span><span class="params">(shape)</span>:</span>  <span class="comment"># 初始化偏置向量</span></span><br><span class="line">    initial = tf.constant(<span class="number">0.1</span>, shape=shape)</span><br><span class="line">    <span class="keyword">return</span> tf.Variable(initial)</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">conv2d</span><span class="params">(x, W)</span>:</span>  <span class="comment"># 二维卷积运算，步长为1，输出大小不变</span></span><br><span class="line">    <span class="keyword">return</span> tf.nn.conv2d(x, W, strides=[<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>], padding=<span class="string">'SAME'</span>)</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">max_pool_2x2</span><span class="params">(x)</span>:</span>  <span class="comment"># 池化运算，将卷积特征缩小为“1/2”</span></span><br><span class="line">    <span class="keyword">return</span> tf.nn.max_pool(x, ksize=[<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">1</span>], strides=[<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">1</span>], padding=<span class="string">'SAME'</span>)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> file_num <span class="keyword">in</span> range(<span class="number">10</span>):</span><br><span class="line">    print(<span class="string">'testing NO.%d dataset.......'</span> % file_num)</span><br><span class="line">    ff = open(<span class="string">'digit_train_'</span> + file_num.__str__() + <span class="string">'.data'</span>)</span><br><span class="line">    rr = ff.readlines()</span><br><span class="line">    x_test2 = []</span><br><span class="line">    y_test2 = []</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(len(rr)):</span><br><span class="line">        x_test2.append(list(map(int, map(float, rr[i].split(<span class="string">' '</span>)[:<span class="number">256</span>]))))</span><br><span class="line">        y_test2.append(list(map(int, rr[i].split(<span class="string">' '</span>)[<span class="number">256</span>:<span class="number">266</span>])))</span><br><span class="line"></span><br><span class="line">    ff.close()</span><br><span class="line">    <span class="comment"># 读出测试数据</span></span><br><span class="line">    ff2 = open(<span class="string">'digit_test_'</span> + file_num.__str__() + <span class="string">'.data'</span>)</span><br><span class="line">    rr2 = ff2.readlines()</span><br><span class="line">    x_test3 = []</span><br><span class="line">    y_test3 = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(len(rr2)):</span><br><span class="line">        x_test3.append(list(map(int, map(float, rr2[i].split(<span class="string">' '</span>)[:<span class="number">256</span>]))))</span><br><span class="line">        y_test3.append(list(map(int, rr2[i].split(<span class="string">' '</span>)[<span class="number">256</span>:<span class="number">266</span>])))</span><br><span class="line"></span><br><span class="line">    ff2.close()</span><br><span class="line">​</span><br><span class="line">    <span class="comment"># 给x、y留出占位符，以便未来填充数据</span></span><br><span class="line">    x = tf.placeholder(<span class="string">"float"</span>, [<span class="keyword">None</span>, <span class="number">256</span>])</span><br><span class="line">    y_ = tf.placeholder(<span class="string">"float"</span>, [<span class="keyword">None</span>, <span class="number">10</span>])</span><br><span class="line">    <span class="comment"># 设置输入层的W和b</span></span><br><span class="line">    W = tf.Variable(tf.zeros([<span class="number">256</span>, <span class="number">10</span>]))</span><br><span class="line">    b = tf.Variable(tf.zeros([<span class="number">10</span>]))</span><br><span class="line">    <span class="comment"># 计算输出，采用的函数是softmax(输入的时候是“one hot”编码)</span></span><br><span class="line">    y = tf.nn.softmax(tf.matmul(x, W) + b)</span><br><span class="line">    <span class="comment"># 第一个卷积层，“5*5”的卷积核，输出向量是32维</span></span><br><span class="line">    w_conv1 = weight_variable([<span class="number">5</span>, <span class="number">5</span>, <span class="number">1</span>, <span class="number">32</span>])</span><br><span class="line">    b_conv1 = bias_variable([<span class="number">32</span>])</span><br><span class="line">    <span class="comment"># 图片大小是“16*16”，“-1”代表其他维数自适应</span></span><br><span class="line">    x_image = tf.reshape(x, [<span class="number">-1</span>, <span class="number">16</span>, <span class="number">16</span>, <span class="number">1</span>])</span><br><span class="line">    h_conv1 = tf.nn.relu(conv2d(x_image, w_conv1) + b_conv1)</span><br><span class="line">    h_pool1 = max_pool_2x2(h_conv1)</span><br><span class="line">​</span><br><span class="line">    <span class="comment"># 第二层卷积层，输入向量是32维，输出64维，还是“5*5”的卷积核</span></span><br><span class="line">    w_conv2 = weight_variable([<span class="number">5</span>, <span class="number">5</span>, <span class="number">32</span>, <span class="number">64</span>])</span><br><span class="line">    b_conv2 = bias_variable([<span class="number">64</span>])</span><br><span class="line">    h_conv2 = tf.nn.relu(conv2d(h_pool1, w_conv2) + b_conv2)</span><br><span class="line">    h_pool2 = max_pool_2x2(h_conv2)</span><br><span class="line">​</span><br><span class="line">    <span class="comment"># 全连接层的w和b</span></span><br><span class="line">    w_fc1 = weight_variable([<span class="number">4</span> * <span class="number">4</span> * <span class="number">64</span>, <span class="number">256</span>])</span><br><span class="line">    b_fc1 = bias_variable([<span class="number">256</span>])  <span class="comment"># 此时输出的维数是256维</span></span><br><span class="line">    h_pool2_flat = tf.reshape(h_pool2, [<span class="number">-1</span>, <span class="number">4</span> * <span class="number">4</span> * <span class="number">64</span>])</span><br><span class="line">    <span class="comment"># h_fc1是提取出的256维特征，后面就是用这个参数输入到SVM中</span></span><br><span class="line">    h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, w_fc1) + b_fc1)</span><br><span class="line">​</span><br><span class="line">    <span class="comment"># 设置dropout，否则很容易过拟合</span></span><br><span class="line">    keep_prob = tf.placeholder(<span class="string">"float"</span>)</span><br><span class="line">    h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)</span><br><span class="line">​</span><br><span class="line">    <span class="comment"># 输出层，本次实验只利用它的输出训练CNN</span></span><br><span class="line">    w_fc2 = weight_variable([<span class="number">256</span>, <span class="number">10</span>])</span><br><span class="line">    b_fc2 = bias_variable([<span class="number">10</span>])</span><br><span class="line">​</span><br><span class="line">    y_conv = tf.nn.softmax(tf.matmul(h_fc1_drop, w_fc2) + b_fc2)</span><br><span class="line">    <span class="comment"># 以交叉熵的形式设置误差代价</span></span><br><span class="line">    cross_entropy = -tf.reduce_sum(y_ * tf.log(y_conv))</span><br><span class="line">    <span class="comment"># 用adma的优化算法优化目标函数</span></span><br><span class="line">    train_step = tf.train.AdamOptimizer(<span class="number">1e-4</span>).minimize(cross_entropy)</span><br><span class="line">    correct_prediction = tf.equal(tf.argmax(y_conv, <span class="number">1</span>), tf.argmax(y_, <span class="number">1</span>))</span><br><span class="line">    accuracy = tf.reduce_mean(tf.cast(correct_prediction, <span class="string">"float"</span>))</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">        sess.run(tf.global_variables_initializer())</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">3000</span>):  <span class="comment"># 跑3000轮迭代，每次随机从训练样本中抽出50个进行训练</span></span><br><span class="line">            batch = ([], [])</span><br><span class="line">            p = random.sample(range(<span class="number">795</span>), <span class="number">50</span>)</span><br><span class="line">            <span class="keyword">for</span> k <span class="keyword">in</span> p:</span><br><span class="line">                batch[<span class="number">0</span>].append(x_test2[k])</span><br><span class="line">                batch[<span class="number">1</span>].append(y_test2[k])</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> i % <span class="number">100</span> == <span class="number">0</span>:</span><br><span class="line">                train_accuracy = accuracy.eval(feed_dict=&#123;x: batch[<span class="number">0</span>],</span><br><span class="line">                                                          y_: batch[<span class="number">1</span>],</span><br><span class="line">                                                          keep_prob: <span class="number">1.0</span>&#125;)</span><br><span class="line"></span><br><span class="line">            train_step.run(feed_dict=&#123;x: batch[<span class="number">0</span>], y_: batch[<span class="number">1</span>], keep_prob: <span class="number">0.6</span>&#125;)</span><br><span class="line">​</span><br><span class="line">        print(<span class="string">"test accuracy %g"</span> % accuracy.eval(feed_dict=&#123;x: x_test3,</span><br><span class="line">                                                            y_: y_test3,</span><br><span class="line">                                                            keep_prob: <span class="number">1.0</span>&#125;))</span><br><span class="line">​</span><br><span class="line">        <span class="comment"># 以下两步都是为了将源数据的“one hot”编码改为1和0，数字“5”可以改为其他值</span></span><br><span class="line">        <span class="keyword">for</span> h <span class="keyword">in</span> range(len(y_test2)):</span><br><span class="line">            <span class="keyword">if</span> np.argmax(y_test2[h]) == <span class="number">5</span>:</span><br><span class="line">                y_test2[h] = <span class="number">1</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                y_test2[h] = <span class="number">0</span></span><br><span class="line">        <span class="keyword">for</span> h <span class="keyword">in</span> range(len(y_test3)):</span><br><span class="line">            <span class="keyword">if</span> np.argmax(y_test3[h]) == <span class="number">5</span>:</span><br><span class="line">                y_test3[h] = <span class="number">1</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                y_test3[h] = <span class="number">0</span></span><br><span class="line">​</span><br><span class="line">        <span class="comment"># 将原来的x带入训练好的CNN中，计算出来全连接层的特征向量，将结果作为SVM中的特征向量</span></span><br><span class="line">        x_temp = []</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> g <span class="keyword">in</span> x_test2:</span><br><span class="line">            x_temp.append(sess.run(h_fc1, feed_dict=&#123;x: np.array(g).reshape((<span class="number">1</span>, <span class="number">256</span>))&#125;)[<span class="number">0</span>])  </span><br><span class="line"></span><br><span class="line">        x_temp2 = []</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> g <span class="keyword">in</span> x_test3:</span><br><span class="line">            x_temp2.append(sess.run(h_fc1, feed_dict=&#123;x: np.array(g).reshape((<span class="number">1</span>, <span class="number">256</span>))&#125;)[<span class="number">0</span>])</span><br><span class="line">​</span><br><span class="line">        clf = svm.SVC(C=<span class="number">0.9</span>, kernel=<span class="string">'linear'</span>)</span><br><span class="line">        clf.fit(x_temp, y_test2)</span><br><span class="line">​</span><br><span class="line">        print(<span class="string">'svm testing accuracy:'</span>, clf.score(x_temp2, y_test3))</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> range(len(x_temp2)):</span><br><span class="line">            <span class="comment"># 在验证时，对出现的四种情况分别使用四个变量进行存储</span></span><br><span class="line">            <span class="keyword">if</span> clf.predict(x_temp2[j].reshape(<span class="number">1</span>, <span class="number">-1</span>))[<span class="number">0</span>] == y_test3[j] == <span class="number">1</span>:</span><br><span class="line">                right0 += <span class="number">1</span></span><br><span class="line">            <span class="keyword">elif</span> clf.predict(x_temp2[j].reshape(<span class="number">1</span>, <span class="number">-1</span>))[<span class="number">0</span>] == y_test3[j] == <span class="number">0</span>:</span><br><span class="line">                right1 += <span class="number">1</span></span><br><span class="line">            <span class="keyword">elif</span> clf.predict(x_temp2[j].reshape(<span class="number">1</span>, <span class="number">-1</span>))[<span class="number">0</span>] == <span class="number">1</span> <span class="keyword">and</span> y_test3[j] == <span class="number">0</span>:</span><br><span class="line">                error0 += <span class="number">1</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                error1 += <span class="number">1</span></span><br><span class="line">​</span><br><span class="line">accuracy = right0 / (right0 + error0)  <span class="comment"># 准确率</span></span><br><span class="line">recall = right0 / (right0 + error1)  <span class="comment"># 召回率</span></span><br><span class="line">print(<span class="string">'svm right ratio:'</span>, (right0 + right1) / (right0 + right1 + error0 + error1))</span><br><span class="line">print(<span class="string">'accuracy:'</span>, accuracy)</span><br><span class="line">print(<span class="string">'recall:'</span>, recall)</span><br><span class="line">print(<span class="string">'F1 score:'</span>, <span class="number">2</span> * accuracy * recall / (accuracy + recall))  <span class="comment"># 计算F1值</span></span><br><span class="line">​</span><br><span class="line">end = time.clock()</span><br><span class="line">print(<span class="string">"time is:"</span>, end - start)</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/16/深度学习/Keras之回调函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/16/深度学习/Keras之回调函数/" itemprop="url">Keras之回调函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-16T10:34:19+08:00">
+                2019-01-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;回调函数是一个函数的合集，会在训练的阶段中所使用。你可以使用回调函数来查看训练模型的内在状态和统计。你可以传递一个列表的回调函数(作为<code>callbacks</code>关键字参数)到<code>Sequential</code>或<code>Model</code>类型的<code>fit</code>方法。在训练时，相应的回调函数的方法就会被在各自的阶段被调用。<br>&emsp;&emsp;虽然我们称之为<code>回调函数</code>，但事实上<code>Keras</code>的回调函数是一个类，回调函数只是习惯性称呼。</p>
+<h3 id="Callback"><a href="#Callback" class="headerlink" title="Callback"></a>Callback</h3><p>&emsp;&emsp;该函数用来组建新的回调函数的抽象基类：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.Callback()</span><br></pre></td></tr></table></figure>
+<p>类属性如下：</p>
+<ul>
+<li><code>params</code>：字典，训练参数(例如<code>verbosity</code>、<code>batch size</code>、<code>number of epochs</code>等)。</li>
+<li><code>model</code>：<code>keras.models.Model</code>的实例，它是正在训练的模型的引用。</li>
+</ul>
+<p>被回调函数作为参数的<code>logs</code>字典，它会包含了一系列与当前<code>batch</code>或<code>epoch</code>相关的信息。目前，<code>Sequentia</code>模型类的<code>fit</code>方法会在传入到回调函数的<code>logs</code>里面包含以下的数据：</p>
+<ul>
+<li>在每个<code>epoch</code>的结尾处(<code>on_epoch_end</code>)：<code>logs</code>将包含训练的正确率和误差(<code>acc</code>和<code>loss</code>)，如果指定了验证集，还会包含验证集正确率和误差(<code>val_acc</code>和<code>val_loss</code>)，<code>val_acc</code>还额外需要在<code>compile</code>中启用<code>metrics = [&#39;accuracy&#39;]</code>。</li>
+<li>在每个<code>batch</code>的开始处(<code>on_batch_begin</code>)：<code>logs</code>包含<code>size</code>，即当前<code>batch</code>的样本数。</li>
+<li>在每个<code>batch</code>的结尾处(<code>on_batch_end</code>)：<code>logs</code>包含<code>loss</code>，若启用<code>accuracy</code>，则还包含<code>acc</code>。</li>
+</ul>
+<h3 id="BaseLogger"><a href="#BaseLogger" class="headerlink" title="BaseLogger"></a>BaseLogger</h3><p>&emsp;&emsp;该回调函数用来对每个<code>epoch</code>累加<code>metrics</code>指定的监视指标的<code>epoch</code>平均值：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.BaseLogger()</span><br></pre></td></tr></table></figure>
+<p>这个回调函数被自动应用到每一个<code>Keras</code>模型上面。</p>
+<h3 id="TerminateOnNaN"><a href="#TerminateOnNaN" class="headerlink" title="TerminateOnNaN"></a>TerminateOnNaN</h3><p>&emsp;&emsp;该函数是当遇到<code>NaN</code>损失会停止训练的回调函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.TerminateOnNaN()</span><br></pre></td></tr></table></figure>
+<h3 id="History"><a href="#History" class="headerlink" title="History"></a>History</h3><p>&emsp;&emsp;该函数是把所有事件都记录到<code>History</code>对象的回调函数：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.History()</span><br></pre></td></tr></table></figure>
+<p>该回调函数在<code>Keras</code>模型上会被自动调用，<code>History</code>对象即为<code>fit</code>方法的返回值。</p>
+<h3 id="ModelCheckpoint"><a href="#ModelCheckpoint" class="headerlink" title="ModelCheckpoint"></a>ModelCheckpoint</h3><p>&emsp;&emsp;该函数在每个训练期之后保存模型：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.ModelCheckpoint(</span><br><span class="line">    filepath, monitor=<span class="string">'val_loss'</span>, verbose=<span class="number">0</span>, save_best_only=<span class="keyword">False</span>,</span><br><span class="line">    save_weights_only=<span class="keyword">False</span>, mode=<span class="string">'auto'</span>, period=<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p><code>filepath</code>可以是格式化的字符串，里面的占位符将会被<code>epoch</code>值和传入<code>on_epoch_end</code>的<code>logs</code>关键字所填入。例如，如果<code>filepath</code>是<code>weights.{epoch:02d}-{val_loss:.2f}.hdf5</code>，那么会生成对应<code>epoch</code>和验证集<code>loss</code>的多个文件。</p>
+<ul>
+<li>filepath：字符串，保存模型的路径。</li>
+<li>monitor：被监测的数据。</li>
+<li><code>verbose</code>：详细信息模式，<code>0</code>或者<code>1</code>。</li>
+<li><code>save_best_only</code>：当设置为<code>True</code>时，将只保存在验证集上性能最好的模型。</li>
+<li><code>mode</code>：<code>auto</code>、<code>min</code>和<code>max</code>其中之一。在<code>save_best_only=True</code>时决定性能最佳模型的评判准则，例如当监测值为<code>val_acc</code>时，模式应为<code>max</code>；当检测值为<code>val_loss</code>时，模式应为<code>min</code>。在<code>auto</code>模式下，评价准则由被监测值的名字自动推断。</li>
+<li><code>save_weights_only</code>：如果为<code>True</code>，那么只有模型的权重会被保存(<code>model.save_weights(filepath)</code>)；否则的话，整个模型会被保存(<code>model.save(filepath)</code>)。</li>
+<li><code>period</code>：每个检查点之间的间隔(训练轮数)。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> keras.callbacks <span class="keyword">import</span> ModelCheckpoint</span><br><span class="line">​</span><br><span class="line">model = Sequential()</span><br><span class="line">model.add(Dense(<span class="number">10</span>, input_dim=<span class="number">784</span>, kernel_initializer=<span class="string">'uniform'</span>))</span><br><span class="line">model.add(Activation(<span class="string">'softmax'</span>))</span><br><span class="line">model.compile(loss=<span class="string">'categorical_crossentropy'</span>, optimizer=<span class="string">'rmsprop'</span>)</span><br><span class="line"><span class="string">""" 如果验证损失下降，那么在每个训练轮之后保存模型 """</span></span><br><span class="line">checkpointer = ModelCheckpoint(filepath=<span class="string">'/tmp/weights.hdf5'</span>,</span><br><span class="line">                               verbose=<span class="number">1</span>, save_best_only=<span class="keyword">True</span>)</span><br><span class="line">model.fit(x_train, y_train, batch_size=<span class="number">128</span>, epochs=<span class="number">20</span>, verbose=<span class="number">0</span>,</span><br><span class="line">          validation_data=(X_test, Y_test), callbacks=[checkpointer])</span><br></pre></td></tr></table></figure>
+<h3 id="EarlyStopping"><a href="#EarlyStopping" class="headerlink" title="EarlyStopping"></a>EarlyStopping</h3><p>&emsp;&emsp;当监测值不再改善时，该回调函数将中止训练：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.EarlyStopping(monitor=<span class="string">'val_loss'</span>, min_delta=<span class="number">0</span>, patience=<span class="number">0</span>, verbose=<span class="number">0</span>, mode=<span class="string">'auto'</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>min_delta</code>：在被监测的数据中被认为是提升的最小变化，例如小于<code>min_delta</code>的绝对变化会被认为没有提升。</li>
+<li><code>patience</code>：当<code>early stop</code>被激活(例如发现<code>loss</code>相比上一个<code>epoch</code>训练没有下降)，则经过<code>patience</code>个<code>epoch</code>后停止训练。</li>
+<li><code>mode</code>：<code>auto</code>、<code>min</code>和<code>max</code>其中之一。在<code>min</code>模式中，当被监测的数据停止下降，训练就会停止；在<code>max</code>模式中，当被监测的数据停止上升，训练就会停止；在<code>auto</code>模式中，方向会自动从被监测的数据的名字中判断出来。</li>
+</ul>
+<h3 id="LearningRateScheduler"><a href="#LearningRateScheduler" class="headerlink" title="LearningRateScheduler"></a>LearningRateScheduler</h3><p>&emsp;&emsp;学习速率定时器：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.LearningRateScheduler(schedule, verbose=<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>参数<code>schedule</code>是一个函数，该函数以<code>epoch</code>号为参数(从<code>0</code>算起的整数)，返回一个新学习率(浮点数)。</p>
+<h3 id="TensorBoard"><a href="#TensorBoard" class="headerlink" title="TensorBoard"></a>TensorBoard</h3><p>&emsp;&emsp;该函数用于<code>Tensorboard</code>基本可视化。<code>TensorBoard</code>是由<code>Tensorflow</code>提供的一个可视化工具。这个回调函数为<code>Tensorboard</code>编写一个日志，使得你可以动态地观察训练和测试指标的图像以及不同层的激活值直方图。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.TensorBoard(</span><br><span class="line">    log_dir=<span class="string">'./logs'</span>, histogram_freq=<span class="number">0</span>, batch_size=<span class="number">32</span>, write_graph=<span class="keyword">True</span>,</span><br><span class="line">    write_grads=<span class="keyword">False</span>, write_images=<span class="keyword">False</span>, embeddings_freq=<span class="number">0</span>,</span><br><span class="line">    embeddings_layer_names=<span class="keyword">None</span>, embeddings_metadata=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>log_dir</code>：用来保存被<code>TensorBoard</code>分析的日志文件的文件名。</li>
+<li><code>histogram_freq</code>：计算各个层激活值直方图的频率(每多少个<code>epoch</code>计算一次)，如果设置为<code>0</code>则不计算。</li>
+<li><code>write_graph</code>：是否在<code>TensorBoard</code>中可视化图像。如果<code>write_graph</code>被设置为<code>True</code>，日志文件会变得非常大。</li>
+<li><code>write_grads</code>：是否在<code>TensorBoard</code>中可视化梯度值直方图。<code>histogram_freq</code>必须要大于<code>0</code>。</li>
+<li><code>batch_size</code>：用以直方图计算的传入神经元网络输入批的大小。</li>
+<li><code>write_images</code>：是否将模型权重以图片的形式可视化。</li>
+<li><code>embeddings_freq</code>：依据该频率(以<code>epoch</code>为单位)筛选保存的<code>embedding</code>层。</li>
+<li><code>embeddings_layer_names</code>：要观察的层名称的列表，若设置为<code>None</code>或空列表，则所有<code>embedding</code>层都将被观察。</li>
+<li><code>embeddings_metadata</code>：一个字典，将层名称映射为包含该<code>embedding</code>层元数据的文件名。如果所有的<code>embedding</code>层都使用相同的元数据文件，则可传递字符串。</li>
+</ul>
+<h3 id="ReduceLROnPlateau"><a href="#ReduceLROnPlateau" class="headerlink" title="ReduceLROnPlateau"></a>ReduceLROnPlateau</h3><p>&emsp;&emsp;当评价指标不再提升时，减少学习率：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.ReduceLROnPlateau(</span><br><span class="line">    monitor=<span class="string">'val_loss'</span>, factor=<span class="number">0.1</span>, patience=<span class="number">10</span>, verbose=<span class="number">0</span>,</span><br><span class="line">    mode=<span class="string">'auto'</span>, epsilon=<span class="number">0.0001</span>, cooldown=<span class="number">0</span>, min_lr=<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>monitor</code>：被监测的数据。</li>
+<li><code>factor</code>：每次减少学习率的因子，学习率将以<code>lr = lr * factor</code>的形式被减少。</li>
+<li><code>patience</code>：当经历了<code>patience</code>个<code>epoch</code>，而模型性能不提升时，学习率减少的动作会被触发。</li>
+<li><code>mode</code>：<code>auto</code>、<code>min</code>或<code>max</code>其中之一。如果是<code>min</code>模式，如果被监测的数据已经停止下降，学习速率会被降低；在<code>max</code>模式，如果被监测的数据已经停止上升，学习速率会被降低；在<code>auto</code>模式，方向会被从被监测的数据中自动推断出来。</li>
+<li><code>epsilon</code>：阈值，用来确定是否进入检测值的<code>平原区</code>。</li>
+<li><code>cooldown</code>：学习率减少后，会经过<code>cooldown</code>个<code>epoch</code>才重新进行正常操作。</li>
+<li><code>min_lr</code>：学习率的下限。</li>
+</ul>
+<p>当学习停滞时，减少<code>2</code>倍或<code>10</code>倍的学习率常常能获得较好的效果。该回调函数检测指标的情况，如果在<code>patience</code>个<code>epoch</code>中看不到模型性能提升，则减少学习率：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">reduce_lr = ReduceLROnPlateau(monitor=<span class="string">'val_loss'</span>, factor=<span class="number">0.2</span>, patience=<span class="number">5</span>, min_lr=<span class="number">0.001</span>)</span><br><span class="line">model.fit(X_train, Y_train, callbacks=[reduce_lr])</span><br></pre></td></tr></table></figure>
+<h3 id="CSVLogger"><a href="#CSVLogger" class="headerlink" title="CSVLogger"></a>CSVLogger</h3><p>&emsp;&emsp;函数原型如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.callbacks.CSVLogger(filename, separator=<span class="string">','</span>, append=<span class="keyword">False</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>filename</code>：<code>csv</code>文件的文件名。</li>
+<li><code>separator</code>：用来隔离<code>csv</code>文件中元素的字符串。</li>
+<li><code>append</code>：如果为<code>True</code>，则表示如果文件存在则增加(可以被用于继续训练)；如果为<code>False</code>，表示覆盖存在的文件。</li>
+</ul>
+<p>将<code>epoch</code>的训练结果保存在<code>csv</code>文件中，支持所有可被转换为<code>string</code>的值，包括<code>1D</code>的可迭代数值(例如<code>np.ndarray</code>)。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">csv_logger = CSVLogger(<span class="string">'training.log'</span>)</span><br><span class="line">model.fit(X_train, Y_train, callbacks=[csv_logger])</span><br></pre></td></tr></table></figure>
+<h3 id="编写自己的回调函数"><a href="#编写自己的回调函数" class="headerlink" title="编写自己的回调函数"></a>编写自己的回调函数</h3><p>&emsp;&emsp;我们可以通过继承<code>keras.callbacks.Callback</code>编写自己的回调函数。如下示例可以保存每个<code>batch</code>的<code>loss</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LossHistory</span><span class="params">(keras.callbacks.Callback)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">on_train_begin</span><span class="params">(self, logs=&#123;&#125;)</span>:</span></span><br><span class="line">        self.losses = []</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">on_batch_end</span><span class="params">(self, batch, logs=&#123;&#125;)</span>:</span></span><br><span class="line">        self.losses.append(logs.get(<span class="string">'loss'</span>))</span><br><span class="line">​</span><br><span class="line">model = Sequential()</span><br><span class="line">model.add(Dense(<span class="number">10</span>, input_dim=<span class="number">784</span>, kernel_initializer=<span class="string">'uniform'</span>))</span><br><span class="line">model.add(Activation(<span class="string">'softmax'</span>))</span><br><span class="line">model.compile(loss=<span class="string">'categorical_crossentropy'</span>, optimizer=<span class="string">'rmsprop'</span>)</span><br><span class="line">​</span><br><span class="line">history = LossHistory()</span><br><span class="line">model.fit(x_train, y_train, batch_size=<span class="number">128</span>, epochs=<span class="number">20</span>, verbose=<span class="number">0</span>, callbacks=[history])</span><br><span class="line">print(history.losses)</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/16/深度学习/Keras之卷积层/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/16/深度学习/Keras之卷积层/" itemprop="url">Keras之卷积层</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-16T08:06:29+08:00">
+                2019-01-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="Conv1D"><a href="#Conv1D" class="headerlink" title="Conv1D"></a>Conv1D</h3><p>&emsp;&emsp;该函数是<code>1D</code>卷积层(例如<code>时序卷积</code>)：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.Conv1D(</span><br><span class="line">    filters, kernel_size, strides=<span class="number">1</span>, padding=<span class="string">'valid'</span>, dilation_rate=<span class="number">1</span>,</span><br><span class="line">    activation=<span class="keyword">None</span>, use_bias=<span class="keyword">True</span>, kernel_initializer=<span class="string">'glorot_uniform'</span>,</span><br><span class="line">    bias_initializer=<span class="string">'zeros'</span>, kernel_regularizer=<span class="keyword">None</span>, bias_regularizer=<span class="keyword">None</span>,</span><br><span class="line">    activity_regularizer=<span class="keyword">None</span>, kernel_constraint=<span class="keyword">None</span>, bias_constraint=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<p>一维卷积层(即<code>时域卷积</code>)用以在一维输入信号上进行邻域滤波。当使用该层作为首层时，需要提供关键字参数<code>input_shape</code>。例如(<code>10, 128</code>)代表一个长为<code>10</code>的序列，序列中每个信号为<code>128</code>向量，而(<code>None, 128</code>)代表变长的<code>128</code>维向量序列。该层生成将输入信号与卷积核按照单一的空域(或时域)方向进行卷积。如果<code>use_bias = True</code>，则还会加上一个偏置项，若<code>activation</code>不为<code>None</code>，则输出为经过激活函数的输出。</p>
+<ul>
+<li><code>filters</code>：卷积核的数目(即输出的维度)。</li>
+<li><code>kernel_size</code>：一个整数，或者单个整数表示的元组或列表，指明卷积核的空域或时域窗长度。</li>
+<li><code>strides</code>：一个整数，或者单个整数表示的元组或列表，指明卷积的步长。任何不为<code>1</code>的<code>strides</code>均与任何不为<code>1</code>的<code>dilation_rate</code>均不兼容。</li>
+<li><code>padding</code>：<code>valid</code>、<code>causal</code>或<code>same</code>之一(大小写敏感)。<code>valid</code>表示<code>不填充</code>；<code>same</code>表示填充输入以使输出具有与原始输入相同的长度；<code>causal</code>表示因果(膨胀)卷积，例如<code>output[t]</code>不依赖于<code>input[t + 1:]</code>，当对不能违反时间顺序的时序信号建模时有用。</li>
+<li><code>dilation_rate</code>：一个整数，或者单个整数表示的元组或列表，指定用于膨胀卷积的膨胀率。任何不为<code>1</code>的<code>dilation_rate</code>均与任何不为<code>1</code>的<code>strides</code>均不兼容。</li>
+<li><code>activation</code>：要使用的激活函数。如果你不指定，则不使用激活函数(即线性激活<code>a(x) = x</code>)。</li>
+<li><code>use_bias</code>：布尔值，该层是否使用偏置向量。</li>
+<li><code>kernel_initializer</code>：<code>kernel</code>权值矩阵的初始化器。</li>
+<li><code>bias_initializer</code>：偏置向量的初始化器。</li>
+<li><code>kernel_regularizer</code>：运用到<code>kernel</code>权值矩阵的正则化函数。</li>
+<li><code>bias_regularizer</code>：运用到偏置向量的正则化函数。</li>
+<li><code>activity_regularizer</code>：运用到层的输出的正则化函数。</li>
+<li><code>kernel_constraint</code>：运用到<code>kernel</code>权值矩阵的约束函数。</li>
+<li><code>bias_constraint</code>：运用到偏置向量的约束函数。</li>
+</ul>
+<p>&emsp;&emsp;输入尺寸：<code>3D</code>张量，尺寸为(<code>batch_size, steps, input_dim</code>)。<br>&emsp;&emsp;输出尺寸：<code>3D</code>张量，尺寸为(<code>batch_size, new_steps, filters</code>)。由于填充或窗口按步长滑动，<code>steps</code>值可能已更改。</p>
+<h3 id="Conv2D"><a href="#Conv2D" class="headerlink" title="Conv2D"></a>Conv2D</h3><p>&emsp;&emsp;该函数是<code>2D</code>卷积层(例如对图像的<code>空间卷积</code>)：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.Conv2D(</span><br><span class="line">    filters, kernel_size, strides=(<span class="number">1</span>, <span class="number">1</span>), padding=<span class="string">'valid'</span>, data_format=<span class="keyword">None</span>,</span><br><span class="line">    dilation_rate=(<span class="number">1</span>, <span class="number">1</span>), activation=<span class="keyword">None</span>, use_bias=<span class="keyword">True</span>,</span><br><span class="line">    kernel_initializer=<span class="string">'glorot_uniform'</span>, bias_initializer=<span class="string">'zeros'</span>,</span><br><span class="line">    kernel_regularizer=<span class="keyword">None</span>, bias_regularizer=<span class="keyword">None</span>, activity_regularizer=<span class="keyword">None</span>,</span><br><span class="line">    kernel_constraint=<span class="keyword">None</span>, bias_constraint=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<p>二维卷积层即是对图像的空域卷积，该层对二维输入进行滑动窗卷积。当使用该层作为第一层时，应提供<code>input_shape</code>参数，例如<code>input_shape = (128, 128, 3)</code>代表<code>128 * 128</code>的彩色<code>RGB</code>图像(<code>data_format = &#39;channels_last&#39;</code>)。</p>
+<ul>
+<li><code>filters</code>：卷积核的数目(即输出的维度)。</li>
+<li><code>kernel_size</code>：一个整数，或者<code>2</code>个整数表示的元组或列表，指明<code>2D</code>卷积窗口的宽度和高度。如为单个整数，则表示在各个空间维度的相同长度。</li>
+<li><code>strides</code>：一个整数，或者<code>2</code>个整数表示的元组或列表，指明卷积沿宽度和高度方向的步长。如为单个整数，则表示在各个空间维度的相同步长。任何不为<code>1</code>的<code>strides</code>均与任何不为<code>1</code>的<code>dilation_rate</code>均不兼容。</li>
+<li><code>padding</code>：<code>valid</code>或<code>same</code>。<code>valid</code>代表只进行有效的卷积，即对边界数据不处理；<code>same</code>代表保留边界处的卷积结果，通常会导致输出<code>shape</code>与输入<code>shape</code>相同。</li>
+<li><code>data_format</code>：字符串，<code>channels_last</code>(默认)或<code>channels_first</code>之一，代表图像的通道维的位置。<code>channels_last</code>对应输入尺寸为(<code>batch, height, width, channels</code>)，<code>channels_first</code>对应输入尺寸为(<code>batch, channels, height, width</code>)。</li>
+<li><code>dilation_rate</code>：一个整数或<code>2</code>个整数的元组或列表，指定膨胀卷积的膨胀率。任何不为<code>1</code>的<code>dilation_rate</code>均与任何不为<code>1</code>的<code>strides</code>均不兼容。</li>
+<li><code>activation</code>：要使用的激活函数。如果你不指定，则不使用激活函数(即线性激活<code>a(x) = x</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输入尺寸(注意这里的输入<code>shape</code>指的是函数内部实现的输入<code>shape</code>，而非函数接口应指定的<code>input_shape</code>)：</p>
+<ul>
+<li>如果<code>data_format = &#39;channels_first&#39;</code>，输入<code>4D</code>张量，尺寸为(<code>samples, channels, rows, cols</code>)。</li>
+<li>如果<code>data_format = &#39;channels_last&#39;</code>，输入<code>4D</code>张量，尺寸为(<code>samples, rows, cols, channels</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输出尺寸(输出的行列数可能会因为填充方法而改变)：</p>
+<ul>
+<li>如果<code>data_format = &#39;channels_first&#39;</code>，输出<code>4D</code>张量，尺寸为(<code>samples, filters, new_rows, new_cols</code>)。</li>
+<li>如果<code>data_format = &#39;channels_last&#39;</code>，输出<code>4D</code>张量，尺寸为(<code>samples, new_rows, new_cols, filters</code>)。</li>
+</ul>
+<h3 id="SeparableConv2D"><a href="#SeparableConv2D" class="headerlink" title="SeparableConv2D"></a>SeparableConv2D</h3><p>&emsp;&emsp;该函数在深度方向的可分离<code>2D</code>卷积：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.SeparableConv2D(</span><br><span class="line">    filters, kernel_size, strides=(<span class="number">1</span>, <span class="number">1</span>), padding=<span class="string">'valid'</span>, data_format=<span class="keyword">None</span>,</span><br><span class="line">    depth_multiplier=<span class="number">1</span>, activation=<span class="keyword">None</span>, use_bias=<span class="keyword">True</span>,</span><br><span class="line">    depthwise_initializer=<span class="string">'glorot_uniform'</span>, pointwise_initializer=<span class="string">'glorot_uniform'</span>,</span><br><span class="line">    bias_initializer=<span class="string">'zeros'</span>, depthwise_regularizer=<span class="keyword">None</span>, pointwise_regularizer=<span class="keyword">None</span>,</span><br><span class="line">    bias_regularizer=<span class="keyword">None</span>, activity_regularizer=<span class="keyword">None</span>, depthwise_constraint=<span class="keyword">None</span>,</span><br><span class="line">    pointwise_constraint=<span class="keyword">None</span>, bias_constraint=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<p>可分离卷积首先按深度方向进行卷积(对每个输入通道分别卷积)，然后逐点进行卷积，将上一步的卷积结果混合到输出通道中。参数<code>depth_multiplier</code>控制了在<code>depthwise</code>卷积(第一步)的过程中，每个输入通道信号产生多少个输出通道。</p>
+<ul>
+<li><code>depth_multiplier</code>：在按深度卷积的步骤中，每个输入通道使用多少个输出通道。</li>
+<li><code>depthwise_initializer</code>：运用到深度方向的核矩阵的初始化器。</li>
+<li><code>pointwise_initializer</code>：运用到逐点核矩阵的初始化器。</li>
+<li><code>depthwise_regularizer</code>：运用到深度方向的核矩阵的正则化函数。</li>
+<li><code>pointwise_regularizer</code>：运用到逐点核矩阵的正则化函数。</li>
+<li><code>depthwise_constraint</code>：运用到深度方向的核矩阵的约束函数。</li>
+<li><code>pointwise_constraint</code>：运用到逐点核矩阵的约束函数。</li>
+</ul>
+<p>&emsp;&emsp;输入尺寸(注意这里的输入<code>shape</code>指的是函数内部实现的输入<code>shape</code>，而非函数接口应指定的<code>input_shape</code>)：</p>
+<ul>
+<li>如果<code>data_format = &#39;channels_first&#39;</code>，输入<code>4D</code>张量，尺寸为(<code>batch, channels, rows, cols</code>)。</li>
+<li>如果<code>data_format = &#39;channels_last&#39;</code>，输入<code>4D</code>张量，尺寸为(<code>batch, rows, cols, channels</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输出尺寸(输出的行列数可能会因为填充方法而改变)：</p>
+<ul>
+<li>如果<code>data_format = &#39;channels_first&#39;</code>，输出<code>4D</code>张量，尺寸为(<code>batch, filters, new_rows, new_cols</code>)。</li>
+<li>如果<code>data_format = &#39;channels_last&#39;</code>，输出<code>4D</code>张量，尺寸为(<code>batch, new_rows, new_cols, filters</code>)。</li>
+</ul>
+<h3 id="Conv2DTranspose"><a href="#Conv2DTranspose" class="headerlink" title="Conv2DTranspose"></a>Conv2DTranspose</h3><p>&emsp;&emsp;该函数转置卷积层(有时被称为<code>反卷积</code>)：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.Conv2DTranspose(</span><br><span class="line">    filters, kernel_size, strides=(<span class="number">1</span>, <span class="number">1</span>), padding=<span class="string">'valid'</span>, data_format=<span class="keyword">None</span>,</span><br><span class="line">    activation=<span class="keyword">None</span>, use_bias=<span class="keyword">True</span>, kernel_initializer=<span class="string">'glorot_uniform'</span>,</span><br><span class="line">    bias_initializer=<span class="string">'zeros'</span>, kernel_regularizer=<span class="keyword">None</span>, bias_regularizer=<span class="keyword">None</span>,</span><br><span class="line">    activity_regularizer=<span class="keyword">None</span>, kernel_constraint=<span class="keyword">None</span>, bias_constraint=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<p>需要反卷积的情况通常发生在用户想要对一个普通卷积的结果做反方向的变换，例如将具有该卷积层输出<code>shape</code>的<code>tensor</code>转换为具有该卷积层输入<code>shape</code>的<code>tensor</code>，同时保留与卷积层兼容的连接模式。当使用该层作为第一层时，应提供<code>input_shape</code>参数。例如<code>input_shape = (3, 128, 128)</code>代表<code>128 * 128</code>的彩色<code>RGB</code>图像。</p>
+<p>&emsp;&emsp;输入尺寸(注意这里的输入<code>shape</code>指的是函数内部实现的输入<code>shape</code>，而非函数接口应指定的<code>input_shape</code>)：</p>
+<ul>
+<li>如果<code>data_format=&#39;channels_first&#39;</code>，输入<code>4D</code>张量，尺寸为(<code>batch, channels, rows, cols</code>)。</li>
+<li>如果<code>data_format=&#39;channels_last&#39;</code>，输入<code>4D</code>张量，尺寸为(<code>batch, rows, cols, channels</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输出尺寸(输出的行列数可能会因为填充方法而改变)：</p>
+<ul>
+<li>如果<code>data_format=&#39;channels_first&#39;</code>，输出<code>4D</code>张量，尺寸为(<code>batch, filters, new_rows, new_cols</code>)。</li>
+<li>如果<code>data_format=&#39;channels_last&#39;</code>，输出<code>4D</code>张量，尺寸为(<code>batch, new_rows, new_cols, filters</code>)。</li>
+</ul>
+<h3 id="Conv3D"><a href="#Conv3D" class="headerlink" title="Conv3D"></a>Conv3D</h3><p>&emsp;&emsp;该函数是<code>3D</code>卷积层(例如立体空间卷积)：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.Conv3D(</span><br><span class="line">    filters, kernel_size, strides=(<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>), padding=<span class="string">'valid'</span>, data_format=<span class="keyword">None</span>,</span><br><span class="line">    dilation_rate=(<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>), activation=<span class="keyword">None</span>, use_bias=<span class="keyword">True</span>,</span><br><span class="line">    kernel_initializer=<span class="string">'glorot_uniform'</span>, bias_initializer=<span class="string">'zeros'</span>,</span><br><span class="line">    kernel_regularizer=<span class="keyword">None</span>, bias_regularizer=<span class="keyword">None</span>, activity_regularizer=<span class="keyword">None</span>,</span><br><span class="line">    kernel_constraint=<span class="keyword">None</span>, bias_constraint=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<p>三维卷积对三维的输入进行滑动窗卷积，当使用该层作为第一层时，应提供<code>input_shape</code>参数。例如<code>input_shape = (3, 10, 128, 128)</code>代表对<code>10</code>帧<code>128 * 128</code>的彩色<code>RGB</code>图像进行卷积。数据的通道位置仍然由<code>data_format</code>参数指定。</p>
+<ul>
+<li><code>filters</code>：整数，输出空间的维度(即卷积中滤波器的输出数量)。</li>
+<li><code>kernel_size</code>：一个整数，或者<code>3</code>个整数表示的元组或列表，指明<code>3D</code>卷积窗口的深度、高度和宽度。如为单个整数，则表示在各个空间维度的相同长度。</li>
+<li><code>strides</code>：一个整数，或者<code>3</code>个整数表示的元组或列表，指明卷积沿每一个空间维度的步长。如为单个整数，则表示在各个空间维度的相同步长。任何不为<code>1</code>的<code>strides</code>均与任何不为<code>1</code>的<code>dilation_rate</code>均不兼容。</li>
+<li><code>data_format</code>：字符串，<code>channels_last</code>(默认)或<code>channels_first</code>之一，代表数据的通道维的位置。<code>channels_last</code>对应输入尺寸为(<code>batch, spatial_dim1, spatial_dim2, spatial_dim3, channels</code>)，<code>channels_first</code>对应输入尺寸为(<code>batch, channels, spatial_dim1, spatial_dim2, spatial_dim3</code>)。</li>
+<li><code>dilation_rate</code>：一个整数或<code>3</code>个整数的元组或列表，指定<code>dilated convolution</code>中的膨胀比例。任何不为<code>1</code>的<code>dilation_rate</code>均与任何不为<code>1</code>的<code>strides</code>均不兼容。</li>
+</ul>
+<p>&emsp;&emsp;输入尺寸(这里的输入<code>shape</code>指的是函数内部实现的输入<code>shape</code>，而非函数接口应指定的<code>input_shape</code>)：</p>
+<ul>
+<li>如果<code>data_format=&#39;channels_first&#39;</code>，输入<code>5D</code>张量，尺寸为(<code>samples, channels, conv_dim1, conv_dim2, conv_dim3</code>)。</li>
+<li>如果<code>data_format=&#39;channels_last&#39;</code>，输入<code>5D</code>张量，尺寸为(<code>samples, conv_dim1, conv_dim2, conv_dim3, channels</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输出尺寸(由于填充的原因，<code>new_conv_dim1</code>、<code>new_conv_dim2</code>和<code>new_conv_dim3</code>值可能已更改)：</p>
+<ul>
+<li>如果<code>data_format=&#39;channels_first&#39;</code>，输出<code>5D</code>张量，尺寸为(<code>samples, filters, new_conv_dim1, new_conv_dim2, new_conv_dim3</code>)。</li>
+<li>如果<code>data_format=&#39;channels_last&#39;</code>，输出<code>5D</code>张量，尺寸为(<code>samples, new_conv_dim1, new_conv_dim2, new_conv_dim3, filters</code>)。</li>
+</ul>
+<h3 id="Cropping1D"><a href="#Cropping1D" class="headerlink" title="Cropping1D"></a>Cropping1D</h3><p>&emsp;&emsp;该函数是<code>1D</code>输入的裁剪层(例如时间序列)：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.Cropping1D(cropping=(<span class="number">1</span>, <span class="number">1</span>))</span><br></pre></td></tr></table></figure>
+<p>它沿着时间维度(第<code>1</code>个轴)对输入进行裁剪。参数<code>cropping</code>是整数或整数元组(长度为<code>2</code>)，决定在裁剪维度(第<code>1</code>个轴)的开始和结束位置应该裁剪多少个单位。如果只提供了一个整数，那么这两个位置将使用相同的值。</p>
+<p>&emsp;&emsp;输入尺寸：<code>3D</code>张量，尺寸为(<code>batch, axis_to_crop, features</code>)。<br>&emsp;&emsp;输出尺寸：<code>3D</code>张量，尺寸为(<code>batch, cropped_axis, features</code>)。</p>
+<h3 id="Cropping2D"><a href="#Cropping2D" class="headerlink" title="Cropping2D"></a>Cropping2D</h3><p>&emsp;&emsp;该函数是<code>2D</code>输入的裁剪层(例如图像)：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.Cropping2D(cropping=((<span class="number">0</span>, <span class="number">0</span>), (<span class="number">0</span>, <span class="number">0</span>)), data_format=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<p>它对<code>2D</code>输入(图像)进行裁剪，将在空域维度(即宽和高的方向上)裁剪。</p>
+<ul>
+<li><code>cropping</code>：整数，或<code>2</code>个整数的元组，或<code>2</code>个整数的<code>2</code>个元组。</li>
+</ul>
+<ol>
+<li>如果为整数：将对宽度和高度应用相同的对称裁剪。</li>
+<li>如果为<code>2</code>个整数的元组：解释为对高度和宽度使用两个不同的裁剪值(<code>symmetric_height_crop, symmetric_width_crop</code>)。</li>
+<li>如果为<code>2</code>个整数的<code>2</code>个元组：解释为(<code>(top_crop, bottom_crop), (left_crop, right_crop)</code>)。</li>
+</ol>
+<ul>
+<li><code>data_format</code>：字符串，<code>channels_last</code>(默认)或<code>channels_first</code>之一，代表图像的通道维的位置。<code>channels_last</code>对应输入尺寸为(<code>batch, height, width, channels</code>)，<code>channels_first</code>对应输入尺寸为(<code>batch, channels, height, width</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输入尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，则输入<code>4D</code>张量，尺寸为(<code>batch, rows, cols, channels</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，则输入<code>4D</code>张量，尺寸为(<code>batch, channels, rows, cols</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输出尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，则输出<code>4D</code>张量，尺寸为(<code>batch, cropped_rows, cropped_cols, channels</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，则输出<code>4D</code>张量，尺寸为(<code>batch, channels, cropped_rows, cropped_cols</code>)。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">model = Sequential()</span><br><span class="line"><span class="comment"># 现在“model.output_shape == (None, 24, 20, 3)”</span></span><br><span class="line">model.add(Cropping2D(cropping=((<span class="number">2</span>, <span class="number">2</span>), (<span class="number">4</span>, <span class="number">4</span>)),input_shape=(<span class="number">28</span>, <span class="number">28</span>, <span class="number">3</span>)))</span><br><span class="line">model.add(Conv2D(<span class="number">64</span>, (<span class="number">3</span>, <span class="number">3</span>), padding=<span class="string">'same'</span>))</span><br><span class="line"><span class="comment"># 现在“model.output_shape == (None, 20, 16. 64)”</span></span><br><span class="line">model.add(Cropping2D(cropping=((<span class="number">2</span>, <span class="number">2</span>), (<span class="number">2</span>, <span class="number">2</span>))))</span><br></pre></td></tr></table></figure>
+<h3 id="Cropping3D"><a href="#Cropping3D" class="headerlink" title="Cropping3D"></a>Cropping3D</h3><p>&emsp;&emsp;该函数是<code>3D</code>数据的裁剪层(例如空间或时空)：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.Cropping3D(cropping=((<span class="number">1</span>, <span class="number">1</span>), (<span class="number">1</span>, <span class="number">1</span>), (<span class="number">1</span>, <span class="number">1</span>)), data_format=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>cropping</code>：整数，或<code>3</code>个整数的元组，或<code>2</code>个整数的<code>3</code>个元组。</li>
+</ul>
+<ol>
+<li>如果为整数：将对深度、高度和宽度应用相同的对称裁剪。</li>
+<li>如果为<code>3</code>个整数的元组：解释为对深度、高度和宽度的<code>3</code>个不同的对称裁剪值(<code>symmetric_dim1_crop, symmetric_dim2_crop, symmetric_dim3_crop</code>)。</li>
+<li>如果为<code>2</code>个整数的<code>3</code>个元组：解释为(<code>(left_dim1_crop, right_dim1_crop), (left_dim2_crop, right_dim2_crop), (left_dim3_crop, right_dim3_crop)</code>)。</li>
+</ol>
+<ul>
+<li><code>data_format</code>：字符串，<code>channels_last</code>(默认)或<code>channels_first</code>之一，代表数据的通道维的位置。<code>channels_last</code>对应输入尺寸为(<code>batch, spatial_dim1, spatial_dim2, spatial_dim3, channels</code>)，<code>channels_first</code>对应输入尺寸为(<code>batch, channels, spatial_dim1, spatial_dim2, spatial_dim3</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输入尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，则输入<code>5D</code>张量，尺寸为(<code>batch, first_axis_to_crop, second_axis_to_crop, third_axis_to_crop, depth</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，则输入<code>5D</code>张量，尺寸为(<code>batch, depth, first_axis_to_crop, second_axis_to_crop, third_axis_to_crop</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输出尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，则输出<code>5D</code>张量，尺寸为(<code>batch, first_cropped_axis, second_cropped_axis, third_cropped_axis, depth</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，则输出<code>5D</code>张量，尺寸为(<code>batch, depth, first_cropped_axis, second_cropped_axis, third_cropped_axis</code>)。</li>
+</ul>
+<h3 id="UpSampling1D"><a href="#UpSampling1D" class="headerlink" title="UpSampling1D"></a>UpSampling1D</h3><p>&emsp;&emsp;该函数是<code>1D</code>输入的上采样层：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.UpSampling1D(size=2)</span><br></pre></td></tr></table></figure>
+<p>沿着时间轴重复每个时间步<code>size</code>次。参数<code>size</code>是整数，上采样因子。<br>&emsp;&emsp;输入尺寸：<code>3D</code>张量，尺寸为(<code>batch, steps, features</code>)。<br>&emsp;&emsp;输出尺寸：<code>3D</code>张量，尺寸为(<code>batch, upsampled_steps, features</code>)。</p>
+<h3 id="UpSampling2D"><a href="#UpSampling2D" class="headerlink" title="UpSampling2D"></a>UpSampling2D</h3><p>&emsp;&emsp;该函数是<code>2D</code>输入的上采样层：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.UpSampling2D(size=(<span class="number">2</span>, <span class="number">2</span>), data_format=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<p>沿着数据的行和列分别重复<code>size[0]</code>和<code>size[1]</code>次。</p>
+<ul>
+<li><code>size</code>：整数，或<code>2</code>个整数的元组，分别是行和列的上采样因子。</li>
+<li><code>data_format</code>：字符串，<code>channels_last</code>(默认)或<code>channels_first</code>之一，代表图像的通道维的位置。<code>channels_last</code>对应输入尺寸为(<code>batch, height, width, channels</code>)，<code>channels_first</code>对应输入尺寸为(<code>batch, channels, height, width</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输入尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，则输入<code>4D</code>张量，尺寸为(<code>batch, rows, cols, channels</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，则输入<code>4D</code>张量，尺寸为(<code>batch, channels, rows, cols</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输出尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，则输出<code>4D</code>张量，尺寸为(<code>batch, upsampled_rows, upsampled_cols, channels</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，则输出<code>4D</code>张量，尺寸为(<code>batch, channels, upsampled_rows, upsampled_cols</code>)。</li>
+</ul>
+<h3 id="UpSampling3D"><a href="#UpSampling3D" class="headerlink" title="UpSampling3D"></a>UpSampling3D</h3><p>&emsp;&emsp;该函数是<code>3D</code>输入的上采样层：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.UpSampling3D(size=(<span class="number">2</span>, <span class="number">2</span>, <span class="number">2</span>), data_format=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<p>沿着数据的第<code>1</code>、<code>2</code>、<code>3</code>维度分别重复<code>size[0]</code>、<code>size[1]</code>和<code>size[2]</code>次。</p>
+<ul>
+<li><code>size</code>：整数，或<code>3</code>个整数的元组，代表<code>dim1</code>、<code>dim2</code>和<code>dim3</code>的上采样因子。</li>
+<li><code>data_format</code>：字符串，<code>channels_last</code>(默认)或<code>channels_first</code>之一，代表数据的通道维的位置。<code>channels_last</code>对应输入尺寸为(<code>batch, spatial_dim1, spatial_dim2, spatial_dim3, channels</code>)，<code>channels_first</code>对应输入尺寸为(<code>batch, channels, spatial_dim1, spatial_dim2, spatial_dim3</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输入尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，则输入<code>5D</code>张量，尺寸为(<code>batch, dim1, dim2, dim3, channels</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，则输入<code>5D</code>张量，尺寸为(<code>batch, channels, dim1, dim2, dim3</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输出尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，则输出<code>5D</code>张量，尺寸为(<code>batch, upsampled_dim1, upsampled_dim2, upsampled_dim3, channels</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，则输出<code>5D</code>张量，尺寸为(<code>batch, channels, upsampled_dim1, upsampled_dim2, upsampled_dim3</code>)。</li>
+</ul>
+<h3 id="ZeroPadding1D"><a href="#ZeroPadding1D" class="headerlink" title="ZeroPadding1D"></a>ZeroPadding1D</h3><p>&emsp;&emsp;对<code>1D</code>输入的首尾端(如时域序列)填充<code>0</code>，以控制卷积以后向量的长度：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.ZeroPadding1D(padding=<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>参数<code>padding</code>是整数，或长度为<code>2</code>的整数元组。</p>
+<ul>
+<li>整数：在填充维度(第一个轴)的开始和结束处添加多少个零。</li>
+<li>长度为<code>2</code>的整数元组：在填充维度的开始和结尾处添加多少个零(<code>(left_pad, right_pad)</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输入尺寸：<code>3D</code>张量，尺寸为(<code>batch, axis_to_pad, features</code>)。<br>&emsp;&emsp;输出尺寸：<code>3D</code>张量，尺寸为(<code>batch, padded_axis, features</code>)。</p>
+<h3 id="ZeroPadding2D"><a href="#ZeroPadding2D" class="headerlink" title="ZeroPadding2D"></a>ZeroPadding2D</h3><p>&emsp;&emsp;对<code>2D</code>输入(如图片)的边界填充<code>0</code>，以控制卷积以后特征图的大小：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.ZeroPadding2D(padding=(<span class="number">1</span>, <span class="number">1</span>), data_format=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>padding</code>：整数，或<code>2</code>个整数的元组，或<code>2</code>个整数的<code>2</code>个元组。</li>
+</ul>
+<ol>
+<li>如果为整数：将对宽度和高度运用相同的对称填充。</li>
+<li>如果为<code>2</code>个整数的元组：解释为高度和宽度的2个不同的对称裁剪值(<code>symmetric_height_pad, symmetric_width_pad</code>)。</li>
+<li>如果为<code>2</code>个整数的<code>2</code>个元组：解释为(<code>(top_pad, bottom_pad), (left_pad, right_pad)</code>)。</li>
+</ol>
+<ul>
+<li><code>data_format</code>：字符串，<code>channels_last</code>(默认)或<code>channels_first</code>之一，代表图像的通道维的位置。<code>channels_last</code>对应输入尺寸为(<code>batch, height, width, channels</code>)，<code>channels_first</code>对应输入尺寸为(<code>batch, channels, height, width</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输入尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，则输入<code>4D</code>张量，尺寸为(<code>batch, rows, cols, channels</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，则输入<code>4D</code>张量，尺寸为(<code>batch, channels, rows, cols</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输出尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，则输出<code>4D</code>张量，尺寸为(<code>batch, padded_rows, padded_cols, channels</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，则输出<code>4D</code>张量，尺寸为(<code>batch, channels, padded_rows, padded_cols</code>)。</li>
+</ul>
+<h3 id="ZeroPadding3D"><a href="#ZeroPadding3D" class="headerlink" title="ZeroPadding3D"></a>ZeroPadding3D</h3><p>&emsp;&emsp;将数据的三个维度上填充<code>0</code>，本层目前只能在使用<code>Theano</code>为后端时可用：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keras.layers.ZeroPadding3D(padding=(<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>), data_format=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>padding</code>：整数，或<code>3</code>个整数的元组，或<code>2</code>个整数的<code>3</code>个元组。</li>
+</ul>
+<ol>
+<li>如果为整数：将对深度、高度和宽度运用相同的对称填充。</li>
+<li>如果为<code>3</code>个整数的元组：解释为深度、高度和宽度的三个不同的对称填充值(<code>symmetric_dim1_pad, symmetric_dim2_pad, symmetric_dim3_pad</code>)。</li>
+<li>如果为<code>2</code>个整数的<code>3</code>个元组：解释为(<code>(left_dim1_pad, right_dim1_pad), (left_dim2_pad, right_dim2_pad), (left_dim3_pad, right_dim3_pad)</code>)。</li>
+</ol>
+<ul>
+<li><code>data_format</code>：字符串，<code>channels_last</code>(默认)或<code>channels_first</code>之一，代表数据的通道维的位置。<code>channels_last</code>对应输入尺寸为(<code>batch, spatial_dim1, spatial_dim2, spatial_dim3, channels</code>)，<code>channels_first</code>对应输入尺寸为(<code>batch, channels, spatial_dim1, spatial_dim2, spatial_dim3</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输入尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，输入<code>5D</code>张量，尺寸为(<code>batch, first_axis_to_pad, second_axis_to_pad, third_axis_to_pad, depth</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，输入<code>5D</code>张量，尺寸为(<code>batch, depth, first_axis_to_pad, second_axis_to_pad, third_axis_to_pad</code>)。</li>
+</ul>
+<p>&emsp;&emsp;输出尺寸：</p>
+<ul>
+<li>如果<code>data_format</code>为<code>channels_last</code>，输出<code>5D</code>张量，尺寸为(<code>batch, first_padded_axis, second_padded_axis, third_axis_to_pad, depth</code>)。</li>
+<li>如果<code>data_format</code>为<code>channels_first</code>，输出<code>5D</code>张量，尺寸为(<code>batch, depth, first_padded_axis, second_padded_axis, third_axis_to_pad</code>)。</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/15/深度学习/Keras之图像预处理/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1701,1131 +2460,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/15/深度学习/pytorch训练集的读取/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/15/深度学习/pytorch训练集的读取/" itemprop="url">pytorch训练集的读取</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-15T09:27:12+08:00">
-                2019-01-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/深度学习/" itemprop="url" rel="index">
-                    <span itemprop="name">深度学习</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>pytorch</code>读取训练集是非常便捷的，只需要使用到<code>2</code>个类，即<code>torch.utils.data.Dataset</code>和<code>torch.utils.data.DataLoader</code>。</p>
-<h3 id="torchvision-datasets的使用"><a href="#torchvision-datasets的使用" class="headerlink" title="torchvision.datasets的使用"></a>torchvision.datasets的使用</h3><p>&emsp;&emsp;对于常用数据集，可以使用<code>torchvision.datasets</code>直接进行读取。<code>torchvision.dataset</code>是<code>torch.utils.data.Dataset</code>的实现，该包提供了以下数据集的读取：<code>MNIST</code>、<code>COCO(Captioning and Detection)</code>、<code>LSUN Classification</code>、<code>ImageFolder</code>、<code>Imagenet-12</code>、<code>CIFAR10 and CIFAR100</code>以及<code>STL10</code>。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torchvision</span><br><span class="line">​</span><br><span class="line">cifarSet = torchvision.datasets.CIFAR10(root=<span class="string">"./cifar/"</span>, train=<span class="keyword">True</span>, download=<span class="keyword">True</span>)</span><br><span class="line">print(cifarSet[<span class="number">0</span>])</span><br><span class="line">img, label = cifarSet[<span class="number">0</span>]</span><br><span class="line">print(img)</span><br><span class="line">print(label)</span><br><span class="line">print(img.format, img.size, img.mode)</span><br><span class="line">img.show()</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">(&lt;PIL.Image.Image image mode=RGB size=<span class="number">32</span>x32 at <span class="number">0x1726952ADA0</span>&gt;, <span class="number">6</span>)</span><br><span class="line">&lt;PIL.Image.Image image mode=RGB size=<span class="number">32</span>x32 at <span class="number">0x1726952ACF8</span>&gt;</span><br><span class="line"><span class="number">6</span></span><br><span class="line"><span class="keyword">None</span> (<span class="number">32</span>, <span class="number">32</span>) RGB</span><br></pre></td></tr></table></figure>
-<h3 id="自定义数据集基础方法"><a href="#自定义数据集基础方法" class="headerlink" title="自定义数据集基础方法"></a>自定义数据集基础方法</h3><p>&emsp;&emsp;首先要创建一个<code>Dataset</code>类：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torch.utils.data.dataset <span class="keyword">import</span> Dataset</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyCustomDataset</span><span class="params">(Dataset)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, ...)</span>:</span></span><br><span class="line">        <span class="comment"># stuff</span></span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__getitem__</span><span class="params">(self, index)</span>:</span></span><br><span class="line">        <span class="comment"># stuff</span></span><br><span class="line">        <span class="keyword">return</span> (img, label)</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__len__</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> count</span><br></pre></td></tr></table></figure>
-<p>在这个代码中，<code>__init__()</code>用于一些初始化过程，<code>__len__()</code>返回所有数据的数量，<code>__getitem__()</code>返回数据和标签，可以这样显式调用：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">img, label = MyCustomDataset.__getitem__(<span class="number">99</span>)</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>Transform</code>最常见的使用方法是：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torch.utils.data.dataset <span class="keyword">import</span> Dataset</span><br><span class="line"><span class="keyword">from</span> torchvision <span class="keyword">import</span> transforms</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyCustomDataset</span><span class="params">(Dataset)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, ..., transforms=None)</span>:</span></span><br><span class="line">        <span class="comment"># stuff</span></span><br><span class="line">        ...</span><br><span class="line">        self.transforms = transforms</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__getitem__</span><span class="params">(self, index)</span>:</span></span><br><span class="line">        <span class="comment"># stuff</span></span><br><span class="line">        ...</span><br><span class="line">        data =  <span class="comment"># 一些读取的数据</span></span><br><span class="line">        <span class="comment"># 如果transform不为None，则进行transform操作</span></span><br><span class="line">        <span class="keyword">if</span> self.transforms <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:</span><br><span class="line">            data = self.transforms(data)</span><br><span class="line">        <span class="keyword">return</span> (img, label)</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__len__</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> count</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    <span class="comment"># 定义我们的transforms(1)</span></span><br><span class="line">    transformations = transforms.Compose([transforms.CenterCrop(<span class="number">100</span>),</span><br><span class="line">                                          transforms.ToTensor()])</span><br><span class="line">    custom_dataset = MyCustomDataset(..., transformations)  <span class="comment"># 创建dataset</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;有些人不喜欢把<code>transform</code>操作写在<code>Dataset</code>外面(上面代码里的注释<code>1</code>)，所以还有一种写法：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> torch.utils.data.dataset <span class="keyword">import</span> Dataset</span><br><span class="line"><span class="keyword">from</span> torchvision <span class="keyword">import</span> transforms</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyCustomDataset</span><span class="params">(Dataset)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, ...)</span>:</span></span><br><span class="line">        <span class="comment"># stuff</span></span><br><span class="line">        ...</span><br><span class="line">        <span class="comment"># (2) 一种方法是单独定义transform</span></span><br><span class="line">        self.center_crop = transforms.CenterCrop(<span class="number">100</span>)</span><br><span class="line">        self.to_tensor = transforms.ToTensor()</span><br><span class="line">        <span class="comment"># (3) 或者写成下面这样</span></span><br><span class="line">        self.transformations = transforms.Compose([transforms.CenterCrop(<span class="number">100</span>),</span><br><span class="line">                                                   transforms.ToTensor()])</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__getitem__</span><span class="params">(self, index)</span>:</span></span><br><span class="line">        <span class="comment"># stuff</span></span><br><span class="line">        ...</span><br><span class="line">        data =  <span class="comment"># 一些读取的数据</span></span><br><span class="line">        <span class="comment"># 当第二次调用transform时，调用的是“__call__()”</span></span><br><span class="line">        data = self.center_crop(data)  <span class="comment"># (2)</span></span><br><span class="line">        data = self.to_tensor(data)  <span class="comment"># (2)</span></span><br><span class="line">        <span class="comment"># 或者写成下面这样</span></span><br><span class="line">        data = self.trasnformations(data)  <span class="comment"># (3)</span></span><br><span class="line">        <span class="comment"># 注意(2)和(3)中只需要实现一种</span></span><br><span class="line">        <span class="keyword">return</span> (img, label)</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__len__</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> count</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    custom_dataset = MyCustomDataset(...)</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;假如说我们想从一个<code>csv</code>文件中读取数据，一个<code>csv</code>示例如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>File Name</th>
-<th>Label</th>
-<th>Extra Operation</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>tr_0.png</code></td>
-<td><code>5</code></td>
-<td><code>TRUE</code></td>
-</tr>
-<tr>
-<td><code>tr_1.png</code></td>
-<td><code>0</code></td>
-<td><code>FALSE</code></td>
-</tr>
-<tr>
-<td><code>tr_1.png</code></td>
-<td><code>4</code></td>
-<td><code>FALSE</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>如果我们需要在自定义数据集里从这个<code>csv</code>文件读取文件名，可以这样做：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CustomDatasetFromImages</span><span class="params">(Dataset)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, csv_path)</span>:</span></span><br><span class="line">        <span class="string">""" 参数csv_path是csv文件路径 """</span></span><br><span class="line">        self.to_tensor = transforms.ToTensor()  <span class="comment"># Transforms</span></span><br><span class="line">        self.data_info = pd.read_csv(csv_path, header=<span class="keyword">None</span>)  <span class="comment"># 读取csv文件</span></span><br><span class="line">        self.image_arr = np.asarray(self.data_info.iloc[:, <span class="number">0</span>])  <span class="comment"># 文件第一列包含图像文件的名称</span></span><br><span class="line">        self.label_arr = np.asarray(self.data_info.iloc[:, <span class="number">1</span>])  <span class="comment"># 第二列是图像的label</span></span><br><span class="line">        self.operation_arr = np.asarray(self.data_info.iloc[:, <span class="number">2</span>])  <span class="comment"># 第三列是决定是否进行额外操作</span></span><br><span class="line">        self.data_len = len(self.data_info.index)  <span class="comment"># 计算length</span></span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__getitem__</span><span class="params">(self, index)</span>:</span></span><br><span class="line">        single_image_name = self.image_arr[index]  <span class="comment"># 得到文件名</span></span><br><span class="line">        img_as_img = Image.open(single_image_name)  <span class="comment"># 读取图像文件</span></span><br><span class="line">        some_operation = self.operation_arr[index]  <span class="comment"># 检查需不需要额外操作</span></span><br><span class="line">        <span class="keyword">if</span> some_operation:  <span class="comment"># 如果需要额外操作</span></span><br><span class="line">            <span class="comment"># ...</span></span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line">        img_as_tensor = self.to_tensor(img_as_img)  <span class="comment"># 把图像转换成tensor</span></span><br><span class="line">        single_image_label = self.label_arr[index]  <span class="comment"># 得到图像的label</span></span><br><span class="line">        <span class="keyword">return</span> (img_as_tensor, single_image_label)</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__len__</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> self.data_len</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    custom_mnist_from_images = CustomDatasetFromImages(<span class="string">'../data/mnist_labels.csv'</span>)</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;另一种情况是<code>csv</code>文件中保存了我们需要的图像文件的像素值，这里需要改动一下<code>__getitem__()</code>函数：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Label</th>
-<th>pixel_1</th>
-<th>pixel_2</th>
-<th>…</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>1</code></td>
-<td><code>50</code></td>
-<td><code>99</code></td>
-<td><code>...</code></td>
-</tr>
-<tr>
-<td><code>0</code></td>
-<td><code>21</code></td>
-<td><code>223</code></td>
-<td><code>...</code></td>
-</tr>
-<tr>
-<td><code>9</code></td>
-<td><code>44</code></td>
-<td><code>112</code></td>
-<td><code>...</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>代码如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CustomDatasetFromCSV</span><span class="params">(Dataset)</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span><span class="params">(self, csv_path, height, width, transforms=None)</span>:</span></span><br><span class="line">        <span class="string">"""</span></span><br><span class="line"><span class="string">        参数csv_path是csv文件路径，height是图像高度，width是图像宽度，transform是transform操作</span></span><br><span class="line"><span class="string">        """</span></span><br><span class="line">        self.data = pd.read_csv(csv_path)</span><br><span class="line">        self.labels = np.asarray(self.data.iloc[:, <span class="number">0</span>])</span><br><span class="line">        self.height = height</span><br><span class="line">        self.width = width</span><br><span class="line">        self.transforms = transform</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__getitem__</span><span class="params">(self, index)</span>:</span></span><br><span class="line">        single_image_label = self.labels[index]</span><br><span class="line">        <span class="comment"># 读取所有像素值，并将“1D array ([784])”reshape成为“2D array ([28,28])”</span></span><br><span class="line">        img_as_np = np.asarray(self.data.iloc[index][<span class="number">1</span>:]).reshape(<span class="number">28</span>, <span class="number">28</span>).astype(<span class="string">'uint8'</span>)</span><br><span class="line">        <span class="comment"># 把“numpy array”格式的图像转换成灰度“PIL image”</span></span><br><span class="line">        img_as_img = Image.fromarray(img_as_np)</span><br><span class="line">        img_as_img = img_as_img.convert(<span class="string">'L'</span>)</span><br><span class="line">        <span class="keyword">if</span> self.transforms <span class="keyword">is</span> <span class="keyword">not</span> <span class="keyword">None</span>:</span><br><span class="line">            img_as_tensor = self.transforms(img_as_img)  <span class="comment"># 将图像转换成tensor</span></span><br><span class="line">        <span class="keyword">return</span> (img_as_tensor, single_image_label)  <span class="comment"># 返回图像及其label</span></span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__len__</span><span class="params">(self)</span>:</span></span><br><span class="line">        <span class="keyword">return</span> len(self.data.index)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    transformations = transforms.Compose([transforms.ToTensor()])</span><br><span class="line">    custom_mnist_from_csv = CustomDatasetFromCSV(<span class="string">'./data/mnist_in_csv.csv'</span>, <span class="number">28</span>, <span class="number">28</span>, transformations)</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>PyTorch</code>中的<code>Dataloader</code>只是调用<code>__getitem__()</code>方法并组合成<code>batch</code>，我们可以这样调用：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    transformations = transforms.Compose([transforms.ToTensor()])  <span class="comment"># 定义transforms</span></span><br><span class="line">    <span class="comment"># 自定义数据集</span></span><br><span class="line">    custom_mnist_from_csv = CustomDatasetFromCSV(<span class="string">'./data/mnist_in_csv.csv'</span>,</span><br><span class="line">                                                 <span class="number">28</span>, <span class="number">28</span>, transformations)</span><br><span class="line">    <span class="comment"># 定义“data loader”</span></span><br><span class="line">    mn_dataset_loader = torch.utils.data.DataLoader(dataset=custom_mnist_from_csv,</span><br><span class="line">                                                    batch_size=<span class="number">10</span>, shuffle=<span class="keyword">False</span>)</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> images, labels <span class="keyword">in</span> mn_dataset_loader:</span><br><span class="line">        <span class="comment"># 将数据传给网络模型</span></span><br></pre></td></tr></table></figure>
-<p>需要注意的是使用多<code>GPU</code>训练时，<code>PyTorch</code>的<code>dataloader</code>会将每个<code>batch</code>平均分配到各个<code>GPU</code>。所以如果<code>batch size</code>过小，可能发挥不了多<code>GPU</code>的效果。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/14/办公/Markdown教程/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/14/办公/Markdown教程/" itemprop="url">Markdown教程</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-14T15:25:43+08:00">
-                2019-01-14
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>Markdown</code>的优点主要有：纯文本，所以兼容性极强，可以用所有文本编辑器打开；让你专注于文字而不是排版；格式转换方便，<code>Markdown</code>的文本你可以轻松转换为<code>html</code>、电子书等；<code>Markdown</code>的标记语法有极好的可读性。</p>
-<h3 id="标题"><a href="#标题" class="headerlink" title="标题"></a>标题</h3><p>&emsp;&emsp;在<code>word</code>中，插入标题的步骤是：<code>输入文本</code>-&gt;<code>选中文本</code>-&gt;<code>设置标题格式</code>。而在<code>Markdown</code>中，只需要在文本前面加上<code>#</code>即可。同理，你还可以增加二级标题至六级标题，只需要增加<code>#</code>即可，标题字号相应降低。注意，<code>#</code>和标题之间建议保留一个字符的空格，这是最标准的<code>Markdown</code>写法。</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="section"># 一级标题</span></span><br><span class="line"><span class="section">## 二级标题</span></span><br><span class="line"><span class="section">### 三级标题</span></span><br><span class="line"><span class="section">#### 四级标题</span></span><br><span class="line"><span class="section">##### 五级标题</span></span><br><span class="line"><span class="section">###### 六级标题</span></span><br></pre></td></tr></table></figure>
-<p><img src="/2019/01/14/办公/Markdown教程/1.png" height="159" width="75"></p>
-<h3 id="列表"><a href="#列表" class="headerlink" title="列表"></a>列表</h3><p>&emsp;&emsp;列表格式在文字排版中也很常用，使用<code>Markdown</code>只需要在文字前面加上<code>-</code>就可以了：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">- </span>文本1</span><br><span class="line"><span class="bullet">- </span>文本2</span><br><span class="line"><span class="bullet">- </span>文本3</span><br></pre></td></tr></table></figure>
-<ul>
-<li>文本1</li>
-<li>文本2</li>
-<li>文本3</li>
-</ul>
-<p>对于有序列表，在文字前面加上<code>1.</code>、<code>2.</code>、<code>3.</code>就可以了：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">1. </span>文本1</span><br><span class="line"><span class="bullet">2. </span>文本2</span><br><span class="line"><span class="bullet">3. </span>文本3</span><br></pre></td></tr></table></figure>
-<ol>
-<li>文本1</li>
-<li>文本2</li>
-<li>文本3</li>
-</ol>
-<h3 id="链接和图片"><a href="#链接和图片" class="headerlink" title="链接和图片"></a>链接和图片</h3><p>&emsp;&emsp;在<code>Markdown</code>中，插入链接不需要其他按钮，只需要使用<code>[显示文本](链接地址)</code>这样的语法即可：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[<span class="string">简书</span>](<span class="link">http://www.jianshu.com</span>)</span><br></pre></td></tr></table></figure>
-<p>也可以把链接放在文章的末尾，注意中间必须要有空行：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[简书]</span><br><span class="line">​</span><br><span class="line">[<span class="symbol">简书</span>]:<span class="link">(http://www.jianshu.com)</span></span><br></pre></td></tr></table></figure>
-<p>插入图片只需要使用<code>![](图片链接地址)</code>这样的语法即可(此方法也可以插入本地图片)：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">![](https://www.google.com/images/branding/googlelogo/1x/googlelogo<span class="emphasis">_color_</span>272x92dp.png)</span><br></pre></td></tr></table></figure>
-<h3 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h3><p>&emsp;&emsp;在写作时经常需要引用他人的文字，于是引用这个格式就很有必要了。在<code>Markdown</code>中，只需要在希望引用的文字前面加上<code>&gt;</code>就好了：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="quote">&gt; 一盏灯，一片昏黄；一简书，一杯淡茶。守着那一份淡定，品读属于自己的寂寞。</span></span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>一盏灯，一片昏黄；一简书，一杯淡茶。守着那一份淡定，品读属于自己的寂寞。</p>
-</blockquote>
-<p>对于诗句的引用，在每一行前面加上<code>&gt;</code>即可：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="quote">&gt; 保持淡定，才能欣赏到最美丽的风景！</span></span><br><span class="line"><span class="quote">&gt; 保持淡定，人生从此不再寂寞。</span></span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>保持淡定，才能欣赏到最美丽的风景！<br>保持淡定，人生从此不再寂寞。</p>
-</blockquote>
-<h3 id="粗体和斜体"><a href="#粗体和斜体" class="headerlink" title="粗体和斜体"></a>粗体和斜体</h3><p>&emsp;&emsp;用两个<code>*</code>包含一段文本就是粗体的语法，用一个<code>*</code>包含一段文本就是斜体的语法：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="emphasis">*一盏灯*</span>，一片昏黄；<span class="strong">**一简书**</span></span><br></pre></td></tr></table></figure>
-<p><em>一盏灯</em>，一片昏黄；<strong>一简书</strong></p>
-<h3 id="代码引用"><a href="#代码引用" class="headerlink" title="代码引用"></a>代码引用</h3><p>&emsp;&emsp;在引用代码时，如果引用的语句只有一段，且不分行，可以用<code>`</code>将语句括起来。如果引用的语句为多行，可以将<code>```</code>置于这段代码的首行和末行。</p>
-<p><img src="/2019/01/14/办公/Markdown教程/2.png" height="112" width="153"></p>
-<p><code>hello world</code><br>I am <code>Fukangwei</code></p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">print(<span class="string">"hello"</span>)</span><br><span class="line">print(<span class="string">"world"</span>)</span><br></pre></td></tr></table></figure>
-<p>如果需要对代码进行高亮处理，可以使用如下格式：<br><img src="/2019/01/14/办公/Markdown教程/3.png" height="78" width="155"></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">if (condition) &#123;</span><br><span class="line">    return true</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>language_key</code>可以是如下选项：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Language</th>
-<th>key</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>C</code></td>
-<td><code>c</code></td>
-</tr>
-<tr>
-<td><code>ActionScript</code></td>
-<td><code>actionscript</code></td>
-</tr>
-<tr>
-<td><code>Apache</code></td>
-<td><code>apache</code></td>
-</tr>
-<tr>
-<td><code>AppleScript</code></td>
-<td><code>applescript</code></td>
-</tr>
-<tr>
-<td><code>AsciiDoc</code></td>
-<td><code>asciidoc</code></td>
-</tr>
-<tr>
-<td><code>AspectJ</code></td>
-<td><code>asciidoc</code></td>
-</tr>
-<tr>
-<td><code>AutoHotkey</code></td>
-<td><code>autohotkey</code></td>
-</tr>
-<tr>
-<td><code>AVR Assembler</code></td>
-<td><code>avrasm</code></td>
-</tr>
-<tr>
-<td><code>Axapta</code></td>
-<td><code>axapta</code></td>
-</tr>
-<tr>
-<td><code>Bash</code></td>
-<td><code>bash</code></td>
-</tr>
-<tr>
-<td><code>BrainFuck</code></td>
-<td><code>brainfuck</code></td>
-</tr>
-<tr>
-<td><code>Cap&#39;n Proto</code></td>
-<td><code>capnproto</code></td>
-</tr>
-<tr>
-<td><code>Clojure REPL</code></td>
-<td><code>clojure</code></td>
-</tr>
-<tr>
-<td><code>Clojure</code></td>
-<td><code>clojure</code></td>
-</tr>
-<tr>
-<td><code>CMake</code></td>
-<td><code>cmake</code></td>
-</tr>
-<tr>
-<td><code>CoffeeScript</code></td>
-<td><code>coffeescript</code></td>
-</tr>
-<tr>
-<td><code>C++</code></td>
-<td><code>cpp</code></td>
-</tr>
-<tr>
-<td><code>C#</code></td>
-<td><code>cs</code></td>
-</tr>
-<tr>
-<td><code>CSS</code></td>
-<td><code>css</code></td>
-</tr>
-<tr>
-<td><code>D</code></td>
-<td><code>d</code></td>
-</tr>
-<tr>
-<td><code>Dart</code></td>
-<td><code>d</code></td>
-</tr>
-<tr>
-<td><code>Delphi</code></td>
-<td><code>delphi</code></td>
-</tr>
-<tr>
-<td><code>Diff</code></td>
-<td><code>diff</code></td>
-</tr>
-<tr>
-<td><code>Django</code></td>
-<td><code>django</code></td>
-</tr>
-<tr>
-<td><code>DOS .bat</code></td>
-<td><code>dos</code></td>
-</tr>
-<tr>
-<td><code>Dust</code></td>
-<td><code>dust</code></td>
-</tr>
-<tr>
-<td><code>Elixir</code></td>
-<td><code>elixir</code></td>
-</tr>
-<tr>
-<td><code>ERB (Embedded Ruby)</code></td>
-<td><code>erb</code></td>
-</tr>
-<tr>
-<td><code>Erlang REPL</code></td>
-<td><code>erlang-repl</code></td>
-</tr>
-<tr>
-<td><code>Erlang</code></td>
-<td><code>erlang</code></td>
-</tr>
-<tr>
-<td><code>FIX</code></td>
-<td><code>fix</code></td>
-</tr>
-<tr>
-<td><code>F#</code></td>
-<td><code>fsharp</code></td>
-</tr>
-<tr>
-<td><code>G-code (ISO 6983)</code></td>
-<td><code>gcode</code></td>
-</tr>
-<tr>
-<td><code>Gherkin</code></td>
-<td><code>gherkin</code></td>
-</tr>
-<tr>
-<td><code>GLSL</code></td>
-<td><code>glsl</code></td>
-</tr>
-<tr>
-<td><code>Go</code></td>
-<td><code>go</code></td>
-</tr>
-<tr>
-<td><code>Gradle</code></td>
-<td><code>gradle</code></td>
-</tr>
-<tr>
-<td><code>Groovy</code></td>
-<td><code>groovy</code></td>
-</tr>
-<tr>
-<td><code>Haml</code></td>
-<td><code>haml</code></td>
-</tr>
-<tr>
-<td><code>Handlebars</code></td>
-<td><code>handlebars</code></td>
-</tr>
-<tr>
-<td><code>Haskell</code></td>
-<td><code>haskell</code></td>
-</tr>
-<tr>
-<td><code>Haxe</code></td>
-<td><code>haxe</code></td>
-</tr>
-<tr>
-<td><code>HTTP</code></td>
-<td><code>http</code></td>
-</tr>
-<tr>
-<td><code>Ini file</code></td>
-<td><code>ini</code></td>
-</tr>
-<tr>
-<td><code>Java</code></td>
-<td><code>java</code></td>
-</tr>
-<tr>
-<td><code>JavaScript</code></td>
-<td><code>javascript</code></td>
-</tr>
-<tr>
-<td><code>JSON</code></td>
-<td><code>json</code></td>
-</tr>
-<tr>
-<td><code>Lasso</code></td>
-<td><code>lasso</code></td>
-</tr>
-<tr>
-<td><code>Less</code></td>
-<td><code>less</code></td>
-</tr>
-<tr>
-<td><code>Lisp</code></td>
-<td><code>lisp</code></td>
-</tr>
-<tr>
-<td><code>LiveCode</code></td>
-<td><code>livecodeserver</code></td>
-</tr>
-<tr>
-<td><code>LiveScript</code></td>
-<td><code>livescript</code></td>
-</tr>
-<tr>
-<td><code>Lua</code></td>
-<td><code>lua</code></td>
-</tr>
-<tr>
-<td><code>Makefile</code></td>
-<td><code>makefile</code></td>
-</tr>
-<tr>
-<td><code>Markdown</code></td>
-<td><code>markdown</code></td>
-</tr>
-<tr>
-<td><code>Mathematica</code></td>
-<td><code>mathematica</code></td>
-</tr>
-<tr>
-<td><code>Matlab</code></td>
-<td><code>matlab</code></td>
-</tr>
-<tr>
-<td><code>MEL (Maya Embedded Language)</code></td>
-<td><code>mel</code></td>
-</tr>
-<tr>
-<td><code>Mercury</code></td>
-<td><code>mercury</code></td>
-</tr>
-<tr>
-<td><code>Mizar</code></td>
-<td><code>mizar</code></td>
-</tr>
-<tr>
-<td><code>Monkey</code></td>
-<td><code>monkey</code></td>
-</tr>
-<tr>
-<td><code>nginx</code></td>
-<td><code>nginx</code></td>
-</tr>
-<tr>
-<td><code>Nimrod</code></td>
-<td><code>nimrod</code></td>
-</tr>
-<tr>
-<td><code>Nix</code></td>
-<td><code>nix</code></td>
-</tr>
-<tr>
-<td><code>NSIS</code></td>
-<td><code>nsis</code></td>
-</tr>
-<tr>
-<td><code>Objective C</code></td>
-<td><code>objectivec</code></td>
-</tr>
-<tr>
-<td><code>OCaml</code></td>
-<td><code>ocaml</code></td>
-</tr>
-<tr>
-<td><code>Oxygene</code></td>
-<td><code>oxygene</code></td>
-</tr>
-<tr>
-<td><code>Parser 3</code></td>
-<td><code>parser3</code></td>
-</tr>
-<tr>
-<td><code>Perl</code></td>
-<td><code>perl</code></td>
-</tr>
-<tr>
-<td><code>PHP</code></td>
-<td><code>php</code></td>
-</tr>
-<tr>
-<td><code>PowerShell</code></td>
-<td><code>powershell</code></td>
-</tr>
-<tr>
-<td><code>Processing</code></td>
-<td><code>processing</code></td>
-</tr>
-<tr>
-<td><code>Python&#39;s profiler output</code></td>
-<td><code>profile</code></td>
-</tr>
-<tr>
-<td><code>Protocol Buffers</code></td>
-<td><code>protobuf</code></td>
-</tr>
-<tr>
-<td><code>Puppet</code></td>
-<td><code>puppet</code></td>
-</tr>
-<tr>
-<td><code>Python</code></td>
-<td><code>python</code></td>
-</tr>
-<tr>
-<td><code>Q</code></td>
-<td><code>q</code></td>
-</tr>
-<tr>
-<td><code>R</code></td>
-<td><code>r</code></td>
-</tr>
-<tr>
-<td><code>RenderMan RIB</code></td>
-<td><code>rib</code></td>
-</tr>
-<tr>
-<td><code>Roboconf</code></td>
-<td><code>roboconf</code></td>
-</tr>
-<tr>
-<td><code>RenderMan RSL</code></td>
-<td><code>rsl</code></td>
-</tr>
-<tr>
-<td><code>Ruby</code></td>
-<td><code>ruby</code></td>
-</tr>
-<tr>
-<td><code>Oracle Rules Language</code></td>
-<td><code>ruleslanguage</code></td>
-</tr>
-<tr>
-<td><code>Rust</code></td>
-<td><code>rust</code></td>
-</tr>
-<tr>
-<td><code>Scala</code></td>
-<td><code>scala</code></td>
-</tr>
-<tr>
-<td><code>Scheme</code></td>
-<td><code>scheme</code></td>
-</tr>
-<tr>
-<td><code>Scilab</code></td>
-<td><code>scilab</code></td>
-</tr>
-<tr>
-<td><code>SCSS</code></td>
-<td><code>scss</code></td>
-</tr>
-<tr>
-<td><code>Smali</code></td>
-<td><code>smali</code></td>
-</tr>
-<tr>
-<td><code>SmallTalk</code></td>
-<td><code>smalltalk</code></td>
-</tr>
-<tr>
-<td><code>SML</code></td>
-<td><code>sml</code></td>
-</tr>
-<tr>
-<td><code>SQL</code></td>
-<td><code>sql</code></td>
-</tr>
-<tr>
-<td><code>Stata</code></td>
-<td><code>stata</code></td>
-</tr>
-<tr>
-<td><code>STEP Part 21 (ISO 10303-21)</code></td>
-<td><code>step21</code></td>
-</tr>
-<tr>
-<td><code>Stylus</code></td>
-<td><code>stylus</code></td>
-</tr>
-<tr>
-<td><code>Swift</code></td>
-<td><code>swift</code></td>
-</tr>
-<tr>
-<td><code>Tcl</code></td>
-<td><code>tcl</code></td>
-</tr>
-<tr>
-<td><code>TeX</code></td>
-<td><code>tex</code></td>
-</tr>
-<tr>
-<td><code>Thrift</code></td>
-<td><code>thrift</code></td>
-</tr>
-<tr>
-<td><code>Twig</code></td>
-<td><code>twig</code></td>
-</tr>
-<tr>
-<td><code>TypeScript</code></td>
-<td><code>typescript</code></td>
-</tr>
-<tr>
-<td><code>Vala</code></td>
-<td><code>vala</code></td>
-</tr>
-<tr>
-<td><code>VB.NET</code></td>
-<td><code>vbnet</code></td>
-</tr>
-<tr>
-<td><code>VBScript in HTML</code></td>
-<td><code>vbscript-html</code></td>
-</tr>
-<tr>
-<td><code>VBScript</code></td>
-<td><code>vbscript</code></td>
-</tr>
-<tr>
-<td><code>Verilog</code></td>
-<td><code>verilog</code></td>
-</tr>
-<tr>
-<td><code>VHDL</code></td>
-<td><code>vhdl</code></td>
-</tr>
-<tr>
-<td><code>Vim Script</code></td>
-<td><code>vim</code></td>
-</tr>
-<tr>
-<td><code>Intel x86 Assembly</code></td>
-<td><code>x86asm</code></td>
-</tr>
-<tr>
-<td><code>XL</code></td>
-<td><code>xl</code></td>
-</tr>
-<tr>
-<td><code>XML</code>或<code>HTML</code></td>
-<td><code>xml</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="表格"><a href="#表格" class="headerlink" title="表格"></a>表格</h3><p>&emsp;&emsp;代码如下所示，注意这<code>3</code>列之间区别：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">| Tables        | Are           | Cool  |</span><br><span class="line">| ------------- |:-------------:| -----:|</span><br><span class="line">| col 3 is      | right-aligned | $1600 |</span><br><span class="line">| col 2 is      | centered      |   $12 |</span><br><span class="line">| zebra stripes | are neat      |    $1 |</span><br></pre></td></tr></table></figure>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Tables</th>
-<th style="text-align:center">Are</th>
-<th style="text-align:right">Cool</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>col 3 is</td>
-<td style="text-align:center">right-aligned</td>
-<td style="text-align:right">$1600</td>
-</tr>
-<tr>
-<td>col 2 is</td>
-<td style="text-align:center">centered</td>
-<td style="text-align:right">$12</td>
-</tr>
-<tr>
-<td>zebra stripes</td>
-<td style="text-align:center">are neat</td>
-<td style="text-align:right">$1</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>另一种写法如下所示：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">dog | bird | cat</span><br><span class="line">----|------|----</span><br><span class="line">foo | foo  | foo</span><br><span class="line">bar | bar  | bar</span><br><span class="line">baz | baz  | baz</span><br></pre></td></tr></table></figure>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>dog</th>
-<th>bird</th>
-<th>cat</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>foo</td>
-<td>foo</td>
-<td>foo</td>
-</tr>
-<tr>
-<td>bar</td>
-<td>bar</td>
-<td>bar</td>
-</tr>
-<tr>
-<td>baz</td>
-<td>baz</td>
-<td>baz</td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="分割线"><a href="#分割线" class="headerlink" title="分割线"></a>分割线</h3><p>&emsp;&emsp;分割线的语法只需要三个<code>*</code>号(实际上<code>***</code>、<code>---</code>、<code>===</code>和<code>___</code>都是分割线语法)：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="emphasis">***</span></span><br><span class="line">hello, fukangwei</span><br></pre></td></tr></table></figure>
-<h3 id="脚注"><a href="#脚注" class="headerlink" title="脚注"></a>脚注</h3><p>&emsp;&emsp;代码示例如下：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">这是脚注一[^1]</span><br><span class="line">这是脚注二[^2]</span><br><span class="line">​</span><br><span class="line">[<span class="symbol">^1</span>]: <span class="link">脚注一</span></span><br><span class="line">[<span class="symbol">^2</span>]: <span class="link">脚注二</span></span><br></pre></td></tr></table></figure>
-<p>这是脚注一<sup><a href="#fn_1" id="reffn_1">1</a></sup><br>这是脚注二<sup><a href="#fn_2" id="reffn_2">2</a></sup><br>​</p>
-<blockquote id="fn_1">
-<sup>1</sup>. 脚注一<a href="#reffn_1" title="Jump back to footnote [1] in the text."> &#8617;</a>
-</blockquote>
-<blockquote id="fn_2">
-<sup>2</sup>. 脚注二<a href="#reffn_2" title="Jump back to footnote [2] in the text."> &#8617;</a>
-</blockquote>
-<h3 id="任务列表"><a href="#任务列表" class="headerlink" title="任务列表"></a>任务列表</h3><p>&emsp;&emsp;在<code>GitHub</code>和<code>GitLab</code>等网站，除了可以使用有序列表和无序列表外，还可以使用任务列表，很适合要列出一些清单的场景。</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">- </span>[ ] 一次性水杯</span><br><span class="line"><span class="bullet">- </span>[x] 西瓜</span><br><span class="line"><span class="bullet">- </span>[ ] 豆浆</span><br><span class="line"><span class="bullet">- </span>[x] 可口可乐</span><br><span class="line"><span class="bullet">- </span>[ ] 小茗同学</span><br></pre></td></tr></table></figure>
-<ul>
-<li>[ ] 一次性水杯</li>
-<li>[x] 西瓜</li>
-<li>[ ] 豆浆</li>
-<li>[x] 可口可乐</li>
-<li>[ ] 小茗同学</li>
-</ul>
-<h3 id="反斜杠"><a href="#反斜杠" class="headerlink" title="反斜杠"></a>反斜杠</h3><p>&emsp;&emsp;<code>Markdown</code>可以利用反斜杠来插入一些在语法中有其它意义的符号(也就是进行转义)，例如下面的语句用于显示<code>*literal asterisks*</code>：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">\<span class="emphasis">*literal asterisks\*</span></span><br></pre></td></tr></table></figure>
-<p>转义符号如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>符号</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>\</code></td>
-<td>反斜线</td>
-</tr>
-<tr>
-<td><code>`</code></td>
-<td>反引号</td>
-</tr>
-<tr>
-<td><code>*</code></td>
-<td>星号</td>
-</tr>
-<tr>
-<td><code>_</code></td>
-<td>底线</td>
-</tr>
-<tr>
-<td><code>{}</code></td>
-<td>花括号</td>
-</tr>
-<tr>
-<td><code>[]</code></td>
-<td>方括号</td>
-</tr>
-<tr>
-<td><code>()</code></td>
-<td>括弧</td>
-</tr>
-<tr>
-<td><code>#</code></td>
-<td>井字号</td>
-</tr>
-<tr>
-<td><code>+</code></td>
-<td>加号</td>
-</tr>
-<tr>
-<td><code>-</code></td>
-<td>减号</td>
-</tr>
-<tr>
-<td><code>.</code></td>
-<td>英文句点</td>
-</tr>
-<tr>
-<td><code>!</code></td>
-<td>惊叹号</td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="删除线"><a href="#删除线" class="headerlink" title="删除线"></a>删除线</h3><p>&emsp;&emsp;删除线的语法如下：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~~这是删除线~~</span><br></pre></td></tr></table></figure>
-<p><del>这是删除线</del></p>
-<h3 id="首行缩进"><a href="#首行缩进" class="headerlink" title="首行缩进"></a>首行缩进</h3><p>&emsp;&emsp;使用特殊占位符可以实现首行缩进：</p>
-<ul>
-<li><code>&amp;ensp;</code>或<code>&amp;#8194;</code>是半角。</li>
-<li><code>&amp;emsp;</code>或<code>&amp;#8195;</code>是全角。</li>
-</ul>
-<p>代码示例：</p>
-<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&amp;ensp;你好</span><br><span class="line">&amp;emsp;你好</span><br><span class="line">&amp;emsp;&amp;emsp;你好</span><br><span class="line">hello, Look at me</span><br></pre></td></tr></table></figure>
-<p>&ensp;你好<br>&emsp;你好<br>&emsp;&emsp;你好<br>hello, Look at me</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/14/办公/Visio使用注意事项/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/14/办公/Visio使用注意事项/" itemprop="url">Visio使用注意事项</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-14T15:04:52+08:00">
-                2019-01-14
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <ol>
-<li>在<code>Visio</code>中输入希腊字母，步骤为：先选择<code>插入</code>，再选择<code>公式</code>。</li>
-<li><code>Visio</code>画出大括号与花括号：<code>文件</code>-&gt;<code>形状</code>-&gt;<code>其他Visio方案</code>-&gt;<code>标注</code>-&gt;<code>侧边大括号</code>。</li>
-<li><code>Visio</code>画出电灯：可以从<code>文件</code>-&gt;<code>形状</code>-&gt;<code>电气工程</code>-&gt;<code>基本项</code>中找到，名字叫<code>灯2</code>。</li>
-<li><code>Visio</code>画出云状图：寻找路径是<code>visio2010</code>-&gt;<code>文件</code>-&gt;<code>形状</code>-&gt;<code>其他visio方案</code>-&gt;<code>批注</code>-&gt;<code>修订云形</code>。</li>
-</ol>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2876,7 +2510,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">955</span>
+                  <span class="site-state-item-count">958</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

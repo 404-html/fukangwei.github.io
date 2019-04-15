@@ -271,6 +271,630 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/运动模板/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/23/opencv和图像处理/运动模板/" itemprop="url">运动模板</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-23T20:26:52+08:00">
+                2019-02-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;运动模板是一种有效的跟踪普通运动的方法，尤其应用在姿态识别中。运动模板方法首先需要的是知道物体的轮廓，而轮廓的获取可以有很多的方法，关于轮廓的获取方法在此不做多余的叙述。<br>&emsp;&emsp;运动模板程序的大致编程思路应该是是这样的：获得当前帧与上一帧的差，然后对差图像进行二值化；更新运动历史图像；然后计算运动历史图像的梯度方向，并将整个运动分割为独立的运动部分，在用一个结构序列标记每一个运动分割，最后计算出选择区域的全局运动方向，从而获得运动目标的质心位置与运动方向。<br>&emsp;&emsp;<code>opencv</code>中完成运动模板构建的函数是<code>cvUpdateMotionHistory</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvUpdateMotionHistory</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *silhouette, <span class="comment">/* 非0像素代表前景物体的最新的分割轮廓 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    CvArr *mhi, <span class="comment">/* 运动模板，也即运动历史图像 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> timestamp, <span class="comment">/* 当前系统时间 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> duration <span class="comment">/* 运动跟踪的最大持续时间 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>在<code>cvUpdateMotionHistory</code>中，所有图像都是单通道图像，图像<code>silhouette</code>是一幅单字节图像，其中非零像素代表前景物体的分割轮廓。图像<code>mhi</code>是一幅浮点值图像，代表运动模板(也就是运动历史图像)。<code>timestamp</code>是当前系统时间，以毫秒为单位。<code>mhi</code>中任何比<code>timestamp</code>减去<code>duration</code>的值早(少)的像素将被设置为<code>0</code>。<br>&emsp;&emsp;一旦运动模板记录了不同时间的物体轮廓，就可以用计算<code>mhi</code>图像的梯度来获取全局运动信息。使用如下函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvCalcMotionGradient</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArrs *mhi, <span class="comment">/* 运动历史图像 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    CvArr *mask, <span class="comment">/* 非0值代表此点处的梯度有效 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    CvArr *orientation, <span class="comment">/* 每一点梯度方向的角度 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> delta1,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> delta2, <span class="comment">/* delta1、delta2分别是允许的最小和最大梯度值 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> aperture_size = <span class="number">3</span> <span class="comment">/* 设置梯度算子的宽和高 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>梯度方向求出后，即可以计算全局运动方向，给出如下函数：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">double</span> <span class="title">cvCalcGlobalOrientation</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="comment">/* 前三个参数都是根据上面两个函数得出来的 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *orientation,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *mask,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *mhi,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> timestamp,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> duration</span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;分割和计算局部运动的函数是<code>cvSegmentMotion</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">CvSeq *<span class="title">cvSegmentMotion</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *mhi, CvArr *seg_mask, CvMemStorage *storage,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> timestamp, <span class="keyword">double</span> seg_thresh)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>示例代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/video/tracking.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/highgui/highgui.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/imgproc/imgproc_c.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctype.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 不同的跟踪参数 */</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">double</span> MHI_DURATION = <span class="number">0.5</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">double</span> MAX_TIME_DELTA = <span class="number">0.5</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">double</span> MIN_TIME_DELTA = <span class="number">0.05</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> N = <span class="number">2</span>; <span class="comment">/* 用于运动检测的循环帧数，与机器速度及FPS设置有关 */</span></span><br><span class="line">IplImage **buf = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">int</span> last = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 临时图像 */</span></span><br><span class="line">IplImage *mhi = <span class="number">0</span>; <span class="comment">/* MHI：运动历史图像 */</span></span><br><span class="line">IplImage *orient = <span class="number">0</span>; <span class="comment">/* 方向 */</span></span><br><span class="line">IplImage *mask = <span class="number">0</span>; <span class="comment">/* 有效的运动掩码 */</span></span><br><span class="line">IplImage *segmask = <span class="number">0</span>; <span class="comment">/* 运动分割映射 */</span></span><br><span class="line">CvMemStorage *storage = <span class="number">0</span>; <span class="comment">/* 临时存储区 */</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* parameters:</span></span><br><span class="line"><span class="comment">  img - input video frame</span></span><br><span class="line"><span class="comment">  dst - resultant motion picture</span></span><br><span class="line"><span class="comment">  args - optional parameters */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">update_mhi</span> <span class="params">( IplImage *img, IplImage *dst, <span class="keyword">int</span> diff_threshold )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">double</span> timestamp = ( <span class="keyword">double</span> ) clock() / CLOCKS_PER_SEC; <span class="comment">/* 获取当前时间，以秒为单位 */</span></span><br><span class="line">    CvSize size = cvSize ( img-&gt;width, img-&gt;height ); <span class="comment">/* 获取当前帧尺寸 */</span></span><br><span class="line">    <span class="keyword">int</span> i, idx1 = last, idx2;</span><br><span class="line">    IplImage *silh;</span><br><span class="line">    CvSeq *seq;</span><br><span class="line">    CvRect comp_rect;</span><br><span class="line">    <span class="keyword">double</span> count;</span><br><span class="line">    <span class="keyword">double</span> angle;</span><br><span class="line">    CvPoint center;</span><br><span class="line">    <span class="keyword">double</span> magnitude;</span><br><span class="line">    CvScalar color;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 开始时为图像分配内存 or 帧尺寸改变时重新分配内存 */</span></span><br><span class="line">    <span class="keyword">if</span> ( !mhi || mhi-&gt;width != size.width || mhi-&gt;height != size.height ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( buf == <span class="number">0</span> ) &#123;</span><br><span class="line">            buf = ( IplImage ** ) <span class="built_in">malloc</span> ( N * <span class="keyword">sizeof</span> ( buf[<span class="number">0</span>] ) );</span><br><span class="line">            <span class="built_in">memset</span> ( buf, <span class="number">0</span>, N * <span class="keyword">sizeof</span> ( buf[<span class="number">0</span>] ) );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; N; i++ ) &#123;</span><br><span class="line">            cvReleaseImage ( &amp;buf[i] );</span><br><span class="line">            buf[i] = cvCreateImage ( size, IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">            cvZero ( buf[i] );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        cvReleaseImage ( &amp;mhi );</span><br><span class="line">        cvReleaseImage ( &amp;orient );</span><br><span class="line">        cvReleaseImage ( &amp;segmask );</span><br><span class="line">        cvReleaseImage ( &amp;mask );</span><br><span class="line">        mhi = cvCreateImage ( size, IPL_DEPTH_32F, <span class="number">1</span> );</span><br><span class="line">        cvZero ( mhi ); <span class="comment">/* clear MHI at the beginning */</span></span><br><span class="line">        orient = cvCreateImage ( size, IPL_DEPTH_32F, <span class="number">1</span> );</span><br><span class="line">        segmask = cvCreateImage ( size, IPL_DEPTH_32F, <span class="number">1</span> );</span><br><span class="line">        mask = cvCreateImage ( size, IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    cvCvtColor ( img, buf[last], CV_BGR2GRAY ); <span class="comment">/* RGB帧图像格式转换为gray */</span></span><br><span class="line">    idx2 = ( last + <span class="number">1</span> ) % N; <span class="comment">/* index of (last - (N-1))th frame */</span></span><br><span class="line">    last = idx2;</span><br><span class="line">    silh = buf[idx2];</span><br><span class="line">    <span class="comment">/* 相邻两帧的差 */</span></span><br><span class="line">    cvAbsDiff ( buf[idx1], buf[idx2], silh );</span><br><span class="line">    cvThreshold ( silh, silh, diff_threshold, <span class="number">1</span>, CV_THRESH_BINARY ); <span class="comment">/* 对差图像做二值化 */</span></span><br><span class="line">    cvUpdateMotionHistory ( silh, mhi, timestamp, MHI_DURATION ); <span class="comment">/* 更新运动历史 */</span></span><br><span class="line">    <span class="comment">/* convert MHI to blue 8u image</span></span><br><span class="line"><span class="comment">       cvCvtScale的第四个参数 shift = (MHI_DURATION - timestamp) * 255. / MHI_DURATION</span></span><br><span class="line"><span class="comment">       控制帧差的消失速率 */</span></span><br><span class="line">    cvCvtScale ( mhi, mask, <span class="number">255.</span> / MHI_DURATION, ( MHI_DURATION - timestamp ) * <span class="number">255.</span> / MHI_DURATION );</span><br><span class="line">    cvZero ( dst );</span><br><span class="line">    cvMerge ( mask, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, dst );</span><br><span class="line">    <span class="comment">/* B, G, R, 0 convert to BLUE image</span></span><br><span class="line"><span class="comment">       计算运动的梯度方向以及正确的方向掩码</span></span><br><span class="line"><span class="comment">       Filter size = 3 */</span></span><br><span class="line">    cvCalcMotionGradient ( mhi, mask, orient, MAX_TIME_DELTA, MIN_TIME_DELTA, <span class="number">3</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !storage ) &#123;</span><br><span class="line">        storage = cvCreateMemStorage ( <span class="number">0</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        cvClearMemStorage ( storage );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 运动分割：获得运动部件的连续序列 */</span></span><br><span class="line">    seq = cvSegmentMotion ( mhi, segmask, storage, timestamp, MAX_TIME_DELTA );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">-1</span>; i &lt; seq-&gt;total; i++ ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( i &lt; <span class="number">0</span> ) &#123; <span class="comment">/* 对整幅图像操作 */</span></span><br><span class="line">            comp_rect = cvRect ( <span class="number">0</span>, <span class="number">0</span>, size.width, size.height );</span><br><span class="line">            color = CV_RGB ( <span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span> );</span><br><span class="line">            magnitude = <span class="number">100</span>; <span class="comment">/* 画线长度以及圆半径的大小控制 */</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123; <span class="comment">/* 第i个运动组件 */</span></span><br><span class="line">            comp_rect = ( ( CvConnectedComp * ) cvGetSeqElem ( seq, i ) )-&gt;rect;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( comp_rect.width + comp_rect.height &lt; <span class="number">100</span> ) &#123; <span class="comment">/* 去掉小的部分 */</span></span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            color = CV_RGB ( <span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span> );</span><br><span class="line">            magnitude = <span class="number">30</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 选择组件ROI */</span></span><br><span class="line">        cvSetImageROI ( silh, comp_rect );</span><br><span class="line">        cvSetImageROI ( mhi, comp_rect );</span><br><span class="line">        cvSetImageROI ( orient, comp_rect );</span><br><span class="line">        cvSetImageROI ( mask, comp_rect );</span><br><span class="line">        <span class="comment">/* 在选择的区域内，计算运动方向 */</span></span><br><span class="line">        angle = cvCalcGlobalOrientation ( orient, mask, mhi, timestamp,  MHI_DURATION );</span><br><span class="line">        angle = <span class="number">360.0</span> - angle; <span class="comment">/* adjust for images with top-left origin */</span></span><br><span class="line">        <span class="comment">/* 在轮廓内计算点数；Norm(L1) = 所有像素值的和 */</span></span><br><span class="line">        count = cvNorm ( silh, <span class="number">0</span>, CV_L1, <span class="number">0</span> );</span><br><span class="line">        cvResetImageROI ( mhi );</span><br><span class="line">        cvResetImageROI ( orient );</span><br><span class="line">        cvResetImageROI ( mask );</span><br><span class="line">        cvResetImageROI ( silh );</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 检查小运动的情形 */</span></span><br><span class="line">        <span class="keyword">if</span> ( count &lt; comp_rect.width * comp_rect.height * <span class="number">0.05</span> ) &#123; <span class="comment">/* 像素的5% */</span></span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 画一个带箭头的记录以表示方向 */</span></span><br><span class="line">        center = cvPoint ( ( comp_rect.x + comp_rect.width / <span class="number">2</span> ), ( comp_rect.y + comp_rect.height / <span class="number">2</span> ) );</span><br><span class="line">        cvCircle ( dst, center, cvRound ( magnitude * <span class="number">1.2</span> ), color, <span class="number">3</span>, CV_AA, <span class="number">0</span> );</span><br><span class="line">        cvLine (</span><br><span class="line">            dst, center,</span><br><span class="line">            cvPoint (</span><br><span class="line">                cvRound ( center.x + magnitude * <span class="built_in">cos</span> ( angle * CV_PI / <span class="number">180</span> ) ),</span><br><span class="line">                cvRound ( center.y - magnitude * <span class="built_in">sin</span> ( angle * CV_PI / <span class="number">180</span> ) )</span><br><span class="line">            ),</span><br><span class="line">            color, <span class="number">3</span>, CV_AA, <span class="number">0</span></span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    IplImage *motion = <span class="number">0</span>;</span><br><span class="line">    CvCapture *capture = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( argc == <span class="number">1</span> || ( argc == <span class="number">2</span> &amp;&amp; <span class="built_in">strlen</span> ( argv[<span class="number">1</span>] ) == <span class="number">1</span> &amp;&amp; <span class="built_in">isdigit</span> ( argv[<span class="number">1</span>][<span class="number">0</span>] ) ) ) &#123;</span><br><span class="line">        capture = cvCaptureFromCAM ( argc == <span class="number">2</span> ? argv[<span class="number">1</span>][<span class="number">0</span>] - <span class="string">'0'</span> : <span class="number">0</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( argc == <span class="number">2</span> ) &#123;</span><br><span class="line">        capture = cvCaptureFromAVI ( argv[<span class="number">1</span>] );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( capture ) &#123;</span><br><span class="line">        cvNamedWindow ( <span class="string">"Motion"</span>, <span class="number">1</span> );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">            IplImage *image = cvQueryFrame ( capture );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( !image ) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( !motion ) &#123;</span><br><span class="line">                motion = cvCreateImage ( cvSize ( image-&gt;width, image-&gt;height ), <span class="number">8</span>, <span class="number">3</span> );</span><br><span class="line">                cvZero ( motion );</span><br><span class="line">                motion-&gt;origin = image-&gt;origin;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            update_mhi ( image, motion, <span class="number">30</span> );</span><br><span class="line">            cvShowImage ( <span class="string">"Motion"</span>, motion );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( cvWaitKey ( <span class="number">1</span> ) &gt;= <span class="number">0</span> ) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        cvReleaseCapture ( &amp;capture );</span><br><span class="line">        cvDestroyWindow ( <span class="string">"Motion"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/02/23/opencv和图像处理/运动模板/1.png" height="249" width="316"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/imdecode和imencode/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/23/opencv和图像处理/imdecode和imencode/" itemprop="url">imdecode和imencode</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-23T20:01:13+08:00">
+                2019-02-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>cv2.imdecode</code>函数从指定的内存缓存中读取数据，并把数据转换(解码)成图像格式，主要用于从网络传输数据中恢复出图像。<br>&emsp;&emsp;<code>cv2.imencode</code>函数是将图片格式转换(编码)成流数据，赋值到内存缓存中，主要用于图像数据格式的压缩，方便网络传输。</p>
+<h3 id="imdecode的使用"><a href="#imdecode的使用" class="headerlink" title="imdecode的使用"></a>imdecode的使用</h3><p>&emsp;&emsp;从网络读取图像数据，并转换成图片格式：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> urllib.request</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line">​</span><br><span class="line">url = <span class="string">'http://www.pyimagesearch.com/wp-content/uploads/2015/01/google_logo.png'</span></span><br><span class="line">resp = urllib.request.urlopen(url)</span><br><span class="line">image = np.asarray(bytearray(resp.read()), dtype=<span class="string">"uint8"</span>)</span><br><span class="line">image = cv2.imdecode(image, cv2.IMREAD_COLOR)</span><br><span class="line">cv2.imshow(<span class="string">'URL2Image'</span>, image)</span><br><span class="line">cv2.waitKey(<span class="number">0</span>)</span><br><span class="line">cv2.destroyAllWindows()</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/02/23/opencv和图像处理/imdecode和imencode/1.png" height="144" width="358"></p>
+<h3 id="imencode的使用"><a href="#imencode的使用" class="headerlink" title="imencode的使用"></a>imencode的使用</h3><p>&emsp;&emsp;将图片编码到缓存，并保存到本地：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line">​</span><br><span class="line">img = cv2.imread(<span class="string">'left.jpg'</span>)</span><br><span class="line"><span class="comment"># “.jpg”表示把当前图片img按照jpg格式编码，不同格式编码的结果不一样</span></span><br><span class="line">img_encode = cv2.imencode(<span class="string">'.jpg'</span>, img)[<span class="number">1</span>]</span><br><span class="line">​</span><br><span class="line">data_encode = np.array(img_encode)</span><br><span class="line">str_encode = data_encode.tostring()</span><br><span class="line">​</span><br><span class="line"><span class="comment"># 缓存数据保存到本地</span></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">'img_encode.txt'</span>, <span class="string">'wb'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    f.write(str_encode)</span><br><span class="line">    f.flush</span><br></pre></td></tr></table></figure>
+<h3 id="imencode和imdecode的使用"><a href="#imencode和imdecode的使用" class="headerlink" title="imencode和imdecode的使用"></a>imencode和imdecode的使用</h3><p>&emsp;&emsp;将图片编码保存到本地，读取本地文件解码恢复成图片格式：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line">​</span><br><span class="line">img = cv2.imread(<span class="string">'left.jpg'</span>)</span><br><span class="line">img_encode = cv2.imencode(<span class="string">'.jpg'</span>, img)[<span class="number">1</span>]</span><br><span class="line">data_encode = np.array(img_encode)</span><br><span class="line">str_encode = data_encode.tostring()</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> open(<span class="string">'img_encode.txt'</span>, <span class="string">'wb'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    f.write(str_encode)</span><br><span class="line">    f.flush</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> open(<span class="string">'img_encode.txt'</span>, <span class="string">'rb'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    str_encode = f.read()</span><br><span class="line">​</span><br><span class="line">nparr = np.fromstring(str_encode, np.uint8)</span><br><span class="line">img_decode = cv2.imdecode(nparr, cv2.IMREAD_COLOR)</span><br><span class="line">cv2.imshow(<span class="string">"img_decode"</span>, img_decode)</span><br><span class="line">cv2.waitKey()</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/读写xml和yml文件/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/23/opencv和图像处理/读写xml和yml文件/" itemprop="url">读写xml和yml文件</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-23T17:27:09+08:00">
+                2019-02-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;有时我们在处理完图像后，需要保存数据到文件上，以供下一步的处理。一个比较广泛的需求场景是：我们对一幅图像进行特征提取之后，需要把特征点信息保存到文件上，以供后面的机器学习分类操作。那么如果遇到这样的场景，我们有什么好方法？我想到的是把这些数据全写到文件上，如果下次需要这些数据时，就把它们从文件里读出来就好了。<br>&emsp;&emsp;其实更好的办法是使用<code>xml</code>和<code>yml</code>，因为它们更具有可读性，简直就是为保存数据结构而生。<code>OpenCV</code>提供了很好用的读写<code>xml</code>和<code>yml</code>的类，只要掌握其读写要领，很容易就可以实现这个小型数据库。<br>&emsp;&emsp;简单的数据写入示例：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> x;</span><br><span class="line">    <span class="keyword">int</span> y;</span><br><span class="line">    <span class="built_in">string</span> s;</span><br><span class="line">&#125; <span class="keyword">test_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="function">FileStorage <span class="title">fs</span> <span class="params">( <span class="string">"test.xml"</span>, FileStorage::WRITE )</span></span>;</span><br><span class="line">    <span class="keyword">int</span> a1 = <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">char</span> a2 = <span class="number">-1</span>;</span><br><span class="line">    <span class="built_in">string</span> str = <span class="string">"hello sysu!"</span>;</span><br><span class="line">    <span class="keyword">int</span> arr[<span class="number">10</span>] = &#123; <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>, <span class="number">10</span> &#125;;</span><br><span class="line">    <span class="keyword">test_t</span> t = &#123; <span class="number">3</span>, <span class="number">4</span>, <span class="string">"hi sysu"</span> &#125;;</span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="built_in">string</span>, <span class="keyword">int</span>&gt; m;</span><br><span class="line">    m[<span class="string">"kobe"</span>] = <span class="number">100</span>;</span><br><span class="line">    m[<span class="string">"james"</span>] = <span class="number">99</span>;</span><br><span class="line">    m[<span class="string">"curry"</span>] = <span class="number">98</span>;</span><br><span class="line">    <span class="comment">/* 写入文件操作，先写标注，再写数据 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"int_data"</span> &lt;&lt; a1;</span><br><span class="line">    fs &lt;&lt; <span class="string">"char_data"</span> &lt;&lt; a2;</span><br><span class="line">    fs &lt;&lt; <span class="string">"string_data"</span> &lt;&lt; str;</span><br><span class="line">    <span class="comment">/* 写入数组 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"array_data"</span> &lt;&lt; <span class="string">"["</span>; <span class="comment">/* 数组开始 */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        fs &lt;&lt; arr[i];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs &lt;&lt; <span class="string">"]"</span>; <span class="comment">/* 数组结束 */</span></span><br><span class="line">    <span class="comment">/* 写入结构体 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"struct_data"</span> &lt;&lt; <span class="string">"&#123;"</span>; <span class="comment">/* 结构体开始 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"x"</span> &lt;&lt; t.x;</span><br><span class="line">    fs &lt;&lt; <span class="string">"y"</span> &lt;&lt; t.y;</span><br><span class="line">    fs &lt;&lt; <span class="string">"s"</span> &lt;&lt; t.s;</span><br><span class="line">    fs &lt;&lt; <span class="string">"&#125;"</span>; <span class="comment">/* 结构结束 */</span></span><br><span class="line">    <span class="comment">/* map的写入 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"map_data"</span> &lt;&lt; <span class="string">"&#123;"</span>; <span class="comment">/* map的开始写入 */</span></span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="built_in">string</span>, <span class="keyword">int</span>&gt;::iterator it = m.begin();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( ; it != m.end(); it++ ) &#123;</span><br><span class="line">        fs &lt;&lt; it-&gt;first &lt;&lt; it-&gt;second;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs &lt;&lt; <span class="string">"&#125;"</span>; <span class="comment">/* map写入结束 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>打开<code>test.xml</code>文件，内容如下：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version="1.0"?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">opencv_storage</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">int_data</span>&gt;</span>2<span class="tag">&lt;/<span class="name">int_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">char_data</span>&gt;</span>-1<span class="tag">&lt;/<span class="name">char_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">string_data</span>&gt;</span>"hello sysu!"<span class="tag">&lt;/<span class="name">string_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">array_data</span>&gt;</span></span><br><span class="line">  1 2 3 4 5 6 7 8 9 10<span class="tag">&lt;/<span class="name">array_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">struct_data</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">x</span>&gt;</span>3<span class="tag">&lt;/<span class="name">x</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">y</span>&gt;</span>4<span class="tag">&lt;/<span class="name">y</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">s</span>&gt;</span>"hi sysu"<span class="tag">&lt;/<span class="name">s</span>&gt;</span><span class="tag">&lt;/<span class="name">struct_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">map_data</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">curry</span>&gt;</span>98<span class="tag">&lt;/<span class="name">curry</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">james</span>&gt;</span>99<span class="tag">&lt;/<span class="name">james</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">kobe</span>&gt;</span>100<span class="tag">&lt;/<span class="name">kobe</span>&gt;</span><span class="tag">&lt;/<span class="name">map_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">opencv_storage</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;如果将文件存为<code>test.yml</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FileStorage <span class="title">fs</span> <span class="params">( <span class="string">"test.yml"</span>, FileStorage::WRITE )</span></span>;</span><br></pre></td></tr></table></figure>
+<p>其内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">%YAML:1.0</span></span><br><span class="line"><span class="attr">int_data:</span> <span class="number">2</span></span><br><span class="line"><span class="attr">char_data:</span> <span class="bullet">-1</span></span><br><span class="line"><span class="attr">string_data:</span> <span class="string">"hello sysu!"</span></span><br><span class="line"><span class="attr">array_data:</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">1</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">2</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">3</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">4</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">5</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">6</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">7</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">8</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">9</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">10</span></span><br><span class="line"><span class="attr">struct_data:</span></span><br><span class="line"><span class="attr">   x:</span> <span class="number">3</span></span><br><span class="line"><span class="attr">   y:</span> <span class="number">4</span></span><br><span class="line"><span class="attr">   s:</span> <span class="string">hi</span> <span class="string">sysu</span></span><br><span class="line"><span class="attr">map_data:</span></span><br><span class="line"><span class="attr">   curry:</span> <span class="number">98</span></span><br><span class="line"><span class="attr">   james:</span> <span class="number">99</span></span><br><span class="line"><span class="attr">   kobe:</span> <span class="number">100</span></span><br></pre></td></tr></table></figure>
+<p>其实还可以保存为<code>txt</code>或<code>doc</code>格式。显然<code>yml</code>文件的排版更加简洁明了，<code>xml</code>文件却有点冗余和杂乱了。</p>
+<hr>
+<h3 id="XML-YAML-file-storages"><a href="#XML-YAML-file-storages" class="headerlink" title="XML/YAML file storages"></a>XML/YAML file storages</h3><p>&emsp;&emsp;You can store and then restore various <code>OpenCV</code> data structures to/from <code>XML</code> or <code>YAML</code> formats. Also, it is possible store and load arbitrarily complex data structures, which include <code>OpenCV</code> data structures, as well as primitive data types (integer and <code>floating-point</code> numbers and text strings) as their elements.<br>&emsp;&emsp;Use the following procedure to write something to <code>XML</code> or <code>YAML</code>:</p>
+<ol>
+<li>Create new <code>FileStorage</code> and open it for writing. It can be done with a single call to <code>FileStorage::FileStorage()</code> constructor that takes a filename, or you can use the default constructor and then call <code>FileStorage::open()</code>. Format of the file (<code>XML</code> or <code>YAML</code>) is determined from the filename extension (<code>.xml</code> and <code>.yml</code>/<code>.yaml</code>, respectively)</li>
+<li>Write all the data you want using the streaming operator <code>&lt;&lt;</code>, just like in the case of <code>STL</code> streams.</li>
+<li>Close the file using <code>FileStorage::release()</code>. <code>FileStorage</code> destructor also closes the file.</li>
+</ol>
+<p>&emsp;&emsp;Here is an example:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span>, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="function">FileStorage <span class="title">fs</span> <span class="params">( <span class="string">"test.yml"</span>, FileStorage::WRITE )</span></span>;</span><br><span class="line">    fs &lt;&lt; <span class="string">"frameCount"</span> &lt;&lt; <span class="number">5</span>;</span><br><span class="line">    <span class="keyword">time_t</span> rawtime;</span><br><span class="line">    time ( &amp;rawtime );</span><br><span class="line">    fs &lt;&lt; <span class="string">"calibrationDate"</span> &lt;&lt; asctime ( localtime ( &amp;rawtime ) );</span><br><span class="line">    Mat cameraMatrix = ( Mat_&lt;<span class="keyword">double</span>&gt; ( <span class="number">3</span>, <span class="number">3</span> ) &lt;&lt; <span class="number">1000</span>, <span class="number">0</span>, <span class="number">320</span>, <span class="number">0</span>, <span class="number">1000</span>, <span class="number">240</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span> );</span><br><span class="line">    Mat distCoeffs = ( Mat_&lt;<span class="keyword">double</span>&gt; ( <span class="number">5</span>, <span class="number">1</span> ) &lt;&lt; <span class="number">0.1</span>, <span class="number">0.01</span>, <span class="number">-0.001</span>, <span class="number">0</span>, <span class="number">0</span> );</span><br><span class="line">    fs &lt;&lt; <span class="string">"cameraMatrix"</span> &lt;&lt; cameraMatrix &lt;&lt; <span class="string">"distCoeffs"</span> &lt;&lt; distCoeffs;</span><br><span class="line">    fs &lt;&lt; <span class="string">"features"</span> &lt;&lt; <span class="string">"["</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++ ) &#123;</span><br><span class="line">        <span class="keyword">int</span> x = rand() % <span class="number">640</span>;</span><br><span class="line">        <span class="keyword">int</span> y = rand() % <span class="number">480</span>;</span><br><span class="line">        uchar lbp = rand() % <span class="number">256</span>;</span><br><span class="line">        fs &lt;&lt; <span class="string">"&#123;:"</span> &lt;&lt; <span class="string">"x"</span> &lt;&lt; x &lt;&lt; <span class="string">"y"</span> &lt;&lt; y &lt;&lt; <span class="string">"lbp"</span> &lt;&lt; <span class="string">"[:"</span>;</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">8</span>; j++ ) &#123;</span><br><span class="line">            fs &lt;&lt; ( ( lbp &gt;&gt; j ) &amp; <span class="number">1</span> );</span><br><span class="line">        &#125;</span><br><span class="line">        fs &lt;&lt; <span class="string">"]"</span> &lt;&lt; <span class="string">"&#125;"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs &lt;&lt; <span class="string">"]"</span>;</span><br><span class="line">    fs.release();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The sample above stores to <code>XML</code> and integer, text string (calibration date), <code>2</code> matrices, and a custom structure <code>feature</code>, which includes feature coordinates and <code>LBP</code> (<code>local binary pattern</code>) value. Here is output of the sample:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">%YAML:1.0</span></span><br><span class="line"><span class="attr">frameCount:</span> <span class="number">5</span></span><br><span class="line"><span class="attr">calibrationDate:</span> <span class="string">"Sun Dec  3 14:59:13 2017\n"</span></span><br><span class="line"><span class="attr">cameraMatrix:</span> <span class="type">!!opencv</span><span class="bullet">-matrix</span></span><br><span class="line"><span class="attr">   rows:</span> <span class="number">3</span></span><br><span class="line"><span class="attr">   cols:</span> <span class="number">3</span></span><br><span class="line"><span class="attr">   dt:</span> <span class="string">d</span></span><br><span class="line"><span class="attr">   data:</span> <span class="string">[</span> <span class="number">1000.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">320.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">1000.</span><span class="string">,</span> <span class="number">240.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">1.</span> <span class="string">]</span></span><br><span class="line"><span class="attr">distCoeffs:</span> <span class="type">!!opencv</span><span class="bullet">-matrix</span></span><br><span class="line"><span class="attr">   rows:</span> <span class="number">5</span></span><br><span class="line"><span class="attr">   cols:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">   dt:</span> <span class="string">d</span></span><br><span class="line"><span class="attr">   data:</span> <span class="string">[</span> <span class="number">1.0000000000000001e-01</span><span class="string">,</span> <span class="number">1.0000000000000000e-02</span><span class="string">,</span></span><br><span class="line"><span class="bullet">       -</span><span class="number">1.0000000000000000e-03</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">0.</span> <span class="string">]</span></span><br><span class="line"><span class="attr">features:</span></span><br><span class="line"><span class="bullet">   -</span> <span class="string">&#123;</span> <span class="attr">x:103,</span> <span class="attr">y:166,</span> <span class="attr">lbp:[</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span> <span class="string">]</span> <span class="string">&#125;</span></span><br><span class="line"><span class="bullet">   -</span> <span class="string">&#123;</span> <span class="attr">x:115,</span> <span class="attr">y:113,</span> <span class="attr">lbp:[</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span> <span class="string">]</span> <span class="string">&#125;</span></span><br><span class="line"><span class="bullet">   -</span> <span class="string">&#123;</span> <span class="attr">x:586,</span> <span class="attr">y:12,</span> <span class="attr">lbp:[</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">0</span> <span class="string">]</span> <span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;To read the previously written <code>XML</code> or <code>YAML</code> file, do the following:</p>
+<ol>
+<li>Open the file storage using <code>FileStorage::FileStorage()</code> constructor or <code>FileStorage::open()</code> method. In the current implementation the whole file is parsed and the whole representation of file storage is built in memory as a hierarchy of file nodes.</li>
+<li>Read the data you are interested in. Use <code>FileStorage::operator []()</code>, <code>FileNode::operator []()</code> and/or <code>FileNodeIterator</code>.</li>
+<li>Close the storage using <code>FileStorage::release()</code>.</li>
+</ol>
+<p>&emsp;&emsp;Here is how to read the file created by the code sample above:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"iostream"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span>, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="function">FileStorage <span class="title">fs2</span> <span class="params">( <span class="string">"test.yml"</span>, FileStorage::READ )</span></span>;</span><br><span class="line">    <span class="comment">/* first method: use (type) operator on FileNode. */</span></span><br><span class="line">    <span class="keyword">int</span> frameCount = ( <span class="keyword">int</span> ) fs2[<span class="string">"frameCount"</span>];</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">string</span> date;</span><br><span class="line">    <span class="comment">/* second method: use FileNode::operator &gt;&gt; */</span></span><br><span class="line">    fs2[<span class="string">"calibrationDate"</span>] &gt;&gt; date;</span><br><span class="line">    Mat cameraMatrix2, distCoeffs2;</span><br><span class="line">    fs2[<span class="string">"cameraMatrix"</span>] &gt;&gt; cameraMatrix2;</span><br><span class="line">    fs2[<span class="string">"distCoeffs"</span>] &gt;&gt; distCoeffs2;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"frameCount: "</span> &lt;&lt; frameCount &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">         &lt;&lt; <span class="string">"calibration date: "</span> &lt;&lt; date &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">         &lt;&lt; <span class="string">"camera matrix: "</span> &lt;&lt; cameraMatrix2 &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">         &lt;&lt; <span class="string">"distortion coeffs: "</span> &lt;&lt; distCoeffs2 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    FileNode features = fs2[<span class="string">"features"</span>];</span><br><span class="line">    FileNodeIterator it = features.begin(), it_end = features.end();</span><br><span class="line">    <span class="keyword">int</span> idx = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;uchar&gt; lbpval;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* iterate through a sequence using FileNodeIterator */</span></span><br><span class="line">    <span class="keyword">for</span> ( ; it != it_end; ++it, idx++ ) &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"feature #"</span> &lt;&lt; idx &lt;&lt; <span class="string">": "</span>;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"x="</span> &lt;&lt; ( <span class="keyword">int</span> ) ( *it ) [<span class="string">"x"</span>] &lt;&lt; <span class="string">", y="</span> &lt;&lt; ( <span class="keyword">int</span> ) ( *it ) [<span class="string">"y"</span>] &lt;&lt; <span class="string">", lbp: ("</span>;</span><br><span class="line">        <span class="comment">/* you can also easily read numerical arrays using FileNode &gt;&gt; std::vector operator. */</span></span><br><span class="line">        ( *it ) [<span class="string">"lbp"</span>] &gt;&gt; lbpval;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ( <span class="keyword">int</span> ) lbpval.size(); i++ ) &#123;</span><br><span class="line">            <span class="built_in">cout</span> &lt;&lt; <span class="string">" "</span> &lt;&lt; ( <span class="keyword">int</span> ) lbpval[i];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">")"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs2.release();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The result is:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">frameCount:</span> <span class="number">5</span></span><br><span class="line"><span class="string">calibration</span> <span class="attr">date:</span> <span class="string">Sun</span> <span class="string">Dec</span>  <span class="number">3</span> <span class="number">14</span><span class="string">:59:13</span> <span class="number">2017</span></span><br><span class="line"><span class="string">camera</span> <span class="attr">matrix:</span> <span class="string">[1000,</span> <span class="number">0</span><span class="string">,</span> <span class="number">320</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">,</span> <span class="number">1000</span><span class="string">,</span> <span class="number">240</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">]</span></span><br><span class="line"><span class="string">distortion</span> <span class="attr">coeffs:</span> <span class="string">[0.1;</span></span><br><span class="line">  <span class="number">0.01</span><span class="string">;</span></span><br><span class="line"><span class="bullet">  -</span><span class="number">0.001</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">]</span></span><br><span class="line"><span class="string">feature</span> <span class="comment">#0: x=103, y=166, lbp: ( 1 0 0 1 0 1 1 0)</span></span><br><span class="line"><span class="string">feature</span> <span class="comment">#1: x=115, y=113, lbp: ( 1 1 1 1 1 1 1 1)</span></span><br><span class="line"><span class="string">feature</span> <span class="comment">#2: x=586, y=12, lbp: ( 1 0 0 1 0 1 0 0)</span></span><br></pre></td></tr></table></figure>
+<h3 id="class-FileStorage"><a href="#class-FileStorage" class="headerlink" title="class FileStorage"></a>class FileStorage</h3><p>&emsp;&emsp;<code>XML/YAML</code> file storage class that encapsulates all the information necessary for writing or reading data to/from a file.</p>
+<h4 id="FileStorage-FileStorage"><a href="#FileStorage-FileStorage" class="headerlink" title="FileStorage::FileStorage"></a>FileStorage::FileStorage</h4><p>&emsp;&emsp;The constructors.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileStorage::FileStorage();</span><br><span class="line">FileStorage::FileStorage ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;source, <span class="keyword">int</span> flags, <span class="keyword">const</span> <span class="built_in">string</span> &amp;encoding = <span class="built_in">string</span>() );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>source</code>: Name of the file to open or the text string to read the data from. Extension of the file (<code>.xml</code> or <code>.yml</code>/<code>.yaml</code>) determines its format (<code>XML</code> or <code>YAML</code> respectively). Also you can append <code>.gz</code> to work with compressed files, for example <code>myHugeMatrix.xml.gz</code>. If both <code>FileStorage::WRITE</code> and <code>FileStorage::MEMORY</code> flags are specified, source is used just to specify the output file format (e.g. <code>mydata.xml</code>, <code>.yml</code> etc.).</li>
+<li><code>flags</code>: Mode of operation. Possible values are:</li>
+</ul>
+<ol>
+<li><code>FileStorage::READ</code> Open the file for reading.</li>
+<li><code>FileStorage::WRITE</code> Open the file for writing.</li>
+<li><code>FileStorage::APPEND</code> Open the file for appending.</li>
+<li><code>FileStorage::MEMORY</code> Read data from source or write data to the internal buffer (which is returned by <code>FileStorage::release</code>).</li>
+</ol>
+<ul>
+<li><code>encoding</code>: Encoding of the file. Note that <code>UTF-16</code> <code>XML</code> encoding is not supported currently and you should use <code>8-bit</code> encoding instead of it.</li>
+</ul>
+<p>&emsp;&emsp;The full constructor opens the file. Alternatively you can use the default constructor and then call <code>FileStorage::open()</code>.</p>
+<h4 id="FileStorage-open"><a href="#FileStorage-open" class="headerlink" title="FileStorage::open"></a>FileStorage::open</h4><p>&emsp;&emsp;Opens a file.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileStorage::open ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;filename, <span class="keyword">int</span> flags, <span class="keyword">const</span> <span class="built_in">string</span> &amp;encoding = <span class="built_in">string</span>() );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>filename</code>: Name of the file to open or the text string to read the data from. Extension of the file (<code>.xml</code> or <code>.yml</code>/<code>.yaml</code>) determines its format (<code>XML</code> or <code>YAML</code> respectively). Also you can append <code>.gz</code> to work with compressed files, for example <code>myHugeMatrix.xml.gz</code>. If both <code>FileStorage::WRITE</code> and <code>FileStorage::MEMORY</code> flags are specified, source is used just to specify the output file format (e.g. <code>mydata.xml</code>, <code>.yml</code> etc.).</li>
+<li><code>flags</code>: Mode of operation.</li>
+<li><code>encoding</code>: Encoding of the file. Note that <code>UTF-16</code> <code>XML</code> encoding is not supported currently and you should use <code>8-bit</code> encoding instead of it.</li>
+</ul>
+<h4 id="FileStorage-isOpened"><a href="#FileStorage-isOpened" class="headerlink" title="FileStorage::isOpened"></a>FileStorage::isOpened</h4><p>&emsp;&emsp;Checks whether the file is opened.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileStorage::isOpened() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the object is associated with the current file and <code>false</code> otherwise.<br>&emsp;&emsp;It is a good practice to call this method after you tried to open a file.</p>
+<h4 id="FileStorage-release"><a href="#FileStorage-release" class="headerlink" title="FileStorage::release"></a>FileStorage::release</h4><p>&emsp;&emsp;Closes the file and releases all the memory buffers.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileStorage::release();</span><br></pre></td></tr></table></figure>
+<p>Call this method after all <code>I/O</code> operations with the storage are finished.</p>
+<h4 id="FileStorage-releaseAndGetString"><a href="#FileStorage-releaseAndGetString" class="headerlink" title="FileStorage::releaseAndGetString"></a>FileStorage::releaseAndGetString</h4><p>&emsp;&emsp;Closes the file and releases all the memory buffers.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">string</span> FileStorage::releaseAndGetString();</span><br></pre></td></tr></table></figure>
+<p>Call this method after all <code>I/O</code> operations with the storage are finished. If the storage was opened for writing data and <code>FileStorage::WRITE</code> was specified</p>
+<h4 id="FileStorage-getFirstTopLevelNode"><a href="#FileStorage-getFirstTopLevelNode" class="headerlink" title="FileStorage::getFirstTopLevelNode"></a>FileStorage::getFirstTopLevelNode</h4><p>&emsp;&emsp;Returns the first element of the <code>top-level</code> mapping.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileStorage::getFirstTopLevelNode() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return The first element of the <code>top-level</code> mapping.</p>
+<h4 id="FileStorage-root"><a href="#FileStorage-root" class="headerlink" title="FileStorage::root"></a>FileStorage::root</h4><p>&emsp;&emsp;Return the <code>top-level</code> mapping.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileStorage::root ( <span class="keyword">int</span> streamidx = <span class="number">0</span> ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>streamidx</code>: Zero-based index of the stream. In most cases there is only one stream in the file. However, YAML supports multiple streams and so there can be several.</li>
+</ul>
+<h4 id="FileStorage-operator"><a href="#FileStorage-operator" class="headerlink" title="FileStorage::operator[]"></a>FileStorage::operator[]</h4><p>&emsp;&emsp;Returns the specified element of the <code>top-level</code> mapping.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileStorage::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;nodename ) <span class="keyword">const</span>;</span><br><span class="line">FileNode FileStorage::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="keyword">char</span> *nodename ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>nodename</code>: Name of the file node.</li>
+</ul>
+<h4 id="FileStorage-operator-1"><a href="#FileStorage-operator-1" class="headerlink" title="FileStorage::operator*"></a>FileStorage::operator*</h4><p>&emsp;&emsp;Returns the obsolete <code>C</code> <code>FileStorage</code> structure.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CvFileStorage *FileStorage::<span class="keyword">operator</span>*();</span><br><span class="line"><span class="keyword">const</span> CvFileStorage *FileStorage::<span class="keyword">operator</span>*() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileStorage-writeRaw"><a href="#FileStorage-writeRaw" class="headerlink" title="FileStorage::writeRaw"></a>FileStorage::writeRaw</h4><p>&emsp;&emsp;Writes multiple numbers.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileStorage::writeRaw ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;fmt, <span class="keyword">const</span> uchar *vec, <span class="keyword">size_t</span> len );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fmt</code>: Specification of each array element that has the following format (<code>[count]{&#39;u&#39;|&#39;c&#39;|&#39;w&#39;|&#39;s&#39;|&#39;i&#39;|&#39;f&#39;|&#39;d&#39;}</code>) where the characters correspond to fundamental <code>C++</code> types:</li>
+</ul>
+<ol>
+<li><code>u</code>: <code>8-bit</code> unsigned number.</li>
+<li><code>c</code>: <code>8-bit</code> signed number.</li>
+<li><code>w</code>: <code>16-bit</code> unsigned number.</li>
+<li><code>s</code>: <code>16-bit</code> signed number.</li>
+<li><code>i</code>: <code>32-bit</code> signed number.</li>
+<li><code>f</code>: single precision <code>floating-point</code> number.</li>
+<li><code>d</code>: double precision <code>floating-point</code> number.</li>
+</ol>
+<p>&emsp;&emsp;<code>count</code> is the optional counter of values of a given type. For example, <code>2if</code> means that each array element is a structure of <code>2</code> integers, followed by a <code>single-precision</code> <code>floating-point</code> number. The equivalent notations of the above specification are <code>(space)iif(space)</code>, <code>(space)2i1f(space)</code> and so forth. Other examples: <code>u</code> means that the array consists of bytes, and <code>2d</code> means the array consists of pairs of doubles.</p>
+<ul>
+<li><code>vec</code>: Pointer to the written array.</li>
+<li><code>len</code>: Number of the uchar elements to write.</li>
+</ul>
+<p>&emsp;&emsp;Writes one or more numbers of the specified format to the currently written structure. Usually it is more convenient to use <code>operator &lt;&lt;()</code> instead of this method.</p>
+<h4 id="FileStorage-writeObj"><a href="#FileStorage-writeObj" class="headerlink" title="FileStorage::writeObj"></a>FileStorage::writeObj</h4><p>&emsp;&emsp;Writes the registered <code>C</code> structure (<code>CvMat</code>, <code>CvMatND</code>, <code>CvSeq</code>).</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileStorage::writeObj ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;name, <span class="keyword">const</span> <span class="keyword">void</span> *obj );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>name</code>: Name of the written object.</li>
+<li><code>obj</code>: Pointer to the object.</li>
+</ul>
+<h4 id="FileStorage-getDefaultObjectName"><a href="#FileStorage-getDefaultObjectName" class="headerlink" title="FileStorage::getDefaultObjectName"></a>FileStorage::getDefaultObjectName</h4><p>&emsp;&emsp;Returns the normalized object name for the specified name of a file.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="built_in">string</span> FileStorage::getDefaultObjectName ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;filename );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>filename</code>: Name of a file.</li>
+</ul>
+<h4 id="operator-lt-lt"><a href="#operator-lt-lt" class="headerlink" title="operator &lt;&lt;"></a>operator &lt;&lt;</h4><p>&emsp;&emsp;Writes data to a file storage.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileStorage &amp;<span class="keyword">operator</span>&lt;&lt; ( FileStorage &amp;fs, <span class="keyword">const</span> _Tp &amp;value );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileStorage &amp;<span class="keyword">operator</span>&lt;&lt; ( FileStorage &amp;fs, <span class="keyword">const</span> <span class="built_in">vector</span>&lt;_Tp&gt; &amp;vec );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fs</code>: Opened file storage to write data.</li>
+<li><code>value</code>: Value to be written to the file storage.</li>
+<li><code>vec</code>: Vector of values to be written to the file storage.</li>
+</ul>
+<p>&emsp;&emsp;It is the main function to write data to a file storage.</p>
+<h4 id="operator-gt-gt"><a href="#operator-gt-gt" class="headerlink" title="operator &gt;&gt;"></a>operator &gt;&gt;</h4><p>&emsp;&emsp;Reads data from a file storage.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; <span class="keyword">void</span> <span class="keyword">operator</span>&gt;&gt; ( <span class="keyword">const</span> FileNode &amp;n, _Tp &amp;value );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; <span class="keyword">void</span> <span class="keyword">operator</span>&gt;&gt; ( <span class="keyword">const</span> FileNode &amp;n, <span class="built_in">vector</span>&lt;_Tp&gt; &amp;vec );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileNodeIterator &amp;<span class="keyword">operator</span>&gt;&gt; ( FileNodeIterator &amp;it, _Tp &amp;value );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileNodeIterator &amp;<span class="keyword">operator</span>&gt;&gt; ( FileNodeIterator &amp;it, <span class="built_in">vector</span>&lt;_Tp&gt; &amp;vec );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>n</code>: Node from which data will be read.</li>
+<li><code>it</code>: Iterator from which data will be read.</li>
+<li><code>value</code>: Value to be read from the file storage.</li>
+<li><code>vec</code>: Vector of values to be read from the file storage.</li>
+</ul>
+<p>&emsp;&emsp;It is the main function to read data from a file storage.</p>
+<h3 id="class-FileNode"><a href="#class-FileNode" class="headerlink" title="class FileNode"></a>class FileNode</h3><p>&emsp;&emsp;<code>File Storage Node</code> class. The node is used to store each and every element of the file storage opened for reading. When <code>XML/YAML</code> file is read, it is first parsed and stored in the memory as a hierarchical collection of nodes. Each node can be a <code>leaf</code> that is contain a single number or a string, or be a collection of other nodes. There can be named collections (<code>mappings</code>) where each element has a name and it is accessed by a name, and ordered collections (<code>sequences</code>) where elements do not have names but rather accessed by index. Type of the file node can be determined using <code>FileNode::type()</code> method.<br>&emsp;&emsp;Note that file nodes are only used for navigating file storages opened for reading. When a file storage is opened for writing, no data is stored in memory after it is written.</p>
+<h4 id="FileNode-FileNode"><a href="#FileNode-FileNode" class="headerlink" title="FileNode::FileNode"></a>FileNode::FileNode</h4><p>&emsp;&emsp;The constructors.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNode::FileNode();</span><br><span class="line">FileNode::FileNode ( <span class="keyword">const</span> CvFileStorage *fs, <span class="keyword">const</span> CvFileNode *node );</span><br><span class="line">FileNode::FileNode ( <span class="keyword">const</span> FileNode &amp;node );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fs</code>: Pointer to the obsolete file storage structure.</li>
+<li><code>node</code>: File node to be used as initialization for the created file node.</li>
+</ul>
+<p>&emsp;&emsp;These constructors are used to create a default file node, construct it from obsolete structures or from the another file node.</p>
+<h4 id="FileNode-operator"><a href="#FileNode-operator" class="headerlink" title="FileNode::operator[]"></a>FileNode::operator[]</h4><p>&emsp;&emsp;Returns element of a mapping node or a sequence node.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileNode::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;nodename ) <span class="keyword">const</span>;</span><br><span class="line">FileNode FileNode::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="keyword">char</span> *nodename ) <span class="keyword">const</span>;</span><br><span class="line">FileNode FileNode::<span class="keyword">operator</span>[] ( <span class="keyword">int</span> i ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>nodename</code>: Name of an element in the mapping node.</li>
+<li><code>i</code>: Index of an element in the sequence node.</li>
+</ul>
+<h4 id="FileNode-type"><a href="#FileNode-type" class="headerlink" title="FileNode::type"></a>FileNode::type</h4><p>&emsp;&emsp;Returns type of the node.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> FileNode::type() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Possible values are:</p>
+<ul>
+<li><code>FileNode::NONE</code>: Empty node.</li>
+<li><code>FileNode::INT</code>: Integer.</li>
+<li><code>FileNode::REAL</code>: <code>Floating-point</code> number.</li>
+<li><code>FileNode::FLOAT</code>: <code>Synonym</code> or <code>REAL</code>.</li>
+<li><code>FileNode::STR</code>: Text string in <code>UTF-8</code> encoding.</li>
+<li><code>FileNode::STRING</code>: Synonym for <code>STR</code>.</li>
+<li><code>FileNode::REF</code>: Integer of type <code>size_t</code>. Typically used for storing complex dynamic structures where some elements reference the others.</li>
+<li><code>FileNode::SEQ</code>: Sequence.</li>
+<li><code>FileNode::MAP</code>: Mapping.</li>
+<li><code>FileNode::FLOW</code>: Compact representation of a sequence or mapping. Used only by the <code>YAML</code> writer.</li>
+<li><code>FileNode::USER</code>: Registered object (e.g. a matrix).</li>
+<li><code>FileNode::EMPTY</code>: Empty structure (sequence or mapping).</li>
+<li><code>FileNode::NAMED</code>: The node has a name (i.e. it is an element of a mapping).</li>
+</ul>
+<h4 id="FileNode-empty"><a href="#FileNode-empty" class="headerlink" title="FileNode::empty"></a>FileNode::empty</h4><p>&emsp;&emsp;Checks whether the node is empty.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::empty() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is empty.</p>
+<h4 id="FileNode-isNone"><a href="#FileNode-isNone" class="headerlink" title="FileNode::isNone"></a>FileNode::isNone</h4><p>&emsp;&emsp;Checks whether the node is a <code>none</code> object.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isNone() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is a <code>none</code> object.</p>
+<h4 id="FileNode-isSeq"><a href="#FileNode-isSeq" class="headerlink" title="FileNode::isSeq"></a>FileNode::isSeq</h4><p>&emsp;&emsp;Checks whether the node is a sequence.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isSeq() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is a sequence.</p>
+<h4 id="FileNode-isMap"><a href="#FileNode-isMap" class="headerlink" title="FileNode::isMap"></a>FileNode::isMap</h4><p>&emsp;&emsp;Checks whether the node is a mapping.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isMap() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is a mapping.</p>
+<h4 id="FileNode-isInt"><a href="#FileNode-isInt" class="headerlink" title="FileNode::isInt"></a>FileNode::isInt</h4><p>&emsp;&emsp;Checks whether the node is an integer.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isInt() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is an integer.</p>
+<h4 id="FileNode-isReal"><a href="#FileNode-isReal" class="headerlink" title="FileNode::isReal"></a>FileNode::isReal</h4><p>&emsp;&emsp;Checks whether the node is a <code>floating-point</code> number.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isReal() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is a <code>floating-point</code> number.</p>
+<h4 id="FileNode-isString"><a href="#FileNode-isString" class="headerlink" title="FileNode::isString"></a>FileNode::isString</h4><p>&emsp;&emsp;Checks whether the node is a text string.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isString() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node is a text string.</p>
+<h4 id="FileNode-isNamed"><a href="#FileNode-isNamed" class="headerlink" title="FileNode::isNamed"></a>FileNode::isNamed</h4><p>&emsp;&emsp;Checks whether the node has a name.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isNamed() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return <code>true</code> if the node has a name.</p>
+<h4 id="FileNode-name"><a href="#FileNode-name" class="headerlink" title="FileNode::name"></a>FileNode::name</h4><p>&emsp;&emsp;Returns the node name.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">string</span> FileNode::name() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return the node name or an empty string if the node is nameless.</p>
+<h4 id="FileNode-size"><a href="#FileNode-size" class="headerlink" title="FileNode::size"></a>FileNode::size</h4><p>&emsp;&emsp;Returns the number of elements in the node.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">size_t</span> FileNode::size() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<p>Return the number of elements in the node, if it is a sequence or mapping, or <code>1</code> otherwise.</p>
+<h4 id="FileNode-operator-int"><a href="#FileNode-operator-int" class="headerlink" title="FileNode::operator int"></a>FileNode::operator int</h4><p>&emsp;&emsp;Returns the node content as an integer.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">int</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
+<p>Return the node content as an integer. If the node stores a <code>floating-point</code> number, it is rounded.</p>
+<h4 id="FileNode-operator-float"><a href="#FileNode-operator-float" class="headerlink" title="FileNode::operator float"></a>FileNode::operator float</h4><p>&emsp;&emsp;Returns the node content as float.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">float</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-operator-double"><a href="#FileNode-operator-double" class="headerlink" title="FileNode::operator double"></a>FileNode::operator double</h4><p>&emsp;&emsp;Returns the node content as double.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">double</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-operator-string"><a href="#FileNode-operator-string" class="headerlink" title="FileNode::operator string"></a>FileNode::operator string</h4><p>&emsp;&emsp;Returns the node content as text string.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">string</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-operator-1"><a href="#FileNode-operator-1" class="headerlink" title="FileNode::operator*"></a>FileNode::operator*</h4><p>&emsp;&emsp;Returns pointer to the underlying obsolete file node structure.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CvFileNode *FileNode::<span class="keyword">operator</span>*();</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-begin"><a href="#FileNode-begin" class="headerlink" title="FileNode::begin"></a>FileNode::begin</h4><p>&emsp;&emsp;Returns the iterator pointing to the first node element.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator FileNode::begin() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-end"><a href="#FileNode-end" class="headerlink" title="FileNode::end"></a>FileNode::end</h4><p>&emsp;&emsp;Returns the iterator pointing to the element following the last node element.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator FileNode::end() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNode-readRaw"><a href="#FileNode-readRaw" class="headerlink" title="FileNode::readRaw"></a>FileNode::readRaw</h4><p>&emsp;&emsp;Reads node elements to the buffer with the specified format.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileNode::readRaw ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;fmt, uchar *vec, <span class="keyword">size_t</span> len ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fmt</code>: Specification of each array element. It has the same format as in <code>FileStorage::writeRaw()</code>.</li>
+<li><code>vec</code>: Pointer to the destination array.</li>
+<li><code>len</code>: Number of elements to read. If it is greater than number of remaining elements then all of them will be read.</li>
+</ul>
+<p>Usually it is more convenient to use <code>operator &gt;&gt;()</code> instead of this method.</p>
+<h4 id="FileNode-readObj"><a href="#FileNode-readObj" class="headerlink" title="FileNode::readObj"></a>FileNode::readObj</h4><p>&emsp;&emsp;Reads the registered object.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> *FileNode::readObj() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h3 id="class-FileNodeIterator"><a href="#class-FileNodeIterator" class="headerlink" title="class FileNodeIterator"></a>class FileNodeIterator</h3><p>&emsp;&emsp;The class <code>FileNodeIterator</code> is used to iterate through sequences and mappings. A standard <code>STL</code> notation, with <code>node.begin()</code>, <code>node.end()</code> denoting the beginning and the end of a sequence, stored in node.</p>
+<h4 id="FileNodeIterator-FileNodeIterator"><a href="#FileNodeIterator-FileNodeIterator" class="headerlink" title="FileNodeIterator::FileNodeIterator"></a>FileNodeIterator::FileNodeIterator</h4><p>&emsp;&emsp;The constructors.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator::FileNodeIterator();</span><br><span class="line">FileNodeIterator::FileNodeIterator ( <span class="keyword">const</span> CvFileStorage *fs, <span class="keyword">const</span> CvFileNode *node, <span class="keyword">size_t</span> ofs = <span class="number">0</span> );</span><br><span class="line">FileNodeIterator::FileNodeIterator ( <span class="keyword">const</span> FileNodeIterator &amp;it );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fs</code>: File storage for the iterator.</li>
+<li><code>node</code>: File node for the iterator.</li>
+<li><code>ofs</code>: Index of the element in the node. The created iterator will point to this element.</li>
+<li><code>it</code>: Iterator to be used as initialization for the created iterator.</li>
+</ul>
+<p>These constructors are used to create a default iterator, set it to specific element in a file node or construct it from another iterator.</p>
+<h4 id="FileNodeIterator-operator"><a href="#FileNodeIterator-operator" class="headerlink" title="FileNodeIterator::operator*"></a>FileNodeIterator::operator*</h4><p>&emsp;&emsp;Returns the currently observed element.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileNodeIterator::<span class="keyword">operator</span>*() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNodeIterator-operator-gt"><a href="#FileNodeIterator-operator-gt" class="headerlink" title="FileNodeIterator::operator-&gt;"></a>FileNodeIterator::operator-&gt;</h4><p>&emsp;&emsp;Accesses methods of the currently observed element.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileNodeIterator::<span class="keyword">operator</span>-&gt;() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="FileNodeIterator-operator-1"><a href="#FileNodeIterator-operator-1" class="headerlink" title="FileNodeIterator::operator ++"></a>FileNodeIterator::operator ++</h4><p>&emsp;&emsp;Moves iterator to the next node.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>++();</span><br><span class="line">FileNodeIterator FileNodeIterator::<span class="keyword">operator</span>++ ( <span class="keyword">int</span> None );</span><br></pre></td></tr></table></figure>
+<h4 id="FileNodeIterator-operator-—"><a href="#FileNodeIterator-operator-—" class="headerlink" title="FileNodeIterator::operator —"></a>FileNodeIterator::operator —</h4><p>&emsp;&emsp;Moves iterator to the previous node.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>--();</span><br><span class="line">FileNodeIterator FileNodeIterator::<span class="keyword">operator</span>-- ( <span class="keyword">int</span> None );</span><br></pre></td></tr></table></figure>
+<h4 id="FileNodeIterator-operator-2"><a href="#FileNodeIterator-operator-2" class="headerlink" title="FileNodeIterator::operator +="></a>FileNodeIterator::operator +=</h4><p>&emsp;&emsp;Moves iterator forward by the specified offset.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>+= ( <span class="keyword">int</span> ofs );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>ofs</code>: Offset (possibly negative) to move the iterator.</li>
+</ul>
+<h4 id="FileNodeIterator-operator-3"><a href="#FileNodeIterator-operator-3" class="headerlink" title="FileNodeIterator::operator -="></a>FileNodeIterator::operator -=</h4><p>&emsp;&emsp;Moves iterator backward by the specified offset (possibly negative).</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>-= ( <span class="keyword">int</span> ofs );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>ofs</code>: Offset (possibly negative) to move the iterator.</li>
+</ul>
+<h4 id="FileNodeIterator-readRaw"><a href="#FileNodeIterator-readRaw" class="headerlink" title="FileNodeIterator::readRaw"></a>FileNodeIterator::readRaw</h4><p>&emsp;&emsp;Reads node elements to the buffer with the specified format.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::readRaw (</span><br><span class="line">    <span class="keyword">const</span> <span class="built_in">string</span> &amp;fmt, uchar *vec,</span><br><span class="line">    <span class="keyword">size_t</span> maxCount = ( <span class="keyword">size_t</span> ) INT_MAX );</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>fmt</code>: Specification of each array element. It has the same format as in <code>FileStorage::writeRaw()</code>.</li>
+<li><code>vec</code>: Pointer to the destination array.</li>
+<li><code>maxCount</code>: Number of elements to read. If it is greater than number of remaining elements then all of them will be read.</li>
+</ul>
+<p>Usually it is more convenient to use <code>operator &gt;&gt;()</code> instead of this method.</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/OpenCV基本数据类型/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1417,895 +2041,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/23/Qt应用示例/Qt窗口间的相互切换/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/23/Qt应用示例/Qt窗口间的相互切换/" itemprop="url">Qt窗口间的相互切换</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-23T11:35:55+08:00">
-                2019-02-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt应用示例/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt应用示例</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;在用<code>Qt</code>设计<code>GUI</code>时，经常要设计两个窗口之间的相互切换，即以从一个窗口跳转到另一个窗口，然后又从另一个窗口跳转回原窗口。下面来介绍具体的实现方法。<br>&emsp;&emsp;首先建立<code>Qt</code>的<code>Gui</code>应用，项目名是<code>TwoWindowsHandoff</code>，基类选择<code>QMainWindow</code>。然后右击项目，添加<code>Qt</code>设计器界面类，类名取为<code>logindialog</code>。我们在这里假设一个窗口是登录对话框，另一个窗口是主界面；登录对话框有两个按钮，分别更改显示文本为<code>login</code>、<code>exit</code>；主界面也有两个按钮，分别更改显示文本为<code>relogin</code>、<code>quit</code>。我们最终的实现功能是：程序运行时，出现登录对话框，点击<code>login</code>按钮进入主界面且登录对话框消失；在主界面点击<code>relogin</code>按钮回到登录对话框且主界面消失，点击<code>exit</code>按钮或<code>quit</code>按钮都会退出程序。<br>&emsp;&emsp;我们可以通过<code>Qt Designer</code>来在两个窗口上分别添加上述按钮，主要的问题是如何设计信号和槽。我们先设计两个窗口的退出按钮：分别右击<code>exit</code>和<code>quit</code>按钮，转到槽，在槽函数中发射<code>quit</code>信号，然后将信号与<code>QApplication</code>对象的<code>quit</code>槽函数关联，这样就设计好了两个退出按钮的退出操作。对于<code>login</code>按钮，我们在其槽函数中发射<code>showmainwindow</code>信号，隐藏对话框，然后在主窗口类中定义对应的槽函数<code>receivelogin</code>，在该函数中应该显示主窗口。同理，对于<code>relogin</code>窗口，我们在其槽函数中发射<code>dlgshow</code>信号，隐藏主窗口，然后在登录对话框类中定义对应的槽函数<code>receivelshow</code>，在该函数中应该显示登录对话框。具体的程序实现如下：<br>&emsp;&emsp;<code>mainwindow.h</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MAINWINDOW_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAINWINDOW_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QMainWindow&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">namespace</span> Ui &#123;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">MainWindow</span>;</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MainWindow</span> :</span> <span class="keyword">public</span> QMainWindow &#123;</span><br><span class="line">    Q_OBJECT</span><br><span class="line">​</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">MainWindow</span> <span class="params">( QWidget *parent = <span class="number">0</span> )</span></span>;</span><br><span class="line">    ~MainWindow();</span><br><span class="line">​</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    Ui::MainWindow *ui;</span><br><span class="line">​</span><br><span class="line">  <span class="keyword">private</span> slots:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">receivelogin</span><span class="params">()</span></span>; <span class="comment">/* 与login中发射的信号关联的槽函数 */</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">on_pushButton_clicked</span><span class="params">()</span></span>; <span class="comment">/* 与relogin的click关联的槽函数 */</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">on_pushButton_2_clicked</span><span class="params">()</span></span>; <span class="comment">/* 与quit的click关联的槽函数 */</span></span><br><span class="line">signals:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">dlgshow</span><span class="params">()</span></span>; <span class="comment">/* 显示登录对话框信号 */</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">quit</span><span class="params">()</span></span>; <span class="comment">/* 退出信号 */</span></span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">// MAINWINDOW_H</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>mydialog.h</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MYDIALOG_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MYDIALOG_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QDialog&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">namespace</span> Ui &#123;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">MyDialog</span>;</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyDialog</span> :</span> <span class="keyword">public</span> QDialog &#123;</span><br><span class="line">    Q_OBJECT</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">MyDialog</span> <span class="params">( QWidget *parent = <span class="number">0</span> )</span></span>;</span><br><span class="line">    ~MyDialog();</span><br><span class="line">​</span><br><span class="line"><span class="keyword">private</span> slots:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">on_pushButton_clicked</span><span class="params">()</span></span>; <span class="comment">/* 与login关联的槽函数 */</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">receiveshow</span><span class="params">()</span></span>; <span class="comment">/* 与relogin中发射的信号关联的槽函数 */</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">on_pushButton_2_clicked</span><span class="params">()</span></span>; <span class="comment">/* 与exit关联的槽函数 */</span></span><br><span class="line">signals:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">showmainwindow</span><span class="params">()</span></span>; <span class="comment">/* 显示主窗口信号 */</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">quit</span><span class="params">()</span></span>; <span class="comment">/* 退出信号 */</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    Ui::MyDialog *ui;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">// MYDIALOG_H</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>main.cpp</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QtGui/QApplication&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"mainwindow.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"mydialog.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span> </span>&#123;</span><br><span class="line">    <span class="function">QApplication <span class="title">a</span> <span class="params">( argc, argv )</span></span>;</span><br><span class="line">    MainWindow w;</span><br><span class="line">    MyDialog dlg;</span><br><span class="line">    dlg.show();</span><br><span class="line">    <span class="comment">/* 信号与槽之间进行关联 */</span></span><br><span class="line">    QObject::connect ( &amp;dlg, SIGNAL ( showmainwindow() ), &amp;w, SLOT ( receivelogin() ) );</span><br><span class="line">    QObject::connect ( &amp;w, SIGNAL ( dlgshow() ), &amp;dlg, SLOT ( receiveshow() ) );</span><br><span class="line">    QObject::connect ( &amp;w, SIGNAL ( quit() ), &amp;a, SLOT ( quit() ) );</span><br><span class="line">    QObject::connect ( &amp;dlg, SIGNAL ( quit() ), &amp;a, SLOT ( quit() ) );</span><br><span class="line">    <span class="keyword">return</span> a.exec();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>mainwindow.cpp</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"mainwindow.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ui_mainwindow.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QPushButton&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QHBoxLayout&gt;</span></span></span><br><span class="line">​</span><br><span class="line">MainWindow::MainWindow ( QWidget *parent ) : QMainWindow ( parent ), ui ( <span class="keyword">new</span> Ui::MainWindow ) &#123;</span><br><span class="line">    ui-&gt;setupUi ( <span class="keyword">this</span> ); <span class="comment">/* 默认是类名 */</span></span><br><span class="line">    setWindowTitle ( tr ( <span class="string">"myMainWindow"</span> ) );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">MainWindow::~MainWindow() &#123;</span><br><span class="line">    <span class="keyword">delete</span> ui;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::receivelogin() &#123;</span><br><span class="line">    <span class="keyword">this</span>-&gt;show(); <span class="comment">/* 显示主窗口 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::on_pushButton_clicked() &#123;</span><br><span class="line">    <span class="keyword">this</span>-&gt;hide(); <span class="comment">/* 隐藏主窗口 */</span></span><br><span class="line">    <span class="function">emit <span class="title">dlgshow</span><span class="params">()</span></span>; <span class="comment">/* 发射显示登录对话框信号 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::on_pushButton_2_clicked() &#123;</span><br><span class="line">    <span class="function">emit <span class="title">quit</span><span class="params">()</span></span>; <span class="comment">/* 发射退出信号 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>mydialog.cpp</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"mydialog.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ui_mydialog.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QHBoxLayout&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;mainwindow.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line">MyDialog::MyDialog ( QWidget *parent ) :   QDialog ( parent ),  ui ( <span class="keyword">new</span> Ui::MyDialog ) &#123;</span><br><span class="line">    ui-&gt;setupUi ( <span class="keyword">this</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">MyDialog::~MyDialog() &#123;</span><br><span class="line">    <span class="keyword">delete</span> ui;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MyDialog::on_pushButton_clicked() &#123;</span><br><span class="line">    <span class="keyword">this</span>-&gt;hide(); <span class="comment">/* 隐藏登录对话框 */</span></span><br><span class="line">    <span class="function">emit <span class="title">showmainwindow</span><span class="params">()</span></span>; <span class="comment">/* 显示主窗口 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MyDialog::receiveshow() &#123;</span><br><span class="line">    <span class="keyword">this</span>-&gt;show(); <span class="comment">/* 显示登录对话框 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MyDialog::on_pushButton_2_clicked() &#123;</span><br><span class="line">    <span class="function">emit <span class="title">quit</span><span class="params">()</span></span>; <span class="comment">/* 发射退出信号 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/02/23/Qt应用示例/Qt窗口间的相互切换/1.png" height="198" width="492"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/23/Qt语法详解/Qt之LineEdit/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/23/Qt语法详解/Qt之LineEdit/" itemprop="url">Qt之LineEdit</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-23T10:45:35+08:00">
-                2019-02-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="行编辑器"><a href="#行编辑器" class="headerlink" title="行编辑器"></a>行编辑器</h3><p>&emsp;&emsp;<code>mywidget.h</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MYWIDGET_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MYWIDGET_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QWidget&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">namespace</span> Ui &#123;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">MyWidget</span>;</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyWidget</span> :</span> <span class="keyword">public</span> QWidget &#123;</span><br><span class="line">    Q_OBJECT</span><br><span class="line">​</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">MyWidget</span> <span class="params">( QWidget *parent = <span class="number">0</span> )</span></span>;</span><br><span class="line">    ~MyWidget();</span><br><span class="line">​</span><br><span class="line"><span class="keyword">private</span> slots:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">on_lineEdit2_returnPressed</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">on_lineEdit3_returnPressed</span><span class="params">()</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    Ui::MyWidget *ui;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">// MYWIDGET_H</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>mywidget.cpp</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"mywidget.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"ui_mywidget.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QDebug&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QCompleter&gt;</span></span></span><br><span class="line">​</span><br><span class="line">MyWidget::MyWidget ( QWidget *parent ) : QWidget ( parent ), ui ( <span class="keyword">new</span> Ui::MyWidget ) &#123;</span><br><span class="line">    ui-&gt;setupUi ( <span class="keyword">this</span> );</span><br><span class="line">    QValidator *validator = <span class="keyword">new</span> QIntValidator ( <span class="number">100</span>, <span class="number">999</span>, <span class="keyword">this</span> ); <span class="comment">/* 新建验证器，指定范围为100至999 */</span></span><br><span class="line">    ui-&gt;lineEdit3-&gt;setValidator ( validator ); <span class="comment">/* 在行编辑器中使用验证器 */</span></span><br><span class="line">    QStringList wordList;</span><br><span class="line">    wordList &lt;&lt; <span class="string">"Qt"</span> &lt;&lt; <span class="string">"Qt Creator"</span> &lt;&lt; tr ( <span class="string">"你好"</span> );</span><br><span class="line">    QCompleter *completer = <span class="keyword">new</span> QCompleter ( wordList, <span class="keyword">this</span> ); <span class="comment">/* 新建自动完成器 */</span></span><br><span class="line">    completer-&gt;setCaseSensitivity ( Qt::CaseInsensitive ); <span class="comment">/* 设置大小写不敏感 */</span></span><br><span class="line">    ui-&gt;lineEdit4-&gt;setCompleter ( completer );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">MyWidget::~MyWidget() &#123;</span><br><span class="line">    <span class="keyword">delete</span> ui;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MyWidget::on_lineEdit2_returnPressed() &#123; <span class="comment">/* 回车键按下信号的槽 */</span></span><br><span class="line">    ui-&gt;lineEdit3-&gt;setFocus(); <span class="comment">/* 让lineEdit3获得光标 */</span></span><br><span class="line">    qDebug() &lt;&lt; ui-&gt;lineEdit2-&gt;text(); <span class="comment">/* 输出lineEdit2的内容 */</span></span><br><span class="line">    qDebug() &lt;&lt; ui-&gt;lineEdit2-&gt;displayText(); <span class="comment">/* 输出lineEdit2显示的内容 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MyWidget::on_lineEdit3_returnPressed() &#123; <span class="comment">/* 回车键按下信号的槽 */</span></span><br><span class="line">    ui-&gt;lineEdit4-&gt;setFocus();</span><br><span class="line">    qDebug() &lt;&lt; ui-&gt;lineEdit3-&gt;text();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/02/23/Qt语法详解/Qt之LineEdit/1.png" height="230" width="284"></p>
-<hr>
-<h3 id="lineEdit-gt-textChanged信号不触发的原因"><a href="#lineEdit-gt-textChanged信号不触发的原因" class="headerlink" title="lineEdit-&gt;textChanged信号不触发的原因"></a>lineEdit-&gt;textChanged信号不触发的原因</h3><p>&emsp;&emsp;项目要求是当<code>lineEdit</code>中的内容发生改变时，激活<code>find</code>按纽。但实际运行结果却不行，发现是自己的<code>connect</code>语句写错了：</p>
-<p><img src="/2019/02/23/Qt语法详解/Qt之LineEdit/2.png"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// connect ( lineEdit, SIGNAL ( textChanged ( QString &amp; ) ), this, SLOT ( enableFindButton ( QString &amp; ) ) ); /* 错误写法 */</span></span><br><span class="line">connect ( lineEdit, SIGNAL ( textChanged ( <span class="keyword">const</span> QString &amp; ) ), <span class="keyword">this</span>, SLOT ( enableFindButton ( <span class="keyword">const</span> QString &amp; ) ) );</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="Qt设置密码输入框"><a href="#Qt设置密码输入框" class="headerlink" title="Qt设置密码输入框"></a>Qt设置密码输入框</h3><p>&emsp;&emsp;<code>QLineEdit</code>类自带<code>public function: void setEchoMode(EchoMode)</code>以实现密码输入框效果。<code>EchoMode</code>的枚举值如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Constant</th>
-<th>Value</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>QLineEdit::Normal</code></td>
-<td><code>0</code></td>
-<td>正常显示形式，也就是一边输入一边显示</td>
-</tr>
-<tr>
-<td><code>QLineEdit::NoEcho</code></td>
-<td><code>1</code></td>
-<td>不会显示任何字符，包括字符串长度</td>
-</tr>
-<tr>
-<td><code>QLineEdit::Password</code></td>
-<td><code>2</code></td>
-<td>根据平台使用模糊字符代替你实际输入的字符</td>
-</tr>
-<tr>
-<td><code>QLineEdit::PasswordEchoOnEdit</code></td>
-<td><code>3</code></td>
-<td>当你处于输入状态的时候，是正常显示字符。输入完毕之后使用<code>Password</code>形式隐藏字符</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>通过<code>EchoMode</code>提供枚举值有选择的设置<code>setEchoMode(EchoMode)</code>，以达到自己想要的效果。</p>
-<hr>
-<ul>
-<li><code>text()</code>：获得<code>lineEdit</code>中的内容，为<code>QString</code>类型。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/22/Qt语法详解/Qt之QTreeWidget/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/22/Qt语法详解/Qt之QTreeWidget/" itemprop="url">Qt之QTreeWidget</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-22T13:17:33+08:00">
-                2019-02-22
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>Qt</code>中实现树形结构可以使用<code>QTreeWidget</code>类，也可以使用<code>QTreeView</code>类，<code>QTreeWidget</code>继承自<code>QTreeView</code>类，其效果如下：</p>
-<p><img src="/2019/02/22/Qt语法详解/Qt之QTreeWidget/1.png"></p>
-<h3 id="树形结构实现"><a href="#树形结构实现" class="headerlink" title="树形结构实现"></a>树形结构实现</h3><p>&emsp;&emsp;<code>QT</code>的<code>GUI</code>中有<code>treeWidget</code>部件，将该控件在<code>GUI</code>中布局好，假设其对象名为<code>treeWidget</code>。树形结构通过<code>QTreeWidget</code>类和<code>QTreeWidgetItem</code>类实现，<code>QTreeWidgetItem</code>类实现结点的添加。上图代码实现如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">ui-&gt;treeWidget-&gt;setColumnCount ( <span class="number">1</span> ); <span class="comment">/* 设置列数 */</span></span><br><span class="line">ui-&gt;treeWidget-&gt;setHeaderLabel ( tr ( <span class="string">"图像选择"</span> ) ); <span class="comment">/* 设置头的标题 */</span></span><br><span class="line">​</span><br><span class="line">QTreeWidgetItem *imageItem1 = <span class="keyword">new</span> QTreeWidgetItem ( ui-&gt;treeWidget, QStringList ( QString ( <span class="string">"图像1"</span> ) ) );</span><br><span class="line">imageItem1-&gt;setIcon ( <span class="number">0</span>, QIcon ( <span class="string">"xxx.png"</span> ) );</span><br><span class="line">QTreeWidgetItem *imageItem1_1 = <span class="keyword">new</span> QTreeWidgetItem ( imageItem1, QStringList ( QString ( <span class="string">"Band1"</span> ) ) ); <span class="comment">/* 子节点1 */</span></span><br><span class="line">imageItem1-&gt;addChild ( imageItem1_1 ); <span class="comment">/* 添加子节点 */</span></span><br><span class="line">​</span><br><span class="line">QTreeWidgetItem *imageItem2 = <span class="keyword">new</span> QTreeWidgetItem ( ui-&gt;treeWidget, QStringList ( QString ( <span class="string">"图像2"</span> ) ) );</span><br><span class="line">QTreeWidgetItem *imageItem2_1 = <span class="keyword">new</span> QTreeWidgetItem ( imageItem2, QStringList ( QString ( <span class="string">"Band1"</span> ) ) ); <span class="comment">/* 子节点1 */</span></span><br><span class="line">QTreeWidgetItem *imageItem2_2 = <span class="keyword">new</span> QTreeWidgetItem ( imageItem2, QStringList ( QString ( <span class="string">"Band2"</span> ) ) ); <span class="comment">/* 子节点2 */</span></span><br><span class="line">imageItem2-&gt;addChild ( imageItem2_1 ); <span class="comment">/* 添加子节点 */</span></span><br><span class="line">imageItem2-&gt;addChild ( imageItem2_2 );</span><br><span class="line">​</span><br><span class="line">ui-&gt;treeWidget-&gt;expandAll(); <span class="comment">/* 结点全部展开 */</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;除了使用上面这种方法之外，还可以使用<code>QList&lt;QTreeWidgetItem *&gt; &amp; items</code>实现结点的添加：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">QList&lt;QTreeWidgetItem *&gt; rootList;</span><br><span class="line">​</span><br><span class="line">QTreeWidgetItem *imageItem1 = <span class="keyword">new</span> QTreeWidgetItem; <span class="comment">/* 添加第一个父节点 */</span></span><br><span class="line">imageItem1-&gt;setText ( <span class="number">0</span>, tr ( <span class="string">"图像1"</span> ) );</span><br><span class="line">rootList.append ( imageItem1 );</span><br><span class="line">​</span><br><span class="line">QTreeWidgetItem *imageItem1_1 = <span class="keyword">new</span> QTreeWidgetItem ( imageItem1, QStringList ( QString ( <span class="string">"Band1"</span> ) ) ); <span class="comment">/* 添加子节点 */</span></span><br><span class="line">imageItem1-&gt;addChild ( imageItem1_1 );</span><br><span class="line">​</span><br><span class="line">QTreeWidgetItem *imageItem2 = <span class="keyword">new</span> QTreeWidgetItem; <span class="comment">/* 添加第二个父节点 */</span></span><br><span class="line">imageItem2-&gt;setText ( <span class="number">0</span>, tr ( <span class="string">"图像2"</span> ) );</span><br><span class="line">rootList.append ( imageItem2 );</span><br><span class="line">​</span><br><span class="line">QTreeWidgetItem *imageItem2_1 = <span class="keyword">new</span> QTreeWidgetItem ( imageItem2, QStringList ( QString ( <span class="string">"Band1"</span> ) ) ); <span class="comment">/* 添加子节点 */</span></span><br><span class="line">QTreeWidgetItem *imageItem2_2 = <span class="keyword">new</span> QTreeWidgetItem ( imageItem2, QStringList ( QString ( <span class="string">"Band2"</span> ) ) );</span><br><span class="line">imageItem2-&gt;addChild ( imageItem2_1 );</span><br><span class="line">imageItem2-&gt;addChild ( imageItem2_2 );</span><br><span class="line">​</span><br><span class="line">ui-&gt;treeWidget-&gt;insertTopLevelItems ( <span class="number">0</span>, rootList ); <span class="comment">/* 将结点插入部件中 */</span></span><br><span class="line">​</span><br><span class="line">ui-&gt;treeWidget-&gt;expandAll(); <span class="comment">/* 全部展开 */</span></span><br></pre></td></tr></table></figure>
-<h3 id="点击节点的事件响应"><a href="#点击节点的事件响应" class="headerlink" title="点击节点的事件响应"></a>点击节点的事件响应</h3><p>&emsp;&emsp;首先想到有没有点击某个节点的信号，查看文档后发现有一个<code>void itemClicked ( QTreeWidgetItem * item, int column )</code>信号，它是双击某个节点的信号。将该信号与某个自定义槽相连，当双击节点时触发槽函数。第一个参数为点击的<code>QTreeWidgetItem</code>类对象，第二个参数为节点所在列号。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> slots:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">showSelectedImage</span> <span class="params">( QTreeWidgetItem *item, <span class="keyword">int</span> column )</span></span>; <span class="comment">/* 点击树节点事件 */</span></span><br><span class="line">​</span><br><span class="line">connect ( ui-&gt;treeWidget, SIGNAL ( itemDoubleClicked ( QTreeWidgetItem *, <span class="keyword">int</span> ) ), \</span><br><span class="line">          <span class="keyword">this</span>, SLOT ( showSelectedImage ( QTreeWidgetItem *, <span class="keyword">int</span> ) ) );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">void</span> MainWindow::showSelectedImage ( QTreeWidgetItem *item, <span class="keyword">int</span> column ) &#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<hr>
-<p>&emsp;&emsp;The <code>QTreeWidget</code> class provides a tree view that uses a predefined tree model.</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Header</th>
-<th>Inherits</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>QTreeWidget</code></td>
-<td><code>QTreeView</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Public-Functions"><a href="#Public-Functions" class="headerlink" title="Public Functions"></a>Public Functions</h3><div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Return</th>
-<th>Function</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td></td>
-<td><code>QTreeWidget(QWidget * parent = 0)</code></td>
-</tr>
-<tr>
-<td></td>
-<td><code>~QTreeWidget()</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>addTopLevelItem(QTreeWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>addTopLevelItems(const QList&lt;QTreeWidgetItem *&gt; &amp; items)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>closePersistentEditor(QTreeWidgetItem * item, int column = 0)</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>columnCount() const</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>currentColumn() const</code></td>
-</tr>
-<tr>
-<td><code>QTreeWidgetItem *</code></td>
-<td><code>currentItem() const</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>editItem(QTreeWidgetItem * item, int column = 0)</code></td>
-</tr>
-<tr>
-<td><code>QList&lt;QTreeWidgetItem *&gt;</code></td>
-<td><code>findItems(const QString &amp; text, Qt::MatchFlags flags, int column = 0) const</code></td>
-</tr>
-<tr>
-<td><code>QTreeWidgetItem *</code></td>
-<td><code>headerItem() const</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>indexOfTopLevelItem(QTreeWidgetItem * item) const</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>insertTopLevelItem(int index, QTreeWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>insertTopLevelItems(int index, const QList&lt;QTreeWidgetItem *&gt; &amp; items)</code></td>
-</tr>
-<tr>
-<td><code>QTreeWidgetItem *</code></td>
-<td><code>invisibleRootItem() const</code></td>
-</tr>
-<tr>
-<td><code>bool</code></td>
-<td><code>isFirstItemColumnSpanned(const QTreeWidgetItem * item) const</code></td>
-</tr>
-<tr>
-<td><code>QTreeWidgetItem *</code></td>
-<td><code>itemAbove(const QTreeWidgetItem * item) const</code></td>
-</tr>
-<tr>
-<td><code>QTreeWidgetItem *</code></td>
-<td><code>itemAt(const QPoint &amp; p) const</code></td>
-</tr>
-<tr>
-<td><code>QTreeWidgetItem *</code></td>
-<td><code>itemAt(int x, int y) const</code></td>
-</tr>
-<tr>
-<td><code>QTreeWidgetItem *</code></td>
-<td><code>itemBelow(const QTreeWidgetItem * item) const</code></td>
-</tr>
-<tr>
-<td><code>QWidget *</code></td>
-<td><code>itemWidget(QTreeWidgetItem * item, int column) const</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>openPersistentEditor(QTreeWidgetItem * item, int column = 0)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>removeItemWidget(QTreeWidgetItem * item, int column)</code></td>
-</tr>
-<tr>
-<td><code>QList&lt;QTreeWidgetItem *&gt;</code></td>
-<td><code>selectedItems() const</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setColumnCount(int columns)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setCurrentItem(QTreeWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setCurrentItem(QTreeWidgetItem * item, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setCurrentItem(QTreeWidgetItem * item, int column, QItemSelectionModel::SelectionFlags command)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setFirstItemColumnSpanned(const QTreeWidgetItem * item, bool span)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setHeaderItem(QTreeWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setHeaderLabel(const QString &amp; label)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setHeaderLabels(const QStringList &amp; labels)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setItemWidget(QTreeWidgetItem * item, int column, QWidget * widget)</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>sortColumn() const</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>sortItems(int column, Qt::SortOrder order)</code></td>
-</tr>
-<tr>
-<td><code>QTreeWidgetItem *</code></td>
-<td><code>takeTopLevelItem(int index)</code></td>
-</tr>
-<tr>
-<td><code>QTreeWidgetItem *</code></td>
-<td><code>topLevelItem(int index) const</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>topLevelItemCount() const</code></td>
-</tr>
-<tr>
-<td><code>QRect</code></td>
-<td><code>visualItemRect(const QTreeWidgetItem * item) const</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Reimplemented-Public-Functions"><a href="#Reimplemented-Public-Functions" class="headerlink" title="Reimplemented Public Functions"></a>Reimplemented Public Functions</h3><ul>
-<li><code>virtual void setSelectionModel(QItemSelectionModel * selectionModel)</code></li>
-</ul>
-<h3 id="Public-Slots"><a href="#Public-Slots" class="headerlink" title="Public Slots"></a>Public Slots</h3><div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Return</th>
-<th>Function</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>void</code></td>
-<td><code>clear()</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>collapseItem(const QTreeWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>expandItem(const QTreeWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>scrollToItem(const QTreeWidgetItem * item, QAbstractItemView::ScrollHint hint = EnsureVisible)</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Signals"><a href="#Signals" class="headerlink" title="Signals"></a>Signals</h3><div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Return</th>
-<th>Function</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>void</code></td>
-<td><code>currentItemChanged(QTreeWidgetItem * current, QTreeWidgetItem * previous)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemActivated(QTreeWidgetItem * item, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemChanged(QTreeWidgetItem * item, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemClicked(QTreeWidgetItem * item, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemCollapsed(QTreeWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemDoubleClicked(QTreeWidgetItem * item, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemEntered(QTreeWidgetItem * item, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemExpanded(QTreeWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemPressed(QTreeWidgetItem * item, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemSelectionChanged()</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Protected-Functions"><a href="#Protected-Functions" class="headerlink" title="Protected Functions"></a>Protected Functions</h3><div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Return</th>
-<th>Function</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>virtual bool</code></td>
-<td><code>dropMimeData(QTreeWidgetItem * parent, int index, const QMimeData * data, Qt::DropAction action)</code></td>
-</tr>
-<tr>
-<td><code>QModelIndex</code></td>
-<td><code>indexFromItem(QTreeWidgetItem * item, int column = 0) const</code></td>
-</tr>
-<tr>
-<td><code>QTreeWidgetItem *</code></td>
-<td><code>itemFromIndex(const QModelIndex &amp; index) const</code></td>
-</tr>
-<tr>
-<td><code>virtual QMimeData *</code></td>
-<td><code>mimeData(const QList&lt;QTreeWidgetItem *&gt; items) const</code></td>
-</tr>
-<tr>
-<td><code>virtual QStringList</code></td>
-<td><code>mimeTypes() const</code></td>
-</tr>
-<tr>
-<td><code>virtual Qt::DropActions</code></td>
-<td><code>supportedDropActions() const</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Reimplemented-Protected-Functions"><a href="#Reimplemented-Protected-Functions" class="headerlink" title="Reimplemented Protected Functions"></a>Reimplemented Protected Functions</h3><div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Return</th>
-<th>Function</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>virtual void</code></td>
-<td><code>dropEvent(QDropEvent * event)</code></td>
-</tr>
-<tr>
-<td><code>virtual bool</code></td>
-<td><code>event(QEvent * e)</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Detailed-Description"><a href="#Detailed-Description" class="headerlink" title="Detailed Description"></a>Detailed Description</h3><p>&emsp;&emsp;The <code>QTreeWidget</code> class provides a tree view that uses a predefined tree model.<br>&emsp;&emsp;The <code>QTreeWidget</code> class is a convenience class that provides a standard tree widget with a classic <code>item-based</code> interface similar to that used by the <code>QListView</code> class in <code>Qt 3</code>. This class is based on <code>Qt&#39;s</code> <code>Model/View</code> architecture and uses a default model to hold items, each of which is a <code>QTreeWidgetItem</code>.<br>&emsp;&emsp;Developers who do not need the flexibility of the <code>Model/View</code> framework can use this class to create simple hierarchical lists very easily. A more flexible approach involves combining a <code>QTreeView</code> with a standard item model. This allows the storage of data to be separated from its representation.<br>&emsp;&emsp;In its simplest form, a tree widget can be constructed in the following way:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">QTreeWidget *treeWidget = <span class="keyword">new</span> QTreeWidget();</span><br><span class="line">treeWidget-&gt;setColumnCount ( <span class="number">1</span> );</span><br><span class="line">QList&lt;QTreeWidgetItem *&gt; items;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; ++i ) &#123;</span><br><span class="line">    items.append ( <span class="keyword">new</span> QTreeWidgetItem ( ( QTreeWidget * ) <span class="number">0</span>, QStringList ( QString ( <span class="string">"item: %1"</span> ).arg ( i ) ) ) );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">treeWidget-&gt;insertTopLevelItems ( <span class="number">0</span>, items );</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;Before items can be added to the tree widget, the number of columns must be set with <code>setColumnCount()</code>. This allows each item to have one or more labels or other decorations. The number of columns in use can be found with the <code>columnCount()</code> function.<br>&emsp;&emsp;The tree can have a header that contains a section for each column in the widget. It is easiest to set up the labels for each section by supplying a list of strings with <code>setHeaderLabels()</code>, but a custom header can be constructed with a <code>QTreeWidgetItem</code> and inserted into the tree with the <code>setHeaderItem()</code> function.<br>&emsp;&emsp;The items in the tree can be sorted by column according to a predefined sort order. If sorting is enabled, the user can sort the items by clicking on a column header. Sorting can be enabled or disabled by calling <code>setSortingEnabled()</code>. The <code>isSortingEnabled()</code> function indicates whether sorting is enabled.</p>
-<p><img src="/2019/02/22/Qt语法详解/Qt之QTreeWidget/2.png" height="157" width="642"></p>
-<h3 id="Property-Documentation"><a href="#Property-Documentation" class="headerlink" title="Property Documentation"></a>Property Documentation</h3><ul>
-<li><code>columnCount : int</code>: This property holds the number of columns displayed in the tree widget. By default, this property has a value of <code>1</code>. Access functions:</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">columnCount</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setColumnCount</span><span class="params">(<span class="keyword">int</span> columns)</span></span></span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>topLevelItemCount : const int</code>: This property holds the number of <code>top-level</code> items. By default, this property has a value of <code>0</code>. Access functions:</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">topLevelItemCount</span><span class="params">()</span> <span class="keyword">const</span></span></span><br></pre></td></tr></table></figure>
-<h3 id="Member-Function-Documentation"><a href="#Member-Function-Documentation" class="headerlink" title="Member Function Documentation"></a>Member Function Documentation</h3><ul>
-<li><code>QTreeWidget::QTreeWidget(QWidget * parent = 0)</code>: Constructs a tree widget with the given <code>parent</code>.</li>
-<li><code>QTreeWidget::~QTreeWidget()</code>: Destroys the tree widget and all its items.</li>
-<li><code>void QTreeWidget::addTopLevelItem(QTreeWidgetItem * item)</code>: Appends the <code>item</code> as a <code>top-level</code> item in the widget.</li>
-<li><code>void QTreeWidget::addTopLevelItems(const QList&lt;QTreeWidgetItem *&gt; &amp; items)</code>: Appends the list of <code>items</code> as a <code>top-level</code> items in the widget.</li>
-<li><code>void QTreeWidget::clear() [slot]</code>: Clears the tree widget by removing all of its items and selections. <strong>Note</strong>: Since each item is removed from the tree widget before being deleted, the return value of <code>QTreeWidgetItem::treeWidget()</code> will be invalid when called from an item’s destructor.</li>
-<li><code>void QTreeWidget::closePersistentEditor(QTreeWidgetItem * item, int column = 0)</code>: Closes the persistent editor for the <code>item</code> in the given <code>column</code>. This function has no effect if no persistent editor is open for this combination of <code>item</code> and <code>column</code>.</li>
-<li><code>void QTreeWidget::collapseItem(const QTreeWidgetItem * item) [slot]</code>: Closes the <code>item</code>. This causes the tree containing the item’s children to be collapsed.</li>
-<li><code>int QTreeWidget::currentColumn() const</code>: Returns the current column in the tree widget.</li>
-<li><code>QTreeWidgetItem * QTreeWidget::currentItem() const</code>: Returns the current item in the tree widget.</li>
-<li><code>void QTreeWidget::currentItemChanged(QTreeWidgetItem * current, QTreeWidgetItem * previous) [signal]</code>: This signal is emitted when the current item changes. The current item is specified by <code>current</code>, and this replaces the <code>previous</code> current item.</li>
-<li><code>void QTreeWidget::dropEvent(QDropEvent * event) [virtual protected]</code>: Reimplemented from QWidget::dropEvent().</li>
-<li><code>bool QTreeWidget::dropMimeData(QTreeWidgetItem * parent, int index, const QMimeData * data, Qt::DropAction action) [virtual protected]</code>: Handles the <code>data</code> supplied by a drag and drop operation that ended with the given <code>action</code> in the <code>index</code> in the given <code>parent</code> item. The default implementation returns true if the drop was successfully handled by decoding the mime data and inserting it into the model; otherwise it returns false.</li>
-<li><code>void QTreeWidget::editItem(QTreeWidgetItem * item, int column = 0)</code>: Starts editing the <code>item</code> in the given <code>column</code> if it is editable.</li>
-<li><code>bool QTreeWidget::event(QEvent * e) [virtual protected]</code>: Reimplemented from <code>QObject::event()</code>.</li>
-<li><code>void QTreeWidget::expandItem(const QTreeWidgetItem * item) [slot]</code>: Expands the <code>item</code>. This causes the tree containing the item’s children to be expanded.</li>
-<li><code>QList&lt;QTreeWidgetItem *&gt; QTreeWidget::findItems(const QString &amp; text, Qt::MatchFlags flags, int column = 0) const</code>: Returns a list of items that match the given <code>text</code>, using the given <code>flags</code>, in the given <code>column</code>.</li>
-<li><code>QTreeWidgetItem * QTreeWidget::headerItem() const</code>: Returns the item used for the tree widget’s header.</li>
-<li><code>QModelIndex QTreeWidget::indexFromItem(QTreeWidgetItem * item, int column = 0) const [protected]</code>: Returns the QModelIndex assocated with the given <code>item</code> in the given <code>column</code>.</li>
-<li><code>int QTreeWidget::indexOfTopLevelItem(QTreeWidgetItem * item) const</code>: Returns the index of the given <code>top-level</code> <code>item</code>, or <code>-1</code> if the <code>item</code> cannot be found.</li>
-<li><code>void QTreeWidget::insertTopLevelItem(int index, QTreeWidgetItem * item)</code>: Inserts the <code>item</code> at index in the top level in the view. If the <code>item</code> has already been inserted somewhere else it wont be inserted.</li>
-<li><code>void QTreeWidget::insertTopLevelItems(int index, const QList&lt;QTreeWidgetItem *&gt; &amp; items)</code>: Inserts the list of <code>items</code> at index in the top level in the view. Items that have already been inserted somewhere else wont be inserted.</li>
-<li><code>QTreeWidgetItem * QTreeWidget::invisibleRootItem() const</code>: Returns the tree widget’s invisible root item. The invisible root item provides access to the tree widget’s <code>top-level</code> items through the <code>QTreeWidgetItem</code> <code>API</code>, making it possible to write functions that can treat <code>top-level</code> items and their children in a uniform way; for example, recursive functions.</li>
-<li><code>bool QTreeWidget::isFirstItemColumnSpanned(const QTreeWidgetItem * item) const</code>: Returns true if the given <code>item</code> is set to show only one section over all columns; otherwise returns false.</li>
-<li><code>QTreeWidgetItem * QTreeWidget::itemAbove(const QTreeWidgetItem * item) const</code>: Returns the item above the given <code>item</code>.</li>
-<li><code>void QTreeWidget::itemActivated(QTreeWidgetItem * item, int column) [signal]</code>: This signal is emitted when the user activates an <code>item</code> by <code>single-</code> or <code>double-clicking</code> (depending on the platform, i.e. on the <code>QStyle::SH_ItemView_ActivateItemOnSingleClick</code> style hint) or pressing a special key (e.g., Enter). The specified <code>item</code> is the item that was clicked, or <code>0</code> if no item was clicked. The <code>column</code> is the item’s column that was clicked, or <code>-1</code> if no item was clicked.</li>
-<li><code>QTreeWidgetItem * QTreeWidget::itemAt(const QPoint &amp; p) const</code>: Returns a pointer to the item at the coordinates <code>p</code>. The coordinates are relative to the tree widget’s <code>viewport()</code>.</li>
-<li><code>QTreeWidgetItem * QTreeWidget::itemAt(int x, int y) const</code>: This is an overloaded function. Returns a pointer to the item at the coordinates <code>(x, y)</code>. The coordinates are relative to the tree widget’s <code>viewport()</code>.</li>
-<li><code>QTreeWidgetItem * QTreeWidget::itemBelow(const QTreeWidgetItem * item) const</code>: Returns the item visually below the given <code>item</code>.</li>
-<li><code>void QTreeWidget::itemChanged(QTreeWidgetItem * item, int column) [signal]</code>: This signal is emitted when the contents of the <code>column</code> in the specified <code>item</code> changes.</li>
-<li><code>void QTreeWidget::itemClicked(QTreeWidgetItem * item, int column) [signal]</code>: This signal is emitted when the user clicks inside the widget. The specified <code>item</code> is the item that was clicked. The <code>column</code> is the item’s column that was clicked. If no item was clicked, no signal will be emitted.</li>
-<li><code>void QTreeWidget::itemCollapsed(QTreeWidgetItem * item) [signal]</code>: This signal is emitted when the specified <code>item</code> is collapsed so that none of its children are displayed. <strong>Note</strong>: This signal will not be emitted if an item changes its state when <code>collapseAll()</code> is invoked.</li>
-<li><code>void QTreeWidget::itemDoubleClicked(QTreeWidgetItem * item, int column) [signal]</code>: This signal is emitted when the user double clicks inside the widget. The specified <code>item</code> is the item that was clicked, or 0 if no item was clicked. The <code>column</code> is the item’s column that was clicked. If no item was double clicked, no signal will be emitted.</li>
-<li><code>void QTreeWidget::itemEntered(QTreeWidgetItem * item, int column) [signal]</code>: This signal is emitted when the mouse cursor enters an <code>item</code> over the specified <code>column</code>. <code>QTreeWidget</code> mouse tracking needs to be enabled for this feature to work.</li>
-<li><code>void QTreeWidget::itemExpanded(QTreeWidgetItem * item) [signal]</code>: This signal is emitted when the specified <code>item</code> is expanded so that all of its children are displayed. <strong>Note</strong>: This signal will not be emitted if an item changes its state when <code>expandAll()</code> is invoked.</li>
-<li><code>QTreeWidgetItem * QTreeWidget::itemFromIndex(const QModelIndex &amp; index) const [protected]</code>: Returns a pointer to the <code>QTreeWidgetItem</code> assocated with the given <code>index</code>.</li>
-<li><code>void QTreeWidget::itemPressed(QTreeWidgetItem * item, int column) [signal]</code>: This signal is emitted when the user presses a mouse button inside the widget. The specified <code>item</code> is the item that was clicked, or <code>0</code> if no item was clicked. The <code>column</code> is the item’s column that was clicked, or <code>-1</code> if no item was clicked.</li>
-<li><code>void QTreeWidget::itemSelectionChanged() [signal]</code>: This signal is emitted when the selection changes in the tree widget. The current selection can be found with <code>selectedItems()</code>.</li>
-<li><code>QWidget * QTreeWidget::itemWidget(QTreeWidgetItem * item, int column) const</code>: Returns the widget displayed in the cell specified by <code>item</code> and the given <code>column</code>. <strong>Note</strong>: The tree takes ownership of the widget.</li>
-<li><code>QMimeData * QTreeWidget::mimeData(const QList&lt;QTreeWidgetItem *&gt; items) const [virtual protected]</code>: Returns an object that contains a serialized description of the specified <code>items</code>. The format used to describe the items is obtained from the <code>mimeTypes()</code> function. If the list of <code>items</code> is empty, <code>0</code> is returned rather than a serialized empty list.</li>
-<li><code>QStringList QTreeWidget::mimeTypes() const [virtual protected]</code>: Returns a list of <code>MIME</code> types that can be used to describe a list of treewidget items.</li>
-<li><code>void QTreeWidget::openPersistentEditor(QTreeWidgetItem * item, int column = 0)</code>: Opens a persistent editor for the <code>item</code> in the given <code>column</code>.</li>
-<li><code>void QTreeWidget::removeItemWidget(QTreeWidgetItem * item, int column)</code>: Removes the widget set in the given <code>item</code> in the given <code>column</code>.</li>
-<li><code>void QTreeWidget::scrollToItem(const QTreeWidgetItem * item, QAbstractItemView::ScrollHint hint = EnsureVisible) [slot]</code>: Ensures that the <code>item</code> is visible, scrolling the view if necessary using the specified <code>hint</code>.</li>
-<li><code>QList&lt;QTreeWidgetItem *&gt; QTreeWidget::selectedItems() const</code>: Returns a list of all selected <code>non-hidden</code> items.</li>
-<li><code>void QTreeWidget::setCurrentItem(QTreeWidgetItem * item)</code>: Sets the current <code>item</code> in the tree widget. Unless the selection mode is <code>NoSelection</code>, the item is also be selected.</li>
-<li><code>void QTreeWidget::setCurrentItem(QTreeWidgetItem * item, int column)</code>: Sets the current <code>item</code> in the tree widget and the current <code>column</code> to column.</li>
-<li><code>void QTreeWidget::setCurrentItem(QTreeWidgetItem * item, int column, QItemSelectionModel::SelectionFlags command)</code>: Sets the current <code>item</code> in the tree widget and the current <code>column</code> to column, using the given <code>command</code>.</li>
-<li><code>void QTreeWidget::setFirstItemColumnSpanned(const QTreeWidgetItem * item, bool span)</code>: Sets the given <code>item</code> to only show one section for all columns if <code>span</code> is <code>true</code>; otherwise the item will show one section per column.</li>
-<li><code>void QTreeWidget::setHeaderItem(QTreeWidgetItem * item)</code>: Sets the header <code>item</code> for the tree widget. The label for each column in the header is supplied by the corresponding label in the item. The tree widget takes ownership of the item.</li>
-<li><code>void QTreeWidget::setHeaderLabel(const QString &amp; label)</code>: Same as <code>setHeaderLabels(QStringList(label))</code>.</li>
-<li><code>void QTreeWidget::setHeaderLabels(const QStringList &amp; labels)</code>: Adds a column in the header for each item in the <code>labels</code> list, and sets the label for each column. Note that <code>setHeaderLabels()</code> won’t remove existing columns.</li>
-<li><code>void QTreeWidget::setItemWidget(QTreeWidgetItem * item, int column, QWidget * widget)</code>: Sets the given <code>widget</code> to be displayed in the cell specified by the given <code>item</code> and <code>column</code>. The given widget’s <code>autoFillBackground</code> property must be set to <code>true</code>, otherwise the widget’s background will be transparent, showing both the model data and the tree widget item. This function should only be used to display static content in the place of a tree widget item. If you want to display custom dynamic content or implement a custom editor widget, use <code>QTreeView</code> and subclass <code>QItemDelegate</code> instead. This function cannot be called before the item hierarchy has been set up, i.e., the <code>QTreeWidgetItem</code> that will hold widget must have been added to the view before widget is set. <strong>Note</strong>: The tree takes ownership of the widget.</li>
-<li><code>void QTreeWidget::setSelectionModel(QItemSelectionModel * selectionModel) [virtual]</code>: Reimplemented from <code>QAbstractItemView::setSelectionModel()</code>.</li>
-<li><code>int QTreeWidget::sortColumn() const</code>: Returns the column used to sort the contents of the widget.</li>
-<li><code>void QTreeWidget::sortItems(int column, Qt::SortOrder order)</code>: Sorts the items in the widget in the specified <code>order</code> by the values in the given <code>column</code>.</li>
-<li><code>Qt::DropActions QTreeWidget::supportedDropActions() const [virtual protected]</code>: Returns the drop actions supported by this view.</li>
-<li><code>QTreeWidgetItem * QTreeWidget::takeTopLevelItem(int index)</code>: Removes the <code>top-level</code> item at the given <code>index</code> in the tree and returns it, otherwise returns <code>0</code>.</li>
-<li><code>QTreeWidgetItem * QTreeWidget::topLevelItem(int index) const</code>: Returns the top level item at the given <code>index</code>, or <code>0</code> if the item does not exist.</li>
-<li><code>QRect QTreeWidget::visualItemRect(const QTreeWidgetItem * item) const</code>: Returns the rectangle on the viewport occupied by the <code>item</code> at item.</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2356,7 +2091,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">955</span>
+                  <span class="site-state-item-count">958</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

@@ -271,6 +271,479 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/08/Node_JS/多进程/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/08/Node_JS/多进程/" itemprop="url">多进程</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-08T15:44:46+08:00">
+                2019-02-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>Node.js</code>是以单线程的模式运行的，但它使用的是事件驱动来处理并发，这样有助于我们在多核<code>cpu</code>的系统上创建多个子进程，从而提高性能。每个子进程总是带有三个流对象：<code>child.stdin</code>、<code>child.stdout</code>和<code>child.stderr</code>，它们可能会共享父进程的<code>stdio</code>流，或者也可以是独立的被导流的流对象。<br>&emsp;&emsp;<code>Node.js</code>提供了<code>child_process</code>模块来创建子进程，方法有：</p>
+<ul>
+<li><code>exec</code>：<code>child_process.exec</code>，使用子进程执行命令，缓存子进程的输出，并将子进程的输出以回调函数参数的形式返回。</li>
+<li><code>spawn</code>：<code>child_process.spawn</code>，使用指定的命令行参数创建新进程。</li>
+<li><code>fork</code>：<code>child_process.fork</code>是<code>spawn</code>的特殊形式，用于在子进程中运行的模块，如<code>fork(&#39;./son.js&#39;)</code>相当于<code>spawn(&#39;node&#39;, [&#39;./son.js&#39;])</code>。与<code>spawn</code>方法不同的是，<code>fork</code>会在父进程与子进程之间，建立一个通信管道，用于进程之间的通信。</li>
+</ul>
+<h3 id="exec方法"><a href="#exec方法" class="headerlink" title="exec方法"></a>exec方法</h3><p>&emsp;&emsp;<code>child_process.exec</code>使用子进程执行命令，缓存子进程的输出，并将子进程的输出以回调函数参数的形式返回：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">child_process.exec(command[, options], callback)</span><br></pre></td></tr></table></figure>
+<p>参数<code>command</code>是字符串，就是将要运行的命令，参数使用空格隔开；<code>options</code>是对象：</p>
+<ul>
+<li><code>cwd</code>：字符串，子进程的当前工作目录。</li>
+<li><code>env</code>：对象，环境变量键值对。</li>
+<li><code>encoding</code>：字符串，字符编码，默认是<code>utf8</code>。</li>
+<li><code>shell</code>：字符串，执行命令的<code>Shell</code>。默认情况下，在<code>UNIX</code>中为<code>/bin/sh</code>，在<code>Windows</code>中为<code>cmd.exe</code>。</li>
+<li><code>timeout</code>：数字，超时时间，默认为<code>0</code>。</li>
+<li><code>maxBuffer</code>：数字，在<code>stdout</code>或<code>stderr</code>中允许存在的最大缓冲，如果超出，那么子进程将会被杀死 ，默认为<code>200 * 1024</code>。</li>
+<li><code>killSignal</code>：字符串，结束信号，默认为<code>SIGTERM</code>。</li>
+<li><code>uid</code>：数字，设置用户进程的<code>ID</code>。</li>
+<li><code>gid</code>：数字，设置进程组的<code>ID</code>。</li>
+</ul>
+<p><code>callback</code>是回调函数，包含三个参数，即<code>error</code>、<code>stdout</code>和<code>stderr</code>。<br>&emsp;&emsp;创建<code>support.js</code>和<code>master.js</code>。<code>support.js</code>代码如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">console</span>.log(<span class="string">"进程"</span> + process.argv[<span class="number">2</span>] + <span class="string">"执行"</span>);</span><br></pre></td></tr></table></figure>
+<p><code>master.js</code>代码如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">'fs'</span>);</span><br><span class="line"><span class="keyword">const</span> child_process = <span class="built_in">require</span>(<span class="string">'child_process'</span>);</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++) &#123;</span><br><span class="line">    <span class="keyword">var</span> workerProcess = child_process.exec(<span class="string">'node support.js '</span> + i, <span class="function"><span class="keyword">function</span> (<span class="params">error, stdout, stderr</span>) </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (error) &#123;</span><br><span class="line">            <span class="built_in">console</span>.log(error.stack);</span><br><span class="line">            <span class="built_in">console</span>.log(<span class="string">'Error code: '</span> + error.code);</span><br><span class="line">            <span class="built_in">console</span>.log(<span class="string">'Signal received: '</span> + error.signal);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'stdout: '</span> + stdout);</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'stderr: '</span> + stderr);</span><br><span class="line">    &#125;);</span><br><span class="line">​</span><br><span class="line">    workerProcess.on(<span class="string">'exit'</span>, <span class="function"><span class="keyword">function</span> (<span class="params">code</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'子进程已退出，退出码'</span> + code);</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">子进程已退出，退出码<span class="number">0</span></span><br><span class="line">stdout: 进程<span class="number">0</span>执行</span><br><span class="line">​</span><br><span class="line">stderr:</span><br><span class="line">子进程已退出，退出码<span class="number">0</span></span><br><span class="line">stdout: 进程<span class="number">2</span>执行</span><br><span class="line">​</span><br><span class="line">stderr:</span><br><span class="line">子进程已退出，退出码<span class="number">0</span></span><br><span class="line">stdout: 进程<span class="number">1</span>执行</span><br><span class="line">​</span><br><span class="line">stderr:</span><br></pre></td></tr></table></figure>
+<h3 id="spawn方法"><a href="#spawn方法" class="headerlink" title="spawn方法"></a>spawn方法</h3><p>&emsp;&emsp;<code>child_process.spawn</code>使用指定的命令行参数创建新进程：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">child_process.spawn(command[, args][, options])</span><br></pre></td></tr></table></figure>
+<p>参数<code>command</code>是将要运行的命令；<code>args</code>是字符串参数数组；<code>options</code>是对象：</p>
+<ul>
+<li><code>cwd</code>：字符串，子进程的当前工作目录</li>
+<li><code>env</code>：对象，环境变量键值对。</li>
+<li><code>detached</code>：布尔值，这个子进程是否将变成进程组的领导。</li>
+<li><code>uid</code>：数字，设置用户进程的<code>ID</code>。</li>
+<li><code>gid</code>：数字，设置进程组的<code>ID</code>。</li>
+</ul>
+<p><code>spawn</code>方法返回流(<code>stdout</code>和<code>stderr</code>)，在进程返回大量数据时使用。进程一旦开始执行时，<code>spawn</code>就接收响应。<br>&emsp;&emsp;创建<code>support.js</code>和<code>master.js</code>。<code>support.js</code>代码如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">console</span>.log(<span class="string">"进程"</span> + process.argv[<span class="number">2</span>] + <span class="string">"执行"</span>);</span><br></pre></td></tr></table></figure>
+<p><code>master.js</code>代码如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">'fs'</span>);</span><br><span class="line"><span class="keyword">const</span> child_process = <span class="built_in">require</span>(<span class="string">'child_process'</span>);</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++) &#123;</span><br><span class="line">    <span class="keyword">var</span> workerProcess = child_process.spawn(<span class="string">'node'</span>, [<span class="string">'support.js'</span>, i]);</span><br><span class="line">​</span><br><span class="line">    workerProcess.stdout.on(<span class="string">'data'</span>, <span class="function"><span class="keyword">function</span> (<span class="params">data</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'stdout: '</span> + data);</span><br><span class="line">    &#125;);</span><br><span class="line">​</span><br><span class="line">    workerProcess.stderr.on(<span class="string">'data'</span>, <span class="function"><span class="keyword">function</span> (<span class="params">data</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'stderr: '</span> + data);</span><br><span class="line">    &#125;);</span><br><span class="line">​</span><br><span class="line">    workerProcess.on(<span class="string">'close'</span>, <span class="function"><span class="keyword">function</span> (<span class="params">code</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'子进程已退出，退出码'</span> + code);</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">stdout: 进程<span class="number">0</span>执行</span><br><span class="line">​</span><br><span class="line">子进程已退出，退出码<span class="number">0</span></span><br><span class="line">stdout: 进程<span class="number">1</span>执行</span><br><span class="line">​</span><br><span class="line">子进程已退出，退出码<span class="number">0</span></span><br><span class="line">stdout: 进程<span class="number">2</span>执行</span><br><span class="line">​</span><br><span class="line">子进程已退出，退出码<span class="number">0</span></span><br></pre></td></tr></table></figure>
+<h3 id="fork方法"><a href="#fork方法" class="headerlink" title="fork方法"></a>fork方法</h3><p>&emsp;&emsp;<code>child_process.fork</code>是<code>spawn</code>方法的特殊形式，用于创建进程：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">child_process.fork(modulePath[, args][, options])</span><br></pre></td></tr></table></figure>
+<p>参数<code>modulePath</code>是字符串，它是将要在子进程中运行的模块；<code>args</code>是<code>Array</code>，字符串参数数组；<code>options</code>是对象：</p>
+<ul>
+<li><code>cwd</code>：字符串，子进程的当前工作目录。</li>
+<li><code>env</code>：对象，环境变量键值对。</li>
+<li><code>execPath</code>：字符串，创建子进程的可执行文件。</li>
+<li><code>execArgv</code>：数组，子进程的可执行文件的字符串参数数组，默认为<code>process.execArgv</code>。</li>
+<li><code>silent</code>：布尔值，如果为<code>true</code>，子进程的<code>stdin</code>、<code>stdout</code>和<code>stderr</code>将会被关联至父进程；否则，它们将会从父进程中继承，默认为<code>false</code>。</li>
+<li><code>uid</code>：数字，设置用户进程的<code>ID</code>。</li>
+<li><code>gid</code>：数字，设置进程组的<code>ID</code>。</li>
+</ul>
+<p>返回的对象除了拥有<code>ChildProcess</code>实例的所有方法，还有一个内建的通信信道。<br>&emsp;&emsp;创建<code>support.js</code>和<code>master.js</code>。<code>support.js</code>代码如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">console</span>.log(<span class="string">"进程"</span> + process.argv[<span class="number">2</span>] + <span class="string">"执行"</span>);</span><br></pre></td></tr></table></figure>
+<p><code>master.js</code>代码如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">'fs'</span>);</span><br><span class="line"><span class="keyword">const</span> child_process = <span class="built_in">require</span>(<span class="string">'child_process'</span>);</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++) &#123;</span><br><span class="line">    <span class="keyword">var</span> worker_process = child_process.fork(<span class="string">"support.js"</span>, [i]);</span><br><span class="line">​</span><br><span class="line">    worker_process.on(<span class="string">'close'</span>, <span class="function"><span class="keyword">function</span> (<span class="params">code</span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'子进程已退出，退出码'</span> + code);</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">进程<span class="number">0</span>执行</span><br><span class="line">子进程已退出，退出码<span class="number">0</span></span><br><span class="line">进程<span class="number">1</span>执行</span><br><span class="line">子进程已退出，退出码<span class="number">0</span></span><br><span class="line">进程<span class="number">2</span>执行</span><br><span class="line">子进程已退出，退出码<span class="number">0</span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/08/Node_JS/util模块/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/08/Node_JS/util模块/" itemprop="url">util模块</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-08T15:33:19+08:00">
+                2019-02-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>util</code>是一个<code>Node.js</code>核心模块，提供常用函数的集合，用于弥补核心<code>JavaScript</code>的功能不足。</p>
+<h3 id="util-inherits"><a href="#util-inherits" class="headerlink" title="util.inherits"></a>util.inherits</h3><p>&emsp;&emsp;<code>util.inherits</code>是一个实现对象间原型继承的函数：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">util.inherits(<span class="keyword">constructor</span>, superConstructor)</span><br></pre></td></tr></table></figure>
+<p><code>JavaScript</code>的面向对象特性是基于原型的，与常见的基于类的不同。<code>JavaScript</code>没有提供对象继承的语言级别特性，而是通过原型复制来实现的。<br>&emsp;&emsp;<code>util.inherits</code>用法示例如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> util = <span class="built_in">require</span>(<span class="string">'util'</span>);</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">Base</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.name = <span class="string">'base'</span>;</span><br><span class="line">    <span class="keyword">this</span>.base = <span class="number">1991</span>;</span><br><span class="line">    <span class="keyword">this</span>.sayHello = <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="built_in">console</span>.log(<span class="string">'Hello '</span> + <span class="keyword">this</span>.name);</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">Base.prototype.showName = <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="keyword">this</span>.name);</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">Sub</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.name = <span class="string">'sub'</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">util.inherits(Sub, Base);</span><br><span class="line"><span class="keyword">var</span> objBase = <span class="keyword">new</span> Base();</span><br><span class="line">objBase.showName(); <span class="comment">// 输出“base”</span></span><br><span class="line">objBase.sayHello(); <span class="comment">// 输出“Hello base”</span></span><br><span class="line"><span class="built_in">console</span>.log(objBase); <span class="comment">// 输出“Base &#123; name: 'base', base: 1991, sayHello: [Function] &#125;”</span></span><br><span class="line"><span class="keyword">var</span> objSub = <span class="keyword">new</span> Sub();</span><br><span class="line">objSub.showName(); <span class="comment">// 输出“sub”</span></span><br><span class="line"><span class="built_in">console</span>.log(objSub); <span class="comment">// 输出“Sub &#123; name: 'sub' &#125;”</span></span><br></pre></td></tr></table></figure>
+<p>我们定义了一个基础对象<code>Base</code>和一个继承自<code>Base</code>的<code>Sub</code>，<code>Base</code>有三个在构造函数内定义的属性和一个在原型中定义的函数。<br>&emsp;&emsp;注意，<code>Sub</code>仅仅继承了<code>Base</code>在原型中定义的函数，而构造函数内部创造的<code>base</code>属性和<code>sayHello</code>函数都没有被<code>Sub</code>继承。同时，在原型中定义的属性不会被<code>console.log</code>作为对象的属性输出。</p>
+<h3 id="util-inspect"><a href="#util-inspect" class="headerlink" title="util.inspect"></a>util.inspect</h3><p>&emsp;&emsp;<code>util.inspect</code>是一个将任意对象转换为字符串的方法，通常用于调试和错误输出。它至少接受一个参数<code>object</code>，即要转换的对象：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">util.inspect(object, [showHidden ,][depth ,][colors])</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>showHidden</code>：一个可选参数，如果值为<code>true</code>，将会输出更多隐藏信息。</li>
+<li><code>depth</code>：表示最大递归的层数，如果对象很复杂，你可以指定层数以控制输出信息的多少。如果不指定<code>depth</code>，默认会递归<code>2</code>层；指定为<code>null</code>表示将不限递归层数完整遍历对象。</li>
+<li><code>color</code>：如果<code>color</code>值为<code>true</code>，输出格式将会以<code>ANSI</code>颜色编码，通常用于在终端显示更漂亮的效果。</li>
+</ul>
+<p>特别要指出的是，<code>util.inspect</code>并不会简单地直接把对象转换为字符串，即使该对象定义了<code>toString</code>方法，也不会调用。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> util = <span class="built_in">require</span>(<span class="string">'util'</span>);</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">Person</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.name = <span class="string">'byvoid'</span>;</span><br><span class="line">    <span class="keyword">this</span>.toString = <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.name;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">var</span> obj = <span class="keyword">new</span> Person();</span><br><span class="line"><span class="built_in">console</span>.log(util.inspect(obj));</span><br><span class="line"><span class="built_in">console</span>.log(util.inspect(obj, <span class="literal">true</span>));</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Person &#123; <span class="attr">name</span>: <span class="string">'byvoid'</span>, <span class="attr">toString</span>: [<span class="built_in">Function</span>] &#125;</span><br><span class="line">Person &#123;</span><br><span class="line">  name: <span class="string">'byvoid'</span>,</span><br><span class="line">  toString:</span><br><span class="line">   &#123; [<span class="built_in">Function</span>]</span><br><span class="line">     [length]: <span class="number">0</span>,</span><br><span class="line">     [name]: <span class="string">''</span>,</span><br><span class="line">     [<span class="built_in">arguments</span>]: <span class="literal">null</span>,</span><br><span class="line">     [caller]: <span class="literal">null</span>,</span><br><span class="line">     [prototype]: &#123; [<span class="keyword">constructor</span>]: [Circular] &#125; &#125; &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="util-isArray-object"><a href="#util-isArray-object" class="headerlink" title="util.isArray(object)"></a>util.isArray(object)</h3><p>&emsp;&emsp;如果给定的参数<code>object</code>是一个数组，则返回<code>true</code>，否则返回<code>false</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> util = <span class="built_in">require</span>(<span class="string">'util'</span>);</span><br><span class="line">​</span><br><span class="line"><span class="built_in">console</span>.log(util.isArray([])) <span class="comment">// 输出“true”</span></span><br><span class="line"><span class="built_in">console</span>.log(util.isArray(<span class="keyword">new</span> <span class="built_in">Array</span>)) <span class="comment">// 输出“true”</span></span><br><span class="line"><span class="built_in">console</span>.log(util.isArray(&#123;&#125;)) <span class="comment">// 输出“false”</span></span><br></pre></td></tr></table></figure>
+<h3 id="util-isRegExp-object"><a href="#util-isRegExp-object" class="headerlink" title="util.isRegExp(object)"></a>util.isRegExp(object)</h3><p>&emsp;&emsp;如果给定的参数<code>object</code>是一个正则表达式，则返回<code>true</code>，否则返回<code>false</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> util = <span class="built_in">require</span>(<span class="string">'util'</span>);</span><br><span class="line">​</span><br><span class="line"><span class="built_in">console</span>.log(util.isRegExp(<span class="regexp">/some regexp/</span>)) <span class="comment">// 输出“true”</span></span><br><span class="line"><span class="built_in">console</span>.log(util.isRegExp(<span class="keyword">new</span> <span class="built_in">RegExp</span>(<span class="string">'another regexp'</span>))) <span class="comment">// 输出“true”</span></span><br><span class="line"><span class="built_in">console</span>.log(util.isRegExp(&#123;&#125;)) <span class="comment">// 输出“false”</span></span><br></pre></td></tr></table></figure>
+<h3 id="util-isDate-object"><a href="#util-isDate-object" class="headerlink" title="util.isDate(object)"></a>util.isDate(object)</h3><p>&emsp;&emsp;如果给定的参数<code>object</code>是一个日期，则返回<code>true</code>，否则返回<code>false</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> util = <span class="built_in">require</span>(<span class="string">'util'</span>);</span><br><span class="line">​</span><br><span class="line"><span class="built_in">console</span>.log(util.isDate(<span class="keyword">new</span> <span class="built_in">Date</span>())) <span class="comment">// 输出“true”</span></span><br><span class="line"><span class="built_in">console</span>.log(util.isDate(<span class="built_in">Date</span>())) <span class="comment">// 输出“false”(without 'new', returns a String)</span></span><br><span class="line"><span class="built_in">console</span>.log(util.isDate(&#123;&#125;)) <span class="comment">// 输出“false”</span></span><br></pre></td></tr></table></figure>
+<h3 id="util-isError-object"><a href="#util-isError-object" class="headerlink" title="util.isError(object)"></a>util.isError(object)</h3><p>&emsp;&emsp;如果给定的参数<code>object</code>是一个错误对象，则返回<code>true</code>，否则返回<code>false</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> util = <span class="built_in">require</span>(<span class="string">'util'</span>);</span><br><span class="line">​</span><br><span class="line"><span class="built_in">console</span>.log(util.isError(<span class="keyword">new</span> <span class="built_in">Error</span>())) <span class="comment">// 输出“true”</span></span><br><span class="line"><span class="built_in">console</span>.log(util.isError(<span class="keyword">new</span> <span class="built_in">TypeError</span>())) <span class="comment">// 输出“true”</span></span><br><span class="line"><span class="built_in">console</span>.log( <span class="comment">// 输出“false”</span></span><br><span class="line">    util.isError(&#123;</span><br><span class="line">        name: <span class="string">'Error'</span>,</span><br><span class="line">        message: <span class="string">'an error occurred'</span></span><br><span class="line">    &#125;)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/08/Node_JS/Stream流/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/08/Node_JS/Stream流/" itemprop="url">Stream流</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-08T14:17:36+08:00">
+                2019-02-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>Stream</code>是一个抽象接口，<code>Node.js</code>中有很多对象实现了这个接口。例如，对<code>http</code>服务器发起请求的<code>request</code>对象就是一个<code>Stream</code>，还有<code>stdout</code>(标准输出)。<br>&emsp;&emsp;对于<code>Node.js</code>，<code>Stream</code>有四种流类型：</p>
+<ul>
+<li><code>Readable</code>：可读操作。</li>
+<li><code>Writable</code>：可写操作。</li>
+<li><code>Duplex</code>：可读可写操作。</li>
+<li><code>Transform</code>：操作被写入数据，然后读出结果。</li>
+</ul>
+<p>所有的<code>Stream</code>对象都是<code>EventEmitter</code>的实例，常用的事件有：</p>
+<ul>
+<li><code>data</code>：当有数据可读时触发。</li>
+<li><code>end</code>：没有更多的数据可读时触发。</li>
+<li><code>error</code>：在接收和写入过程中发生错误时触发。</li>
+<li><code>finish</code>：所有数据已被写入到底层系统时触发。</li>
+</ul>
+<h3 id="从流中读取数据"><a href="#从流中读取数据" class="headerlink" title="从流中读取数据"></a>从流中读取数据</h3><p>&emsp;&emsp;创建<code>input.txt</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">菜鸟教程官网地址：www.runoob.com</span><br></pre></td></tr></table></figure>
+<p>创建<code>main.js</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> fs = <span class="built_in">require</span>(<span class="string">"fs"</span>);</span><br><span class="line"><span class="keyword">var</span> data = <span class="string">''</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> readerStream = fs.createReadStream(<span class="string">'input.txt'</span>); <span class="comment">// 创建可读流</span></span><br><span class="line">readerStream.setEncoding(<span class="string">'UTF8'</span>); <span class="comment">// 设置编码为utf8</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">// 处理流事件 --&gt; data, end, and error</span></span><br><span class="line">readerStream.on(<span class="string">'data'</span>, <span class="function"><span class="keyword">function</span>(<span class="params">chunk</span>) </span>&#123;</span><br><span class="line">    data += chunk;</span><br><span class="line">&#125;);</span><br><span class="line">​</span><br><span class="line">readerStream.on(<span class="string">'end'</span>,<span class="function"><span class="keyword">function</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(data);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">readerStream.on(<span class="string">'error'</span>, <span class="function"><span class="keyword">function</span>(<span class="params">err</span>)</span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(err.stack);</span><br><span class="line">&#125;);</span><br><span class="line">​</span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">"程序执行完毕"</span>);</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">程序执行完毕</span><br><span class="line">菜鸟教程官网地址：www.runoob.com</span><br></pre></td></tr></table></figure>
+<h3 id="写入流"><a href="#写入流" class="headerlink" title="写入流"></a>写入流</h3><p>&emsp;&emsp;创建<code>main.js</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> fs = <span class="built_in">require</span>(<span class="string">"fs"</span>);</span><br><span class="line"><span class="keyword">var</span> data = <span class="string">'菜鸟教程官网地址：www.runoob.com'</span>;</span><br><span class="line">​</span><br><span class="line"><span class="comment">// 创建一个可以写入的流，写入到文件output.txt中</span></span><br><span class="line"><span class="keyword">var</span> writerStream = fs.createWriteStream(<span class="string">'output.txt'</span>);</span><br><span class="line">writerStream.write(data,<span class="string">'UTF8'</span>); <span class="comment">// 使用utf8编码写入数据</span></span><br><span class="line">writerStream.end(); <span class="comment">// 标记文件末尾</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">// 处理流事件 --&gt; data, end, and error</span></span><br><span class="line">writerStream.on(<span class="string">'finish'</span>, <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">"写入完成"</span>);</span><br><span class="line">&#125;);</span><br><span class="line">​</span><br><span class="line">writerStream.on(<span class="string">'error'</span>, <span class="function"><span class="keyword">function</span>(<span class="params">err</span>)</span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(err.stack);</span><br><span class="line">&#125;);</span><br><span class="line">​</span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">"程序执行完毕"</span>);</span><br></pre></td></tr></table></figure>
+<p>以上程序会将<code>data</code>变量的数据写入到<code>output.txt</code>。执行结果：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">程序执行完毕</span><br><span class="line">写入完成</span><br></pre></td></tr></table></figure>
+<p>查看<code>output.txt</code>文件的内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cat output.txt</span><br><span class="line">菜鸟教程官网地址：www.runoob.com</span><br></pre></td></tr></table></figure>
+<h3 id="管道流"><a href="#管道流" class="headerlink" title="管道流"></a>管道流</h3><p>&emsp;&emsp;管道提供了一个输出流到输入流的机制，通常用于从一个流中获取数据，并将数据传递到另外一个流中。<br>&emsp;&emsp;我们把文件比作装水的桶，而水就是文件里的内容，用一根管子(<code>pipe</code>)连接两个桶，使得水从一个桶流入另一个桶，这样就慢慢地实现了大文件的复制过程。<br>&emsp;&emsp;创建<code>input.txt</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">菜鸟教程官网地址：www.runoob.com</span><br></pre></td></tr></table></figure>
+<p>创建<code>main.js</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> fs = <span class="built_in">require</span>(<span class="string">"fs"</span>);</span><br><span class="line"><span class="comment">// 创建一个可读流</span></span><br><span class="line"><span class="keyword">var</span> readerStream = fs.createReadStream(<span class="string">'input.txt'</span>);</span><br><span class="line"><span class="comment">// 创建一个可写流</span></span><br><span class="line"><span class="keyword">var</span> writerStream = fs.createWriteStream(<span class="string">'output.txt'</span>);</span><br><span class="line"><span class="comment">// 管道读写操作，读取input.txt文件内容，并将内容写入到output.txt</span></span><br><span class="line">readerStream.pipe(writerStream);</span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">"程序执行完毕"</span>);</span><br></pre></td></tr></table></figure>
+<h3 id="链式流"><a href="#链式流" class="headerlink" title="链式流"></a>链式流</h3><p>&emsp;&emsp;链式是通过连接输出流到另外一个流，并创建多个流操作链的机制，一般用于管道操作。接下来用管道和链式来压缩和解压文件。<br>&emsp;&emsp;创建<code>compress.js</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> fs = <span class="built_in">require</span>(<span class="string">"fs"</span>);</span><br><span class="line"><span class="keyword">var</span> zlib = <span class="built_in">require</span>(<span class="string">'zlib'</span>);</span><br><span class="line">​</span><br><span class="line"><span class="comment">// 压缩input.txt文件为input.txt.gz</span></span><br><span class="line">fs.createReadStream(<span class="string">'input.txt'</span>)</span><br><span class="line">    .pipe(zlib.createGzip())</span><br><span class="line">    .pipe(fs.createWriteStream(<span class="string">'input.txt.gz'</span>));</span><br><span class="line">​</span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">"文件压缩完成"</span>);</span><br></pre></td></tr></table></figure>
+<p>执行完以上操作后，可以看到当前目录下生成了<code>input.txt</code>的压缩文件<code>input.txt.gz</code>。<br>&emsp;&emsp;接下来创建<code>decompress.js</code>：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> fs = <span class="built_in">require</span>(<span class="string">"fs"</span>);</span><br><span class="line"><span class="keyword">var</span> zlib = <span class="built_in">require</span>(<span class="string">'zlib'</span>);</span><br><span class="line">​</span><br><span class="line"><span class="comment">// 解压input.txt.gz文件为input.txt</span></span><br><span class="line">fs.createReadStream(<span class="string">'input.txt.gz'</span>)</span><br><span class="line">    .pipe(zlib.createGunzip())</span><br><span class="line">    .pipe(fs.createWriteStream(<span class="string">'input.txt'</span>));</span><br><span class="line">​</span><br><span class="line"><span class="built_in">console</span>.log(<span class="string">"文件解压完成"</span>);</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/08/Node_JS/REPL交互式解释器/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1398,1006 +1871,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/08/Java/Number和Math类/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/08/Java/Number和Math类/" itemprop="url">Number和Math类</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-08T10:37:12+08:00">
-                2019-02-08
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index">
-                    <span itemprop="name">Java</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;一般情况下，当需要使用数字的时候，我们通常使用内置数据类型，例如<code>byte</code>、<code>int</code>、<code>long</code>、<code>double</code>等：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">5000</span>;</span><br><span class="line"><span class="keyword">float</span> b = <span class="number">13.65f</span>;</span><br><span class="line"><span class="keyword">byte</span> c = <span class="number">0x4a</span>;</span><br></pre></td></tr></table></figure>
-<p>然而在实际开发过程中，我们经常会遇到需要使用对象，而不是内置数据类型的情形。为了解决这个问题，<code>Java</code>为每一个内置数据类型提供了对应的包装类。<br>&emsp;&emsp;所有的包装类(<code>Integer</code>、<code>Long</code>、<code>Byte</code>、<code>Double</code>、<code>Float</code>、<code>Short</code>)都是抽象类<code>Number</code>的子类：</p>
-<p><img src="/2019/02/08/Java/Number和Math类/1.png" height="220" width="472"></p>
-<p>&emsp;&emsp;这种由编译器特别支持的包装称为装箱，所以当内置数据类型被当作对象使用的时候，编译器会把内置类型装箱为包装类。相似的，编译器也可以把一个对象拆箱为内置类型。<code>Number</code>类属于<code>java.lang</code>包。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> </span>&#123;</span><br><span class="line">        Integer x = <span class="number">5</span>;</span><br><span class="line">        x = x + <span class="number">10</span>;</span><br><span class="line">        System.out.println(x); <span class="comment">/* 输出“15” */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>当<code>x</code>被赋为整型值时，由于<code>x</code>是一个对象，所以编译器要对<code>x</code>进行装箱。然后为了使<code>x</code>能进行加运算，所以要对<code>x</code>进行拆箱。</p>
-<h3 id="Math类"><a href="#Math类" class="headerlink" title="Math类"></a>Math类</h3><p>&emsp;&emsp;<code>Java</code>的<code>Math</code>包含了用于执行基本数学运算的属性和方法，例如初等指数、对数、平方根和三角函数。<code>Math</code>的方法都被定义为<code>static</code>形式，通过<code>Math</code>类可以在主函数中直接调用。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"90度的正弦值："</span> + Math.sin(Math.PI / <span class="number">2</span>));</span><br><span class="line">        System.out.println(<span class="string">"0度的余弦值："</span> + Math.cos(<span class="number">0</span>));</span><br><span class="line">        System.out.println(<span class="string">"60度的正切值："</span> + Math.tan(Math.PI / <span class="number">3</span>));</span><br><span class="line">        System.out.println(<span class="string">"1的反正切值："</span> + Math.atan(<span class="number">1</span>));</span><br><span class="line">        System.out.println(<span class="string">"π/2的角度值："</span> + Math.toDegrees(Math.PI / <span class="number">2</span>));</span><br><span class="line">        System.out.println(Math.PI);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">90</span>度的正弦值：<span class="number">1.0</span></span><br><span class="line"><span class="number">0</span>度的余弦值：<span class="number">1.0</span></span><br><span class="line"><span class="number">60</span>度的正切值：<span class="number">1.7320508075688767</span></span><br><span class="line"><span class="number">1</span>的反正切值：<span class="number">0.7853981633974483</span></span><br><span class="line">π/<span class="number">2</span>的角度值：<span class="number">90.0</span></span><br><span class="line"><span class="number">3.141592653589793</span></span><br></pre></td></tr></table></figure>
-<h3 id="Number和Math类方法"><a href="#Number和Math类方法" class="headerlink" title="Number和Math类方法"></a>Number和Math类方法</h3><p>&emsp;&emsp;下表列出的是<code>Number</code>和<code>Math</code>类常用的一些方法：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>方法</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>xxxValue</code></td>
-<td>将<code>Number</code>对象转换为<code>xxx</code>数据类型的值并返回</td>
-</tr>
-<tr>
-<td><code>compareTo</code></td>
-<td>将<code>Number</code>对象与参数比较</td>
-</tr>
-<tr>
-<td><code>equals</code></td>
-<td>判断<code>Number</code>对象是否与参数相等</td>
-</tr>
-<tr>
-<td><code>valueOf</code></td>
-<td>返回一个<code>Number</code>对象指定的内置数据类型</td>
-</tr>
-<tr>
-<td><code>toString</code></td>
-<td>以字符串形式返回值</td>
-</tr>
-<tr>
-<td><code>parseInt</code></td>
-<td>将字符串解析为<code>int</code>类型</td>
-</tr>
-<tr>
-<td><code>abs</code></td>
-<td>返回参数的绝对值</td>
-</tr>
-<tr>
-<td><code>ceil</code></td>
-<td>返回大于等于(<code>&gt;=</code>)给定参数的的最小整数</td>
-</tr>
-<tr>
-<td><code>floor</code></td>
-<td>返回小于等于(<code>&lt;=</code>)给定参数的最大整数</td>
-</tr>
-<tr>
-<td><code>rint</code></td>
-<td>返回与参数最接近的整数，返回类型为<code>double</code></td>
-</tr>
-<tr>
-<td><code>round</code></td>
-<td>它表示四舍五入，算法为<code>Math.floor(x + 0.5)</code></td>
-</tr>
-<tr>
-<td><code>min</code></td>
-<td>返回两个参数中的最小值</td>
-</tr>
-<tr>
-<td><code>max</code></td>
-<td>返回两个参数中的最大值</td>
-</tr>
-<tr>
-<td><code>exp</code></td>
-<td>返回自然数底数<code>e</code>的参数次方</td>
-</tr>
-<tr>
-<td><code>log</code></td>
-<td>返回参数的自然数底数的对数值</td>
-</tr>
-<tr>
-<td><code>pow</code></td>
-<td>返回第一个参数的第二个参数次方</td>
-</tr>
-<tr>
-<td><code>sqrt</code></td>
-<td>求参数的算术平方根</td>
-</tr>
-<tr>
-<td><code>sin</code></td>
-<td>求指定<code>double</code>类型参数的正弦值</td>
-</tr>
-<tr>
-<td><code>cos</code></td>
-<td>求指定<code>double</code>类型参数的余弦值</td>
-</tr>
-<tr>
-<td><code>tan</code></td>
-<td>求指定<code>double</code>类型参数的正切值</td>
-</tr>
-<tr>
-<td><code>asin</code></td>
-<td>求指定<code>double</code>类型参数的反正弦值</td>
-</tr>
-<tr>
-<td><code>acos</code></td>
-<td>求指定<code>double</code>类型参数的反余弦值</td>
-</tr>
-<tr>
-<td><code>atan</code></td>
-<td>求指定<code>double</code>类型参数的反正切值</td>
-</tr>
-<tr>
-<td><code>atan2</code></td>
-<td>将笛卡尔坐标转换为极坐标，并返回极坐标的角度值</td>
-</tr>
-<tr>
-<td><code>toDegrees</code></td>
-<td>将参数转化为角度</td>
-</tr>
-<tr>
-<td><code>toRadians</code></td>
-<td>将角度转换为弧度</td>
-</tr>
-<tr>
-<td><code>random</code></td>
-<td>返回一个随机数</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p><code>Math</code>的<code>floor</code>、<code>round</code>和<code>ceil</code>方法实例比较：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">double</span>[] nums = &#123;<span class="number">1.4</span>, <span class="number">1.5</span>, <span class="number">1.6</span>, -<span class="number">1.4</span>, -<span class="number">1.5</span>, -<span class="number">1.6</span>&#125;;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">double</span> num : nums) &#123;</span><br><span class="line">            test(num);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">(<span class="keyword">double</span> num)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"Math.floor("</span> + num + <span class="string">") = "</span> + Math.floor(num));</span><br><span class="line">        System.out.println(<span class="string">"Math.round("</span> + num + <span class="string">") = "</span> + Math.round(num));</span><br><span class="line">        System.out.println(<span class="string">"Math.ceil("</span> + num + <span class="string">") = "</span> + Math.ceil(num));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">Math.floor(<span class="number">1.4</span>) = <span class="number">1.0</span></span><br><span class="line">Math.round(<span class="number">1.4</span>) = <span class="number">1</span></span><br><span class="line">Math.ceil(<span class="number">1.4</span>) = <span class="number">2.0</span></span><br><span class="line">Math.floor(<span class="number">1.5</span>) = <span class="number">1.0</span></span><br><span class="line">Math.round(<span class="number">1.5</span>) = <span class="number">2</span></span><br><span class="line">Math.ceil(<span class="number">1.5</span>) = <span class="number">2.0</span></span><br><span class="line">Math.floor(<span class="number">1.6</span>) = <span class="number">1.0</span></span><br><span class="line">Math.round(<span class="number">1.6</span>) = <span class="number">2</span></span><br><span class="line">Math.ceil(<span class="number">1.6</span>) = <span class="number">2.0</span></span><br><span class="line">Math.floor(-<span class="number">1.4</span>) = -<span class="number">2.0</span></span><br><span class="line">Math.round(-<span class="number">1.4</span>) = -<span class="number">1</span></span><br><span class="line">Math.ceil(-<span class="number">1.4</span>) = -<span class="number">1.0</span></span><br><span class="line">Math.floor(-<span class="number">1.5</span>) = -<span class="number">2.0</span></span><br><span class="line">Math.round(-<span class="number">1.5</span>) = -<span class="number">1</span></span><br><span class="line">Math.ceil(-<span class="number">1.5</span>) = -<span class="number">1.0</span></span><br><span class="line">Math.floor(-<span class="number">1.6</span>) = -<span class="number">2.0</span></span><br><span class="line">Math.round(-<span class="number">1.6</span>) = -<span class="number">2</span></span><br><span class="line">Math.ceil(-<span class="number">1.6</span>) = -<span class="number">1.0</span></span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="xxxValue方法"><a href="#xxxValue方法" class="headerlink" title="xxxValue方法"></a>xxxValue方法</h3><p>&emsp;&emsp;<code>xxxValue</code>方法用于将<code>Number</code>对象转换为<code>xxx</code>数据类型的值并返回。</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>方法</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>byteValue</code></td>
-<td>以<code>byte</code>形式返回指定的数值</td>
-</tr>
-<tr>
-<td><code>doubleValue</code></td>
-<td>以<code>double</code>形式返回指定的数值</td>
-</tr>
-<tr>
-<td><code>floatValue</code></td>
-<td>以<code>float</code>形式返回指定的数值</td>
-</tr>
-<tr>
-<td><code>intValue</code></td>
-<td>以<code>int</code>形式返回指定的数值</td>
-</tr>
-<tr>
-<td><code>longValue</code></td>
-<td>以<code>long</code>形式返回指定的数值</td>
-</tr>
-<tr>
-<td><code>shortValue</code></td>
-<td>以<code>short</code>形式返回指定的数值</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>代码如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> </span>&#123;</span><br><span class="line">        Integer x = <span class="number">5</span>;</span><br><span class="line">        <span class="comment">/* 返回byte原生数据类型 */</span></span><br><span class="line">        System.out.println(x.byteValue()); <span class="comment">/* 输出“5” */</span></span><br><span class="line">        <span class="comment">/* 返回double原生数据类型 */</span></span><br><span class="line">        System.out.println(x.doubleValue()); <span class="comment">/* 输出“5.0” */</span></span><br><span class="line">        <span class="comment">/* 返回long原生数据类型 */</span></span><br><span class="line">        System.out.println(x.longValue()); <span class="comment">/* 输出“5” */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="compareTo方法"><a href="#compareTo方法" class="headerlink" title="compareTo方法"></a>compareTo方法</h3><p>&emsp;&emsp;<code>compareTo</code>方法用于将<code>Number</code>对象与方法的参数进行比较，可用于比较<code>Byte</code>、<code>Long</code>、<code>Integer</code>等。该方法用于两个相同数据类型的比较，两个不同类型的数据不能用此方法来比较。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">compareTo</span><span class="params">(NumberSubClass referenceName)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数<code>referenceName</code>可以是一个<code>Byte</code>、<code>Double</code>、<code>Integer</code>、<code>Float</code>、<code>Long</code>或<code>Short</code>类型的参数。如果指定的数与参数相等，返回<code>0</code>；如果指定的数小于参数，返回<code>-1</code>；如果指定的数大于参数，返回<code>1</code>。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> </span>&#123;</span><br><span class="line">        Integer x = <span class="number">5</span>;</span><br><span class="line">        System.out.println(x.compareTo(<span class="number">3</span>));</span><br><span class="line">        System.out.println(x.compareTo(<span class="number">5</span>));</span><br><span class="line">        System.out.println(x.compareTo(<span class="number">8</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="equals方法"><a href="#equals方法" class="headerlink" title="equals方法"></a>equals方法</h3><p>&emsp;&emsp;<code>equals</code>方法用于判断<code>Number</code>对象与方法的参数进是否相等。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数<code>o</code>可以是任何对象。如<code>Number</code>对象不为<code>Null</code>，且与方法的参数类型与数值都相等，就返回<code>True</code>，否则返回<code>False</code>。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> </span>&#123;</span><br><span class="line">        Integer x = <span class="number">5</span>;</span><br><span class="line">        Integer y = <span class="number">10</span>;</span><br><span class="line">        Integer z = <span class="number">5</span>;</span><br><span class="line">        Short a = <span class="number">5</span>;</span><br><span class="line">​</span><br><span class="line">        System.out.println(x.equals(y)); <span class="comment">/* false */</span></span><br><span class="line">        System.out.println(x.equals(z)); <span class="comment">/* true */</span></span><br><span class="line">        System.out.println(x.equals(a)); <span class="comment">/* false */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意<code>==</code>与<code>equals</code>的区别，<code>==</code>比较的是对象的地址，<code>equals</code>比较的是对象的内容。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/07/Java/基础知识/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/07/Java/基础知识/" itemprop="url">基础知识</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-07T22:10:32+08:00">
-                2019-02-07
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index">
-                    <span itemprop="name">Java</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="Java简介"><a href="#Java简介" class="headerlink" title="Java简介"></a>Java简介</h3><p>&emsp;&emsp;<code>Java</code>是由<code>Sun Microsystems</code>公司于<code>1995</code>年<code>5</code>月推出的<code>Java</code>面向对象程序设计语言和<code>Java</code>平台的总称。由<code>James Gosling</code>和同事们共同研发，分为三个体系：</p>
-<ul>
-<li><code>JavaSE(J2SE)</code>：<code>Java2 Platform Standard Edition</code>，<code>java</code>平台标准版。</li>
-<li><code>JavaEE(J2EE)</code>：<code>Java 2 Platform,Enterprise Edition</code>，<code>java</code>平台企业版。</li>
-<li><code>JavaME(J2ME)</code>：<code>Java 2 Platform Micro Edition</code>，<code>java</code>平台微型版。</li>
-</ul>
-<h3 id="主要特性"><a href="#主要特性" class="headerlink" title="主要特性"></a>主要特性</h3><p>&emsp;&emsp;<code>Java</code>是简单的：<code>Java</code>的语法与<code>C/C++</code>很接近，使得大多数程序员很容易学习和使用。另一方面，<code>Java</code>丢弃了<code>C++</code>中很少使用的、很难理解的、令人迷惑的那些特性，例如操作符重载、多继承、自动的强制类型转换。特别地，<code>Java</code>不使用指针，而是引用，并提供了自动垃圾收集机制，使得程序员不必为内存管理而担忧。<br>&emsp;&emsp;<code>Java</code>是面向对象的：<code>Java</code>提供类、接口和继承等面向对象的特性，为了简单起见，只支持类之间的单继承，但支持接口之间的多继承，并支持类与接口之间的实现机制(关键字为<code>implements</code>)。<code>Java</code>全面支持动态绑定，而<code>C++</code>只对虚函数使用动态绑定。总之，<code>Java</code>是一个纯的面向对象程序设计语言。<br>&emsp;&emsp;<code>Java</code>是分布式的：<code>Java</code>语言支持<code>Internet</code>应用的开发，在基本的<code>Java</code>应用编程接口中有一个网络应用编程接口(<code>java net</code>)，它提供了用于网络应用编程的类库，包括<code>URL</code>、<code>URLConnection</code>、<code>Socket</code>、<code>ServerSocket</code>等。<code>Java</code>的<code>RMI</code>(远程方法激活)机制也是开发分布式应用的重要手段。<br>&emsp;&emsp;<code>Java</code>是健壮的：<code>Java</code>的强类型机制、异常处理、垃圾的自动收集等是<code>Java</code>程序健壮性的重要保证。对指针的丢弃是<code>Java</code>的明智选择。<code>Java</code>的安全检查机制使得<code>Java</code>更具健壮性。<br>&emsp;&emsp;<code>Java</code>是安全的：<code>Java</code>通常被用在网络环境中，为此，<code>Java</code>提供了一个安全机制以防恶意代码的攻击。除了<code>Java</code>具有的许多安全特性以外，<code>Java</code>对通过网络下载的类具有一个安全防范机制(类<code>ClassLoader</code>)，例如分配不同的名字空间以防替代本地的同名类、字节代码检查，并提供安全管理机制(类<code>SecurityManager</code>)，让<code>Java</code>应用设置安全哨兵。<br>&emsp;&emsp;<code>Java</code>是体系结构中立的：<code>Java</code>程序(后缀为<code>java</code>的文件)在<code>Java</code>平台上被编译为体系结构中立的字节码格式(后缀为<code>class</code>的文件)，然后可以在实现<code>Java</code>平台的任何系统中运行。这种途径适合于异构的网络环境和软件的分发。<br>&emsp;&emsp;<code>Java</code>是可移植的：这种可移植性来源于体系结构中立性，另外<code>Java</code>还严格规定了各个基本数据类型的长度。<code>Java</code>系统本身也具有很强的可移植性，<code>Java</code>编译器是用<code>Java</code>实现的，<code>Java</code>的运行环境是用<code>ANSI C</code>实现的。<br>&emsp;&emsp;<code>Java</code>是解释型的：<code>Java</code>程序在<code>Java</code>平台上被编译为字节码格式，然后可以在实现<code>Java</code>平台的任何系统中运行。在运行时，<code>Java</code>平台中的<code>Java</code>解释器对这些字节码进行解释执行，执行过程中需要的类在联接阶段被载入到运行环境中。<br>&emsp;&emsp;<code>Java</code>是高性能的：与那些解释型的高级脚本语言相比，<code>Java</code>的确是高性能的。事实上，<code>Java</code>的运行速度随着<code>JIT</code>(<code>Just-In-Time</code>)编译器技术的发展越来越接近于<code>C++</code>。<br>&emsp;&emsp;<code>Java</code>是多线程的：在<code>Java</code>中，线程是一种特殊的对象，它必须由<code>Thread</code>类或其子(或孙子)类来创建。通常有两种方法来创建线程：其一，使用型构为<code>Thread(Runnable)</code>的构造子将一个实现了<code>Runnable</code>接口的对象包装成一个线程；其二，从<code>Thread</code>类派生出子类，并重写<code>run</code>方法，使用该子类创建的对象即为线程。值得注意的是，<code>Thread</code>类已经实现了<code>Runnable</code>接口，因此任何一个线程均有它的<code>run</code>方法，而<code>run</code>方法中包含了线程所要运行的代码。线程的活动由一组方法来控制。<code>Java</code>支持多个线程的同时执行，并提供多线程之间的同步机制(关键字为<code>synchronized</code>)。<br>&emsp;&emsp;<code>Java</code>是动态的：<code>Java</code>的设计目标之一是适应于动态变化的环境。<code>Java</code>程序需要的类能够动态地被载入到运行环境，也可以通过网络来载入所需要的类，这也有利于软件的升级。</p>
-<h3 id="Java基础语法"><a href="#Java基础语法" class="headerlink" title="Java基础语法"></a>Java基础语法</h3><p>&emsp;&emsp;一个<code>Java</code>程序可以认为是一系列对象的集合，而这些对象通过调用彼此的方法来协同工作。下面简要介绍一下类、对象、方法和实例变量的概念：</p>
-<ul>
-<li>对象：对象是类的一个实例，有状态和行为。例如一条狗是一个对象，它的状态有颜色、名字、品种等；行为有摇尾巴、叫、吃等。</li>
-<li>类：类是一个模板，它描述一类对象的行为和状态。</li>
-<li>方法：方法就是行为，一个类可以有很多方法。逻辑运算、数据修改以及所有动作都是在方法中完成的。</li>
-<li>实例变量：每个对象都有独特的实例变量，对象的状态由这些实例变量的值决定。</li>
-</ul>
-<p>&emsp;&emsp;新建文件<code>HelloWorld.java</code>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorld</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"Hello World"</span>); <span class="comment">/* 打印“Hello World” */</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>编写<code>Java</code>程序时，应注意以下几点：</p>
-<ul>
-<li>大小写敏感：<code>Java</code>是大小写敏感的，这就意味着标识符<code>Hello</code>与<code>hello</code>是不同的。</li>
-<li>类名：对于所有的类来说，类名的首字母应该大写。如果类名由若干单词组成，那么每个单词的首字母应该大写，例如<code>MyFirstJavaClass</code>。</li>
-<li>方法名：所有的方法名都应该以小写字母开头。如果方法名含有若干单词，则后面的每个单词首字母大写。</li>
-<li>源文件名：源文件名必须和类名相同。当保存文件的时候，你应该使用类名作为文件名保存(切记<code>Java</code>是大小写敏感的)，文件名的后缀为<code>.java</code>(如果文件名和类名不相同，则会导致编译错误)。</li>
-<li>主方法入口：所有的<code>Java</code>程序由<code>public static void main(String []args)</code>方法开始执行。</li>
-</ul>
-<h3 id="Java标识符"><a href="#Java标识符" class="headerlink" title="Java标识符"></a>Java标识符</h3><p>&emsp;&emsp;<code>Java</code>所有的组成部分都需要名字，类名、变量名以及方法名都被称为标识符。关于<code>Java</code>标识符，有以下几点需要注意：</p>
-<ul>
-<li>所有的标识符都应该以字母(<code>A-Z</code>或者<code>a-z</code>)、美元符<code>$</code>或者下划线<code>_</code>开始。</li>
-<li>首字符之后可以是字母(<code>A-Z</code>或者<code>a-z</code>)、美元符<code>$</code>、下划线<code>_</code>或数字的任何字符组合。</li>
-<li>关键字不能用作标识符。</li>
-<li>标识符是大小写敏感的。</li>
-</ul>
-<p>合法标识符例如<code>age</code>、<code>$salary</code>、<code>_value</code>、<code>__1_value</code>，非法标识符例如<code>123abc</code>、<code>-salary</code>。</p>
-<h3 id="Java修饰符"><a href="#Java修饰符" class="headerlink" title="Java修饰符"></a>Java修饰符</h3><p>&emsp;&emsp;像其他语言一样，<code>Java</code>可以使用修饰符来修饰类中方法和属性。主要有两类修饰符：</p>
-<ul>
-<li>访问控制修饰符：<code>default</code>、<code>public</code>、<code>protected</code>和<code>private</code>。</li>
-<li>非访问控制修饰符：<code>final</code>、<code>abstract</code>和<code>strictfp</code>。</li>
-</ul>
-<h3 id="Java变量"><a href="#Java变量" class="headerlink" title="Java变量"></a>Java变量</h3><p>&emsp;&emsp;<code>Java</code>中主要有如下几种类型的变量：局部变量、类变量(静态变量)和成员变量(非静态变量)</p>
-<h3 id="Java数组"><a href="#Java数组" class="headerlink" title="Java数组"></a>Java数组</h3><p>&emsp;&emsp;数组是储存在堆上的对象，可以保存多个同类型变量。</p>
-<h3 id="Java枚举"><a href="#Java枚举" class="headerlink" title="Java枚举"></a>Java枚举</h3><p>&emsp;&emsp;<code>Java 5.0</code>引入了枚举，枚举限制变量只能是预先设定好的值。使用枚举可以减少代码中的bug。例如我们为果汁店设计一个程序，它将限制果汁为小杯、中杯、大杯，这就意味着它不允许顾客点除了这三种尺寸外的果汁：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">FreshJuice</span> &#123;</span></span><br><span class="line">    <span class="keyword">enum</span> FreshJuiceSize &#123;SMALL, MEDIUM, LARGE&#125;</span><br><span class="line">    FreshJuiceSize size;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FreshJuiceTest</span> &#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        FreshJuice juice = <span class="keyword">new</span> FreshJuice();</span><br><span class="line">        juice.size = FreshJuice.FreshJuiceSize.MEDIUM;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>注意，枚举可以单独声明或者声明在类里面。方法、变量、构造函数也可以在枚举中定义。</p>
-<h3 id="Java关键字"><a href="#Java关键字" class="headerlink" title="Java关键字"></a>Java关键字</h3><p>&emsp;&emsp;下面列出了<code>Java</code>关键字，这些保留字不能用于常量、变量和任何标识符的名称。<br>&emsp;&emsp;访问控制如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>访问控制符</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>private</code></td>
-<td>私有的</td>
-</tr>
-<tr>
-<td><code>protected</code></td>
-<td>受保护的</td>
-</tr>
-<tr>
-<td><code>public</code></td>
-<td>公共的</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>&emsp;&emsp;类、方法和变量修饰符如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>修饰符</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>abstract</code></td>
-<td>声明抽象</td>
-</tr>
-<tr>
-<td><code>class</code></td>
-<td>类</td>
-</tr>
-<tr>
-<td><code>extends</code></td>
-<td>继承</td>
-</tr>
-<tr>
-<td><code>final</code></td>
-<td>最终值，不可改变的</td>
-</tr>
-<tr>
-<td><code>implements</code></td>
-<td>实现(接口)</td>
-</tr>
-<tr>
-<td><code>interface</code></td>
-<td>接口</td>
-</tr>
-<tr>
-<td><code>native</code></td>
-<td>本地，原生方法(非<code>Java</code>实现)</td>
-</tr>
-<tr>
-<td><code>new</code></td>
-<td>创建</td>
-</tr>
-<tr>
-<td><code>static</code></td>
-<td>静态</td>
-</tr>
-<tr>
-<td><code>strictfp</code></td>
-<td>严格，精准</td>
-</tr>
-<tr>
-<td><code>synchronized</code></td>
-<td>线程同步</td>
-</tr>
-<tr>
-<td><code>transient</code></td>
-<td>短暂</td>
-</tr>
-<tr>
-<td><code>volatile</code></td>
-<td>易失</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>&emsp;&emsp;程序控制语句如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>控制语句</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>break</code></td>
-<td>跳出循环</td>
-</tr>
-<tr>
-<td><code>case</code></td>
-<td>定义一个值以供<code>switch</code>选择</td>
-</tr>
-<tr>
-<td><code>continue</code></td>
-<td>继续</td>
-</tr>
-<tr>
-<td><code>default</code></td>
-<td>默认</td>
-</tr>
-<tr>
-<td><code>do</code></td>
-<td>运行</td>
-</tr>
-<tr>
-<td><code>else</code></td>
-<td>否则</td>
-</tr>
-<tr>
-<td><code>for</code></td>
-<td>循环</td>
-</tr>
-<tr>
-<td><code>if</code></td>
-<td>如果</td>
-</tr>
-<tr>
-<td><code>instanceof</code></td>
-<td>实例</td>
-</tr>
-<tr>
-<td><code>return</code></td>
-<td>返回</td>
-</tr>
-<tr>
-<td><code>switch</code></td>
-<td>根据值选择执行</td>
-</tr>
-<tr>
-<td><code>while</code></td>
-<td>循环</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>&emsp;&emsp;错误处理如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>错误处理</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>assert</code></td>
-<td>断言表达式是否为真</td>
-</tr>
-<tr>
-<td><code>catch</code></td>
-<td>捕捉异常</td>
-</tr>
-<tr>
-<td><code>finally</code></td>
-<td>有没有异常都执行</td>
-</tr>
-<tr>
-<td><code>throw</code></td>
-<td>抛出一个异常对象</td>
-</tr>
-<tr>
-<td><code>throws</code></td>
-<td>声明一个异常可能被抛出</td>
-</tr>
-<tr>
-<td><code>try</code></td>
-<td>捕获异常</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>&emsp;&emsp;包相关如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>包关键词</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>import</code></td>
-<td>引入</td>
-</tr>
-<tr>
-<td><code>package</code></td>
-<td>包</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>&emsp;&emsp;基本类型如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>基本类型</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>boolean</code></td>
-<td>布尔型</td>
-</tr>
-<tr>
-<td><code>byte</code></td>
-<td>字节型</td>
-</tr>
-<tr>
-<td><code>char</code></td>
-<td>字符型</td>
-</tr>
-<tr>
-<td><code>double</code></td>
-<td>双精度浮点</td>
-</tr>
-<tr>
-<td><code>float</code></td>
-<td>单精度浮点</td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td>整型</td>
-</tr>
-<tr>
-<td><code>long</code></td>
-<td>长整型</td>
-</tr>
-<tr>
-<td><code>short</code></td>
-<td>短整型</td>
-</tr>
-<tr>
-<td><code>null</code></td>
-<td>空</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>&emsp;&emsp;变量引用如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>变量引用</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>super</code></td>
-<td>父类，超类</td>
-</tr>
-<tr>
-<td><code>this</code></td>
-<td>本类</td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td>无返回值</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>&emsp;&emsp;保留关键字如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>保留关键字</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>goto</code></td>
-<td>它是关键字，但不能使用</td>
-</tr>
-<tr>
-<td><code>const</code></td>
-<td>它是关键字，但不能使用</td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Java注释"><a href="#Java注释" class="headerlink" title="Java注释"></a>Java注释</h3><p>&emsp;&emsp;类似于<code>C/C++</code>，<code>Java</code>也支持单行以及多行注释。注释中的字符将被<code>Java</code>编译器忽略：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloWorld</span> </span>&#123;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 这是第一个Java程序，它将打印“Hello World”</span></span><br><span class="line"><span class="comment">     * 这是一个多行注释的示例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 这是单行注释的示例</span></span><br><span class="line">        <span class="comment">/* 这个也是单行注释的示例 */</span></span><br><span class="line">        System.out.println(<span class="string">"Hello World"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="继承"><a href="#继承" class="headerlink" title="继承"></a>继承</h3><p>&emsp;&emsp;在<code>Java</code>中，一个类可以由其他类派生。如果你要创建一个类，而且已经存在一个类具有你所需要的属性或方法，那么你可以将新创建的类继承该类。<br>&emsp;&emsp;利用继承的方法，可以重用已存在类的方法和属性，而不用重写这些代码。被继承的类称为超类(<code>super class</code>)，派生类称为子类(<code>subclass</code>)。</p>
-<h3 id="接口"><a href="#接口" class="headerlink" title="接口"></a>接口</h3><p>&emsp;&emsp;在<code>Java</code>中，接口可理解为对象间相互通信的协议。接口在继承中扮演着很重要的角色。接口只定义派生要用到的方法，但是方法的具体实现完全取决于派生类。</p>
-<h3 id="Java源程序与编译型运行区别"><a href="#Java源程序与编译型运行区别" class="headerlink" title="Java源程序与编译型运行区别"></a>Java源程序与编译型运行区别</h3><p>&emsp;&emsp;如下图所示：</p>
-<p><img src="/2019/02/07/Java/基础知识/1.png" height="182" width="380"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/07/C++语法详解/模板/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/07/C++语法详解/模板/" itemprop="url">模板</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-07T21:07:50+08:00">
-                2019-02-07
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;模板是泛型编程的基础，泛型编程即以一种独立于任何特定类型的方式编写代码。模板是创建泛型类或函数的蓝图或公式。库容器，例如迭代器和算法，都是泛型编程的例子，它们都使用了模板的概念，我们可以定义许多不同类型的向量，例如<code>vector &lt;int&gt;</code>或<code>vector &lt;string&gt;</code>。</p>
-<h3 id="函数模板"><a href="#函数模板" class="headerlink" title="函数模板"></a>函数模板</h3><p>&emsp;&emsp;模板函数定义的一般形式如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> type&gt; ret-type func-name ( parameter <span class="built_in">list</span> ) &#123;</span><br><span class="line">    <span class="comment">/* 函数的主体 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>type</code>是函数所使用的数据类型的占位符名称，这个名称可以在函数定义中使用。下面是函数模板的实例，返回两个数中的最大值：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function"><span class="keyword">inline</span> T <span class="keyword">const</span> &amp;<span class="title">Max</span> <span class="params">( T <span class="keyword">const</span> &amp;a, T <span class="keyword">const</span> &amp;b )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> a &lt; b ? b : a;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">39</span>;</span><br><span class="line">    <span class="keyword">int</span> j = <span class="number">20</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"Max(i, j): "</span> &lt;&lt; Max ( i, j ) &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">double</span> f1 = <span class="number">13.5</span>;</span><br><span class="line">    <span class="keyword">double</span> f2 = <span class="number">20.7</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"Max(f1, f2): "</span> &lt;&lt; Max ( f1, f2 ) &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">string</span> s1 = <span class="string">"Hello"</span>;</span><br><span class="line">    <span class="built_in">string</span> s2 = <span class="string">"World"</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"Max(s1, s2): "</span> &lt;&lt; Max ( s1, s2 ) &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Max(i, j): <span class="number">39</span></span><br><span class="line">Max(f1, f2): <span class="number">20.7</span></span><br><span class="line">Max(s1, s2): World</span><br></pre></td></tr></table></figure>
-<h3 id="类模板"><a href="#类模板" class="headerlink" title="类模板"></a>类模板</h3><p>&emsp;&emsp;正如定义函数模板一样，我们也可以定义类模板。泛型类声明的一般形式如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="class"><span class="keyword">class</span> <span class="title">type</span>&gt; <span class="title">class</span> <span class="title">class</span>-<span class="title">name</span> &#123;</span></span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>type</code>是占位符类型名称，可以在类被实例化的时候进行指定。可以使用一个逗号分隔的列表来定义多个泛型数据类型。下面的实例定义了类<code>Stack&lt;&gt;</code>，并实现了泛型方法来对元素进行入栈出栈操作：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;cstdlib&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdexcept&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span> &lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>&gt; <span class="title">class</span> <span class="title">Stack</span> &#123;</span></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="built_in">vector</span>&lt;T&gt; elems; <span class="comment">/* 元素 */</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">push</span> <span class="params">( T <span class="keyword">const</span> &amp; )</span></span>; <span class="comment">/* 入栈 */</span></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">pop</span><span class="params">()</span></span>;              <span class="comment">/* 出栈 */</span></span><br><span class="line">    <span class="function">T <span class="title">top</span><span class="params">()</span> <span class="keyword">const</span></span>;           <span class="comment">/* 返回栈顶元素 */</span></span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">empty</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123;     <span class="comment">/* 如果为空，则返回真 */</span></span><br><span class="line">        <span class="keyword">return</span> elems.empty();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span> &lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>&gt; <span class="title">void</span> <span class="title">Stack</span>&lt;T&gt;:</span>:push ( T <span class="keyword">const</span> &amp;elem ) &#123;</span><br><span class="line">    elems.push_back ( elem ); <span class="comment">/* 追加传入元素的副本 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span> &lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>&gt; <span class="title">void</span> <span class="title">Stack</span>&lt;T&gt;:</span>:pop () &#123;</span><br><span class="line">    <span class="keyword">if</span> ( elems.empty() ) &#123;</span><br><span class="line">        <span class="keyword">throw</span> out_of_range ( <span class="string">"Stack&lt;&gt;::pop(): empty stack"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"></span><br><span class="line">    elems.pop_back(); <span class="comment">/* 删除最后一个元素 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span> &lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>&gt; <span class="title">T</span> <span class="title">Stack</span>&lt;T&gt;:</span>:top () <span class="keyword">const</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> ( elems.empty() ) &#123;</span><br><span class="line">        <span class="keyword">throw</span> out_of_range ( <span class="string">"Stack&lt;&gt;::top(): empty stack"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> elems.back(); <span class="comment">/* 返回最后一个元素的副本 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Stack&lt;<span class="keyword">int</span>&gt; intStack; <span class="comment">/* int类型的栈 */</span></span><br><span class="line">        Stack&lt;<span class="built_in">string</span>&gt; stringStack; <span class="comment">/* string类型的栈 */</span></span><br><span class="line">        intStack.push ( <span class="number">7</span> ); <span class="comment">/* 操作int类型的栈 */</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; intStack.top() &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        stringStack.push ( <span class="string">"hello"</span> ); <span class="comment">/* 操作string类型的栈 */</span></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; stringStack.top() &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">        stringStack.pop();</span><br><span class="line">        stringStack.pop();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> ( exception <span class="keyword">const</span> &amp;ex ) &#123;</span><br><span class="line">        <span class="built_in">cerr</span> &lt;&lt; <span class="string">"Exception: "</span> &lt;&lt; ex.what() &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">7</span></span><br><span class="line">hello</span><br><span class="line">Exception: Stack&lt;&gt;::pop(): empty <span class="built_in">stack</span></span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="函数模板的声明和模板函数的生成"><a href="#函数模板的声明和模板函数的生成" class="headerlink" title="函数模板的声明和模板函数的生成"></a>函数模板的声明和模板函数的生成</h3><h4 id="函数模板的声明"><a href="#函数模板的声明" class="headerlink" title="函数模板的声明"></a>函数模板的声明</h4><p>&emsp;&emsp;函数模板可以用来创建一个通用的函数，以支持多种不同的形参，避免重载函数的函数体重复设计。它的最大特点是把函数使用的数据类型作为参数。函数模板的声明形式为：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt; <span class="keyword">typename</span> 数据类型参数标识符 &gt;</span><br><span class="line">返回类型 函数名 ( 参数表 ) &#123;</span><br><span class="line">    <span class="comment">/* 函数体 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>template</code>是定义模板函数的关键字，其后面的尖括号不能省略；<code>typename</code>(或<code>class</code>)是声明数据类型参数标识符的关键字，用以说明它后面的标识符是数据类型标识符。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function">T <span class="title">fuc</span> <span class="params">( T x, <span class="keyword">int</span> y )</span> </span>&#123;</span><br><span class="line">    T x;</span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果主调函数中有以下语句：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">double</span> d;</span><br><span class="line"><span class="keyword">int</span> a;</span><br><span class="line">fuc ( d, a );</span><br></pre></td></tr></table></figure>
-<p>则系统将用实参<code>d</code>的数据类型<code>double</code>去代替函数模板中的<code>T</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">double</span> <span class="title">fuc</span> <span class="params">( <span class="keyword">double</span> x, <span class="keyword">int</span> y )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">double</span> x;</span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>函数模板只是声明了一个函数的描述，不是一个可以直接执行的函数，只有根据实际情况用实参的数据类型代替类型参数标识符之后，才能产生真正的函数。<br>&emsp;&emsp;关键字<code>typename</code>也可以使用关键字<code>class</code>，这时数据类型参数标识符就可以使用所有的<code>C++</code>数据类型。</p>
-<h4 id="模板函数的生成"><a href="#模板函数的生成" class="headerlink" title="模板函数的生成"></a>模板函数的生成</h4><p>&emsp;&emsp;函数模板的数据类型参数标识符实际上是一个类型形参，在使用函数模板时，要将这个形参实例化为确定的数据类型。将类型形参实例化的参数称为模板实参，用模板实参实例化的函数称为模板函数(简单地说，类实例化生成实例，函数模板实例化生成模板函数)。模板函数的生成就是将函数模板的类型形参实例化的过程。使用中应注意的几个问题：<br>&emsp;&emsp;1. 函数模板允许使用多个类型参数，但在template定义部分的每个形参前必须有关键字<code>typename</code>或<code>class</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt; <span class="class"><span class="keyword">class</span> 数据类型参数标识符1, ..., <span class="title">class</span> 数据类型参数标识符<span class="title">n</span> &gt;</span></span><br><span class="line"><span class="class">返回类型 函数名 ( 参数表 ) &#123;</span></span><br><span class="line">    <span class="comment">/* 函数体 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;2. 在<code>template</code>语句与函数模板定义语句的返回类型之间不允许有别的语句，下面的声明是错误的：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>&gt;</span></span><br><span class="line"><span class="class"><span class="title">int</span> <span class="title">I</span>;</span></span><br><span class="line"><span class="function">T <span class="title">min</span> <span class="params">( T x, T y )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* 函数体 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;3. 模板函数类似于重载函数，但两者有很大区别：函数重载时，每个函数体内可以执行不同的动作，但同一个函数模板实例化后的模板函数都必须执行相同的动作。</p>
-<h4 id="函数模板的异常处理"><a href="#函数模板的异常处理" class="headerlink" title="函数模板的异常处理"></a>函数模板的异常处理</h4><p>&emsp;&emsp;函数模板中的模板形参可实例化为各种类型，但当实例化模板形参的各模板实参之间不完全一致时，就可能发生错误：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">min</span> <span class="params">( T &amp;x, T &amp;y )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> ( x &lt; y ) ? x : y;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span> <span class="params">( <span class="keyword">int</span> i, <span class="keyword">char</span> j )</span> </span>&#123;</span><br><span class="line">    min ( i, i );</span><br><span class="line">    min ( j, j );</span><br><span class="line">    min ( i, j );</span><br><span class="line">    min ( j, i );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>例子中的后两个调用是错误的。出现错误的原因是：在调用时，编译器按最先遇到的实参类型隐式地生成一个模板函数，并用它对所有模板函数进行一致性检查。例如对语句<code>min(i, j);</code>，先遇到的实参<code>i</code>是整型的，编译器就将模板形参解释为整型，此后出现的模板实参<code>j</code>不能解释为整型而产生错误，此时没有隐含的类型转换功能。解决此种异常的方法有两种：</p>
-<ul>
-<li>采用强制类型转换，如将语句<code>min(i, j);</code>改写为<code>min(i, int(j));</code>。</li>
-<li>用非模板函数重载函数模板。具体情况如下所示：</li>
-</ul>
-<p>&emsp;&emsp;1. 借用函数模板的函数体。此时只声明非模板函数的原型，它的函数体借用函数模板的函数体。改写上面的例子如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">min</span> <span class="params">( T &amp;x, T &amp;y )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> ( x &lt; y ) ? x : y;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">min</span> <span class="params">( <span class="keyword">int</span>, <span class="keyword">int</span> )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span> <span class="params">( <span class="keyword">int</span> i, <span class="keyword">char</span> j )</span> </span>&#123;</span><br><span class="line">    min ( i, i );</span><br><span class="line">    min ( j, j );</span><br><span class="line">    min ( i, j );</span><br><span class="line">    min ( j, i );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行该程序就不会出错了，因为重载函数支持数据间的隐式类型转换。<br>&emsp;&emsp;2. 重新定义函数体。就像一般的重载函数一样，重新定义一个完整的非模板函数，它所带的参数可以随意。<code>C++</code>中，函数模板与同名的非模板函数重载时，应遵循下列调用原则：</p>
-<ul>
-<li>寻找一个参数完全匹配的函数，若找到就调用它。若参数完全匹配的函数多于一个，则这个调用是一个错误的调用。</li>
-<li>寻找一个函数模板，若找到就将其实例化生成一个匹配的模板函数并调用它。</li>
-<li>若上面两条都失败，则使用函数重载的方法，通过类型转换产生参数匹配，若找到就调用它。</li>
-<li>若上面三条都失败，还没有找都匹配的函数，则这个调用是一个错误的调用。</li>
-</ul>
-<hr>
-<h3 id="C-函数模板重载"><a href="#C-函数模板重载" class="headerlink" title="C++函数模板重载"></a>C++函数模板重载</h3><p>&emsp;&emsp;和普通函数一样，在<code>C++</code>中模板函数也同样支持函数重载的功能，甚至可以将模板函数与普通函数混合在一起，以达到更为灵活的函数重载的效果。下面给出一个利用模板函数重载计算哈希值的代码示例：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">hash_code</span> <span class="params">( T v )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> v.hashCode() * <span class="number">2</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">hash_code</span> <span class="params">( T *v )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> v-&gt;hashCode();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">hash_code</span> <span class="params">( <span class="keyword">const</span> <span class="keyword">int</span> v )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> v + <span class="number">100</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">HashClass</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    HashClass ( <span class="keyword">int</span> v ) : _v ( v ) &#123;&#125;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> _v + <span class="number">200</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">int</span> _v;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">HashClass <span class="title">c1</span> <span class="params">( <span class="number">10</span> )</span></span>;</span><br><span class="line">    <span class="comment">/* 调用的是“template&lt;typename T&gt; int hash_code(T v)” */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The hash value is %d\n"</span>, hash_code ( c1 ) );</span><br><span class="line">    <span class="function">HashClass <span class="title">c2</span> <span class="params">( <span class="number">20</span> )</span></span>;</span><br><span class="line">    <span class="comment">/* 调用的是“template&lt;typename T&gt; int hash_code(T* v)” */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The hash value is %d\n"</span>, hash_code ( &amp;c2 ) );</span><br><span class="line">    <span class="keyword">int</span> i3 = <span class="number">30</span>;</span><br><span class="line">    <span class="comment">/* 调用的是“int hash_code(const int v)” */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"The hash value is %d\n"</span>, hash_code ( i3 ) );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><code>hash_code</code>函数可以让编译器根据参数的不同选择最为合适的候选函数。在这里模板函数和普通函数一同参与了函数重载。对于模板函数重载，主要应用于算法领域，既对于大多数的类型可以通过泛型算法以达到预期的效果，而对于特殊类型，则可以通过函数重载的方式，针对该类型实现另外一套更为高效的算法。</p>
-<hr>
-<h3 id="C-模板特例化应用实例"><a href="#C-模板特例化应用实例" class="headerlink" title="C++模板特例化应用实例"></a>C++模板特例化应用实例</h3><p>&emsp;&emsp;如果我们想对特定的数据类型执行不同的代码(而不是通用模板)，这种情况下就可以使用模板特例化(<code>template specialization</code>)。</p>
-<h4 id="函数模板特例化"><a href="#函数模板特例化" class="headerlink" title="函数模板特例化"></a>函数模板特例化</h4><p>&emsp;&emsp;当特例化一个函数模板时，必须为原模板中的每个模板参数都提供实参。使用关键字<code>template</code>后跟一个空尖括号<code>&lt;&gt;</code>，即<code>template &lt;&gt;</code>，以指出我们正在特例化一个模板。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">fun</span> <span class="params">( T a )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"The main template fun(): "</span> &lt;&lt; a &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span> &lt;&gt;  <span class="comment">/* 对int型特例化 */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">fun</span> <span class="params">( <span class="keyword">int</span> a )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"Specialized template for int type: "</span> &lt;&lt; a &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    fun&lt;<span class="keyword">char</span>&gt; ( <span class="string">'a'</span> );</span><br><span class="line">    fun&lt;<span class="keyword">int</span>&gt; ( <span class="number">10</span> );</span><br><span class="line">    fun&lt;<span class="keyword">float</span>&gt; ( <span class="number">9.15</span> );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">The main template fun(): a</span><br><span class="line">Specialized <span class="keyword">template</span> <span class="keyword">for</span> <span class="keyword">int</span> type: <span class="number">10</span></span><br><span class="line">The main template fun(): 9.15</span><br></pre></td></tr></table></figure>
-<p>对于除<code>int</code>型外的其他数据类型，都会调用通用版本的函数模板<code>fun(T a)</code>；对于<code>int</code>型，则会调用特例化版本的<code>fun(int a)</code>。注意，一个特例化版本的本质是一个实例，而非函数的重载，因此特例化不影响函数匹配。</p>
-<h4 id="类模板特例化"><a href="#类模板特例化" class="headerlink" title="类模板特例化"></a>类模板特例化</h4><p>&emsp;&emsp;除了特例化函数模板，我们还可以特例化类模板。下面是一个简单的例子：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Test</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"General template object"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">template</span>&lt;&gt; <span class="comment">/* 对int型特例化 */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Test</span>&lt;int&gt; &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"Specialized template object"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    Test&lt;<span class="keyword">int</span>&gt; a;</span><br><span class="line">    Test&lt;<span class="keyword">char</span>&gt; b;</span><br><span class="line">    Test&lt;<span class="keyword">float</span>&gt; c;</span><br><span class="line">    a.print();</span><br><span class="line">    b.print();</span><br><span class="line">    c.print();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Specialized <span class="keyword">template</span> object</span><br><span class="line">General <span class="keyword">template</span> object</span><br><span class="line">General <span class="keyword">template</span> object</span><br></pre></td></tr></table></figure>
-<p>与函数模板不同的是，类模板的特例化不必为所有模板参数提供实参。我们可以只指定一部分而非所有模板参数，这种叫做类模板的偏特化或部分特例化(<code>partial specialization</code>)。例如<code>C++</code>标准库中类<code>vector</code>的定义：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> Allocator&gt;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">vector</span> &#123;</span></span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 部分特例化 */</span></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Allocator&gt;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">vector</span>&lt;bool, Allocator&gt; &#123;</span></span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>在<code>vector</code>这个例子中，一个参数被绑定到<code>bool</code>类型，而另一个参数仍未绑定需要由用户指定。注意，一个类模板的部分特例化版本仍然是一个模板，因为使用它时用户还必须为那些在特例化版本中未指定的模板参数提供实参。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2448,7 +1921,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">955</span>
+                  <span class="site-state-item-count">958</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

@@ -271,6 +271,396 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/05/Contiki和uip/Contiki内核的STM32移植/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/05/Contiki和uip/Contiki内核的STM32移植/" itemprop="url">Contiki内核的STM32移植</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-05T07:24:14+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;1. 找一个<code>STM32</code>的<code>UART</code>的打印例程，最好是支持<code>printf</code>函数的。<br>&emsp;&emsp;2. 接下来拷贝<code>contiki\core</code>中的文件。要加入工程的文件只有如下几个：<code>core\sys</code>目录下的<code>autostart.c</code>、<code>etimer.c</code>、<code>process.c</code>和<code>timer.c</code>。<br>&emsp;&emsp;3. 在<code>include</code>路径中，加入<code>contiki\core</code>、<code>contiki\core\sys</code>、<code>contiki\core\lib</code>、<code>contiki\cpu</code>。<br>&emsp;&emsp;4. 把<code>cpu\arm\stm32f103</code>目录下的<code>clock.c</code>拷贝到工程目录(<code>stm32f10x_it.c</code>所在目录)并加入工程中。<br>&emsp;&emsp;5. 把<code>platform\stm32test</code>目录下的<code>contiki_main.c</code>复制到<code>main.c</code>中，并将该目录下的<code>contiki_conf.h</code>加入到<code>include</code>路径中。<br>&emsp;&emsp;6. 把<code>uart</code>的文件改成<code>debug-uart.c</code>，并将相应的<code>.h</code>文件也改了，重新放入工程中。<br>&emsp;&emsp;7. 把<code>clock.c</code>中两个函数做如下更改：用<code>#include &quot;stm32f10x.h&quot;</code>和<code>#include &quot;stm32f10x_it.h&quot;</code>替换原来的<code>#include &lt;stm32f10x_map.h&gt;</code>和<code>#include &lt;nvic.h&gt;</code>。其他源文件和头文件也做此修改。把<code>systick</code>初始化函数改成：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clock_init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( SysTick_Config ( SystemCoreClock / CLOCK_SECOND ) ) &#123;</span><br><span class="line">        <span class="keyword">while</span> ( <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>把<code>systick</code>中断函数改为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">SysTick_Handler</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    current_clock++;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( etimer_pending() &amp;&amp; etimer_next_expiration_time() &lt;= current_clock ) &#123;</span><br><span class="line">        etimer_request_poll();</span><br><span class="line">        <span class="comment">// printf( "%d, %d\n", clock_time(), etimer_next_expiration_time() );</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( --second_countdown == <span class="number">0</span> ) &#123;</span><br><span class="line">        current_seconds++;</span><br><span class="line">        second_countdown = CLOCK_SECOND;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后把<code>stm32f10x_it.c</code>的<code>void SysTick_Handler(void){}</code>删除。<br>&emsp;&emsp;8. 把串口初始化函数改为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">dbg_setup_uart</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    USART_InitTypeDef USART_InitStructure;</span><br><span class="line">    GPIO_InitTypeDef GPIO_InitStructure;</span><br><span class="line">    RCC_APB2PeriphClockCmd ( RCC_APB2Periph_GPIOA | RCC_APB2Periph_USART1 | RCC_APB2Periph_AFIO, ENABLE );</span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;</span><br><span class="line">    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;</span><br><span class="line">    GPIO_Init ( GPIOA, &amp;GPIO_InitStructure );</span><br><span class="line">    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;</span><br><span class="line">    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;</span><br><span class="line">    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;</span><br><span class="line">    GPIO_Init ( GPIOA, &amp;GPIO_InitStructure );</span><br><span class="line">    USART_InitStructure.USART_BaudRate = <span class="number">9600</span>;</span><br><span class="line">    USART_InitStructure.USART_WordLength = USART_WordLength_8b;</span><br><span class="line">    USART_InitStructure.USART_StopBits = USART_StopBits_1;</span><br><span class="line">    USART_InitStructure.USART_Parity = USART_Parity_No;</span><br><span class="line">    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;</span><br><span class="line">    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;</span><br><span class="line">    USART_Init ( USART1, &amp;USART_InitStructure );</span><br><span class="line">    USART_ITConfig ( USART1, USART_IT_RXNE, ENABLE );</span><br><span class="line">    USART_Cmd ( USART1, ENABLE );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;9. 将<code>main.c</code>中的<code>#include&lt;gpio.h&gt;</code>删除，并编译工程。可能会出一些错误，比如多定义或者未定义。其中<code>1</code>个是<code>autostart_processes</code>未定义，解决方法是创建一个进程并使用<code>AUTOSTART_PROCESSES</code>加入自启动项目。<code>main.c</code>如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stm32f10x.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stm32f10x_it.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stm32f10x_dma.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;debug-uart.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/process.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/procinit.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/etimer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/autostart.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/clock.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"led.h"</span></span></span><br><span class="line">​</span><br><span class="line">PROCESS ( blink_process, <span class="string">"Blink"</span> );</span><br><span class="line">PROCESS_THREAD ( blink_process, ev, data ) &#123;</span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">etimer</span> <span class="title">et</span>;</span></span><br><span class="line">        etimer_set ( &amp;et, CLOCK_SECOND );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et ) );</span><br><span class="line">        GPIO_ResetBits ( GPIOA, GPIO_Pin_8 );</span><br><span class="line">        etimer_set ( &amp;et, CLOCK_SECOND );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et ) );</span><br><span class="line">        GPIO_SetBits ( GPIOA, GPIO_Pin_8 );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">PROCESS ( blink_process_2, <span class="string">"Blink"</span> );</span><br><span class="line">PROCESS_THREAD ( blink_process_2, ev, data ) &#123;</span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">etimer</span> <span class="title">et_2</span>;</span></span><br><span class="line">        etimer_set ( &amp;et_2, CLOCK_SECOND / <span class="number">2</span> );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et_2 ) );</span><br><span class="line">        GPIO_ResetBits ( GPIOD, GPIO_Pin_2 );</span><br><span class="line">        etimer_set ( &amp;et_2, CLOCK_SECOND / <span class="number">2</span> );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et_2 ) );</span><br><span class="line">        GPIO_SetBits ( GPIOD, GPIO_Pin_2 );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">int</span> idle_count = <span class="number">0</span>;</span><br><span class="line">AUTOSTART_PROCESSES ( &amp;blink_process, &amp;blink_process_2 );</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    LED_Init();</span><br><span class="line">    dbg_setup_uart();</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Initialising\n"</span> );</span><br><span class="line">    clock_init();</span><br><span class="line">    process_init();</span><br><span class="line">    process_start ( &amp;etimer_process, <span class="literal">NULL</span> );</span><br><span class="line">    autostart_start ( autostart_processes );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"Processes running\n"</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">        &#125; <span class="keyword">while</span> ( process_run() &gt; <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">        idle_count++;</span><br><span class="line">        <span class="comment">/* Idle! */</span></span><br><span class="line">        <span class="comment">/* Stop processor clock */</span></span><br><span class="line">        <span class="comment">/* asm("wfi"::); */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/04/Contiki和uip/Contiki的SPI接口/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/04/Contiki和uip/Contiki的SPI接口/" itemprop="url">Contiki的SPI接口</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-04T23:50:56+08:00">
+                2019-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="SPI宏定义"><a href="#SPI宏定义" class="headerlink" title="SPI宏定义"></a>SPI宏定义</h3><p>&emsp;&emsp;<code>Contiki</code>源码的<code>SPI</code>宏定义如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> __SPI_H__</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __SPI_H__</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> SPI_WAITFORTxREADY</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_BEFORE() SPI_WAITFORTxREADY()</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_AFTER()</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_ENDED() SPI_WAITFOREOTx()</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span> <span class="comment">/* SPI_WAITFORTxREADY */</span></span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_BEFORE()</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_AFTER() SPI_WAITFOREOTx()</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTx_ENDED()</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* SPI_WAITFORTxREADY */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">unsigned</span> <span class="keyword">char</span> spi_busy;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">spi_init</span> <span class="params">( <span class="keyword">void</span> )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Write one character to SPI */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE(data)          \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                         \</span><br><span class="line">        SPI_WAITFORTx_BEFORE();  \</span><br><span class="line">        SPI_TXBUF = data;        \</span><br><span class="line">        SPI_WAITFOREOTx();       \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Write one character to SPI - will not wait for end</span></span><br><span class="line"><span class="comment">   useful for multiple writes with wait after final */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE_FAST(data)     \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                         \</span><br><span class="line">        SPI_WAITFORTx_BEFORE();  \</span><br><span class="line">        SPI_TXBUF = data;        \</span><br><span class="line">        SPI_WAITFORTx_AFTER();   \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Read one character from SPI */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_READ(data)      \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                    \</span><br><span class="line">        SPI_TXBUF = <span class="number">0</span>;      \</span><br><span class="line">        SPI_WAITFOREORx();  \</span><br><span class="line">        data = SPI_RXBUF;   \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Flush the SPI read register */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_FLUSH()  \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;             \</span><br><span class="line">        SPI_RXBUF;   \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>);</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* __SPI_H__ */</span></span></span><br></pre></td></tr></table></figure>
+<h3 id="platform-conf-h中的SPI宏定义"><a href="#platform-conf-h中的SPI宏定义" class="headerlink" title="platform-conf.h中的SPI宏定义"></a>platform-conf.h中的SPI宏定义</h3><p>&emsp;&emsp;<code>Contiki</code>中有两个重要的头文件，一个是<code>contiki-conf.h</code>，另一个是<code>platform-conf.h</code>。该头文件中存在所有和平台有关的宏定义，其中包括<code>SPI</code>接口。<br>&emsp;&emsp;<code>MSP430</code>平台(<code>exp5438</code>)如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_TXBUF UCB0TXBUF</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_RXBUF UCB0RXBUF</span></span><br><span class="line"><span class="comment">/* USART0 Tx ready? */</span></span><br><span class="line"><span class="comment">/* 发送或接收正在进行，UCBUSY置位 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREOTx()  while ((UCB0STAT &amp; UCBUSY) != 0)</span></span><br><span class="line"><span class="comment">/* USART0 Rx ready? */</span></span><br><span class="line"><span class="comment">/* 当RXBUF接收到一个字符，UCRXIFG置位 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREORx()  while ((UCB0IFG &amp; UCRXIFG) == 0)</span></span><br><span class="line"><span class="comment">/* USART0 Tx buffer ready? */</span></span><br><span class="line"><span class="comment">/* 当TXBUF为空时，UCTXIFG置位 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTxREADY()  while ((UCB0IFG &amp; UCTXIFG) == 0)</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>AVR</code>平台(<code>micaz</code>)如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_TXBUF SPDR</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_RXBUF SPDR</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREOTx() do &#123; while (!(SPSR &amp; BV(SPIF))); &#125; while (0)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREORx() do &#123; while (!(SPSR &amp; BV(SPIF))); &#125; while (0)</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>SPI_WAITFOREOTx</code>为等待发送完成，<code>MSP430F5438</code>检测忙碌标志，<code>Atmeg128</code>检测发送接收完成标志位。</li>
+<li><code>SPI_WAITFOREORx</code>为等待接收完成，<code>MSP430F5438</code>检测接收缓冲区标志位，<code>Atmeg128</code>检测发送接收完成标志。</li>
+</ul>
+<h3 id="SPI宏定义展开"><a href="#SPI宏定义展开" class="headerlink" title="SPI宏定义展开"></a>SPI宏定义展开</h3><p>&emsp;&emsp;<code>EXP5438</code>的<code>SPI</code>宏展开如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Write one character to SPI */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE(data)          \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                         \</span><br><span class="line">        SPI_WAITFORTx_BEFORE();  \</span><br><span class="line">        SPI_TXBUF = data;        \</span><br><span class="line">        SPI_WAITFOREOTx();       \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE(data)               \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                              \</span><br><span class="line">        UCB0TXBUF = data;             \</span><br><span class="line">        <span class="keyword">while</span>((UCB0STAT&amp;UCBUSY)!=<span class="number">0</span>);  \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Write one character to SPI - will not wait for end</span></span><br><span class="line"><span class="comment">   useful for multiple writes with wait after final */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE_FAST(data)     \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                         \</span><br><span class="line">        SPI_WAITFORTx_BEFORE();  \</span><br><span class="line">        SPI_TXBUF = data;        \</span><br><span class="line">        SPI_WAITFORTx_AFTER();   \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WRITE_FAST(data)          \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                              \</span><br><span class="line">        UCB0TXBUF = data;             \</span><br><span class="line">        <span class="keyword">while</span>((UCB0STAT&amp;UCBUSY)!=<span class="number">0</span>);  \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* Read one character from SPI */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_READ(data)      \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                    \</span><br><span class="line">        SPI_TXBUF = <span class="number">0</span>;      \</span><br><span class="line">        SPI_WAITFOREORx();  \</span><br><span class="line">        data = SPI_RXBUF;   \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_READ(data)                  \</span></span><br><span class="line">    <span class="keyword">do</span> &#123;                                \</span><br><span class="line">        UCB0RXBUF = <span class="number">0</span>;                  \</span><br><span class="line">        <span class="keyword">while</span>((UCB0IFG&amp;UCRXIFG) == <span class="number">0</span>);  \</span><br><span class="line">        data = SPI_RXBUF;               \</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="STM32平台"><a href="#STM32平台" class="headerlink" title="STM32平台"></a>STM32平台</h3><p>&emsp;&emsp;如果<code>STM32</code>连接<code>CC2520</code>，那么<code>SPI</code>的关键定义如下(暂未使用硬件平台进行测试，并假设使用<code>SPI1</code>)：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_TXBUF SPI1-&gt;DR</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_RXBUF SPI1-&gt;DR</span></span><br><span class="line"><span class="comment">/* 等待发送完成 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREOTx() while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);</span></span><br><span class="line"><span class="comment">/* 等待接收完成 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFOREORx() while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET);</span></span><br><span class="line"><span class="comment">/* 同为等待发送完成 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SPI_WAITFORTxREADY() while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);</span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/04/Contiki和uip/Contiki在CC2530的移植/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/04/Contiki和uip/Contiki在CC2530的移植/" itemprop="url">Contiki在CC2530的移植</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-04T23:38:25+08:00">
+                2019-02-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;首先选择一个<code>CC2530</code>上的基础程序(例如串口打印)，移植系统在此基础上进行。<br>&emsp;&emsp;将<code>contiki-3.0/core/sys</code>目录下的<code>autostart.c</code>、<code>etimer.c</code>、<code>process.c</code>和<code>timer.c</code>文件，<code>contiki-3.0\cpu\cc253x\dev</code>目录下的<code>clock.c</code>以及<code>contiki-3.0\cpu\cc253x\dev</code>目录下的<code>soc.c</code>添加到工程中。<br>&emsp;&emsp;将头文件路径添加到<code>IAR</code>中：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\core\</span><br><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\core\lib\</span><br><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\cpu\</span><br><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\core\sys\</span><br><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\platform\cc2530dk\</span><br><span class="line">$PROJ_DIR$\contiki<span class="number">-3.0</span>\cpu\cc253x\</span><br></pre></td></tr></table></figure>
+<p>将<code>main</code>文件修改为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/process.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/procinit.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/etimer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/autostart.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/clock.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ioCC2530.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"stdio.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LED1 P1_0 <span class="comment">/* 定义P1.0口为LED1控制端 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">IO_Init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    P1SEL &amp;= ~<span class="number">0x01</span>; <span class="comment">/* P1.0作为普通IO口 */</span></span><br><span class="line">    P1DIR |= <span class="number">0x01</span>; <span class="comment">/* P1.0定义为输出 */</span></span><br><span class="line">    P1INP |= <span class="number">0X01</span>; <span class="comment">/* 打开三态 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">InitUART</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    PERCFG = <span class="number">0x00</span>; <span class="comment">/* (外设控制寄存器)USART_0的I/O位置为备用位置0 */</span></span><br><span class="line">    P0SEL = <span class="number">0x0c</span>; <span class="comment">/* P0_2和P0_3用作串口(外部设备功能) */</span></span><br><span class="line">    P2DIR &amp;= ~<span class="number">0XC0</span>; <span class="comment">/* (端口2方向和端口0外设优先级控制)P0优先作为UART0 */</span></span><br><span class="line">    U0CSR |= <span class="number">0x80</span>; <span class="comment">/* 设置为UART模式 */</span></span><br><span class="line">    U0GCR |= <span class="number">8</span>; <span class="comment">/* 波特率指数值，BAUD_E和BAUD_M决定了UART波特率 */</span></span><br><span class="line">    U0BAUD |= <span class="number">59</span>; <span class="comment">/* 波特率设为9600 */</span></span><br><span class="line">    UTX0IF = <span class="number">0</span>; <span class="comment">/* UART0的TX中断标志初始设置为0 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">__<span class="function">near_func <span class="keyword">int</span> <span class="title">putchar</span> <span class="params">( <span class="keyword">int</span> c )</span> </span>&#123;</span><br><span class="line">    UTX0IF = <span class="number">0</span>;</span><br><span class="line">    U0DBUF = ( <span class="keyword">char</span> ) c;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( UTX0IF == <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ( c );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">PROCESS ( led_process, <span class="string">"led"</span> );</span><br><span class="line">PROCESS_THREAD ( led_process, ev, data ) &#123;</span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">    IO_Init();</span><br><span class="line">    LED1 = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">etimer</span> <span class="title">et</span>;</span></span><br><span class="line">        etimer_set ( &amp;et, CLOCK_SECOND / <span class="number">2</span> );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et ) );</span><br><span class="line">        LED1 = !LED1; <span class="comment">/* LED1闪烁 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">PROCESS ( print_process, <span class="string">"print"</span> );</span><br><span class="line">PROCESS_THREAD ( print_process, ev, data ) &#123;</span><br><span class="line">    PROCESS_BEGIN();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">etimer</span> <span class="title">et</span>;</span></span><br><span class="line">        etimer_set ( &amp;et, CLOCK_SECOND / <span class="number">2</span> );</span><br><span class="line">        PROCESS_WAIT_EVENT_UNTIL ( etimer_expired ( &amp;et ) );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"I am running!\r\n"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    PROCESS_END();</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">int</span> idle_count = <span class="number">0</span>;</span><br><span class="line">AUTOSTART_PROCESSES ( &amp;led_process, &amp;print_process );</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">soc_init</span><span class="params">()</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    InitUART();</span><br><span class="line">    clock_init();</span><br><span class="line">    soc_init();</span><br><span class="line">    process_init();</span><br><span class="line">    process_start ( &amp;etimer_process, <span class="literal">NULL</span> );</span><br><span class="line">    autostart_start ( autostart_processes );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( <span class="number">1</span> ) &#123;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">while</span> ( process_run() &gt; <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">        idle_count++;</span><br><span class="line">        <span class="comment">/* Idle! */</span></span><br><span class="line">        <span class="comment">/* Stop processor clock */</span></span><br><span class="line">        <span class="comment">/* asm("wfi"::); */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对工程进行编译，会出现很多错误，接下来更改错误。系统会提示<code>8051def.h</code>文件中的<code>stdint.h</code>不存在，解决方法是在<code>IAR</code>头文件路径中添加如下路径：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$TOOLKIT_DIR$\inc\dlib\c\</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;系统会提示没有<code>compiler.h</code>文件，解决方法是注释<code>cc253x.h</code>中的<code>#include &lt;compiler.h&gt;</code>，然后加入<code>#include &lt;ioCC2530.h&gt;</code>，将<code>cc253x.h</code>中与<code>ioCC2530.h</code>重复的部分注释掉。将<code>contiki-conf.h</code>文件中的<code>CLOCK_CONF_STACK_FRIENDLY</code>设置为<code>0</code>，将<code>clock.c</code>中的<code>__xdata __at(0x0000) static unsigned long timer_value = 0;</code>改为<code>static volatile unsigned long timer_value = 0;</code>。将如下内容进行修改：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> save</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> CC_CONF_OPTIMIZE_STACK_SIZE</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">pragma</span> exclude bits</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clock_isr</span> <span class="params">( <span class="keyword">void</span> )</span> __<span class="title">interrupt</span> <span class="params">( ST_VECTOR )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> restore</span></span><br></pre></td></tr></table></figure>
+<p>修改为：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//#pragma save</span></span><br><span class="line"><span class="comment">//#if CC_CONF_OPTIMIZE_STACK_SIZE</span></span><br><span class="line"><span class="comment">//#pragma exclude bits</span></span><br><span class="line"><span class="comment">//#endif</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> vector=ST_VECTOR</span></span><br><span class="line">__near_func __<span class="function">interrupt <span class="keyword">void</span> <span class="title">clock_isr</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* ... */</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//#pragma restore</span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;将<code>8051def.h</code>中的如下内容注释掉：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">if</span> !defined(__SDCC_mcs51) &amp;&amp; !defined(SDCC_mcs51)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __data</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __xdata</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __code</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __bit bool</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __sfr volatile unsigned char</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __sbit volatile bool</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __critical</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __at(x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __using(x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __interrupt(x)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __naked</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>在<code>autostart.h</code>中加入如下内容，移植工作结束。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> AUTOSTART_ENABLE 1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> CC_NO_VA_ARGS    0</span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/04/Contiki和uip/Contiki的rtimer移植/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1321,436 +1711,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/04/C语言应用代码/宏定义使用技巧/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/04/C语言应用代码/宏定义使用技巧/" itemprop="url">宏定义使用技巧</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-04T12:40:35+08:00">
-                2019-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;1. 防止一个头文件被重复包含：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> COMDEF_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COMDEF_H</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 头文件内容 */</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;2. 重新定义一些类型，防止由于各种平台和编译器的不同，而产生的类型字节数差异，从而方便移植：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">char</span>     boolean; <span class="comment">/* Boolean value type    */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">int</span> uint32;  <span class="comment">/* Unsigned 32 bit value */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">short</span>    uint16;  <span class="comment">/* Unsigned 16 bit value */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">char</span>     uint8;   <span class="comment">/* Unsigned 8 bit value  */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">long</span> <span class="keyword">int</span>   int32;   <span class="comment">/* Signed 32 bit value   */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">short</span>      int16;   <span class="comment">/* Signed 16 bit value   */</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">signed</span> <span class="keyword">char</span>       int8;    <span class="comment">/* Signed 8 bit value    */</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;3. 得到指定地址上的一个字节或字：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MEM_B( x ) ( * ( ( byte * ) ( x ) ) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MEM_W( x ) ( * ( ( word * ) ( x ) ) )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;4. 求最大值和最小值：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAX( x, y ) ( ( ( x ) &gt; ( y ) ) ? ( x ) : ( y ) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MIN( x, y ) ( ( ( x ) &lt; ( y ) ) ? ( x ) : ( y ) )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;5. 得到<code>field</code>在结构体<code>struct</code>中的偏移量：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> FPOS( type, field ) ( ( dword ) &amp; ( ( type * ) 0 )-&gt; field )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;6. 得到一个结构体中<code>field</code>所占用的字节数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> FSIZ( type, field ) sizeof ( ( ( type * ) 0 )-&gt;field )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;7. 按照<code>LSB</code>格式把两个字节转化为一个<code>Word</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> FLIPW( ray ) ( ( ( ( word ) ( ray ) [0] ) * 256 ) + ( ray ) [1] )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;8. 按照<code>LSB</code>格式把一个<code>Word</code>转化为两个字节：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> FLOPW( ray, val )            \</span></span><br><span class="line">    ( ray ) [<span class="number">0</span>] = ( ( val ) / <span class="number">256</span> ); \</span><br><span class="line">    ( ray ) [<span class="number">1</span>] = ( ( val ) &amp; <span class="number">0xFF</span> )</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;9. 得到一个变量的地址(<code>word</code>宽度)：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> B_PTR( var ) ( ( byte * ) ( void * ) &amp; ( var ) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> W_PTR( var ) ( ( word * ) ( void * ) &amp; ( var ) )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;10. 得到一个字的高位和低位字节：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> WORD_LO(x) ( ( byte ) ( ( word ) ( x ) &amp; 255 ) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> WORD_HI(x) ( ( byte ) ( ( word ) ( x ) &gt;&gt; 8 ) )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;11. 返回一个比X大的最接近的<code>8</code>的倍数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> RND8( x ) ( ( ( ( x ) + 7 ) / 8 ) * 8 )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;12. 将一个字母转换为大写：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> UPCASE( c ) ( ( ( c ) &gt;= <span class="meta-string">'a'</span> &amp;&amp; ( c ) &lt;= <span class="meta-string">'z'</span> ) ? ( ( c ) - 0x20 ) : ( c ) )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;13. 判断字符是不是<code>10</code>进值的数字：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DECCHK( c ) ( ( c ) &gt;= <span class="meta-string">'0'</span> &amp;&amp; ( c ) &lt;= <span class="meta-string">'9'</span> )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;14. 判断字符是不是<code>16</code>进值的数字：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HEXCHK( c ) (                  \</span></span><br><span class="line">    ( ( c ) &gt;= <span class="string">'0'</span> &amp;&amp; ( c ) &lt;= <span class="string">'9'</span> ) || \</span><br><span class="line">    ( ( c ) &gt;= <span class="string">'A'</span> &amp;&amp; ( c ) &lt;= <span class="string">'F'</span> ) || \</span><br><span class="line">    ( ( c ) &gt;= <span class="string">'a'</span> &amp;&amp; ( c ) &lt;= <span class="string">'f'</span> ) )</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;15. 防止溢出的一个方法：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> INC_SAT( val ) ( val = ( ( val ) + 1 &gt; ( val ) ) ? ( val ) + 1 : ( val ) )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;16. 返回数组元素的个数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ARR_SIZE( a ) ( sizeof ( ( a ) ) / sizeof ( ( a[0] ) ) )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;17. 对于<code>IO</code>空间映射在存储空间的结构，输入输出处理：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> inp( port )         ( * ( ( volatile byte * ) ( port ) ) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> inpw( port )        ( * ( ( volatile word * ) ( port ) ) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> inpdw( port )       ( * ( ( volatile dword * ) ( port ) ) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> outp( port, val )   ( * ( ( volatile byte * ) ( port ) ) = ( ( byte ) ( val ) ) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> outpw( port, val )  ( * ( ( volatile word * ) ( port ) ) = ( ( word ) ( val ) ) )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> outpdw( port, val ) ( * ( ( volatile dword * ) ( port ) ) = ( ( dword ) ( val ) ) )</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;18. 使用宏进行跟踪调试：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> _DEBUG</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> DEBUGMSG(msg, date) printf ( msg ); printf ( <span class="meta-string">"%d %d %d"</span>, date, _LINE_, _FILE_ )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> DEBUGMSG(msg, date)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;19. 使用<code>do{}while(0)</code>语句可以防止宏定义错误：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DO(a, b) do &#123; \</span></span><br><span class="line">        a + b;        \</span><br><span class="line">        a++;          \</span><br><span class="line">    &#125; <span class="keyword">while</span> ( <span class="number">0</span> )</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;20. 将宏定义得像函数一样：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SWAP(a,b)     \</span></span><br><span class="line">    &#123;                 \</span><br><span class="line">        <span class="keyword">int</span> temp = a; \</span><br><span class="line">        a = b;        \</span><br><span class="line">        b = temp;     \</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> b = <span class="number">2</span>;</span><br><span class="line">    SWAP ( a, b );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"a = %d, b = %d\n"</span>, a, b );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/04/C语言应用代码/C语言实现消息队列/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/04/C语言应用代码/C语言实现消息队列/" itemprop="url">C语言实现消息队列</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-04T12:34:58+08:00">
-                2019-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>GM_Queue.h</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 采用链表实现，链表的头部为队首，链表的尾部为队尾，</span></span><br><span class="line"><span class="comment">   Enqueue在队尾进行操作，Dequeue在队首进行操作 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _GM_QUEUE_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _GM_QUEUE_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __cplusplus</span></span><br><span class="line"><span class="keyword">extern</span><span class="string">"C"</span> &#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GM_Queue_Enqueue</span> <span class="params">( <span class="keyword">int</span> value )</span></span>; <span class="comment">/* 加入队列 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GM_Queue_Dequeue</span> <span class="params">( <span class="keyword">int</span> *value )</span></span>; <span class="comment">/* 离开队列 */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GM_Queue_Clear</span><span class="params">()</span></span>; <span class="comment">/* 清除队列 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GM_Queue_Length</span><span class="params">()</span></span>; <span class="comment">/* 计算队列长度 */</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __cplusplus</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/**&lt; __cplusplus */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/**&lt; _GM_QUEUE_H */</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>GM_Queue.c</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"GM_Queue.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">Queue</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> value;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">Queue</span> *<span class="title">next</span>;</span></span><br><span class="line">&#125; Queue_Struct;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> Queue_Struct *head = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">static</span> Queue_Struct *tail = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GM_Queue_Enqueue</span> <span class="params">( <span class="keyword">int</span> value )</span> </span>&#123;</span><br><span class="line">    Queue_Struct *tmp = ( Queue_Struct * ) <span class="built_in">malloc</span> ( <span class="keyword">sizeof</span> ( Queue_Struct ) );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == tmp ) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    tmp-&gt;value = value;</span><br><span class="line">    tmp-&gt;next  = <span class="literal">NULL</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( <span class="literal">NULL</span> == tail ) &#123;</span><br><span class="line">        head = tmp;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        tail-&gt;next = tmp;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    tail = tmp;</span><br><span class="line">    ++count;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GM_Queue_Dequeue</span> <span class="params">( <span class="keyword">int</span> *value )</span> </span>&#123;</span><br><span class="line">    Queue_Struct *tmp = <span class="literal">NULL</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( ( <span class="literal">NULL</span> == head ) || ( <span class="literal">NULL</span> == value ) ) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    *value = head-&gt;value;</span><br><span class="line">    tmp = head;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( head == tail ) &#123;</span><br><span class="line">        head = <span class="literal">NULL</span>;</span><br><span class="line">        tail = <span class="literal">NULL</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        head = head-&gt;next;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">free</span> ( tmp );</span><br><span class="line">    tmp = <span class="literal">NULL</span>;</span><br><span class="line">    --count;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">GM_Queue_Clear</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> value = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">while</span> ( count &gt; <span class="number">0</span> ) &#123;</span><br><span class="line">        GM_Queue_Dequeue ( &amp;value );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GM_Queue_Length</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> rt = <span class="number">-1</span>;</span><br><span class="line">    <span class="keyword">int</span> value = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">10</span>; ++i ) &#123;</span><br><span class="line">        rt = GM_Queue_Enqueue ( i );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"ENQUEUE rt = %d: value = %d\n"</span>, rt, i );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"COUNT = %d\n"</span>, GM_Queue_Length() );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">10</span>; ++i ) &#123;</span><br><span class="line">        rt = GM_Queue_Dequeue ( &amp;value );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"DEQUEUE rt = %d: value = %d\n"</span>, rt, value );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    rt = GM_Queue_Dequeue ( &amp;value );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"DEQUEUE rt = %d: value = %d\n"</span>, rt, value );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; <span class="number">10</span>; ++i ) &#123;</span><br><span class="line">        rt = GM_Queue_Enqueue ( i );</span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"ENQUEUE rt = %d: value = %d\n"</span>, rt, i );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    GM_Queue_Clear();</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"COUNT = %d\n"</span>, GM_Queue_Length() );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/04/Linux驱动程序/Linux设备控制接口/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/04/Linux驱动程序/Linux设备控制接口/" itemprop="url">Linux设备控制接口</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-04T11:24:01+08:00">
-                2019-02-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;设备驱动程序的一个基本功能就是管理和控制设备，同时为用户应用程序提供管理和控制设备的接口，在<code>Linux</code>中这个接口是通过<code>ioctl</code>函数来实现的。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> ( *ioctl ) ( struct inode *, struct file *, <span class="keyword">unsigned</span> <span class="keyword">int</span>, <span class="keyword">unsigned</span> <span class="keyword">long</span> );</span><br></pre></td></tr></table></figure>
-<p><code>struct inode *</code>和<code>struct file *</code>描述了操作的文件，<code>unsigned int</code>描述了<code>ioctl</code>命令号，最后一个参数是<code>unsigned long</code>数据类型，描述了<code>ioctl</code>命令可能带有的参数，它可能是一个整数或指针数据。</p>
-<h3 id="ioctl命令号"><a href="#ioctl命令号" class="headerlink" title="ioctl命令号"></a>ioctl命令号</h3><p>&emsp;&emsp;<code>ioctl</code>命令号是这个函数中最重要的参数，它描述的<code>ioctl</code>要处理的命令。<code>Linux</code>中使用一个<code>32</code>位的数据来编码<code>ioctl</code>命令，它包含四个部分：<code>dir</code>、<code>type</code>、<code>nr</code>和<code>size</code>。</p>
-<ul>
-<li><code>dir</code>：代表数据传输的方向，占<code>2</code>位，可以是<code>_IOC_NONE</code>(无数据传输，<code>0U</code>)、<code>_IOC_WRITE</code>(向设备写数据，<code>1U</code>)或<code>_IOC_READ</code>(从设备读数据，<code>2U</code>)或他们的逻辑或组合，当然只有<code>_IOC_WRITE</code>和<code>_IOC_READ</code>的逻辑或才有意义。</li>
-<li><code>type</code>：描述了<code>ioctl</code>命令的类型，<code>8</code>位。每种设备或系统都可以指定自己的一个类型号，<code>ioctl</code>用这个类型来表示<code>ioctl</code>命令所属的设备或驱动。一般用<code>ASCII</code>码字符来表示，如<code>a</code>。</li>
-<li><code>nr</code>：<code>ioctl</code>命令序号，一般为<code>8</code>位。对于一个指定的设备驱动，可以对它的<code>ioctl</code>命令做一个顺序编码，一般从零开始，这个编码就是<code>ioctl</code>命令的序号。</li>
-<li><code>size</code>：<code>ioctl</code>命令的参数大小，一般为<code>14</code>位。<code>ioctl</code>命令号的这个数据成员不是强制使用的，你可以不使用它，但是我们建议你指定这个数据成员，通过它我们可以检查用户空间数据的大小以避免错误的数据操作，也可以实现兼容旧版本的<code>ioctl</code>命令。</li>
-</ul>
-<p>&emsp;&emsp;我们可以自己来直接指定一个<code>ioctl</code>命令号，它可能仅仅是一个整数集，但<code>Linux</code>中的<code>ioctl</code>命令号都是有特定含义的，因此通常我们不推荐这么做。其实<code>Linux</code>内核已经提供了相应的宏来自动生成<code>ioctl</code>命令号：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">_IO ( type, nr )</span><br><span class="line">_IOR ( type, nr, size )</span><br><span class="line">_IOW ( type, nr, size )</span><br><span class="line">_IOWR ( type, nr, size )</span><br></pre></td></tr></table></figure>
-<p>宏<code>_IO</code>用于无数据传输，宏<code>_IOR</code>用于从设备读数据，宏<code>_IOW</code>用于向设备写数据，宏<code>_IOWR</code>用于同时有读写数据的<code>IOCTL</code>命令。相对的，<code>Linux</code>内核也提供了相应的宏来从<code>ioctl</code>命令号种解码相应的域值：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">_IOC_DIR ( nr )</span><br><span class="line">_IOC_TYPE ( nr )</span><br><span class="line">_IOC_NR ( nr )</span><br><span class="line">_IOC_SIZE ( nr )</span><br></pre></td></tr></table></figure>
-<p>这些宏都定义在<code>asm/ioctl.h</code>(或<code>asm-generic.h</code>)。在使用时，先指定各个<code>IOCTL</code>命令的顺序编号(一般从<code>0</code>开始)，然后根据使用的环境用这些宏来自动生成<code>IOCTL</code>命令号。</p>
-<h3 id="ioctl返回值"><a href="#ioctl返回值" class="headerlink" title="ioctl返回值"></a>ioctl返回值</h3><p>&emsp;&emsp;<code>ioctl</code>函数的返回值是一个整数类型的值，如果命令执行成功，<code>ioctl</code>返回<code>0</code>；如果出现错误，<code>ioctl</code>函数应该返回一个负值。这个负值会作为<code>errno</code>值反馈给调用此<code>ioctl</code>的用户空间程序。关于返回值的具体含义，请参考<code>linux/errno.h</code>和<code>asm/errno.h</code>。</p>
-<h3 id="ioctl参数"><a href="#ioctl参数" class="headerlink" title="ioctl参数"></a>ioctl参数</h3><p>&emsp;&emsp;这里有必要说明一下<code>ioctl</code>命令的参数，因为它很容易犯错误。如果<code>ioctl</code>命令参数仅仅是一个整数，那么事情很简单了，我们可以在<code>ioctl</code>函数中直接使用它。但如果它是一个指针数据，那么使用上就要小心了。首先要说明这个参数是有用户空间的程序传递过来的，因此这个指针指向的地址是用户空间地址。在<code>Linux</code>中，用户空间地址是一个虚拟地址，在内核空间是无法直接使用它的。为了解决在内核空间使用用户空间地址的数据，<code>Linux</code>内核提供了以下函数，它们用于在内核空间访问用户空间的数据，定义在<code>asm/uaccess.h</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsigned</span> <span class="keyword">long</span> __<span class="function">must_check <span class="title">copy_to_user</span> <span class="params">( <span class="keyword">void</span> __user *to, <span class="keyword">const</span> <span class="keyword">void</span> *from, <span class="keyword">unsigned</span> <span class="keyword">long</span> n )</span></span>;</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">long</span> __<span class="function">must_check <span class="title">copy_from_user</span> <span class="params">( <span class="keyword">void</span> *to, <span class="keyword">const</span> <span class="keyword">void</span> __user *from, <span class="keyword">unsigned</span> <span class="keyword">long</span> n )</span></span>;</span><br></pre></td></tr></table></figure>
-<p><code>copy_from_user</code>和<code>copy_to_user</code>一般用于复杂的或大数据交换，对于简单的数据类型，如<code>int</code>或<code>char</code>，内核提供了简单的宏来实现这个功能：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> get_user(x, ptr)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> put_user(x, ptr)</span></span><br></pre></td></tr></table></figure>
-<p>其中<code>x</code>是内核空间的简单数据类型地址，<code>ptr</code>是用户空间地址指针。<br>&emsp;&emsp;我们需要牢记，在内核中是无法直接访问用户空间地址数据的。因此凡是从用户空间传递过来的指针数据，务必使用内核提供的函数来访问它们。这里有必要再一次强调的是，在内核模块或驱动程序的编写中，我们强烈建议你使用内核提供的接口来生成并操作<code>ioctl</code>命令号，这样可以对命令号赋予特定的含义，使我们的程序更加的健壮；另一方面也可以提高程序的可移植性。</p>
-<h3 id="举例"><a href="#举例" class="headerlink" title="举例"></a>举例</h3><p>&emsp;&emsp;将<code>helloworld</code>驱动添加到<code>ioctl</code>函数，首先添加一个头文件来定义<code>ioctl</code>接口需要用到的数据(<code>hello.h</code>)：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _HELLO_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _HELLO_H</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/ioctl.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAXBUF 20</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">buf_data</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> size;</span><br><span class="line">    <span class="keyword">char</span> data [MAXBUF];</span><br><span class="line">&#125; buf_data;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HELLO_IOCTL_NR_BASE     0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HELLO_IOCTL_NR_SET_DATA (HELLO_IOCTL_NR_BASE + 1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HELLO_IOCTL_NR_MAX      (HELLO_IOCTL_NR_GET_BUFF + 1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> HELLO_IOCTL_SET_DATA    _IOR(<span class="meta-string">'h'</span>, HELLO_IOCTL_NR_SET_DATA, buf_data*)</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
-<p>然后为驱动程序添加<code>ioctl</code>接口<code>hello_ioctl</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">hello_ioctl</span> <span class="params">( struct inode *inode, struct file *filp, <span class="keyword">unsigned</span> <span class="keyword">int</span> cmd, <span class="keyword">unsigned</span> <span class="keyword">long</span> arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> cmd_nr;</span><br><span class="line">    <span class="keyword">int</span> err;</span><br><span class="line">    buf_data buff;</span><br><span class="line">    err = <span class="number">0</span>;</span><br><span class="line">    cmd_nr = _IOC_NR ( cmd );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">switch</span> ( cmd_nr ) &#123;</span><br><span class="line">        <span class="keyword">case</span> HELLO_IOCTL_NR_SET_DATA:</span><br><span class="line">            <span class="keyword">if</span> ( copy_from_user ( &amp;buff, ( <span class="keyword">unsigned</span> <span class="keyword">char</span> * ) arg, <span class="keyword">sizeof</span> ( buf_data ) ) ) &#123;</span><br><span class="line">                err = -ENOMEM;</span><br><span class="line">                <span class="keyword">goto</span> error;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="built_in">memset</span> ( hello_buf, <span class="number">0</span>, <span class="keyword">sizeof</span> ( hello_buf ) );</span><br><span class="line">            <span class="built_in">memcpy</span> ( hello_buf, buff.data, buff.size );</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            printk ( <span class="string">"hello_ioctl: Unknown ioctl command (%d)\n"</span>, cmd );</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">error:</span><br><span class="line">    <span class="keyword">return</span> err;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">hello_fops</span> = &#123;</span></span><br><span class="line">    .read = hello_read,</span><br><span class="line">    .write = hello_write,</span><br><span class="line">    .open = hello_open,</span><br><span class="line">    .ioctl = hello_ioctl,</span><br><span class="line">    .release = hello_release,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="ioctl控制设备"><a href="#ioctl控制设备" class="headerlink" title="ioctl控制设备"></a>ioctl控制设备</h3><p>&emsp;&emsp;<code>memdev.c</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/mm.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/sched.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/cdev.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/io.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/system.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;asm/uaccess.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"memdev.h"</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> mem_major = MEMDEV_MAJOR;</span><br><span class="line">module_param ( mem_major, <span class="keyword">int</span>, S_IRUGO );</span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mem_dev</span> *<span class="title">mem_devp</span>;</span> <span class="comment">/* 设备结构体指针 */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">cdev</span> <span class="title">cdev</span>;</span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mem_open</span> <span class="params">( struct inode *inode, struct file *filp )</span> </span>&#123; <span class="comment">/* 文件打开函数 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mem_dev</span> *<span class="title">dev</span>;</span></span><br><span class="line">    <span class="keyword">int</span> num = MINOR ( inode-&gt;i_rdev ); <span class="comment">/* 获取次设备号 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( num &gt;= MEMDEV_NR_DEVS ) &#123;</span><br><span class="line">        <span class="keyword">return</span> -ENODEV;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    dev = &amp;mem_devp[num];</span><br><span class="line">    filp-&gt;private_data = dev; <span class="comment">/* 将设备描述结构指针赋值给文件私有数据指针 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mem_release</span> <span class="params">( struct inode *inode, struct file *filp )</span> </span>&#123; <span class="comment">/* 文件释放函数 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* IO操作 */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">memdev_ioctl</span> <span class="params">( struct inode *inode, struct file *filp, <span class="keyword">unsigned</span> <span class="keyword">int</span> cmd, <span class="keyword">unsigned</span> <span class="keyword">long</span> arg )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> err = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> ioarg = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 检测命令的有效性 */</span></span><br><span class="line">    <span class="keyword">if</span> ( _IOC_TYPE ( cmd ) != MEMDEV_IOC_MAGIC ) &#123;</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( _IOC_NR ( cmd ) &gt; MEMDEV_IOC_MAXNR ) &#123;</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( _IOC_DIR ( cmd ) &amp; _IOC_READ ) &#123; <span class="comment">/* 根据命令类型，检测参数空间是否可以访问 */</span></span><br><span class="line">        err = !access_ok ( VERIFY_WRITE, ( <span class="keyword">void</span> * ) arg, _IOC_SIZE ( cmd ) );</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( _IOC_DIR ( cmd ) &amp; _IOC_WRITE ) &#123;</span><br><span class="line">        err = !access_ok ( VERIFY_READ, ( <span class="keyword">void</span> * ) arg, _IOC_SIZE ( cmd ) );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( err ) &#123;</span><br><span class="line">        <span class="keyword">return</span> -EFAULT;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">switch</span> ( cmd ) &#123; <span class="comment">/* 根据命令，执行相应的操作 */</span></span><br><span class="line">        <span class="keyword">case</span> MEMDEV_IOCPRINT: <span class="comment">/* 打印当前设备信息 */</span></span><br><span class="line">            printk ( <span class="string">"&lt;--- CMD MEMDEV_IOCPRINT Done---&gt;\n\n"</span> );</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">case</span> MEMDEV_IOCGETDATA: <span class="comment">/* 获取参数 */</span></span><br><span class="line">            ioarg = filp-&gt;f_pos;</span><br><span class="line">            ret = __put_user ( ioarg, ( <span class="keyword">int</span> * ) arg );</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">case</span> MEMDEV_IOCSETDATA: <span class="comment">/* 设置参数 */</span></span><br><span class="line">            ret = __get_user ( ioarg, ( <span class="keyword">int</span> * ) arg );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( ( ioarg &lt; <span class="number">0</span> ) || ( ioarg &gt; MEMDEV_SIZE ) ) &#123;</span><br><span class="line">                <span class="keyword">return</span> -EINVAL;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            filp-&gt;f_pos = ioarg;</span><br><span class="line">            printk ( <span class="string">"&lt;--- In Kernel MEMDEV_IOCSETDATA ioarg = %d ---&gt;\n\n"</span>, ioarg );</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 读函数 */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> ssize_t <span class="title">mem_read</span> <span class="params">( struct file *filp, <span class="keyword">char</span> __user *buf, <span class="keyword">size_t</span> size, <span class="keyword">loff_t</span> *ppos )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> p =  *ppos;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> count = size;</span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mem_dev</span> *<span class="title">dev</span> = <span class="title">filp</span>-&gt;<span class="title">private_data</span>;</span> <span class="comment">/* 获得设备结构体指针 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( p &gt;= MEMDEV_SIZE ) &#123; <span class="comment">/* 判断读位置是否有效 */</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( count &gt; MEMDEV_SIZE - p ) &#123;</span><br><span class="line">        count = MEMDEV_SIZE - p;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( copy_to_user ( buf, ( <span class="keyword">void</span> * ) ( dev-&gt;data + p ), count ) ) &#123; <span class="comment">/* 读数据到用户空间 */</span></span><br><span class="line">        ret = -EFAULT;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        *ppos += count;</span><br><span class="line">        ret = count;</span><br><span class="line">        printk ( KERN_INFO <span class="string">"read %d bytes(s) from %ld\n"</span>, count, p );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 写函数 */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> ssize_t <span class="title">mem_write</span> <span class="params">( struct file *filp, <span class="keyword">const</span> <span class="keyword">char</span> __user *buf, <span class="keyword">size_t</span> size, <span class="keyword">loff_t</span> *ppos )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> p =  *ppos;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> count = size;</span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mem_dev</span> *<span class="title">dev</span> = <span class="title">filp</span>-&gt;<span class="title">private_data</span>;</span> <span class="comment">/* 获得设备结构体指针 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( p &gt;= MEMDEV_SIZE ) &#123; <span class="comment">/* 分析和获取有效的写长度 */</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( count &gt; MEMDEV_SIZE - p ) &#123;</span><br><span class="line">        count = MEMDEV_SIZE - p;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( copy_from_user ( dev-&gt;data + p, buf, count ) ) &#123; <span class="comment">/* 从用户空间写入数据 */</span></span><br><span class="line">        ret = -EFAULT;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        *ppos += count;</span><br><span class="line">        ret = count;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">mem_fops</span> = &#123;</span> <span class="comment">/* 文件操作结构体 */</span></span><br><span class="line">    .owner   = THIS_MODULE,</span><br><span class="line">    .open    = mem_open,</span><br><span class="line">    .release = mem_release,</span><br><span class="line">    .ioctl   = memdev_ioctl,</span><br><span class="line">    .read    = mem_read,</span><br><span class="line">    .write   = mem_write,</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">memdev_init</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 设备驱动模块加载函数 */</span></span><br><span class="line">    <span class="keyword">int</span> result;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">dev_t</span> devno = MKDEV ( mem_major, <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( mem_major ) &#123;</span><br><span class="line">        result = register_chrdev_region ( devno, <span class="number">2</span>, <span class="string">"memdev"</span> ); <span class="comment">/* 静态申请设备号 */</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        result = alloc_chrdev_region ( &amp;devno, <span class="number">0</span>, <span class="number">2</span>, <span class="string">"memdev"</span> ); <span class="comment">/* 动态分配设备号 */</span></span><br><span class="line">        mem_major = MAJOR ( devno );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( result &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    cdev_init ( &amp;cdev, &amp;mem_fops ); <span class="comment">/* 初始化cdev结构 */</span></span><br><span class="line">    cdev.owner = THIS_MODULE;</span><br><span class="line">    cdev.ops = &amp;mem_fops;</span><br><span class="line">    cdev_add ( &amp;cdev, MKDEV ( mem_major, <span class="number">0</span> ), MEMDEV_NR_DEVS ); <span class="comment">/* 注册字符设备 */</span></span><br><span class="line">    mem_devp = kmalloc ( MEMDEV_NR_DEVS * <span class="keyword">sizeof</span> ( struct mem_dev ), GFP_KERNEL ); <span class="comment">/* 为设备描述结构分配内存 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !mem_devp ) &#123; <span class="comment">/* 申请失败 */</span></span><br><span class="line">        result = -ENOMEM;</span><br><span class="line">        <span class="keyword">goto</span> fail_malloc;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="built_in">memset</span> ( mem_devp, <span class="number">0</span>, <span class="keyword">sizeof</span> ( struct mem_dev ) );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; MEMDEV_NR_DEVS; i++ ) &#123; <span class="comment">/* 为设备分配内存 */</span></span><br><span class="line">        mem_devp[i].size = MEMDEV_SIZE;</span><br><span class="line">        mem_devp[i].data = kmalloc ( MEMDEV_SIZE, GFP_KERNEL );</span><br><span class="line">        <span class="built_in">memset</span> ( mem_devp[i].data, <span class="number">0</span>, MEMDEV_SIZE );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">fail_malloc:</span><br><span class="line">    unregister_chrdev_region ( devno, <span class="number">1</span> );</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">memdev_exit</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123; <span class="comment">/* 模块卸载函数 */</span></span><br><span class="line">    cdev_del ( &amp;cdev ); <span class="comment">/* 注销设备 */</span></span><br><span class="line">    kfree ( mem_devp ); <span class="comment">/* 释放设备结构体内存 */</span></span><br><span class="line">    unregister_chrdev_region ( MKDEV ( mem_major, <span class="number">0</span> ), <span class="number">2</span> ); <span class="comment">/* 释放设备号 */</span></span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">MODULE_AUTHOR ( <span class="string">"David Xie"</span> );</span><br><span class="line">MODULE_LICENSE ( <span class="string">"GPL"</span> );</span><br><span class="line">​</span><br><span class="line">module_init ( memdev_init );</span><br><span class="line">module_exit ( memdev_exit );</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>memdev.h</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> _MEMDEV_H_</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _MEMDEV_H_</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/ioctl.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MEMDEV_MAJOR</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> MEMDEV_MAJOR 0 <span class="comment">/* 预设的mem的主设备号 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MEMDEV_NR_DEVS</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> MEMDEV_NR_DEVS 2 <span class="comment">/* 设备数 */</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MEMDEV_SIZE</span></span><br><span class="line">    <span class="meta">#<span class="meta-keyword">define</span> MEMDEV_SIZE 4096</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">​</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mem_dev</span> &#123;</span> <span class="comment">/* mem设备描述结构体 */</span></span><br><span class="line">    <span class="keyword">char</span> *data;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> size;</span><br><span class="line">&#125;;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MEMDEV_IOC_MAGIC <span class="meta-string">'k'</span> <span class="comment">/* 定义幻数 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 定义命令 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MEMDEV_IOCPRINT   _IO(MEMDEV_IOC_MAGIC, 1)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MEMDEV_IOCGETDATA _IOR(MEMDEV_IOC_MAGIC, 2, int)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MEMDEV_IOCSETDATA _IOW(MEMDEV_IOC_MAGIC, 3, int)</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MEMDEV_IOC_MAXNR 3</span></span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* _MEMDEV_H_ */</span></span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>app-ioctl.c</code>如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"memdev.h"</span> <span class="comment">/* 包含命令定义 */</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 调用命令MEMDEV_IOCSETDATA */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">setpos</span> <span class="params">( <span class="keyword">int</span> fd, <span class="keyword">int</span> pos )</span> </span>&#123;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"ioctl: Call MEMDEV_IOCSETDATA to set position\n"</span> );</span><br><span class="line">    ioctl ( fd, MEMDEV_IOCSETDATA, &amp;pos );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 调用命令MEMDEV_IOCGETDATA */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">getpos</span> <span class="params">( <span class="keyword">int</span> fd )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> pos;</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"ioctl: Call MEMDEV_IOCGETDATA to get position\n"</span> );</span><br><span class="line">    ioctl ( fd, MEMDEV_IOCGETDATA, &amp;pos );</span><br><span class="line">    <span class="keyword">return</span> pos;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">void</span> )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> fd = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> arg = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">char</span> buf[<span class="number">256</span>];</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( <span class="number">-1</span> == ( fd = open ( <span class="string">"/dev/memdev"</span>, O_RDWR ) ) ) &#123; <span class="comment">/* 打开设备文件 */</span></span><br><span class="line">        <span class="built_in">printf</span> ( <span class="string">"Open Dev Mem0 Error!\n"</span> );</span><br><span class="line">        _exit ( EXIT_FAILURE );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 调用命令MEMDEV_IOCPRINT */</span></span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"ioctl: Call MEMDEV_IOCPRINT to printk in driver\n"</span> );</span><br><span class="line">    ioctl ( fd, MEMDEV_IOCPRINT, &amp;arg );</span><br><span class="line">    <span class="built_in">strcpy</span> ( buf, <span class="string">"This is a test for ioctl"</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"write %d bytes in new open file\n"</span>, <span class="built_in">strlen</span> ( buf ) );</span><br><span class="line">    write ( fd, buf, <span class="built_in">strlen</span> ( buf ) );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"new pos is %d\n"</span>, getpos ( fd ) );</span><br><span class="line">    setpos ( fd, <span class="number">0</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"set pos = 0\n"</span> );</span><br><span class="line">    <span class="built_in">printf</span> ( <span class="string">"after setpos(fd, 0), new pos is %d\n"</span>, getpos ( fd ) );</span><br><span class="line">    close ( fd );</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -1801,7 +1761,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">955</span>
+                  <span class="site-state-item-count">958</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

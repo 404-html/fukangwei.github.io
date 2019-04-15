@@ -271,6 +271,557 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/16/深度学习/RCNN原理/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/16/深度学习/RCNN原理/" itemprop="url">RCNN原理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-16T15:56:25+08:00">
+                2019-02-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>Region CNN</code>(<code>RCNN</code>)可以说是利用深度学习进行目标检测的开山之作，主要解决目标检测中的速度和训练集这两个关键问题。</p>
+<ul>
+<li>速度：经典的目标检测算法使用滑动窗法依次判断所有可能的区域。本文则预先提取一系列较可能是物体的候选区域，之后仅在这些候选区域上提取特征，进行判断。</li>
+<li>训练集：经典的目标检测算法在区域中提取人工设定的特征(<code>Haar</code>、<code>HOG</code>等)。<code>RCNN</code>则需要训练深度网络进行特征提取。可供使用的有两个数据库：</li>
+</ul>
+<ol>
+<li>较大的识别库(<code>ImageNet ILSVC 2012</code>)：标定每张图片中物体的类别，一千万张图像，共<code>1000</code>类。</li>
+<li>较小的检测库(<code>PASCAL VOC 2007</code>)：标定每张图片中，物体的类别和位置，一万张图像，共<code>20</code>类。</li>
+</ol>
+<p><code>RCNN</code>使用识别库进行预训练，而后用检测库调优参数，最后在检测库上评测。</p>
+<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><p>&emsp;&emsp;<code>RCNN</code>算法分为如下几个步骤：</p>
+<ol>
+<li>输入一张多目标图像，采用<code>selective search</code>算法提取约<code>2000</code>个候选框。</li>
+<li>先在每个候选框周围加上<code>16</code>个像素值为候选框像素平均值的边框，再直接变形为<code>227 * 227</code>的大小。</li>
+<li>先将所有候选框像素减去该候选框像素平均值(预处理操作)，再依次将每个<code>227 * 227</code>的候选框输入<code>AlexNet</code>网络获取<code>4096</code>维的特征(比以前的人工经验特征低两个数量级)，<code>2000</code>个候选框的<code>CNN</code>特征组合成<code>2000 * 4096</code>维矩阵。</li>
+<li>将<code>2000 * 4096</code>维特征与<code>20</code>个<code>SVM</code>组成的权值矩阵<code>4096 * 20</code>相乘(<code>20</code>种分类，因为<code>SVM</code>是二分类器，则有<code>20</code>个<code>SVM</code>)，获得<code>2000 * 20</code>维矩阵(表示每个建议框是某个物体类别的得分)。</li>
+<li>分别对上述<code>2000 * 20</code>维矩阵中每一列(即每一类)进行非极大值抑制(剔除重叠候选框)，得到该列(即该类)得分最高的一些候选框。</li>
+<li>分别用<code>20</code>个回归器对上述<code>20</code>个类别中剩余的候选框进行回归操作，最终得到每个类别的修正后的得分最高的<code>bounding box</code>。</li>
+</ol>
+<p><img src="/2019/02/16/深度学习/RCNN原理/1.png" height="135" width="476"></p>
+<p>&emsp;&emsp;使用了<code>Selective Search</code>方法从一张图像生成约<code>2000</code>至<code>3000</code>个候选区域。基本思路如下：使用一种过分割手段，将图像分割成小区域；查看现有小区域，合并可能性最高的两个区域，重复直到整张图像合并成一个区域位置；输出所有曾经存在过的区域，即所谓的候选区域。候选区域生成和后续步骤相对独立，实际可以使用任意算法进行。<br>&emsp;&emsp;优先合并以下四种区域：颜色(颜色直方图)相近的；纹理(梯度直方图)相近的；合并后总面积小的；合并后的总面积在其<code>BBOX</code>中所占比例大的。第三条保证合并操作的尺度较为均匀，避免一个大区域陆续<code>吃掉</code>其他小区域。假设有区域<code>a-b-c-d-e-f-g-h</code>，较好的合并方式是：<code>ab-cd-ef-gh -&gt; abcd-efgh -&gt; abcdefgh</code>；不好的合并方法是<code>ab-c-d-e-f-g-h -&gt; abcd-e-f-g-h -&gt; abcdef-gh -&gt; abcdefgh</code>。第四条保证合并后形状规则，例如左图适于合并，右图不适于合并：</p>
+<p><img src="/2019/02/16/深度学习/RCNN原理/2.png"></p>
+<p>&emsp;&emsp;上述四条规则只涉及区域的颜色直方图、纹理直方图、面积和位置。合并后的区域特征可以直接由子区域特征计算而来，速度较快。为了尽可能不遗漏候选区域，上述操作在多个颜色空间中同时进行(<code>RGB</code>、<code>HSV</code>或<code>Lab</code>等)。在一个颜色空间中，使用上述四条规则的不同组合进行合并。所有颜色空间与所有规则的全部结果，在去除重复后，都作为候选区域输出。</p>
+<h3 id="候选框搜索"><a href="#候选框搜索" class="headerlink" title="候选框搜索"></a>候选框搜索</h3><p>&emsp;&emsp;从上面的流程图可以看到，搜索的候选框是矩形的，而且是大小各不相同。然而<code>CNN</code>要求输入图片的大小是固定的，如果把搜索的矩形选框不做处理就扔进<code>CNN</code>中，肯定是不行的。因此对于每个输入的候选框都需要缩放到固定的大小。下面讲解要怎么进行缩放处理，为了简单起见，假设下一阶段<code>CNN</code>所需要的输入图片大小是正方形(<code>227 * 227</code>)。<code>RCNN</code>的作者给出了四种变形方式：</p>
+<ul>
+<li>考虑<code>context</code>(图像中的<code>context</code>指<code>RoI</code>周边像素)的各向同性变形，候选框周围像素扩充到<code>227 * 227</code>。若遇到图像边界，则用候选框像素均值填充，如下图第二列。</li>
+<li>不考虑<code>context</code>的各向同性变形，直接用候选框像素均值填充至<code>227 * 227</code>，如下图第三列。</li>
+<li>各向异性变形，简单粗暴地对图像缩放至<code>227 * 227</code>，如下图第四列。</li>
+<li>变形前先进行边界像素填充(<code>padding</code>)处理，即向外扩展建议框边界，以上三种方法中分别采用<code>padding = 0</code>(下图第一行)和<code>padding = 16</code>(下图第二行)进行处理。</li>
+</ul>
+<p>经过作者一系列实验，采用<code>padding = 16</code>的各向异性变形(下图第二行第三列)效果最好，能使<code>mAP</code>提升<code>3</code>至<code>5%</code>。</p>
+<p><img src="/2019/02/16/深度学习/RCNN原理/3.png" height="220" width="418"></p>
+<h3 id="特征提取"><a href="#特征提取" class="headerlink" title="特征提取"></a>特征提取</h3><p>&emsp;&emsp;特征提取分为有监督预训练和特定样本下的微调这两个步骤。网络结构基本借鉴<code>Hinton</code>在<code>ImageNet</code>上的分类网络：</p>
+<p><img src="/2019/02/16/深度学习/RCNN原理/4.png" height="120" width="433"></p>
+<p>&emsp;&emsp;有监督预训练的样本如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>样本</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>正样本</td>
+<td><code>ILSVRC2012</code></td>
+</tr>
+<tr>
+<td>负样本</td>
+<td><code>ILSVRC2012</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>ILSVRC</code>样本集上仅有图像类别标签，没有图像物体位置标注。采用<code>AlexNet</code>网络进行有监督预训练，学习率为<code>0.01</code>。该网络输入为<code>227 * 227</code>的<code>ILSVRC</code>训练集图像，输出最后一层为<code>4096维特征 -&gt; 1000类</code>的映射，训练的是网络参数。</p>
+<p>&emsp;&emsp;特定样本下的微调样本如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>样本</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>正样本</td>
+<td><code>Ground Truth</code>加上与<code>Ground Truth</code>相交<code>IoU &gt; 0.5</code>的候选框(由于<code>Ground Truth</code>太少了)</td>
+</tr>
+<tr>
+<td>负样本</td>
+<td>与<code>Ground Truth</code>相交<code>IoU ≤ 0.5</code>的候选框</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>PASCAL VOC 2007</code>样本集上既有图像中物体类别标签，也有图像中物体位置标签。采用训练好的<code>AlexNet</code>网络进行<code>PASCAL VOC 2007</code>样本集下的微调，学习率为<code>0.001</code>(<code>0.01/10</code>是为了在学习新东西时不至于忘记之前的记忆)。<code>mini-batch</code>为<code>32</code>个正样本和<code>96</code>个负样本(由于正样本太少)。该网络输入为候选框(由<code>selective search</code>而来)变形后的<code>227 * 227</code>的图像，修改了原来的<code>1000</code>为类别输出，改为<code>21</code>维(<code>20</code>类加上背景)输出，训练的是网络参数。</p>
+<h3 id="类别判断"><a href="#类别判断" class="headerlink" title="类别判断"></a>类别判断</h3><p>&emsp;&emsp;对每一类目标，使用一个线性<code>SVM</code>二类分类器进行判别。输入为深度网络输出的<code>4096</code>维特征，输出是否属于此类。由于负样本很多，使用<code>hard negative mining</code>方法。假设要检测车辆，只有当<code>bounding box</code>把整辆车都包含在内才叫正样本；如果<code>bounding box</code>没有包含到车辆，那么就可以把它当做负样本。但问题是当检测窗口只有部分包含物体，那该怎么定义正负样本呢？作者测试了<code>IOU</code>阈值各种方案数值：<code>0</code>、<code>0.1</code>至<code>0.5</code>。最后通过训练发现，如果选择<code>IOU</code>阈值为<code>0.3</code>效果最好(选择为<code>0</code>精度下降了<code>4</code>个百分点，选择<code>0.5</code>精度下降了<code>5</code>个百分点)，即当重叠度小于<code>0.3</code>时，就把它标注为负样本。一旦<code>CNN</code>的<code>f7</code>层特征被提取出来，那么将为每个物体类训练一个<code>svm</code>分类器。使用<code>CNN</code>提取<code>2000</code>个候选框，可以得到<code>2000 * 4096</code>这样的特征向量矩阵，然后只需要把这样的一个矩阵与<code>svm</code>权值矩阵<code>4096 * N</code>点乘(<code>N</code>为分类类别数目，因为我们训练的<code>N</code>个<code>svm</code>，每个<code>svm</code>包含了<code>4096</code>个权值<code>w</code>)，就可以得到结果了。<br>&emsp;&emsp;将得到的特征输入到<code>SVM</code>进行分类，看看这个<code>feature vector</code>所对应的<code>region proposal</code>是需要的物体还是无关的实物(<code>background</code>)。最后使用排序、<code>canny</code>边界检测就得到了需要的<code>bounding box</code>。</p>
+<h3 id="什么叫有监督预训练？为什么要进行有监督预训练？"><a href="#什么叫有监督预训练？为什么要进行有监督预训练？" class="headerlink" title="什么叫有监督预训练？为什么要进行有监督预训练？"></a>什么叫有监督预训练？为什么要进行有监督预训练？</h3><p>&emsp;&emsp;有监督预训练也称之为迁移学习，举例说明：若有大量标注信息的人脸年龄分类的正负样本图片，可以利用该样本训练了<code>CNN</code>网络，用于人脸年龄识别；现在要通过人脸进行性别识别，那么就可以去掉已经训练好的人脸年龄识别网络<code>CNN</code>的最后一层或几层，换成所需要的分类层。前面的网络参数直接使用为初始化参数，修改层的网络参数随机初始化，再利用人脸性别分类的正负样本图片进行训练，得到人脸性别识别网络，这种方法就叫做有监督预训练，可以很好地解决小样本数据无法训练深层<code>CNN</code>网络的问题。小样本数据训练很容易造成网络过拟合，但是在大样本训练后利用其参数初始化网络可以很好地训练小样本，这解决了小样本训练的难题。</p>
+<h3 id="可以不进行特定样本下的微调吗？可以直接采用AlexNet网络的特征进行SVM训练吗？"><a href="#可以不进行特定样本下的微调吗？可以直接采用AlexNet网络的特征进行SVM训练吗？" class="headerlink" title="可以不进行特定样本下的微调吗？可以直接采用AlexNet网络的特征进行SVM训练吗？"></a>可以不进行特定样本下的微调吗？可以直接采用AlexNet网络的特征进行SVM训练吗？</h3><p>&emsp;&emsp;<code>RCNN</code>设计了没有进行微调的对比实验，分别对<code>AlexNet</code>网络的<code>pool5</code>、<code>fc6</code>、<code>fc7</code>层进行特征提取，输入<code>SVM</code>进行训练。这相当于把<code>AlexNet</code>网络当做特征提取器，类似于<code>HOG</code>、<code>SIFT</code>。实验结果发现<code>f6</code>层提取的特征比<code>f7</code>层的<code>mAP</code>还高，<code>pool5</code>层提取的特征与<code>f6</code>、<code>f7</code>层相比<code>mAP</code>差不多。在<code>PASCAL VOC 2007</code>数据集上采取了微调后，<code>fc6</code>、<code>fc7</code>层特征较<code>pool5</code>层特征用于<code>SVM</code>训练提升<code>mAP</code>十分明显。<br>&emsp;&emsp;由此作者得出结论：不针对特定任务进行微调，而将<code>CNN</code>当成特征提取器，<code>pool5</code>层得到的特征是基础特征，类似于<code>HOG</code>、<code>SIFT</code>，类似于只学习到了人脸共性特征；从<code>fc6</code>和<code>fc7</code>等全连接层中所学习到的特征，则是针对特定样本的特征，类似于学习到了分类性别分类年龄的个性特征。</p>
+<h3 id="为什么微调时和训练SVM时所采用的正负样本阈值-0-5和0-3-不一致？"><a href="#为什么微调时和训练SVM时所采用的正负样本阈值-0-5和0-3-不一致？" class="headerlink" title="为什么微调时和训练SVM时所采用的正负样本阈值(0.5和0.3)不一致？"></a>为什么微调时和训练SVM时所采用的正负样本阈值(0.5和0.3)不一致？</h3><p>&emsp;&emsp;微调阶段是由于<code>CNN</code>对小样本容易过拟合，需要大量训练数据，故对<code>IoU</code>限制宽松；<code>SVM</code>适用于小样本训练，故对样本<code>IoU</code>限制严格。</p>
+<h3 id="为什么不直接采用微调后的AlexNet网络最后一层SoftMax进行21分类？"><a href="#为什么不直接采用微调后的AlexNet网络最后一层SoftMax进行21分类？" class="headerlink" title="为什么不直接采用微调后的AlexNet网络最后一层SoftMax进行21分类？"></a>为什么不直接采用微调后的AlexNet网络最后一层SoftMax进行21分类？</h3><p>&emsp;&emsp;因为微调时和训练<code>SVM</code>时所采用的正负样本阈值不同，微调阶段定义的正样本并不强调精准的位置，而<code>SVM</code>正样本只有<code>Ground Truth</code>；并且微调阶段的负样本是随机抽样的，而<code>SVM</code>的负样本是经过<code>hard negative mining</code>方法筛选的。采用<code>SoftMax</code>会使<code>PSACAL VOC 2007</code>测试集上<code>mAP</code>从<code>54.2%</code>降低到<code>50.9%</code>。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/16/深度学习/TensorFlow之猫狗分类/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/16/深度学习/TensorFlow之猫狗分类/" itemprop="url">TensorFlow之猫狗分类</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-16T15:24:58+08:00">
+                2019-02-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="猫狗大战数据集"><a href="#猫狗大战数据集" class="headerlink" title="猫狗大战数据集"></a>猫狗大战数据集</h3><p>&emsp;&emsp;<code>Cats vs. Dogs</code>(猫狗大战)是<code>Kaggle</code>大数据竞赛某一年的一道赛题，利用给定的数据集，用算法实现猫和狗的识别。数据集可以从<code>Kaggle</code>官网上下载，即<code>https://www.kaggle.com/c/dogs-vs-cats</code>。数据集由训练数据和测试数据组成，训练数据包含猫和狗各<code>12500</code>张图片，测试数据包含<code>12500</code>张猫和狗的图片。<br>&emsp;&emsp;首先在<code>Pycharm</code>上新建<code>Cats_vs_Dogs</code>工程，工程目录结构为：</p>
+<ul>
+<li><code>data</code>文件夹下包含<code>test</code>和<code>train</code>两个子文件夹，分别用于存放测试数据和训练数据。</li>
+<li><code>logs</code>文件夹用于存放我们训练时的模型结构以及训练参数。</li>
+<li><code>input_data.py</code>负责实现读取数据，生成批次(<code>batch</code>)。</li>
+<li><code>model.py</code>负责实现我们的神经网络模型。</li>
+<li><code>training.py</code>负责实现模型的训练以及评估。</li>
+</ul>
+<p>接下来分成数据读取、模型构造、模型训练、测试模型四个部分来讲。</p>
+<h3 id="训练数据的读取-input-data-py"><a href="#训练数据的读取-input-data-py" class="headerlink" title="训练数据的读取(input_data.py)"></a>训练数据的读取(input_data.py)</h3><p>&emsp;&emsp;首先需要引入如下模块：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> os</span><br></pre></td></tr></table></figure>
+<p>因为我们需要获取<code>test</code>目录下的文件，所以要导入<code>os</code>模块。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 获取文件路径和标签，file_dir是文件夹路径，该函数返回乱序后的图片和标签</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_files</span><span class="params">(file_dir)</span>:</span></span><br><span class="line">    cats = []</span><br><span class="line">    label_cats = []</span><br><span class="line">    dogs = []</span><br><span class="line">    label_dogs = []</span><br><span class="line">    <span class="keyword">for</span> file <span class="keyword">in</span> os.listdir(file_dir):  <span class="comment"># 载入数据路径并写入标签值</span></span><br><span class="line">        name = file.split(sep=<span class="string">'.'</span>)</span><br><span class="line">        <span class="keyword">if</span> name[<span class="number">0</span>] == <span class="string">'cat'</span>:</span><br><span class="line">            cats.append(file_dir + file)</span><br><span class="line">            label_cats.append(<span class="number">0</span>)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            dogs.append(file_dir + file)</span><br><span class="line">            label_dogs.append(<span class="number">1</span>)</span><br><span class="line">    print(<span class="string">"There are %d cats\nThere are %d dogs"</span> % (len(cats), len(dogs)))</span><br><span class="line">​</span><br><span class="line">    <span class="comment"># 打乱文件顺序</span></span><br><span class="line">    image_list = np.hstack((cats, dogs))</span><br><span class="line">    label_list = np.hstack((label_cats, label_dogs))</span><br><span class="line">    temp = np.array([image_list, label_list])</span><br><span class="line">    temp = temp.transpose()  <span class="comment"># 转置</span></span><br><span class="line">    np.random.shuffle(temp)</span><br><span class="line">​</span><br><span class="line">    image_list = list(temp[:, <span class="number">0</span>])</span><br><span class="line">    label_list = list(temp[:, <span class="number">1</span>])</span><br><span class="line">    label_list = [int(i) <span class="keyword">for</span> i <span class="keyword">in</span> label_list]</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> image_list, label_list</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;函数<code>get_files</code>的功能是获取给定路径<code>file_dir</code>下的所有的训练数据(包括图片和标签)，以<code>list</code>的形式返回。由于训练数据前<code>12500</code>张是猫，后<code>12500</code>张是狗，如果直接按这个顺序训练，训练效果可能会受影响(猜测的)，所以需要将顺序打乱。因为图片和标签是一一对应的，所以要整合到一起乱序。<br>&emsp;&emsp;这里先用<code>np.hstack</code>方法将猫和狗图片和标签整合到一起，得到<code>image_list</code>和<code>label_list</code>，<code>hstack((a,b))</code>的功能是将<code>a</code>和<code>b</code>以水平的方式连接，比如原来<code>cats</code>和<code>dogs</code>是长度为<code>12500</code>的向量，执行了<code>hstack(cats, dogs)</code>后，<code>image_list</code>的长度为<code>25000</code>，同理<code>label_list</code>的长度也为<code>25000</code>。接着将一一对应的<code>image_list</code>和<code>label_list</code>再合并一次。<code>temp</code>的大小是<code>2 * 25000</code>，经过转置(变成<code>25000 * 2</code>)，然后使用<code>np.random.shuffle</code>方法进行乱序。<br>&emsp;&emsp;最后从<code>temp</code>中分别取出乱序后的<code>image_list</code>和<code>label_list</code>列向量，作为函数的返回值。这里要注意，因为<code>label_list</code>里面的数据类型是字符串类型，所以加上<code>label_list = [int(i) for i in label_list]</code>这么一行将其转为<code>int</code>类型。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 生成相同大小的批次，参数capacity队列容量，返回值是图像和标签的batch</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_batch</span><span class="params">(image, label, image_W, image_H, batch_size, capacity)</span>:</span></span><br><span class="line">    <span class="comment"># 将python.list类型转换成tf能够识别的格式</span></span><br><span class="line">    image = tf.cast(image, tf.string)</span><br><span class="line">    label = tf.cast(label, tf.int32)</span><br><span class="line"></span><br><span class="line">    input_queue = tf.train.slice_input_producer([image, label])  <span class="comment"># 生成队列</span></span><br><span class="line">    image_contents = tf.read_file(input_queue[<span class="number">0</span>])</span><br><span class="line">    label = input_queue[<span class="number">1</span>]</span><br><span class="line">    image = tf.image.decode_jpeg(image_contents, channels=<span class="number">3</span>)</span><br><span class="line">    <span class="comment"># 统一图片大小</span></span><br><span class="line">    image = tf.image.resize_images(image, [image_H, image_W], \</span><br><span class="line">                                   method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)</span><br><span class="line">    image = tf.cast(image, tf.float32)</span><br><span class="line">    image_batch, label_batch = tf.train.batch([image, label], batch_size=batch_size, \</span><br><span class="line">                                              num_threads=<span class="number">64</span>, capacity=capacity)</span><br><span class="line">​</span><br><span class="line">    <span class="comment"># label_batch = tf.reshape(label_batch, [batch_size])</span></span><br><span class="line">    <span class="keyword">return</span> image_batch, label_batch</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;函数<code>get_batch</code>用于将图片分批次，因为一次性将所有<code>25000</code>张图片载入内存不现实也不必要，所以将图片分成不同批次进行训练。对于把训练数据集设置成一个个<code>batch</code>，其解释为：如果损失函数是非凸的话，整个训练样本尽管算的动，可能会卡在局部最优解上；分批训练表示全样本的抽样实现，也就是相当于人为地引入了修正梯度上的采样噪声，使得<code>一路不同，找别路</code>的方法，更有可能搜索到全局最优解。这里传入的<code>image</code>和<code>label</code>参数就是函数<code>get_files</code>返回的<code>image_list</code>和<code>label_list</code>，是<code>python</code>中的<code>list</code>类型，所以需要将其转为<code>TensorFlow</code>可以识别的<code>tensor</code>格式。<br>&emsp;&emsp;这里使用队列来获取数据，因为队列操作牵扯到线程，这里引用了一张图解释：</p>
+<p><img src="/2019/02/16/深度学习/TensorFlow之猫狗分类/1.png" height="248" width="623"></p>
+<p>&emsp;&emsp;我认为大体上可以这么理解：每次训练时，从队列中取一个<code>batch</code>送到网络进行训练，然后又有新的图片从训练库中注入队列，这样循环往复。队列相当于起到了训练库到网络模型间数据管道的作用，训练数据通过队列送入网络。<br>&emsp;&emsp;我们使用<code>slice_input_producer</code>来建立一个队列，将<code>image</code>和<code>label</code>放入一个<code>list</code>中当做参数传给该函数，然后从队列中取得<code>image</code>和<code>label</code>。要注意，用<code>read_file</code>读取图片之后，要按照图片格式进行解码。本例程中训练数据是<code>jpg</code>格式的，所以使用<code>decode_jpeg</code>解码器，如果是其他格式，就要用其他解码器。注意<code>decode</code>出来的数据类型是<code>uint8</code>，之后模型卷积层里面<code>conv2d</code>要求输入数据为<code>float32</code>类型，所以需要进行类型转换。<br>&emsp;&emsp;因为训练库中图片大小是不一样的，所以还需要将图片裁剪成相同大小(<code>img_W</code>和<code>img_H</code>)。有些程序员使用<code>resize_image_with_crop_or_pad</code>方法来裁剪图片，这种方法是从图像中心向四周裁剪，如果图片超过规定尺寸，最后只会剩中间区域的一部分，可能一只狗只剩下躯干，头都不见了，用这样的图片训练结果肯定会受到影响。所以这里稍微改动了一下，使用<code>resize_images</code>对图像进行缩放，而不是裁剪，采用<code>NEAREST_NEIGHBOR</code>插值方法。<br>&emsp;&emsp;然后用<code>tf.train.batch</code>方法获取<code>batch</code>，还有一种方法是<code>tf.train.shuffle_batch</code>，因为之前已经乱序过了，这里用普通的<code>batch</code>函数。<br>&emsp;&emsp;最后将得到的<code>image_batch</code>和<code>label_batch</code>返回，<code>image_batch</code>是一个<code>4D</code>的<code>tensor</code>，即<code>[batch, width, height, channels]</code>，<code>label_batch</code>是一个<code>1D</code>的<code>tensor</code>，即<code>[batch]</code>。<br>&emsp;&emsp;可以用下面的代码测试获取图片是否成功，因为之前将图片转为<code>float32</code>了，因此这里<code>imshow</code>出来的图片色彩会有点奇怪，因为本来<code>imshow</code>是显示<code>uint8</code>类型的数据(灰度值在<code>uint8</code>类型下是<code>0</code>至<code>255</code>，转为<code>float32</code>后会超出这个范围，所以色彩有点奇怪)，不过这不影响后面模型的训练：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line">​</span><br><span class="line">BATCH_SIZE = <span class="number">2</span></span><br><span class="line">CAPACITY = <span class="number">256</span></span><br><span class="line">IMG_W = <span class="number">208</span></span><br><span class="line">IMG_H = <span class="number">208</span></span><br><span class="line">​</span><br><span class="line">train_dir = <span class="string">"data\\train\\"</span></span><br><span class="line">image_list, label_list = get_files(train_dir)</span><br><span class="line">image_batch, label_batch = get_batch(image_list, label_list, IMG_W, IMG_H, BATCH_SIZE, CAPACITY)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    i = <span class="number">0</span></span><br><span class="line">    coord = tf.train.Coordinator()</span><br><span class="line">    threads = tf.train.start_queue_runners(coord=coord)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">not</span> coord.should_stop() <span class="keyword">and</span> i &lt; <span class="number">1</span>:</span><br><span class="line">            img, label = sess.run([image_batch, label_batch])</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">for</span> j <span class="keyword">in</span> np.arange(BATCH_SIZE):</span><br><span class="line">                print(<span class="string">"label: %d"</span> % label[j])</span><br><span class="line">                plt.imshow(img[j, :, :, :])</span><br><span class="line">                plt.show()</span><br><span class="line">            i += <span class="number">1</span></span><br><span class="line">    <span class="keyword">except</span> tf.errors.OutOfRangeError:</span><br><span class="line">        print(<span class="string">"done!"</span>)</span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        coord.request_stop()</span><br><span class="line">    coord.join(threads)</span><br></pre></td></tr></table></figure>
+<h3 id="卷积神经网络模型的构造-model-py"><a href="#卷积神经网络模型的构造-model-py" class="headerlink" title="卷积神经网络模型的构造(model.py)"></a>卷积神经网络模型的构造(model.py)</h3><p>&emsp;&emsp;以下仿照<code>TensorFlow</code>的官方例程<code>cifar-10</code>的网络结构来编写的，就是两个卷积层(每个卷积层后加一个池化层)，两个全连接层，最后使用<code>softmax</code>输出分类结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">inference</span><span class="params">(images, batch_size, n_classes)</span>:</span></span><br><span class="line">    <span class="comment"># conv1, shape = [kernel_size, kernel_size, channels, kernel_numbers]</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"conv1"</span>) <span class="keyword">as</span> scope:</span><br><span class="line">        weights = tf.get_variable(<span class="string">"weights"</span>, shape=[<span class="number">3</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">16</span>], dtype=tf.float32, \</span><br><span class="line">                                  initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.1</span>, dtype=tf.float32))</span><br><span class="line">        biases = tf.get_variable(<span class="string">"biases"</span>, shape=[<span class="number">16</span>], dtype=tf.float32, initializer=tf.constant_initializer(<span class="number">0.1</span>))</span><br><span class="line">        conv = tf.nn.conv2d(images, weights, strides=[<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>], padding=<span class="string">"SAME"</span>)</span><br><span class="line">        pre_activation = tf.nn.bias_add(conv, biases)</span><br><span class="line">        conv1 = tf.nn.relu(pre_activation, name=<span class="string">"conv1"</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"pooling1_lrn"</span>) <span class="keyword">as</span> scope:  <span class="comment"># pool1 &amp;&amp; norm1</span></span><br><span class="line">        pool1 = tf.nn.max_pool(conv1, ksize=[<span class="number">1</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">1</span>], strides=[<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">1</span>], padding=<span class="string">"SAME"</span>, name=<span class="string">"pooling1"</span>)</span><br><span class="line">        norm1 = tf.nn.lrn(pool1, depth_radius=<span class="number">4</span>, bias=<span class="number">1.0</span>, alpha=<span class="number">0.001</span> / <span class="number">9.0</span>, beta=<span class="number">0.75</span>, name=<span class="string">'norm1'</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"conv2"</span>) <span class="keyword">as</span> scope:  <span class="comment"># conv2</span></span><br><span class="line">        weights = tf.get_variable(<span class="string">"weights"</span>, shape=[<span class="number">3</span>, <span class="number">3</span>, <span class="number">16</span>, <span class="number">16</span>], dtype=tf.float32, \</span><br><span class="line">                                  initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.1</span>, dtype=tf.float32))</span><br><span class="line">        biases = tf.get_variable(<span class="string">"biases"</span>, shape=[<span class="number">16</span>], dtype=tf.float32, initializer=tf.constant_initializer(<span class="number">0.1</span>))</span><br><span class="line">        conv = tf.nn.conv2d(norm1, weights, strides=[<span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>], padding=<span class="string">"SAME"</span>)</span><br><span class="line">        pre_activation = tf.nn.bias_add(conv, biases)</span><br><span class="line">        conv2 = tf.nn.relu(pre_activation, name=<span class="string">"conv2"</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"pooling2_lrn"</span>) <span class="keyword">as</span> scope:  <span class="comment"># pool2 &amp;&amp; norm2</span></span><br><span class="line">        pool2 = tf.nn.max_pool(conv2, ksize=[<span class="number">1</span>, <span class="number">3</span>, <span class="number">3</span>, <span class="number">1</span>], strides=[<span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">1</span>], padding=<span class="string">"SAME"</span>, name=<span class="string">"pooling2"</span>)</span><br><span class="line">        norm2 = tf.nn.lrn(pool2, depth_radius=<span class="number">4</span>, bias=<span class="number">1.0</span>, alpha=<span class="number">0.001</span> / <span class="number">9.0</span>, beta=<span class="number">0.75</span>, name=<span class="string">'norm2'</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"fc1"</span>) <span class="keyword">as</span> scope:  <span class="comment"># full-connect1</span></span><br><span class="line">        reshape = tf.reshape(norm2, shape=[batch_size, <span class="number">-1</span>])</span><br><span class="line">        dim = reshape.get_shape()[<span class="number">1</span>].value</span><br><span class="line">        weights = tf.get_variable(<span class="string">"weights"</span>, shape=[dim, <span class="number">128</span>], dtype=tf.float32, \</span><br><span class="line">                                  initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.005</span>, dtype=tf.float32))</span><br><span class="line">        biases = tf.get_variable(<span class="string">"biases"</span>, shape=[<span class="number">128</span>], dtype=tf.float32, initializer=tf.constant_initializer(<span class="number">0.1</span>))</span><br><span class="line">        fc1 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=<span class="string">"fc1"</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"fc2"</span>) <span class="keyword">as</span> scope:  <span class="comment"># full_connect2</span></span><br><span class="line">        weights = tf.get_variable(<span class="string">"weights"</span>, shape=[<span class="number">128</span>, <span class="number">128</span>], dtype=tf.float32, \</span><br><span class="line">                                  initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.005</span>, dtype=tf.float32))</span><br><span class="line">        biases = tf.get_variable(<span class="string">"biases"</span>, shape=[<span class="number">128</span>], dtype=tf.float32, initializer=tf.constant_initializer(<span class="number">0.1</span>))</span><br><span class="line">        fc2 = tf.nn.relu(tf.matmul(fc1, weights) + biases, name=<span class="string">"fc2"</span>)</span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"softmax_linear"</span>) <span class="keyword">as</span> scope:  <span class="comment"># softmax</span></span><br><span class="line">        weights = tf.get_variable(<span class="string">"weights"</span>, shape=[<span class="number">128</span>, n_classes], dtype=tf.float32, \</span><br><span class="line">                                  initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.005</span>, dtype=tf.float32))</span><br><span class="line">        biases = tf.get_variable(<span class="string">"biases"</span>, shape=[n_classes], dtype=tf.float32, initializer=tf.constant_initializer(<span class="number">0.1</span>))</span><br><span class="line">        softmax_linear = tf.add(tf.matmul(fc2, weights), biases, name=<span class="string">"softmax_linear"</span>)</span><br><span class="line">    <span class="keyword">return</span> softmax_linear</span><br></pre></td></tr></table></figure>
+<p>发现程序里面有很多<code>with tf.variable_scope(&quot;name&quot;)</code>的语句，这其实是<code>TensorFlow</code>中的变量作用域机制，目的是有效便捷地管理需要的变量。变量作用域机制在<code>TensorFlow</code>中主要由两部分组成：</p>
+<ul>
+<li><code>tf.get_variable(&lt;name&gt;, &lt;shape&gt;, &lt;initializer&gt;)</code>：创建一个变量。</li>
+<li><code>tf.variable_scope(&lt;scope_name&gt;)</code>：指定命名空间。</li>
+</ul>
+<p>如果需要共享变量，需要通过<code>reuse_variables</code>方法来指定。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">losses</span><span class="params">(logits, labels)</span>:</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"loss"</span>) <span class="keyword">as</span> scope:</span><br><span class="line">        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(</span><br><span class="line">                            logits=logits, labels=labels, name=<span class="string">"xentropy_per_example"</span>)</span><br><span class="line">        loss = tf.reduce_mean(cross_entropy, name=<span class="string">"loss"</span>)</span><br><span class="line">        tf.summary.scalar(scope.name + <span class="string">"loss"</span>, loss)</span><br><span class="line">    <span class="keyword">return</span> loss</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">trainning</span><span class="params">(loss, learning_rate)</span>:</span></span><br><span class="line">    <span class="keyword">with</span> tf.name_scope(<span class="string">"optimizer"</span>):</span><br><span class="line">        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)</span><br><span class="line">        global_step = tf.Variable(<span class="number">0</span>, name=<span class="string">"global_step"</span>, trainable=<span class="keyword">False</span>)</span><br><span class="line">        train_op = optimizer.minimize(loss, global_step=global_step)</span><br><span class="line">    <span class="keyword">return</span> train_op</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">evaluation</span><span class="params">(logits, labels)</span>:</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">"accuracy"</span>) <span class="keyword">as</span> scope:</span><br><span class="line">        correct = tf.nn.in_top_k(logits, labels, <span class="number">1</span>)</span><br><span class="line">        correct = tf.cast(correct, tf.float16)</span><br><span class="line">        accuracy = tf.reduce_mean(correct)</span><br><span class="line">        tf.summary.scalar(scope.name + <span class="string">"accuracy"</span>, accuracy)</span><br><span class="line">    <span class="keyword">return</span> accuracy</span><br></pre></td></tr></table></figure>
+<p>函数<code>losses</code>用于计算训练过程中的<code>loss</code>，这里输入参数<code>logtis</code>是函数<code>inference</code>的输出，代表图片对猫和狗的预测概率，<code>labels</code>则是图片对应的标签。<br>&emsp;&emsp;通过在程序中设置断点，查看<code>logtis</code>的值，结果如下图所示，一个数值代表属于猫的概率，一个数值代表属于狗的概率，两者的和为<code>1</code>：</p>
+<p><img src="/2019/02/16/深度学习/TensorFlow之猫狗分类/2.png" height="198" width="246"></p>
+<p>&emsp;&emsp;函数<code>tf.nn.sparse_sotfmax_cross_entropy_with_logtis</code>是将稀疏表示的<code>label</code>与输出层计算出来结果做对比。然后因为训练的时候是<code>16</code>张图片一个<code>batch</code>，所以再用<code>tf.reduce_mean</code>求一下平均值，就得到了这个<code>batch</code>的平均<code>loss</code>。对于<code>training(loss, learning_rate)</code>，<code>loss</code>是训练的<code>loss</code>，<code>learning_rate</code>是学习率，使用<code>AdamOptimizer</code>优化器来使<code>loss</code>朝着变小的方向优化。<code>evaluation(logits, labels)</code>的功能是在训练过程中实时监测验证数据的准确率，达到反映训练效果的作用。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/16/深度学习/Facenet教程/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/16/深度学习/Facenet教程/" itemprop="url">Facenet教程</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-16T14:35:47+08:00">
+                2019-02-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/深度学习/" itemprop="url" rel="index">
+                    <span itemprop="name">深度学习</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="安装和配置Facenet"><a href="#安装和配置Facenet" class="headerlink" title="安装和配置Facenet"></a>安装和配置Facenet</h3><p>&emsp;&emsp;在cmd命令行，定位到自己想要下载的文件夹，用git下载FaceNet源代码工程：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone --recursive https://github.com/davidsandberg/facenet.git</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;下载数据集<code>LFW</code>，<code>LFW</code>数据集是由美国马萨诸塞大学阿姆斯特分校计算机视觉实验室整理的，下载地址为<code>http://vis-www.cs.umass.edu/lfw/lfw.tgz</code>。下载完成后，把数据解压到目录<code>facenet/data/lfw/raw</code>下面，新建一个命名为<code>lfw_160</code>的空文件夹。</p>
+<p><img src="/2019/02/16/深度学习/Facenet教程/1.png" height="98" width="309"></p>
+<p><img src="/2019/02/16/深度学习/Facenet教程/2.png" height="122" width="262"></p>
+<p>&emsp;&emsp;设置环境变量，新建<code>PYTHONPATH</code>，其值为<code>D:\Anaconda2\envs\py3.6\Lib\site-packages\facenet\src</code>。</p>
+<h3 id="对图像数据进行预处理"><a href="#对图像数据进行预处理" class="headerlink" title="对图像数据进行预处理"></a>对图像数据进行预处理</h3><p>&emsp;&emsp;我们需要将待检测的数据集校准为和预训练模型所使用的数据集大小一致。使用<code>facenet/src/align/align_dataset_mtcnn.py</code>进行校准，校准后的图片存在<code>facenet/data/lfw/lfw_160</code>下面。将<code>cmd</code>定位到<code>facenet</code>所在位置，输入如下代码：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">python src\align\align_dataset_mtcnn.py \</span><br><span class="line">       data\lfw\raw data\lfw\lfw_160 \</span><br><span class="line">       --image_size 160 \</span><br><span class="line">       --margin 32 \</span><br><span class="line">       --random_order \</span><br><span class="line">       --gpu_memory_fraction 0.25</span><br></pre></td></tr></table></figure>
+<p>校准后发现图像变为<code>160 * 160</code>。</p>
+<h3 id="下载训练好的网络模型"><a href="#下载训练好的网络模型" class="headerlink" title="下载训练好的网络模型"></a>下载训练好的网络模型</h3><p>&emsp;&emsp;<code>facenet</code>提供了两个预训练模型，分别是基于<code>CASIA-WebFace</code>和<code>MS-Celeb-1M</code>人脸库训练的。第一个模型<code>20170511-185253</code>下载地址为<code>https://drive.google.com/file/d/0B5MzpY9kBtDVOTVnU3NIaUdySFE/edit</code>；第二个模型<code>20170512-110547</code>下载地址为<code>https://drive.google.com/file/d/0B5MzpY9kBtDVZ2RpVDYwWmxoSUk/edit</code>。把下载的文件解压到<code>src/models</code>目录下面：</p>
+<p><img src="/2019/02/16/深度学习/Facenet教程/3.png"></p>
+<h3 id="人脸对比"><a href="#人脸对比" class="headerlink" title="人脸对比"></a>人脸对比</h3><p>&emsp;&emsp;<code>Facenet</code>可以直接对比<code>2</code>个人脸经过它的网络映射之后的欧式距离，运行程序为<code>facenet/src/compare.py</code>。在<code>facenet</code>目录下放入要对比的人脸图像，然后输入如下代码：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python src/compare.py src/models/20170512-110547/ Zhang_Ziyi_0004.png Zhang_Ziyi_0002.png</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/02/16/深度学习/Facenet教程/4.png" height="120" width="234"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/16/深度学习/数据增强/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1469,530 +2020,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/15/深度学习/学习速率/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/15/深度学习/学习速率/" itemprop="url">学习速率</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-15T15:27:46+08:00">
-                2019-02-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/深度学习/" itemprop="url" rel="index">
-                    <span itemprop="name">深度学习</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;学习速率(<code>learning rate</code>)是神经网络中随着时间推移，信息累积的速度。学习速率决定了网络达到最优值速度，或对于特定期望的输出时，网络的参数达到最优状态的速度。在随机梯度下降(<code>SGD</code>)的平面图中，学习速率与误差梯度的形状无关，因为全局学习速率与误差梯度无关。然而，可以对原始<code>SGD</code>更新规则进行许多修改，将学习速率与错误梯度的大小和方向相关联。</p>
-<h3 id="为什么要调整学习速率？"><a href="#为什么要调整学习速率？" class="headerlink" title="为什么要调整学习速率？"></a>为什么要调整学习速率？</h3><p>&emsp;&emsp;随着时间的推移，调整学习速率与根据道路条件对汽车的速度进行调整相似。在高速公路等平稳宽阔的道路上，我们可以提高速度(学习速率)；但是在狭窄的丘陵或山谷道路上，我们必须放慢速度。此外，我们不希望在高速公路上行驶得太慢，否则需要太长时间才能到达目的地(由于参数不正确而导致更长的训练时间)。同样，我们也不想在丘陵和狭窄的道路上(如优化损失函数曲面的沟壑)驾驶太快，因为我们很容易失去对汽车的控制(陷入抖动或产生太多的反弹，我们几乎不能做任何改进)或跳过目的地(最佳值)。<br>&emsp;&emsp;请记住<code>较高的学习速率表示系统含有太多的动能，参数向量在处于混沌状态下，不断来回反弹，无法稳定到损失函数的一个较深且较窄的最优值</code>。<br>&emsp;&emsp;理想的策略是从一个很大的学习速率开始，随后逐渐减半，直到损失值不再分歧(发散)。接近训练结束时，学习速率的衰减应该在100倍以上。这种衰减使学习到的网络模型可以抵抗随机波动，这中随机波动可能会扭转学习(陷入发散状态)。我们将从一个小的学习速率开始，测试一小组数据，并选择适当的值。</p>
-<h3 id="衰减学习速率"><a href="#衰减学习速率" class="headerlink" title="衰减学习速率"></a>衰减学习速率</h3><p>&emsp;&emsp;非自适应学习速率可能不是最佳的。学习速率衰减可以通过每几个时间周期做一些较小的常数因子的衰减，或通过指数衰减来实现，指数衰减采用几个时间周期的指数的数学形式来实现。<code>衰减</code>通常被认为是一个消极的概念，同样，学习速率的衰减也是消极的：它指的是学习速率下降的程度。然而，这种衰减的结果实际上是我们非常想要的。例如在一辆车上，我们降低速度以适应道路和交通状况，这种减速可以被理解为汽车速度的<code>衰减</code>。同样，我们从衰减学习速率得到好处，以适应梯度。<br>&emsp;&emsp;动量是一种自适应学习速率方法的参数，允许沿浅方向使用较高的速度，同时沿陡峭方向降低速度前进。这种动量被定义为<code>经典动量</code>，其对速度进行校正，然后在速度方向上进行大跳跃。动量有助于加速或减速学习速率以适应梯度的变化，最终导致网络学习速率的变化而不是其在损失函数表面上的位置的变化。动量使学习到的网络更能抵抗输入数中的噪声和随机性。<br>&emsp;&emsp;将学习速率视为超参数的其他更新规则包括：</p>
-<ul>
-<li><code>AdaGrad</code>更新规则：基于每个维度历史的均方误差的和，为每一个维度的梯度增加了一个初度变换的规则。</li>
-<li><code>RMSProp</code>自适应学习速率法：保持每个权重的平方梯度的移动平均值，以规范化(<code>normalize</code>)当前梯度。<code>RMSProp</code>增加了对波动和随机噪声的更强的抵抗能力。</li>
-<li><code>Adam</code>、<code>Kingma</code>和<code>Ba</code>：引入了偏差矫正策略以补偿零初始化带来影响。</li>
-<li><code>rprop</code>：只使用梯度的符号来对每个权重的步长自适应调整，这不适用于<code>mini-batch</code>训练。</li>
-</ul>
-<p>除了这些规则以外，还有基于牛顿的更新规则的二阶方法。然而，二阶方法不将学习速率视为超参数，且由于它们的计算需求很高，所以很少用于大规模的深度学习系统。<br>&emsp;&emsp;下图显示了在类似超参数设置条件下，不同优化技术的对比：</p>
-<p><img src="/2019/02/15/深度学习/学习速率/1.jpg" height="258" width="260"></p>
-<p>&emsp;&emsp;从本质上讲，我们的目的不是衰减，而是要通过衰减跳入一个正确的地方。必须选择性地增加或减少学习速率，为了达到一个全局最优值或者是期望的目标值。不要害怕这个，因为我们经常要做一遍又一遍。<br>&emsp;&emsp;在<code>Tensorflow</code>中，为解决设定学习率(<code>learning rate</code>)问题，提供了<code>tf.train.exponential_decay</code>函数实现指数衰减学习率。首先使用较大学习率，目的是快速得到一个比较优的解；然后通过迭代逐步减小学习率，目的是使模型在训练后期更加稳定：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">decayed_learning_rate = learining_rate * decay_rate^(global_step / decay_steps)</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>decayed_learning_rate</code>：每一轮优化时使用的学习率。</li>
-<li><code>learning_rate</code>：事先设定的初始学习率。</li>
-<li><code>decay_rate</code>：衰减系数。</li>
-<li><code>decay_steps</code>：衰减速度。</li>
-</ul>
-<p><code>tf.train.exponential_decay</code>函数原型如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tf.train.exponential_decay(learning_rate, global_, decay_steps, decay_rate, staircase=<span class="keyword">True</span>/<span class="keyword">False</span>)</span><br></pre></td></tr></table></figure>
-<p>代码如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line">​</span><br><span class="line">learning_rate = <span class="number">0.1</span></span><br><span class="line">decay_rate = <span class="number">0.96</span></span><br><span class="line">global_steps = <span class="number">1000</span></span><br><span class="line">decay_steps = <span class="number">100</span></span><br><span class="line">​</span><br><span class="line">global_ = tf.Variable(tf.constant(<span class="number">0</span>))</span><br><span class="line">c = tf.train.exponential_decay(learning_rate, global_, decay_steps, decay_rate, staircase=<span class="keyword">True</span>)</span><br><span class="line">d = tf.train.exponential_decay(learning_rate, global_, decay_steps, decay_rate, staircase=<span class="keyword">False</span>)</span><br><span class="line">​</span><br><span class="line">T_C = []</span><br><span class="line">F_D = []</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(global_steps):</span><br><span class="line">        T_c = sess.run(c, feed_dict=&#123;global_: i&#125;)</span><br><span class="line">        T_C.append(T_c)</span><br><span class="line">        F_d = sess.run(d, feed_dict=&#123;global_: i&#125;)</span><br><span class="line">        F_D.append(F_d)</span><br><span class="line">​</span><br><span class="line">plt.figure(<span class="number">1</span>)</span><br><span class="line">plt.plot(range(global_steps), F_D, <span class="string">'r-'</span>)</span><br><span class="line">plt.plot(range(global_steps), T_C, <span class="string">'b-'</span>)</span><br><span class="line">​</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/02/15/深度学习/学习速率/2.png" height="262" width="366"></p>
-<p>初始的学习速率是<code>0.1</code>，总的迭代次数是<code>1000</code>次，如果<code>staircase=True</code>，那就表明每<code>decay_steps</code>次计算学习速率变化，更新原始学习速率；如果是<code>False</code>，那就是每一步都更新学习速率。红色表示<code>False</code>，蓝色表示<code>True</code>。<br>&emsp;&emsp;常数分片学习率衰减如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">piecewise_constant(x, boundaries, values, name=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
-<p>例如前<code>10000</code>轮迭代使用<code>1.0</code>作为学习率，<code>10000</code>轮到<code>12000</code>轮使用<code>0.5</code>作为学习率，以后使用<code>0.1</code>作为学习率：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line">​</span><br><span class="line">global_ = tf.Variable(tf.constant(<span class="number">0</span>), trainable=<span class="keyword">False</span>)</span><br><span class="line">boundaries = [<span class="number">10000</span>, <span class="number">12000</span>]</span><br><span class="line">values = [<span class="number">1.0</span>, <span class="number">0.5</span>, <span class="number">0.1</span>]</span><br><span class="line">learning_rate = tf.train.piecewise_constant(global_, boundaries, values)</span><br><span class="line">global_steps = <span class="number">20000</span></span><br><span class="line">​</span><br><span class="line">T_L = []</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(global_steps):</span><br><span class="line">        T_l = sess.run(learning_rate, feed_dict=&#123;global_: i&#125;)</span><br><span class="line">        T_L.append(T_l)</span><br><span class="line">​</span><br><span class="line">plt.figure(<span class="number">1</span>)</span><br><span class="line">plt.plot(range(global_steps), T_L, <span class="string">'r-'</span>)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/02/15/深度学习/学习速率/3.png" height="264" width="355"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/15/深度学习/TensorFlow模型的保存和加载/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/15/深度学习/TensorFlow模型的保存和加载/" itemprop="url">TensorFlow模型的保存和加载</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-15T14:31:21+08:00">
-                2019-02-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/深度学习/" itemprop="url" rel="index">
-                    <span itemprop="name">深度学习</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;将训练好的模型参数保存起来，以便以后进行验证或测试，这是我们经常要做的事情。<code>tf</code>里面提供模型保存的函数是<code>tf.train.Saver</code>模块。模型保存先要创建一个<code>Saver</code>对象：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">saver = tf.train.Saver()</span><br></pre></td></tr></table></figure>
-<p>在创建<code>Saver</code>对象的时候，有一个参数经常会用到，就是<code>max_to_keep</code>，这个是用来设置保存模型的个数，默认为<code>5</code>，保存最近的<code>5</code>个模型。如果你想每训练一次(<code>epoch</code>)就想保存一次模型，则可以将<code>max_to_keep</code>设置为<code>None</code>或者<code>0</code>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">saver = tf.train.Saver(max_to_keep=<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
-<p>但是这样做除了多占用硬盘，并没有实际多大的用处，因此不推荐。当然，如果你只想保存最后一代的模型，则只需要将<code>max_to_keep</code>设置为<code>1</code>即可：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">saver = tf.train.Saver(max_to_keep=<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
-<p>创建完saver对象后，就可以保存训练好的模型了：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">saver.save(sess, <span class="string">'ckpt/mnist.ckpt'</span>, global_step=step)</span><br></pre></td></tr></table></figure>
-<p>第一个参数<code>sess</code>，这个就不用说了。第二个参数设定保存的路径和名字，第三个参数将训练的次数作为后缀加入到模型名字中：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">saver.save(sess, <span class="string">'my-model'</span>, global_step=<span class="number">0</span>) == &gt; filename: <span class="string">'my-model-0'</span></span><br><span class="line">saver.save(sess, <span class="string">'my-model'</span>, global_step=<span class="number">1000</span>) == &gt; filename: <span class="string">'my-model-1000'</span></span><br></pre></td></tr></table></figure>
-<p>该函数会在目录下生成如下几个文件：</p>
-<p><img src="/2019/02/15/深度学习/TensorFlow模型的保存和加载/1.png"></p>
-<p>&emsp;&emsp;通过<code>tf.train.Saver</code>类实现保存和载入神经网络模型：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line">v1 = tf.Variable(tf.constant(<span class="number">1.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"v1"</span>)</span><br><span class="line">v2 = tf.Variable(tf.constant(<span class="number">2.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"v2"</span>)</span><br><span class="line">result = v1 + v2</span><br><span class="line">​</span><br><span class="line">saver = tf.train.Saver()</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    sess.run(tf.global_variables_initializer())</span><br><span class="line">    saver.save(sess, <span class="string">"Model/model.ckpt"</span>)</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;加载<code>TensorFlow</code>模型的方法：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line">v1 = tf.Variable(tf.constant(<span class="number">1.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"v1"</span>)</span><br><span class="line">v2 = tf.Variable(tf.constant(<span class="number">2.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"v2"</span>)</span><br><span class="line">result = v1 + v2</span><br><span class="line">​</span><br><span class="line">saver = tf.train.Saver()</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    saver.restore(sess, <span class="string">"./Model/model.ckpt"</span>)  <span class="comment"># 注意此处路径前添加“./”</span></span><br><span class="line">    print(sess.run(result))  <span class="comment"># 结果为[ 3.]</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;若不希望重复定义计算图上的运算，可直接加载已经持久化的图：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line">saver = tf.train.import_meta_graph(<span class="string">"Model/model.ckpt.meta"</span>)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    saver.restore(sess, <span class="string">"./Model/model.ckpt"</span>)  <span class="comment"># 注意路径写法</span></span><br><span class="line">    print(sess.run(tf.get_default_graph().get_tensor_by_name(<span class="string">"add:0"</span>)))  <span class="comment"># 结果为[ 3.]</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>tf.train.Saver</code>类也支持在保存和加载时给变量重命名：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line"><span class="comment"># 声明的变量名称name与已保存的模型中的变量名称name不一致</span></span><br><span class="line">u1 = tf.Variable(tf.constant(<span class="number">1.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"other-v1"</span>)</span><br><span class="line">u2 = tf.Variable(tf.constant(<span class="number">2.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"other-v2"</span>)</span><br><span class="line">result = u1 + u2</span><br><span class="line">​</span><br><span class="line"><span class="comment"># 若直接声明Saver类对象，会报错变量找不到。使用一个字典dict</span></span><br><span class="line"><span class="comment"># 重命名变量即可，语法为&#123;"已保存的变量的名称name": 重命名变量名&#125;，</span></span><br><span class="line"><span class="comment"># 原来名称name为v1的变量现在加载到变量u1(名称name为other-v1)中</span></span><br><span class="line">saver = tf.train.Saver(&#123;<span class="string">"v1"</span>: u1, <span class="string">"v2"</span>: u2&#125;)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    saver.restore(sess, <span class="string">"./Model/model.ckpt"</span>)</span><br><span class="line">    print(sess.run(result))  <span class="comment"># [ 3.]</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;保存滑动平均模型：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line">v = tf.Variable(<span class="number">0</span>, dtype=tf.float32, name=<span class="string">"v"</span>)</span><br><span class="line"><span class="keyword">for</span> variables <span class="keyword">in</span> tf.global_variables():</span><br><span class="line">    print(variables.name)  <span class="comment"># 结果为“v:0”</span></span><br><span class="line">​</span><br><span class="line">ema = tf.train.ExponentialMovingAverage(<span class="number">0.99</span>)</span><br><span class="line">maintain_averages_op = ema.apply(tf.global_variables())</span><br><span class="line"><span class="keyword">for</span> variables <span class="keyword">in</span> tf.global_variables():</span><br><span class="line">    print(variables.name)  <span class="comment"># 结果为“v:0(换行)v/ExponentialMovingAverage:0”</span></span><br><span class="line">​</span><br><span class="line">saver = tf.train.Saver()</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    sess.run(tf.global_variables_initializer())</span><br><span class="line">    sess.run(tf.assign(v, <span class="number">10</span>))</span><br><span class="line">    sess.run(maintain_averages_op)</span><br><span class="line">    saver.save(sess, <span class="string">"Model/model_ema.ckpt"</span>)</span><br><span class="line">    print(sess.run([v, ema.average(v)]))  <span class="comment"># 结果为[10.0, 0.099999905]</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;通过变量重命名直接读取变量的滑动平均值：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line">v = tf.Variable(<span class="number">0</span>, dtype=tf.float32, name=<span class="string">"v"</span>)</span><br><span class="line">saver = tf.train.Saver(&#123;<span class="string">"v/ExponentialMovingAverage"</span>: v&#125;)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    saver.restore(sess, <span class="string">"./Model/model_ema.ckpt"</span>)</span><br><span class="line">    print(sess.run(v))  <span class="comment"># 结果为0.0999999</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;通过<code>tf.train.ExponentialMovingAverage</code>的<code>variables_to_restore</code>函数获取变量重命名字典：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line"><span class="comment"># 注意此处的变量名称name一定要与已保存的变量名称一致</span></span><br><span class="line">v = tf.Variable(<span class="number">0</span>, dtype=tf.float32, name=<span class="string">"v"</span>)</span><br><span class="line">ema = tf.train.ExponentialMovingAverage(<span class="number">0.99</span>)</span><br><span class="line"><span class="comment"># 如下结果为&#123;'v/ExponentialMovingAverage': &lt;tf.Variable 'v:0'</span></span><br><span class="line"><span class="comment"># shape=() dtype=float32_ref&gt;&#125;，此处的v取自上面变量v的名称“name="v"”</span></span><br><span class="line">print(ema.variables_to_restore())  </span><br><span class="line">saver = tf.train.Saver(ema.variables_to_restore())</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    saver.restore(sess, <span class="string">"./Model/model_ema.ckpt"</span>)</span><br><span class="line">    print(sess.run(v))  <span class="comment"># 0.0999999</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;如果变量定义在<code>name_scope</code>的里面：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.name_scope(<span class="string">'input'</span>):</span><br><span class="line">    v1 = tf.Variable(tf.constant(<span class="number">1.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"v1"</span>)</span><br><span class="line">    v2 = tf.Variable(tf.constant(<span class="number">2.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"v2"</span>)</span><br><span class="line">​</span><br><span class="line">result = v1 + v2</span><br><span class="line">saver = tf.train.Saver()</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    sess.run(tf.global_variables_initializer())</span><br><span class="line">    saver.save(sess, <span class="string">"./model.ckpt"</span>)</span><br></pre></td></tr></table></figure>
-<p>提取变量时使用如下语句：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line">saver = tf.train.import_meta_graph(<span class="string">"Model/model.ckpt.meta"</span>)</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    saver.restore(sess, <span class="string">"./Model/model.ckpt"</span>)  <span class="comment"># 注意路径写法</span></span><br><span class="line">    print(sess.run(tf.get_default_graph().get_tensor_by_name(<span class="string">"input/v2:0"</span>)))  <span class="comment"># 结果为[2.]</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;我们可以使用<code>tf.train.latest_checkpoint</code>来自动获取最后一次保存的模型：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">latest_checkpoint(checkpoint_dir, latest_filename=<span class="keyword">None</span>)</span><br></pre></td></tr></table></figure>
-<p>代码如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line"><span class="keyword">from</span> tensorflow.examples.tutorials.mnist <span class="keyword">import</span> input_data</span><br><span class="line">​</span><br><span class="line">mnist = input_data.read_data_sets(<span class="string">"MNIST_data/"</span>, one_hot=<span class="keyword">False</span>)</span><br><span class="line">​</span><br><span class="line">x = tf.placeholder(tf.float32, [<span class="keyword">None</span>, <span class="number">784</span>])</span><br><span class="line">y_ = tf.placeholder(tf.int32, [<span class="keyword">None</span>, ])</span><br><span class="line">​</span><br><span class="line">dense1 = tf.layers.dense(</span><br><span class="line">    inputs=x, units=<span class="number">1024</span>, activation=tf.nn.relu,</span><br><span class="line">    kernel_initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.01</span>),</span><br><span class="line">    kernel_regularizer=tf.nn.l2_loss)</span><br><span class="line">dense2 = tf.layers.dense(</span><br><span class="line">    inputs=dense1, units=<span class="number">512</span>, activation=tf.nn.relu,</span><br><span class="line">    kernel_initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.01</span>),</span><br><span class="line">    kernel_regularizer=tf.nn.l2_loss)</span><br><span class="line">logits = tf.layers.dense(</span><br><span class="line">    inputs=dense2, units=<span class="number">10</span>, activation=<span class="keyword">None</span>,</span><br><span class="line">    kernel_initializer=tf.truncated_normal_initializer(stddev=<span class="number">0.01</span>),</span><br><span class="line">    kernel_regularizer=tf.nn.l2_loss)</span><br><span class="line">​</span><br><span class="line">loss = tf.losses.sparse_softmax_cross_entropy(labels=y_, logits=logits)</span><br><span class="line">train_op = tf.train.AdamOptimizer(learning_rate=<span class="number">0.001</span>).minimize(loss)</span><br><span class="line">correct_prediction = tf.equal(tf.cast(tf.argmax(logits, <span class="number">1</span>), tf.int32), y_)</span><br><span class="line">acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))</span><br><span class="line">​</span><br><span class="line">sess = tf.InteractiveSession()</span><br><span class="line">sess.run(tf.global_variables_initializer())</span><br><span class="line">​</span><br><span class="line">is_train = <span class="keyword">False</span></span><br><span class="line">saver = tf.train.Saver(max_to_keep=<span class="number">3</span>)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> is_train:  <span class="comment"># 训练阶段</span></span><br><span class="line">    max_acc = <span class="number">0</span></span><br><span class="line">    f = open(<span class="string">'ckpt/acc.txt'</span>, <span class="string">'w'</span>)</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">100</span>):</span><br><span class="line">        batch_xs, batch_ys = mnist.train.next_batch(<span class="number">100</span>)</span><br><span class="line">        sess.run(train_op, feed_dict=&#123;x: batch_xs, y_: batch_ys&#125;)</span><br><span class="line">        val_loss, val_acc = sess.run([loss, acc], feed_dict=&#123;x: mnist.test.images, y_: mnist.test.labels&#125;)</span><br><span class="line">        print(<span class="string">'epoch:%d, val_loss:%f, val_acc:%f'</span> % (i, val_loss, val_acc))</span><br><span class="line">        f.write(str(i + <span class="number">1</span>) + <span class="string">', val_acc: '</span> + str(val_acc) + <span class="string">'\n'</span>)</span><br><span class="line">        <span class="keyword">if</span> val_acc &gt; max_acc:</span><br><span class="line">            max_acc = val_acc</span><br><span class="line">            saver.save(sess, <span class="string">'ckpt/mnist.ckpt'</span>, global_step=i + <span class="number">1</span>)</span><br><span class="line">    f.close()</span><br><span class="line"><span class="keyword">else</span>:  <span class="comment"># 验证阶段</span></span><br><span class="line">    model_file = tf.train.latest_checkpoint(<span class="string">'ckpt/'</span>)</span><br><span class="line">    saver.restore(sess, model_file)</span><br><span class="line">    val_loss, val_acc = sess.run([loss, acc], feed_dict=&#123;x: mnist.test.images, y_: mnist.test.labels&#125;)</span><br><span class="line">    print(<span class="string">'val_loss:%f, val_acc:%f'</span> % (val_loss, val_acc))</span><br><span class="line">sess.close()</span><br></pre></td></tr></table></figure>
-<p>这里的<code>latest_checkpoint</code>函数的参数表示模型存储的位置，不需要提供模型的名字，它会去查看<code>checkpoint</code>文件，看看最新保存结果的命名。</p>
-<hr>
-<h3 id="将TensorFlow的网络导出为单个文件"><a href="#将TensorFlow的网络导出为单个文件" class="headerlink" title="将TensorFlow的网络导出为单个文件"></a>将TensorFlow的网络导出为单个文件</h3><p>&emsp;&emsp;有时我们需要将<code>TensorFlow</code>的模型导出为单个文件(同时包含模型架构定义与权重)，方便在其他地方使用(例如在<code>C++</code>中部署网络)。<code>Tensorflow</code>提供如下<code>API</code>来存储和加载模型：</p>
-<ul>
-<li>生成检查点文件(<code>checkpoint file</code>)，扩展名一般为<code>.ckpt</code>，通过在<code>tf.train.Saver</code>对象上调用<code>Saver.save</code>生成。它包含权重和其他在程序中定义的变量，不包含图结构。如果需要在另一个程序中使用，需要重新创建图形结构，并告诉<code>TensorFlow</code>如何处理这些权重。</li>
-<li>生成图协议文件(<code>graph proto file</code>)，这是一个二进制文件，扩展名一般为<code>.pb</code>，用<code>tf.train.write_graph</code>保存。它只包含图形结构，不包含权重，然后使用<code>tf.import_graph_def</code>来加载图形。</li>
-</ul>
-<p>&emsp;&emsp;通过<code>convert_variables_to_constants</code>函数将计算图中的变量及其取值通过常量的方式保存于一个文件中：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line"><span class="keyword">from</span> tensorflow.python.framework.graph_util <span class="keyword">import</span> convert_variables_to_constants</span><br><span class="line">​</span><br><span class="line"><span class="comment"># 构造网络</span></span><br><span class="line">a = tf.Variable([[<span class="number">3</span>], [<span class="number">4</span>]], dtype=tf.float32, name=<span class="string">'a'</span>)</span><br><span class="line">b = tf.Variable(<span class="number">4</span>, dtype=tf.float32, name=<span class="string">'b'</span>)</span><br><span class="line">output = tf.add(a, b, name=<span class="string">'out'</span>)  <span class="comment"># 一定要给输出tensor取一个名字</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:  <span class="comment"># 转换Variable为constant，并将网络写入到文件</span></span><br><span class="line">    sess.run(tf.global_variables_initializer())</span><br><span class="line">    <span class="comment"># 这里需要填入输出tensor的名字</span></span><br><span class="line">    graph = convert_variables_to_constants(sess, sess.graph_def, [<span class="string">"out"</span>])</span><br><span class="line">    tf.train.write_graph(graph, <span class="string">'.'</span>, <span class="string">'graph.pb'</span>, as_text=<span class="keyword">False</span>)</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Converted <span class="number">2</span> variables to const ops.</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;载入包含变量及其取值的模型：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    <span class="keyword">with</span> open(<span class="string">'./graph.pb'</span>, <span class="string">'rb'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        graph_def = tf.GraphDef()</span><br><span class="line">        graph_def.ParseFromString(f.read())</span><br><span class="line">        output = tf.import_graph_def(graph_def, return_elements=[<span class="string">'out:0'</span>])</span><br><span class="line">        print(sess.run(output))</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[array([[<span class="number">7.</span>],</span><br><span class="line">       [<span class="number">8.</span>]], dtype=float32)]</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;如果我们的网络需要有一个输入自定义数据的接口，可以采用如下方法：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line"><span class="keyword">from</span> tensorflow.python.framework.graph_util <span class="keyword">import</span> convert_variables_to_constants</span><br><span class="line">​</span><br><span class="line">a = tf.Variable([[<span class="number">3</span>], [<span class="number">4</span>]], dtype=tf.float32, name=<span class="string">'a'</span>)</span><br><span class="line">b = tf.Variable(<span class="number">4</span>, dtype=tf.float32, name=<span class="string">'b'</span>)</span><br><span class="line">input_tensor = tf.placeholder(tf.float32, name=<span class="string">'input'</span>)</span><br><span class="line">output = tf.add((a + b), input_tensor, name=<span class="string">'out'</span>)</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    sess.run(tf.global_variables_initializer())</span><br><span class="line">    graph = convert_variables_to_constants(sess, sess.graph_def, [<span class="string">"out"</span>])</span><br><span class="line">    tf.train.write_graph(graph, <span class="string">'.'</span>, <span class="string">'graph.pb'</span>, as_text=<span class="keyword">False</span>)</span><br></pre></td></tr></table></figure>
-<p>上述代码重新保存网络至<code>graph.pb</code>，这次我们有了一个输入<code>placeholder</code>，下面来看看怎么恢复网络并输入自定义数据：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    <span class="keyword">with</span> open(<span class="string">'./graph.pb'</span>, <span class="string">'rb'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        graph_def = tf.GraphDef()</span><br><span class="line">        graph_def.ParseFromString(f.read())</span><br><span class="line">        output = tf.import_graph_def(</span><br><span class="line">                    graph_def, input_map=&#123;<span class="string">'input:0'</span>: <span class="number">4.</span>&#125;,</span><br><span class="line">                    return_elements=[<span class="string">'out:0'</span>], name=<span class="string">'a'</span>)</span><br><span class="line">        print(sess.run(output))</span><br><span class="line">`</span><br></pre></td></tr></table></figure>
-<p>执行结果：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[array([[<span class="number">11.</span>],</span><br><span class="line">       [<span class="number">12.</span>]], dtype=float32)]</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;当然也可以在<code>input_map</code>那里可以替换为自定义的<code>placeholder</code>：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line">​</span><br><span class="line">new_input = tf.placeholder(tf.float32, shape=())</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    <span class="keyword">with</span> open(<span class="string">'./graph.pb'</span>, <span class="string">'rb'</span>) <span class="keyword">as</span> f:</span><br><span class="line">        graph_def = tf.GraphDef()</span><br><span class="line">        graph_def.ParseFromString(f.read())</span><br><span class="line">        output = tf.import_graph_def(</span><br><span class="line">                    graph_def, input_map=&#123;<span class="string">'input:0'</span>: new_input&#125;,</span><br><span class="line">                    return_elements=[<span class="string">'out:0'</span>], name=<span class="string">'a'</span>)</span><br><span class="line">        print(sess.run(output, feed_dict=&#123;new_input: <span class="number">4</span>&#125;))</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="Tensorflow模型持久化"><a href="#Tensorflow模型持久化" class="headerlink" title="Tensorflow模型持久化"></a>Tensorflow模型持久化</h3><p>&emsp;&emsp;当我们使用<code>TensorFlow</code>训练神经网络的时候，模型持久化对于我们的训练有很重要的作用。<br>&emsp;&emsp;如果我们的神经网络比较复杂，训练数据比较多，那么我们的模型训练就会耗时很长，如果在训练过程中出现某些不可预计的错误，导致我们的训练意外终止，那么我们将会前功尽弃。为了避免这个问题，我们就可以通过模型持久化(保存为<code>CKPT</code>格式)来暂存我们训练过程中的临时数据。<br>&emsp;&emsp;如果我们训练的模型需要提供给用户做离线的预测，那么我们只需要前向传播的过程，只需得到预测值就可以了，这个时候我们就可以通过模型持久化(保存为<code>PB</code>格式)只保存前向传播中需要的变量并将变量的值固定下来，这个时候只需用户提供一个输入，我们就可以通过模型得到一个输出给用户。</p>
-<h4 id="保存为CKPT格式的模型"><a href="#保存为CKPT格式的模型" class="headerlink" title="保存为CKPT格式的模型"></a>保存为CKPT格式的模型</h4><p>&emsp;&emsp;定义运算过程，声明并得到一个<code>Saver</code>，通过<code>Saver.save</code>保存模型：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line"><span class="keyword">import</span> os.path</span><br><span class="line">​</span><br><span class="line">MODEL_DIR = <span class="string">"model/ckpt"</span></span><br><span class="line">MODEL_NAME = <span class="string">"model.ckpt"</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> tf.gfile.Exists(MODEL_DIR):  <span class="comment"># 创建目录</span></span><br><span class="line">    tf.gfile.MakeDirs(MODEL_DIR)</span><br><span class="line">​</span><br><span class="line"><span class="comment"># 下面的过程你可以替换成CNN、RNN等你想做的训练过程，这里只是简单的一个计算公式</span></span><br><span class="line"><span class="comment"># 输入占位符，并指定名字，后续模型读取可能会用的</span></span><br><span class="line">input_holder = tf.placeholder(tf.float32, shape=[<span class="number">1</span>], name=<span class="string">"input_holder"</span>)</span><br><span class="line">W1 = tf.Variable(tf.constant(<span class="number">5.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"W1"</span>)</span><br><span class="line">B1 = tf.Variable(tf.constant(<span class="number">1.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"B1"</span>)</span><br><span class="line">_y = (input_holder * W1) + B1</span><br><span class="line"><span class="comment"># 输出节点名字，后续模型读取会用到，比50大返回true，否则返回false</span></span><br><span class="line">predictions = tf.greater(_y, <span class="number">50</span>, name=<span class="string">"predictions"</span>)</span><br><span class="line">​</span><br><span class="line">init = tf.global_variables_initializer()</span><br><span class="line">saver = tf.train.Saver()  <span class="comment"># 声明saver用于保存模型</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    sess.run(init)</span><br><span class="line">    <span class="comment"># 输入一个数据测试一下</span></span><br><span class="line">    print(<span class="string">"predictions : "</span>, sess.run(predictions, feed_dict=&#123;input_holder: [<span class="number">10.0</span>]&#125;))</span><br><span class="line">    saver.save(sess, os.path.join(MODEL_DIR, MODEL_NAME))  <span class="comment"># 模型保存</span></span><br><span class="line">    <span class="comment"># 得到当前图有几个操作节点</span></span><br><span class="line">    print(<span class="string">"%d ops in the final graph."</span> % len(tf.get_default_graph().as_graph_def().node))</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> op <span class="keyword">in</span> tf.get_default_graph().get_operations():  <span class="comment"># 打印模型节点信息</span></span><br><span class="line">    print(op.name, op.values())</span><br></pre></td></tr></table></figure>
-<p>运行后生成的文件如下：</p>
-<ul>
-<li><code>checkpoint</code>：记录目录下所有模型文件列表。</li>
-<li><code>ckpt.data</code>：保存模型中每个变量的取值。</li>
-<li><code>ckpt.meta</code>：保存整个计算图的结构。</li>
-</ul>
-<h4 id="保存为PB格式模型"><a href="#保存为PB格式模型" class="headerlink" title="保存为PB格式模型"></a>保存为PB格式模型</h4><p>&emsp;&emsp;定义运算过程，通过<code>get_default_graph().as_graph_def</code>得到当前图的计算节点信息，通过<code>graph_util.convert_variables_to_constants</code>将相关节点的<code>values</code>固定，通过<code>tf.gfile.GFile</code>进行模型持久化：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line"><span class="keyword">from</span> tensorflow.python.framework <span class="keyword">import</span> graph_util</span><br><span class="line">​</span><br><span class="line">output_graph = <span class="string">"model/add_model.pb"</span></span><br><span class="line">​</span><br><span class="line"><span class="comment"># 下面的过程你可以替换成CNN、RNN等你想做的训练过程，这里只是简单的一个计算公式</span></span><br><span class="line">input_holder = tf.placeholder(tf.float32, shape=[<span class="number">1</span>], name=<span class="string">"input_holder"</span>)</span><br><span class="line">W1 = tf.Variable(tf.constant(<span class="number">5.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"W1"</span>)</span><br><span class="line">B1 = tf.Variable(tf.constant(<span class="number">1.0</span>, shape=[<span class="number">1</span>]), name=<span class="string">"B1"</span>)</span><br><span class="line">_y = (input_holder * W1) + B1</span><br><span class="line">predictions = tf.add(_y, <span class="number">10</span>, name=<span class="string">"predictions"</span>)  <span class="comment"># 做一个加法运算(输出节点名是“predictions”)</span></span><br><span class="line">​</span><br><span class="line">init = tf.global_variables_initializer()</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">    sess.run(init)</span><br><span class="line">    print(<span class="string">"predictions : "</span>, sess.run(predictions, feed_dict=&#123;input_holder: [<span class="number">10.0</span>]&#125;))</span><br><span class="line">    <span class="comment"># 得到当前的图的GraphDef部分，通过这个部分就可以完成重输入层到输出层的计算过程</span></span><br><span class="line">    graph_def = tf.get_default_graph().as_graph_def()</span><br><span class="line">    output_graph_def = graph_util.convert_variables_to_constants(sess, graph_def, [<span class="string">"predictions"</span>])</span><br><span class="line">    <span class="keyword">with</span> tf.gfile.GFile(output_graph, <span class="string">"wb"</span>) <span class="keyword">as</span> f:  <span class="comment"># 保存模型</span></span><br><span class="line">        f.write(output_graph_def.SerializeToString())  <span class="comment"># 序列化输出</span></span><br><span class="line">    print(<span class="string">"%d ops in the final graph."</span> % len(output_graph_def.node))</span><br><span class="line">    print(predictions)</span><br></pre></td></tr></table></figure>
-<p><code>GraphDef</code>这个属性记录了<code>TensorFlow</code>计算图上节点的信息。<code>add_model.pb</code>里面保存了从输入层到输出层这个计算过程的计算图和相关变量的值，我们得到这个模型后传入一个输入，即可以得到一个预估的输出值。</p>
-<h4 id="CKPT转换成PB格式"><a href="#CKPT转换成PB格式" class="headerlink" title="CKPT转换成PB格式"></a>CKPT转换成PB格式</h4><p>&emsp;&emsp;通过传入<code>CKPT</code>模型的路径得到模型的图和变量数据，通过<code>import_meta_graph</code>导入模型中的图，通过<code>saver.restore</code>从模型中恢复图中各个变量的数据，通过<code>graph_util.convert_variables_to_constants</code>将模型持久化：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorflow <span class="keyword">as</span> tf</span><br><span class="line"><span class="keyword">import</span> os.path</span><br><span class="line"><span class="keyword">import</span> argparse</span><br><span class="line"><span class="keyword">from</span> tensorflow.python.framework <span class="keyword">import</span> graph_util</span><br><span class="line">​</span><br><span class="line">MODEL_DIR = <span class="string">"model/"</span></span><br><span class="line">MODEL_NAME = <span class="string">"frozen_model.pb"</span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> tf.gfile.Exists(MODEL_DIR):  <span class="comment"># 创建目录</span></span><br><span class="line">    tf.gfile.MakeDirs(MODEL_DIR)</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">freeze_graph</span><span class="params">(model_folder)</span>:</span></span><br><span class="line">    checkpoint = tf.train.get_checkpoint_state(model_folder)  <span class="comment"># 检查目录下ckpt文件状态是否可用</span></span><br><span class="line">    input_checkpoint = checkpoint.model_checkpoint_path  <span class="comment"># 得到ckpt文件路径</span></span><br><span class="line">    output_graph = os.path.join(MODEL_DIR, MODEL_NAME)  <span class="comment"># PB模型保存路径</span></span><br><span class="line">​</span><br><span class="line">    output_node_names = <span class="string">"predictions"</span>  <span class="comment"># 原模型输出操作节点的名字</span></span><br><span class="line">    <span class="comment"># 得到图、clear_devices：Whether or not to clear the device field for an 'Operation' or 'Tensor' during import</span></span><br><span class="line">    saver = tf.train.import_meta_graph(input_checkpoint + <span class="string">'.meta'</span>, clear_devices=<span class="keyword">True</span>)</span><br><span class="line">​</span><br><span class="line">    graph = tf.get_default_graph()  <span class="comment"># 获得默认的图</span></span><br><span class="line">    input_graph_def = graph.as_graph_def()  <span class="comment"># 返回一个序列化的图代表当前的图</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">with</span> tf.Session() <span class="keyword">as</span> sess:</span><br><span class="line">        saver.restore(sess, input_checkpoint)  <span class="comment"># 恢复图并得到数据</span></span><br><span class="line">        <span class="comment"># 测试读出来的模型是否正确，注意这里传入的是输出和输入节点的tensor的名字，不是操作节点的名字</span></span><br><span class="line">        print(<span class="string">"predictions : "</span>, sess.run(<span class="string">"predictions:0"</span>, feed_dict=&#123;<span class="string">"input_holder:0"</span>: [<span class="number">10.0</span>]&#125;))</span><br><span class="line">        <span class="comment"># 注意，如果有多个输出节点，以逗号隔开</span></span><br><span class="line">        output_graph_def = graph_util.convert_variables_to_constants(sess, input_graph_def, output_node_names.split(<span class="string">","</span>))</span><br><span class="line">        <span class="keyword">with</span> tf.gfile.GFile(output_graph, <span class="string">"wb"</span>) <span class="keyword">as</span> f:  <span class="comment"># 保存模型</span></span><br><span class="line">            f.write(output_graph_def.SerializeToString())  <span class="comment"># 序列化输出</span></span><br><span class="line">        print(<span class="string">"%d ops in the final graph."</span> % len(output_graph_def.node))  <span class="comment"># 得到当前图有几个操作节点</span></span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> op <span class="keyword">in</span> graph.get_operations():</span><br><span class="line">            print(op.name, op.values())</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    parser = argparse.ArgumentParser()</span><br><span class="line">    parser.add_argument(<span class="string">"model_folder"</span>, type=str, help=<span class="string">"input ckpt model dir"</span>)  <span class="comment"># 命令行解析，help是提示符，type是输入的类型</span></span><br><span class="line">    <span class="comment"># 这里运行程序时需要带上模型ckpt的路径，不然会报“error: too few arguments”</span></span><br><span class="line">    aggs = parser.parse_args()</span><br><span class="line">    freeze_graph(aggs.model_folder)</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/15/外语/日语学习笔记/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/15/外语/日语学习笔记/" itemprop="url">日语学习笔记</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-15T13:06:16+08:00">
-                2019-02-15
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/外语/" itemprop="url" rel="index">
-                    <span itemprop="name">外语</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;1. <code>わたしも新しい洋服が欲しくなりました</code>：<code>ほしい</code>是形容词不是动词，所以用了<code>ほしくなりました</code>。<code>ほしい</code>的副词形式<code>ほしく</code>加上<code>なりました</code>，表达就完成了。<br>&emsp;&emsp;2. <code>何か趣味がありますか</code>：第一个<code>か</code>不是强调兴趣是什么，而是强调有还是没有；第二个<code>が</code>是提示主语。比较一下<code>か</code>和<code>が</code>的语境：<code>何か趣味がありますか</code>(你有什么兴趣吗？)强调有还是没有；<code>何が趣味がありますか</code>(你有什么兴趣吗？)强调是什么兴趣。<br>&emsp;&emsp;3. <code>日本の歌が好きなんですか</code>：<code>~んです</code>除了对所陈述的事确认外，还有强调、加强语气的作用。<code>好き</code>是二类形容词，名词和二类形容词后用<code>なんです</code>，动词简体和一类形容词后用<code>んです</code>。现在将来时就是现在时或将来时，陈述现在发生的事情或将来发生的事情时用的时态，<code>だ</code>要换成<code>な</code>。<br>&emsp;&emsp;4. <code>います</code>的各种形式：基本形<code>いる</code>、过去<code>いた</code>、否定<code>いない</code>、过去否定<code>いなっかた</code>。<br>&emsp;&emsp;5. <code>そうなんです</code>：<code>そうです -&gt; そうだ -&gt; そうな + んです/のです -&gt; そうなんです/そうなのですが</code><br>&emsp;&emsp;6. <code>李さんや马さんもいろいろと探してくれています</code>：此句的<code>いろいろ</code>是作为副词使用，后面加<code>と</code>表明修饰后面的动词<code>探してくれる</code>。<br>&emsp;&emsp;7. <code>そうなんだ</code>：相当于<code>そうなんです</code>，<code>~んだ</code>是一个固定的接尾方式，和<code>~んです</code>一样，表示强调肯定语气。<br>&emsp;&emsp;8. <code>お母さん先に入ってよ</code>：<code>入ってよ</code>是<code>入ってください</code>的缩略形式。<br>&emsp;&emsp;9. <code>寝ないとね</code>：相当于<code>寝ないといけない</code>(必须睡觉)。<br>&emsp;&emsp;10. <code>~など</code>表示相同事物的列举，相当于汉语的<code>等等</code>。<br>&emsp;&emsp;11. <code>何か予定がありますか</code>：在语法、语义上都可以将此处的<code>か</code>换成<code>の</code>，但是两者的语境完全不同。<code>か</code>是泛指，即不定指；<code>の</code>表示特指。<br>&emsp;&emsp;12. <code>出かけようとした时に</code>：<code>と</code>表示引用或者承接，而且还有<code>一~就~</code>的意思，这里表示引用用法。<code>动词意志形 + とする</code>的方式表示<code>想要做~</code>。<code>した</code>则是表示这的想法是发生在过去，也就是过去式的用法，而并不是做过了，而且在这里也只是说作者在叙述自己那个时候的想法。<br>&emsp;&emsp;13. <code>帰りに寄ろうと思うんです</code>：<code>帰り</code>是广义时间性名词，<code>に</code>表示时间，<code>帰りに</code>即在回来时。整句意思是<code>在回来时想顺路去</code>。<br>&emsp;&emsp;14. <code>必ずだれかがやっていますね</code>：<code>やって</code>的<code>ます</code>形是<code>やります</code>(做)。<br>&emsp;&emsp;15. <code>だから会員になろうと思っているんです</code>：<code>なろう</code>的<code>ます</code>形是<code>なります</code>(变成)。<br>&emsp;&emsp;16. <code>かほかにも特典があるんですか</code>：<code>ほかに</code>是副词，<code>另外</code>的意思。<br>&emsp;&emsp;17. <code>わたしにも手伝ってほしいって言っていました</code>：<code>手伝う(てつたう)</code>变<code>て</code>形为<code>手伝って</code>，而<code>欲しい</code>这个文法项在接续动词时，就是<code>NにV-て欲しい</code>的形式。<code>って</code>是用作表示引用的，表示引用前面那句话。<br>&emsp;&emsp;18. <code>ちょっと早く着いてしまったけど</code>：<code>てしまった</code>是<code>てしまいました</code>的简体形。<br>&emsp;&emsp;19. <code>いくら闻いても何も言わないんだよ</code>：怎么问都什么不说。这句话语法中的<code>ても</code>是典型的问句形式；<code>いくら</code>是<code>如何、多少...</code>的意思，还有就是在询问价格时经常使用，相当于<code>多少钱</code>。<code>んだ</code>多用于口语，用来加强语气。<br>&emsp;&emsp;20. <code>一杯だけでいいです</code>：只喝一杯可以。<code>で</code>是助词，限定范围。这里表述的意思<code>在一杯(少量)范围内是可以的</code>。<br>&emsp;&emsp;21. <code>遅くなって</code>：<code>遅い</code>修饰动词<code>なる</code>(变化)。<code>遅くなる</code>根据场合不同，可以翻译为<code>迟到</code>、<code>变慢</code>、<code>变晚</code>的意思。<br>&emsp;&emsp;22. <code>名词 + のほかに</code>：<code>另外还...，除此之外也...</code>。<br>&emsp;&emsp;23. <code>それにしても</code>：表示在承认前边所述事实的基础上，感觉实际情况超过原有的预想、期待，表示一种转折的语气。译为<code>尽管那样，也...</code>。<br>&emsp;&emsp;24. <code>ここは紫禁城と言って、映画の舞台になった所です</code>：<code>て</code>连接前后句，表示句子的中顿，<code>言って</code>是<code>言う</code>的连用形。<code>なる</code>是成为的意思，变成<code>た</code>形，后面可直接接名词。这句话的意思是：这里叫做紫禁城，经常作为电影中的舞台出现。<br>&emsp;&emsp;25. <code>AをBに(して) + 动词句</code>：就是表示<code>以A作为B，~</code>，可以省略<code>して</code>。中级里有很多这种句型，该句里是以建筑物作为背景，做照相这个动作。其它比如<code>~を頼りに(して)</code>是<code>以XX为依托，~</code>，<code>~をきっかけに(して)</code>是<code>以XX为契机，~</code>，<code>~を境に(して)</code>是<code>以XX为分水岭，~</code>。同时也可<code>AをBにした + 名词</code>或<code>AをBにする + 名词</code>，<code>にする</code>、<code>にした</code>不可省。比如<code>天安門をバックにした写真</code>(以天安门为背景的照片)。<br>&emsp;&emsp;26. <code>梦が実现できる</code>：这句话意思是<code>梦想能实现</code>。<code>できる</code>是<code>する</code>的可能态，表示能够做某事。<br>&emsp;&emsp;27. <code>そんなはずがない</code>：按理说不会这样。<br>&emsp;&emsp;28. <code>西长安街の方へ行く用事があったので</code>：<code>西长安街の方へ行く</code>是定语修饰用事，句子意思是有到西长安街的事情，即因为有事到西长安街的意思。<br>&emsp;&emsp;29. <code>同僚が预かったままだったんです</code>：也可以是<code>~ままでした</code>，如果不需要<code>です</code>，<code>~ままだった</code>也没问题，这里是<code>ままだった + んです</code>。<br>&emsp;&emsp;30. <code>连络もせずに</code>：<code>せずに</code>应该理解为<code>しないのに</code>的书面用法。<br>&emsp;&emsp;31. <code>访ねてしまって</code>：这里用的是<code>てしまう</code>这个语法。它有两种意思：一是表示动作的终了、完成，例如<code>いえを出る前に、ご饭をたべてしまう</code>(出门前先把饭吃了)；做了不该做的事情或出现了不该出现的情况(或者是某种未料到的不好的情况)，例如<code>ちょっと小さすぎてしまった</code>(有点太小了)。<code>て</code>这里是终助词，多作为女性用语，表示一种委婉的强调，相当于<code>呢、啊</code>。<code>访ねてしまう</code>接上<code>て</code>就是<code>访ねてしまって</code>。<br>&emsp;&emsp;32. <code>言うまでもなく品质は重要です</code>：<code>~までもない/~までもなく</code>相当于<code>~する必要はない</code>，意思是<code>没有必要</code>。接续形式为<code>动-辞书形 + までもない</code>，注意<code>~までもない</code>用于句尾，或接名词；<code>~までもなく</code>后接动词、形容词或副词。例如<code>そんな简単な用事のために、わざわざ行くまでもない</code>(就那么简单的事情，没必要特意前去)；<code>今さら注意するまでもなく、吃烟は健康に大きな害を及ぼします</code>(吸烟危害健康，已经是无需现在再加以提醒的)。<code>言うまでもない/言うまでもなく</code>意思是<code>不言而喻</code>。<br>&emsp;&emsp;33. <code>デザイナーにいくつか试作させています</code>：<code>いくつか</code>有<code>若干</code>的意思，例如<code>リンゴをいくつか买った</code>(买了几个苹果)。<br>&emsp;&emsp;34. <code>元気でいて</code>：<code>いて</code>是存续体在口语中的省略用法。日语中的存续体为<code>ている</code>，即<code>て</code>型，这句话完整应该是<code>元気でいている</code>，意为希望对方这种元气的状态是一种长时间状态的持续，在口语中省略为<code>元気でいて</code>。<br>&emsp;&emsp;35. <code>笑いが止まらなくなるかもしれませんよ</code>：<code>ない</code>和形容词一样，<code>い</code>要变化为<code>く</code>，例如<code>大きい -&gt; 大きくなる</code>。形容动词则是词根加<code>に</code>，例如<code>赈やかになる</code>。除了<code>なる</code>，<code>する</code>也一样。<code>なる</code>的意思是<code>变得</code>。<br>&emsp;&emsp;36. <code>いいんじゃない</code>和<code>いいじゃない</code>：<code>いいんじゃない</code>的意思是<code>不是很好吗？</code>，语气比<code>いいじゃない</code>要强烈。<code>いいじゃないか</code>通常的含义就是反问表肯定<code>不是挺好吗</code>。<code>いいじゃないか</code>并不存在明显的升调或降调，<code>か</code>这个疑问助词本来就读升调，只有<code>いいじゃない</code>存在升调或降调，<code>いいじゃない(升调) = いいじゃないか</code>，是一种省略说法，表示<code>不是挺好吗</code>；<code>いいじゃない(降调) = ではない</code>正常表示否定的用法，即<code>不好</code>。另外还有一种情况，若要表达<code>是不好吗？</code>的意思，日语为<code>いいじゃないですか</code>或<code>いいじゃないか</code>，但这容易引起误解，所以在书写时要作如下处理：<code>いいじゃない、ですか</code>或<code>いいじゃない、か</code>，在读的时候<code>いいじゃない</code>和<code>か(ですか)</code>之间要有停顿，这样才能加以区分。<br>&emsp;&emsp;37. <code>社長はこちらにもお寄りになるのかしら</code>：这句话是敬语，意思是<code>社长会不会也来这边？</code>。<code>お寄りになる</code>是<code>来る</code>的尊敬语，用于地位在上的人。<code>の</code>表示强调。<code>かしら</code>是句末语气词，女性专用，无特殊意义。<br>&emsp;&emsp;38. <code>そちらへは寄らずに</code>：<code>寄る</code>的否定说法，<code>ず</code>表示否定，<code>に</code>与后面句子连用，其意思是<code>去那里不顺路...</code>。<br>&emsp;&emsp;39. <code>勉強すればするほど</code>：<code>动词假定型 + 动词原型 + ほど</code>表示<code>越...越...</code>。<code>勉強すればするほど、日本語が難しいと思う</code>的意思是<code>越学越觉得日语难</code>。<code>勉強すれば</code>是假定型，里面的<code>する</code>其实就是<code>勉強する</code>，是动词的原型，因为是<code>サ变动词</code>，这里可以省略词干，只用<code>する</code>。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2043,7 +2070,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">955</span>
+                  <span class="site-state-item-count">958</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

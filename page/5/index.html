@@ -271,6 +271,505 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/19/单片机/MDK寄存器地址名称映射/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/19/单片机/MDK寄存器地址名称映射/" itemprop="url">MDK寄存器地址名称映射</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-19T06:47:24+08:00">
+                2019-03-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>51</code>单片机开发中经常会引用<code>reg51.h</code>头文件，这里来看看它是如何把名字和寄存器联系起来的：<code>sfr P0 = 0x80;</code>。<code>sfr</code>也是一种扩充数据类型，占用一个内存单元，值域为<code>0</code>至<code>255</code>。利用它可以访问<code>51</code>单片机内部的所有特殊功能寄存器。例如<code>sfr P1 = 0x90;</code>这一句定义<code>P1</code>为<code>P1</code>端口在片内的寄存器。然后我们往地址为<code>0x80</code>的寄存器设值的方法是<code>P0 = value;</code>。<br>&emsp;&emsp;<code>STM32</code>是否也可以这样做？答案是肯定的，<code>MDK</code>采用的方式是通过结构体来将寄存器组织在一起。下面我们就讲解<code>MDK</code>是怎么把结构体和地址对应起来的，为什么修改结构体成员变量的值就可以操作对应寄存器的值。这些事情都是在<code>stm32f10x.h</code>中完成的。<br>&emsp;&emsp;首先查看<code>STM32中文参考手册</code>中的寄存器地址映射表：</p>
+<p><img src="/2019/03/19/单片机/MDK寄存器地址名称映射/1.jpg" height="273" width="510"></p>
+<p>&emsp;&emsp;从这个表可以看出，<code>GPIOA</code>的<code>7</code>个寄存器都是<code>32</code>位的，所以每个寄存器占有<code>4</code>个地址，一共占用<code>28</code>个地址，地址偏移范围为<code>0x000</code>至<code>0x01B</code>。这个地址偏移是相对<code>GPIOA</code>的基地址而言的。<code>GPIOA</code>的基地址是怎么算出来的呢？因为<code>GPIOA</code>都是挂载在<code>APB2</code>总线之上，所以它的基地址是由<code>APB2</code>总线的基地址加上<code>GPIOA</code>在<code>APB2</code>总线上的偏移地址决定的。同理依次类推，我们便可以算出<code>GPIOA</code>基地址了。下面打开<code>stm32f10x.h</code>，定位到<code>GPIO_TypeDef</code>的定义处：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    __IO <span class="keyword">uint32_t</span> CRL;</span><br><span class="line">    __IO <span class="keyword">uint32_t</span> CRH;</span><br><span class="line">    __IO <span class="keyword">uint32_t</span> IDR;</span><br><span class="line">    __IO <span class="keyword">uint32_t</span> ODR;</span><br><span class="line">    __IO <span class="keyword">uint32_t</span> BSRR;</span><br><span class="line">    __IO <span class="keyword">uint32_t</span> BRR;</span><br><span class="line">    __IO <span class="keyword">uint32_t</span> LCKR;</span><br><span class="line">&#125; GPIO_TypeDef;</span><br></pre></td></tr></table></figure>
+<p>然后定位到如下内容：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GPIOA ( ( GPIO_TypeDef * ) GPIOA_BASE )</span></span><br></pre></td></tr></table></figure>
+<p>可以看出，<code>GPIOA</code>是将<code>GPIOA_BASE</code>强制转换为<code>GPIO_TypeDef</code>指针。这句话的意思是，<code>GPIOA</code>指向地址<code>GPIOA_BASE</code>，<code>GPIOA_BASE</code>存放的数据类型为<code>GPIO_TypeDef</code>。<code>GPIOA_BASE</code>的宏定义如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GPIOA_BASE ( APB2PERIPH_BASE + 0x0800 )</span></span><br></pre></td></tr></table></figure>
+<p>依次类推，可以找到最顶层：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> APB2PERIPH_BASE ( PERIPH_BASE + 0x10000 )</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PERIPH_BASE     ( ( uint32_t ) 0x40000000 )</span></span><br></pre></td></tr></table></figure>
+<p>所以便可以算出<code>GPIOA</code>的基地址为<code>GPIOA_BASE = 0x40000000+0x10000+0x0800 = 0x40010800</code>。<br>&emsp;&emsp;下面再根据<code>STM32中文参考手册</code>查看<code>GPIOA</code>的基地址是不是为<code>0x40010800</code>。从存储器映射表可以看到，<code>GPIOA</code>的起始地址(也就是基地址)确实是<code>0x40010800</code>：</p>
+<p><img src="/2019/03/19/单片机/MDK寄存器地址名称映射/2.png" height="284" width="358"></p>
+<p>&emsp;&emsp;已经知道<code>GPIOA</code>的基地址，那么<code>GPIOA</code>的<code>7</code>个寄存器的地址又是怎么算出来的呢？在上面已经讲过<code>GPIOA</code>的各个寄存器对于<code>GPIOA</code>基地址的偏移地址，所以自然可以算出来每个寄存器的地址：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GPIOA的寄存器的地址 = GPIOA基地址 + 寄存器相对GPIOA基地址的偏移值</span><br></pre></td></tr></table></figure>
+<p>这个偏移值在上面的寄存器地址映像表中可以查到。<br>&emsp;&emsp;那么在结构体里面这些寄存器又是怎么与地址一一对应的呢？这里涉及到结构体成员变量地址对齐方式方面的知识。在定义好地址对齐方式之后，每个成员变量对应的地址就可以根据其基地址来计算。对于结构体类型<code>GPIO_TypeDef</code>，它的所有成员变量都是<code>32</code>位，成员变量地址具有连续性，所以就可以算出<code>GPIOA</code>指向的结构体成员变量对应地址。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>寄存器</th>
+<th>偏移地址</th>
+<th>实际地址 = 基地址 + 偏移地址</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GPIOA-&gt;CRL</code></td>
+<td><code>0x00</code></td>
+<td><code>0x40010800 + 0x00</code></td>
+</tr>
+<tr>
+<td><code>GPIOA-&gt;CRH</code></td>
+<td><code>0x04</code></td>
+<td><code>0x40010800 + 0x04</code></td>
+</tr>
+<tr>
+<td><code>GPIOA-&gt;IDR</code></td>
+<td><code>0x08</code></td>
+<td><code>0x40010800 + 0x08</code></td>
+</tr>
+<tr>
+<td><code>GPIOA-&gt;ODR</code></td>
+<td><code>0x0c</code></td>
+<td><code>0x40010800 + 0x0c</code></td>
+</tr>
+<tr>
+<td><code>GPIOA-&gt;BSRR</code></td>
+<td><code>0x10</code></td>
+<td><code>0x40010800 + 0x10</code></td>
+</tr>
+<tr>
+<td><code>GPIOA-&gt;BRR</code></td>
+<td><code>0x14</code></td>
+<td><code>0x40010800 + 0x14</code></td>
+</tr>
+<tr>
+<td><code>GPIOA-&gt;LCKR</code></td>
+<td><code>0x18</code></td>
+<td><code>0x40010800 + 0x18</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>&emsp;&emsp;把<code>GPIO_TypeDef</code>定义的成员变量的顺序和<code>GPIOx</code>寄存器地址映像进行对比可以发现，它们的顺序是一致的，如果不一致，就会导致地址混乱。这就是为什么固件库里面<code>GPIOA-&gt;BRR = value;</code>就是设置地址为<code>0x40010800 + 0x014(BRR偏移量) = 0x40010814</code>的寄存器<code>BRR</code>的值了。它和<code>51</code>中的<code>P0 = value;</code>是设置地址为<code>0x80</code>的<code>P0</code>寄存器的值是一样的道理。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/18/单片机/STM32启动文件的选择/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/18/单片机/STM32启动文件的选择/" itemprop="url">STM32启动文件的选择</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-18T22:40:41+08:00">
+                2019-03-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>STM32</code>启动文件选择如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">startup_stm32f10x_ld_vl.s: <span class="keyword">for</span> STM32 Low density Value line devices</span><br><span class="line">startup_stm32f10x_ld.s:    <span class="keyword">for</span> STM32 Low density devices</span><br><span class="line">startup_stm32f10x_md_vl.s: <span class="keyword">for</span> STM32 Medium density Value line devices</span><br><span class="line">startup_stm32f10x_md.s:    <span class="keyword">for</span> STM32 Medium density devices</span><br><span class="line">startup_stm32f10x_hd.s:    <span class="keyword">for</span> STM32 High density devices</span><br><span class="line">startup_stm32f10x_xl.s:    <span class="keyword">for</span> STM32 XL density devices</span><br><span class="line">startup_stm32f10x_cl.s:    <span class="keyword">for</span> STM32 Connectivity line devices</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>cl</code>：互联型产品，<code>stm32f105/107</code>系列。</li>
+<li><code>vl</code>：超值型产品，<code>stm32f100</code>系列。</li>
+<li><code>xl</code>：超高密度产品，<code>stm32f101/103</code>系列。</li>
+<li><code>ld</code>：低密度产品，<code>FLASH</code>小于<code>64K</code>。</li>
+<li><code>md</code>：中等密度产品，<code>FLASH = 64K or 128K</code>。</li>
+<li><code>hd</code>：高密度产品，<code>FLASH</code>大于<code>128K</code>。</li>
+</ul>
+<h3 id="为什么需要选择启动文件？"><a href="#为什么需要选择启动文件？" class="headerlink" title="为什么需要选择启动文件？"></a>为什么需要选择启动文件？</h3><p>&emsp;&emsp;1. 建立中断服务入口地址，即把中断向量与中断服务函数链接起来。<br>&emsp;&emsp;在串口<code>NVIC</code>配置中，我们只定义了<code>NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;</code>，也就是中断服务向量。然后在<code>stm32f10x_it.c</code>文件的<code>USART2_IRQHandler</code>函数里添加串口的服务程序。但是<code>MCU</code>怎么知道中断向量<code>USART2_IRQn</code>对应的是<code>USART2_IRQHandler</code>呢，这个就是启动文件所起的作用。在<code>启动文件.s</code>中以<code>g_pfnVectors:</code>开头。<br>&emsp;&emsp;2. 从<code>SystemInit</code>函数进入到<code>main</code>函数。<br>&emsp;&emsp;对于<code>stm32</code>，我们定义系统时钟的时候直接在system_stm32f10x.c文件里修改宏定义即可，而事实上到底是从哪开始执行的呢？system_stm32f10x.c文件里有个SystemInit函数，就是对时钟的设置。而这个SystemInit在哪调用的呢？就是启动文件先调用了，然后才进入到main函数。<br>&emsp;&emsp;在<code>启动文件.s</code>中有以下一段话可以解释：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Call the clock system intitialization function */</span></span><br><span class="line">    bl  SystemInit</span><br><span class="line"><span class="comment">/* Call static constructors */</span></span><br><span class="line">    bl __libc_init_array</span><br><span class="line"><span class="comment">/* Call the application's entry point */</span></span><br><span class="line">    bl main</span><br><span class="line">    bx lr</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;3. 有些启动文件定义了堆栈大小，可以在这里进行修改(有些是在<code>.ld</code>文件进行定义的)。</p>
+<h3 id="这些文件在哪里？"><a href="#这些文件在哪里？" class="headerlink" title="这些文件在哪里？"></a>这些文件在哪里？</h3><p>&emsp;&emsp;打开官方库文件，可以看到<code>STM32F10x_StdPeriph_lib/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/startup</code>下有<code>4</code>个文件夹：<code>arm</code>、<code>gcc_ride7</code>、<code>iar</code>、<code>TrueSTUDIO</code>，到底选择哪个文件夹呢？这与编译器有关，不同的编译器调用的指令集是不同的，所以需谨慎选择。<code>arm</code>适用于<code>arm</code>编译器，<code>gcc_ride7</code>适用基于<code>GCC_ride7</code>的编译器，<code>iar</code>适用于<code>IAR</code>编译器，<code>TrueSTDIO</code>是<code>ST</code>自己的编译器，当然也是基于<code>GCC</code>，在<code>MDK</code>与<code>eclipse</code>上可以使用(在<code>eclipse</code>下使用<code>GCC</code>插件的话，需要把后缀名<code>.s</code>改为<code>.S</code>，否则会编译出错)。</p>
+<h3 id="怎么选择101xx、102xx、103xx是小容量、中容量还是大容量？"><a href="#怎么选择101xx、102xx、103xx是小容量、中容量还是大容量？" class="headerlink" title="怎么选择101xx、102xx、103xx是小容量、中容量还是大容量？"></a>怎么选择101xx、102xx、103xx是小容量、中容量还是大容量？</h3><p>&emsp;&emsp;查了一下<code>user manual</code>手册，以下为摘录：</p>
+<p><img src="/2019/03/18/单片机/STM32启动文件的选择/1.jpg"></p>
+<p>&emsp;&emsp;可以这样认为：</p>
+<ul>
+<li><code>flash容量 &lt;= 32k</code>，选择<code>ld</code>。</li>
+<li><code>64k &lt;= flash容量 &lt;= 128k</code>，选择<code>md</code>。</li>
+<li><code>256k &lt;= flash容量 &lt;= 512k</code>，选择<code>hd</code>。</li>
+</ul>
+<p>怎么区分<code>MCU</code>的<code>flash</code>容量呢？可以参考下表对于芯片命名说明：</p>
+<p><img src="/2019/03/18/单片机/STM32启动文件的选择/2.jpg" height="282" width="390"></p>
+<p>可以得出结论：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>命名</th>
+<th>容量</th>
+<th>命名</th>
+<th>容量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>6</code></td>
+<td>32K</td>
+<td><code>8</code></td>
+<td>64K</td>
+</tr>
+<tr>
+<td><code>B</code></td>
+<td>128K</td>
+<td><code>C</code></td>
+<td>256K</td>
+</tr>
+<tr>
+<td><code>D</code></td>
+<td>384K</td>
+<td><code>E</code></td>
+<td>512K</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/18/单片机/STM32的引脚重映射和复用/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/18/单片机/STM32的引脚重映射和复用/" itemprop="url">STM32的引脚重映射和复用</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-18T22:11:33+08:00">
+                2019-03-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;<code>STM32</code>中有很多内置外设的输入输出引脚都具有重映射(<code>remap</code>)的功能，本文对一些在使用引脚重映射时所遇到的有关问题加以说明。<br>&emsp;&emsp;我们知道每个内置外设都有若干个输入输出引脚，一般这些引脚的输出脚位都是固定不变的。为了让设计工程师可以更好地安排引脚的功能，在<code>STM32</code>中引入了外设引脚重映射的概念，即一个外设的引脚除了具有默认的脚位外，还可以通过设置重映射寄存器的方式，把这个外设的引脚映射到其它的脚位。下面是<code>STM32F103xC</code>中有关<code>USART3</code>引脚的摘要片段：</p>
+<p><img src="/2019/03/18/单片机/STM32的引脚重映射和复用/1.png"></p>
+<p>从这里可以看出，<code>USART3_TX</code>的默认引出脚是<code>PB10</code>，<code>USART3_RX</code>的默认引出脚是<code>PB11</code>；但经过重映射后，可以变更<code>USART3_TX</code>的引出脚为<code>PD8</code>，变更<code>USART3_RX</code>的引出脚为<code>PD9</code>。<br>&emsp;&emsp;<code>STM32</code>中的很多内置外设都具有重映射的功能，比如<code>USART</code>、定时器、<code>CAN</code>、<code>SPI</code>、<code>I2C</code>等，详细请看<code>STM32</code>参考手册(<code>RM0008</code>)和<code>STM32</code>数据手册。<br>&emsp;&emsp;有些模块(内置外设)的重映射功能还可以有多种选择，下面是<code>RM0008</code>上有关<code>USART3</code>输入输出引脚的重映射功能表：</p>
+<p><img src="/2019/03/18/单片机/STM32的引脚重映射和复用/2.png"></p>
+<p>从这个表中可以看出，<code>USART3</code>的<code>TX</code>和<code>RX</code>引脚默认的引出脚位是<code>PB10</code>和<code>PB11</code>，根据配置位的设置，可以重映射到<code>PC10</code>和<code>PC11</code>，还可以重映射到<code>PD8</code>和<code>PD9</code>。<br>&emsp;&emsp;一个模块的功能引脚不管是从默认的脚位引出还是从重映射的脚位引出，都要通过<code>GPIO</code>端口模块实现，相应的<code>GPIO</code>端口必须配置为输入(对应模块的输入功能，如<code>USART</code>的<code>RX</code>)或复用输出(对应模块的输出功能，如<code>USART</code>的<code>TX</code>)，对于输出引脚，可以按照需要配置为推挽复用输出或开漏复用输出。</p>
+<p><img src="/2019/03/18/单片机/STM32的引脚重映射和复用/3.png" height="274" width="482"></p>
+<p>&emsp;&emsp;上图是<code>STM32</code>的<code>GPIO</code>端口模块，使用复用功能时的配置。从图中可以看出，配置为复用输出时，该端口对应的<code>GPIO</code>输出功能将不起作用。例如当配置<code>PB10</code>对应的引脚为复用输出功能时，操作<code>PB10</code>对应的输出寄存器将不影响引脚上的信号。从图中还可以看出，普通的<code>GPIO</code>端口输入功能与复用的输入功能的配置方式没有区别，这意味着在使用引脚的复用输入功能时，可以在这个引脚的输入寄存器上读出引脚上的信号。例如使能<code>USART3</code>模块后，可以读<code>GPIOB_IDR</code>寄存器，得到<code>PB11</code>信号线上的当前状态。<br>&emsp;&emsp;有不少引脚上配备了来自多个模块的复用功能引出脚，例如本文第一张图中显示的<code>PB10</code>，默认复用功能就有<code>I2C2_SCL</code>和<code>USART3_TX</code>两个功能。<code>TIM2</code>重映射后，<code>TIM2_CH3</code>也使用<code>PB10</code>的复用功能。<br>&emsp;&emsp;在使用引脚的复用功能时，需要注意在软件上只可以使能一个外设模块，否则在引脚上可能产生信号冲突。例如如果使能了<code>USART3</code>模块，同时没有对<code>USART3</code>进行重映射配置，则不可以使能<code>I2C2</code>模块；如果需要使用<code>I2C2</code>模块，则不能使能<code>USART3</code>模块。但是如果配置了<code>USART3</code>的引脚重映射，<code>USART3</code>的<code>TX</code>和<code>RX</code>信号将从<code>PC10</code>和<code>PC11</code>，或<code>PD8</code>和<code>PD9</code>引出，避开了<code>I2C2</code>使用的<code>PB10</code>和<code>PB11</code>，这时就可以同时使用<code>I2C2</code>模块和<code>USART3</code>模块了。<br>&emsp;&emsp;<code>USART3</code>模块共有<code>5</code>个信号，分别为<code>TX</code>、<code>RX</code>、<code>CK</code>、<code>CTS</code>和<code>RTS</code>，从上面给出的第二张图中可以看出，重映射是对所有信号同时有效。这<code>5</code>个信号中，在使能了<code>USART3</code>模块后，只有<code>TX</code>和<code>RX</code>是始终与对应的引出脚相连，而其它<code>3</code>个信号分别有独立的控制位，控制它们是否与外部引脚相连。如果程序中不使用某个信号的功能，则可以关闭这个信号的功能，对应的引脚可以做为其它功能的引出脚。例如当关闭了<code>USART3</code>的<code>CK</code>、<code>CTS</code>和<code>RTS</code>功能并且没有重映射<code>USART3</code>时，<code>PB12</code>、<code>PB13</code>和<code>PB14</code>可以作为通用输入输出端口使用，也可以作为其它模块的复用功能引出脚。<br>&emsp;&emsp;下面这张图是一个内部控制连接的等效示意图，它并不表示真正的内部连接，但可以有效地帮助理解重映射和复用引脚的概念。图中右边引出的信号，分别连接到了本文第三张图的输入输出模块。</p>
+<p><img src="/2019/03/18/单片机/STM32的引脚重映射和复用/4.png" height="381" width="504"></p>
+<hr>
+<h3 id="STM32端口复用和重映射-USART-Remap"><a href="#STM32端口复用和重映射-USART-Remap" class="headerlink" title="STM32端口复用和重映射(USART Remap)"></a>STM32端口复用和重映射(USART Remap)</h3><p>&emsp;&emsp;<code>STM32</code>有很多<code>I/O</code>口，也有很多内置外设，例如<code>I2C</code>、<code>ADC</code>、<code>ISP</code>、<code>USART</code>。为了节省引脚，这些内置外设基本上是与<code>I/O</code>口共用的，也就是<code>I/O</code>管脚的复用功能。但是<code>STM32</code>还有一个特别之处：很多复用内置的外设的<code>I/O</code>引脚可以通过重映射功能从不同的<code>I/O</code>管脚引出，即复用功能的引脚是可通过程序改变的。</p>
+<p><img src="/2019/03/18/单片机/STM32的引脚重映射和复用/5.png" height="249" width="535"></p>
+<p>&emsp;&emsp;在三个红框交汇处位置，<code>STM32F103VCT6</code>的<code>USART1</code>接的是<code>PB6</code>和<code>PB7</code>，但是上电初始化后默认功能并非是<code>USART1</code>，所以想要用串口功能必须进行端口复用。<code>STM32</code>的单片机每个功能模块有自己的时钟系统，所以要想要调用<code>STM32</code>单片机的功能模块时，必须先配置对应时钟，然后才能去操作相应的功能模块。端口重映射也一样：</p>
+<p><img src="/2019/03/18/单片机/STM32的引脚重映射和复用/6.png"></p>
+<p>&emsp;&emsp;重映射步骤为：<br>&emsp;&emsp;1. 打开复用时钟和<code>USART</code>重映射后的<code>I/O</code>口引脚时钟：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">RCC_APB2PeriphClockCmd ( RCC_APB2Periph_GPIOB | RCC_APB2Periph_AFIO, ENABLE );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;2. <code>I/O</code>口重映射开启：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GPIO_PinRemapConfig ( GPIO_Remap_USART1, ENABLE );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;3. 配制重映射引脚，这里只需配置重映射后的<code>I/O</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;</span><br><span class="line">GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;</span><br><span class="line">GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;</span><br><span class="line">GPIO_Init ( GPIOB, &amp;GPIO_InitStructure );</span><br><span class="line">​</span><br><span class="line">GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;</span><br><span class="line">GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;</span><br><span class="line">GPIO_Init ( GPIOB, &amp;GPIO_InitStructure );</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;最后总结一下：<code>STM32</code>的<code>IO</code>口有<code>3</code>个功能，一个是默认的，一个是复用，另一个是重映射功能(这个其实也属于复用)。如果配置成复用，则将打开<code>AFIO</code>时钟；如果配置成重映射，则打开<code>AFIO</code>时钟和<code>Remap</code>时钟。</p>
+<p><img src="/2019/03/18/单片机/STM32的引脚重映射和复用/7.png" height="301" width="424"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/18/单片机/STM32内核的存储器映射/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -2450,1110 +2949,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/17/Qt语法详解/Qt之QMessageBox/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/17/Qt语法详解/Qt之QMessageBox/" itemprop="url">Qt之QMessageBox</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-17T19:44:36+08:00">
-                2019-03-17
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;先来看一下最熟悉的<code>QMessageBox::information</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">QMessageBox::information ( <span class="literal">NULL</span>, <span class="string">"Title"</span>, <span class="string">"Content"</span>, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes );</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/17/Qt语法详解/Qt之QMessageBox/1.png"></p>
-<p>&emsp;&emsp;函数原型如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> StandardButton QMessageBox::information (</span><br><span class="line">    QWidget *parent, <span class="keyword">const</span> QString &amp;title, <span class="keyword">const</span> QString &amp;text,</span><br><span class="line">    StandardButtons buttons = Ok, StandardButton defaultButton = NoButton );</span><br></pre></td></tr></table></figure>
-<p>参数<code>parent</code>是说明它的父组件；参数<code>title</code>是对话框的标题；参数<code>text</code>是对话框显示的内容；参数<code>buttons</code>用于声明对话框放置的按钮，默认只放置一个<code>OK</code>按钮，这个参数可以使用或运算，例如我们希望有一个<code>Yes</code>和一个<code>No</code>的按钮，可以使用<code>QMessageBox::Yes | QMessageBox::No</code>。所有的按钮类型可以在<code>QMessageBox</code>的<code>StandarButton</code>枚举中找到；参数<code>defaultButton</code>就是默认选中的按钮，默认值是<code>NoButton</code>，也就是哪个按钮都不选中。<br>&emsp;&emsp;<code>Qt</code>提供了五个类似的接口，用于显示类似的窗口。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">QMessageBox::critical ( <span class="literal">NULL</span>, <span class="string">"critical"</span>, <span class="string">"Content"</span>, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes );</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/17/Qt语法详解/Qt之QMessageBox/2.png"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">QMessageBox::warning ( <span class="literal">NULL</span>, <span class="string">"warning"</span>, <span class="string">"Content"</span>, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes );</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/17/Qt语法详解/Qt之QMessageBox/3.png"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">QMessageBox::question ( <span class="literal">NULL</span>, <span class="string">"question"</span>, <span class="string">"Content"</span>, QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes );</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/17/Qt语法详解/Qt之QMessageBox/4.png"></p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">QMessageBox::about ( <span class="literal">NULL</span>, <span class="string">"About"</span>, <span class="string">"About this application"</span> );</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/17/Qt语法详解/Qt之QMessageBox/5.png"></p>
-<p>&emsp;&emsp;<code>QMessageBox</code>对话框的文本信息可以支持<code>HTML</code>标签：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">QMessageBox::about ( <span class="literal">NULL</span>, <span class="string">"About"</span>, <span class="string">"About this &lt;font color='red'&gt;application&lt;/font&gt;"</span> );</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/17/Qt语法详解/Qt之QMessageBox/6.png"></p>
-<p>&emsp;&emsp;如果想自定义图片的话，需要我们自定义一个<code>QMessagebox</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QMessageBox <span class="title">message</span> <span class="params">( QMessageBox::NoIcon, <span class="string">"Title"</span>, <span class="string">"Content with icon."</span> )</span></span>;</span><br><span class="line">message.setIconPixmap ( QPixmap ( <span class="string">"icon.png"</span> ) );</span><br><span class="line">message.exec();</span><br></pre></td></tr></table></figure>
-<p>这里使用的是<code>exec</code>函数，而不是<code>show</code>，因为这是一个模态对话框，需要有它自己的事件循环，否则对话框会一闪而过。</p>
-<p><img src="/2019/03/17/Qt语法详解/Qt之QMessageBox/7.png"></p>
-<p>&emsp;&emsp;还有一点要注意，我们使用的是<code>png</code>格式的图片，因为<code>Qt</code>内置的处理图片格式是<code>png</code>，所以这不会引起很大的麻烦。如果你要使用<code>jpeg</code>格式的图片，<code>Qt</code>是以插件的形式支持的。在开发时没有什么问题，不过如果要部署的话，需要注意这一点。<br>&emsp;&emsp;最后来说一下怎么处理对话框的交互。我们使用<code>QMessageBox</code>类的时候有两种方式，一是使用<code>static</code>函数，另外是使用构造函数。首先来说一下<code>static</code>函数的方式。注意，<code>static</code>函数都是要返回一个<code>StandardButton</code>，我们可以通过判断这个返回值来对用户的操作做出响应：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">QMessageBox::StandardButton rb = QMessageBox::question (</span><br><span class="line">    <span class="literal">NULL</span>, <span class="string">"Show Qt"</span>, <span class="string">"Do you want to show Qt dialog?"</span>,</span><br><span class="line">    QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( rb == QMessageBox::Yes ) &#123;</span><br><span class="line">    QMessageBox::aboutQt ( <span class="literal">NULL</span>, <span class="string">"About Qt"</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果要使用构造函数的方式，那么就要自己判断：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QMessageBox <span class="title">message</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    QMessageBox::NoIcon, <span class="string">"Show Qt"</span>, <span class="string">"Do you want to show Qt dialog?"</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">    QMessageBox::Yes | QMessageBox::No, <span class="literal">NULL</span> )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( message.exec() == QMessageBox::Yes ) &#123;</span><br><span class="line">    QMessageBox::aboutQt ( <span class="literal">NULL</span>, <span class="string">"About Qt"</span> );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>实际用法如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> ret1 = QMessageBox::question ( <span class="comment">/* 问题对话框(参数：父窗口、标题栏、显示信息、拥有的按钮) */</span></span><br><span class="line">    <span class="keyword">this</span>, tr ( <span class="string">"问题对话框"</span> ), tr ( <span class="string">"你了解Qt吗？"</span> ),</span><br><span class="line">    QMessageBox::Yes, QMessageBox::No );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( ret1 == QMessageBox::Yes ) &#123;</span><br><span class="line">    qDebug() &lt;&lt; tr ( <span class="string">"问题！"</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">int</span> ret2 = QMessageBox::information ( <span class="comment">/* 提示对话框 */</span></span><br><span class="line">    <span class="keyword">this</span>, tr ( <span class="string">"提示对话框"</span> ), tr ( <span class="string">"这是Qt书籍！"</span> ), QMessageBox::Ok );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( ret2 == QMessageBox::Ok ) &#123;</span><br><span class="line">    qDebug() &lt;&lt; tr ( <span class="string">"提示！"</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">int</span> ret3 = QMessageBox::warning ( <span class="comment">/* 警告对话框 */</span></span><br><span class="line">    <span class="keyword">this</span>, tr ( <span class="string">"警告对话框"</span> ), tr ( <span class="string">"不能提前结束！"</span> ), QMessageBox::Abort );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( ret3 == QMessageBox::Abort ) &#123;</span><br><span class="line">    qDebug() &lt;&lt; tr ( <span class="string">"警告！"</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">int</span> ret4 = QMessageBox::critical ( <span class="comment">/* 错误对话框 */</span></span><br><span class="line">    <span class="keyword">this</span>, tr ( <span class="string">"严重错误对话框"</span> ),</span><br><span class="line">    tr ( <span class="string">"发现一个严重错误！现在要关闭所有文件！"</span> ), QMessageBox::YesAll );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( ret4 == QMessageBox::YesAll ) &#123;</span><br><span class="line">    qDebug() &lt;&lt; tr ( <span class="string">"错误"</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">QMessageBox::about ( <span class="comment">/* 关于对话框 */</span></span><br><span class="line">    <span class="keyword">this</span>, tr ( <span class="string">"关于对话框"</span> ),</span><br><span class="line">    tr ( <span class="string">"yafeilinux.com致力于Qt及Qt Creator的普及工作！"</span> ) );</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="QMessageBox典型用法"><a href="#QMessageBox典型用法" class="headerlink" title="QMessageBox典型用法"></a>QMessageBox典型用法</h3><p>&emsp;&emsp;弹出消息对话框在许多应用中是必需的。它可以提示用户，防止用户因为不小心而犯下错误。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">QMessageBox msgBox;</span><br><span class="line">msgBox.setText ( <span class="string">"The document has been modified."</span> );</span><br><span class="line">msgBox.setInformativeText ( <span class="string">"Do you want to save your changes?"</span> );</span><br><span class="line">msgBox.setStandardButtons ( QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel );</span><br><span class="line">msgBox.setDefaultButton ( QMessageBox::Save );</span><br><span class="line"><span class="keyword">int</span> ret = msgBox.exec();</span><br><span class="line">​</span><br><span class="line"><span class="keyword">switch</span> ( ret ) &#123;</span><br><span class="line">    <span class="keyword">case</span> QMessageBox::Save: <span class="comment">/* Save was clicked */</span></span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">case</span> QMessageBox::Discard: <span class="comment">/* Don't Save was clicked */</span></span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">case</span> QMessageBox::Cancel: <span class="comment">/* Cancel was clicked */</span></span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">default</span>: <span class="comment">/* should never be reached */</span></span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;在<code>QMessageBox</code>中添加按钮，判断哪一个按钮被按下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">QMessageBox msgBox;</span><br><span class="line">QPushButton *connectButton = msgBox.addButton ( tr ( <span class="string">"Connect"</span> ), QMessageBox::ActionRole );</span><br><span class="line">QPushButton *abortButton = msgBox.addButton ( QMessageBox::Abort );</span><br><span class="line">​</span><br><span class="line">msgBox.exec();</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( msgBox.clickedButton() == connectButton ) &#123;</span><br><span class="line">    <span class="comment">/* connect */</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span> ( msgBox.clickedButton() == abortButton ) &#123;</span><br><span class="line">    <span class="comment">/* abort */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/17/Qt语法详解/Qt之QTableWidget/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/17/Qt语法详解/Qt之QTableWidget/" itemprop="url">Qt之QTableWidget</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-17T18:37:12+08:00">
-                2019-03-17
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QTableWidget&gt;</span></span></span><br><span class="line"><span class="comment">/* 构造一个QTableWidget类的实体对象tableWidget */</span></span><br><span class="line">tableWidget = <span class="keyword">new</span> QTableWidget ( ui-&gt;textBrowser );</span><br><span class="line">tableWidget-&gt;setRowCount ( <span class="number">7</span> ); <span class="comment">/* 设置行数为7 */</span></span><br><span class="line">tableWidget-&gt;setColumnCount ( <span class="number">5</span> ); <span class="comment">/* 设置列数为5 */</span></span><br><span class="line">tableWidget-&gt;setGeometry ( QRect ( <span class="number">0</span>, <span class="number">0</span>, <span class="number">401</span>, <span class="number">241</span> ) ); <span class="comment">/* 设置tableWidget的大小 */</span></span><br><span class="line">tableWidget-&gt;setItem ( <span class="number">0</span>, <span class="number">0</span>, <span class="keyword">new</span> QTableWidgetItem ( <span class="string">"abc"</span> ) ); <span class="comment">/* 第一行第一列的内容设置为“abc” */</span></span><br><span class="line">tableWidget-&gt;setItem ( <span class="number">1</span>, <span class="number">0</span>, <span class="keyword">new</span> QTableWidgetItem ( <span class="string">"def"</span> ) ); <span class="comment">/* 第二行第一列的内容设置为“abc” */</span></span><br><span class="line"><span class="comment">/* 40, 110, 100, 60, 85 */</span></span><br><span class="line">tableWidget-&gt;setColumnWidth ( <span class="number">0</span>, <span class="number">40</span> ); <span class="comment">/* 设置第一列的列宽 */</span></span><br><span class="line">tableWidget-&gt;setColumnWidth ( <span class="number">1</span>, <span class="number">110</span> ); <span class="comment">/* 设置第二列的列宽 */</span></span><br><span class="line">tableWidget-&gt;setColumnWidth ( <span class="number">2</span>, <span class="number">100</span> ); <span class="comment">/* 设置第三列的列宽 */</span></span><br><span class="line">tableWidget-&gt;setColumnWidth ( <span class="number">3</span>, <span class="number">60</span> ); <span class="comment">/* 设置第四列的列宽 */</span></span><br><span class="line">tableWidget-&gt;setColumnWidth ( <span class="number">4</span>, <span class="number">85</span> ); <span class="comment">/* 设置第五列的列宽 */</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 列表的标题为：车次、车牌、支付卡、金额、累计金额 */</span></span><br><span class="line">tableWidget-&gt;setHorizontalHeaderLabels (</span><br><span class="line">    QStringList() &lt;&lt; tr ( <span class="string">"车次"</span> ) &lt;&lt; tr ( <span class="string">"车牌"</span> ) \</span><br><span class="line">                  &lt;&lt; tr ( <span class="string">"支付卡"</span> ) &lt;&lt; tr ( <span class="string">"金额"</span> ) &lt;&lt; tr ( <span class="string">"累计金额"</span> ) );</span><br><span class="line">tableWidget-&gt;setFont ( QFont ( <span class="string">"wenquanyi"</span>, <span class="number">12</span>, <span class="number">3</span> ) ); <span class="comment">/* 设置字体 */</span></span><br><span class="line">QHeaderView *headerView = tableWidget-&gt;verticalHeader();</span><br><span class="line">headerView-&gt;setHidden ( <span class="literal">true</span> ); <span class="comment">/* 行名隐藏 */</span></span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/17/Qt语法详解/Qt之QTableWidget/1.png"></p>
-<hr>
-<p>&emsp;&emsp;表格是<code>GUI</code>中常用的控件，<code>Qt</code>中常用的表格类是<code>QTableWidget</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">QTableWidget *table = <span class="keyword">new</span> QTableWidget ( <span class="number">4</span>, <span class="number">2</span> ); <span class="comment">/* 新建一4行2列的表格 */</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 设置表格行标题 */</span></span><br><span class="line">QStringList headerLabels;</span><br><span class="line">headerLabels &lt;&lt; <span class="string">"C1"</span> &lt;&lt; <span class="string">"C2"</span>;</span><br><span class="line">table-&gt;setHorizontalHeaderLabels ( headerLabels );</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 设置表格行标题的对齐方式 */</span></span><br><span class="line">table-&gt;horizontalHeader()-&gt;setDefaultAlignment ( Qt::AlignLeft );</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 设置行表题 */</span></span><br><span class="line">QStringList rowLabels;</span><br><span class="line">rowLabels &lt;&lt; <span class="string">"Line1"</span> &lt;&lt; <span class="string">"Line2"</span> &lt;&lt; <span class="string">"Line3"</span> &lt;&lt; <span class="string">"Line4"</span>;</span><br><span class="line">table-&gt;setVerticalHeaderLabels ( rowLabels );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">4</span>; i++ ) &#123; <span class="comment">/* 设置每一行的高度 */</span></span><br><span class="line">    table-&gt;setRowHeight ( i, <span class="number">22</span> );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 自动调整最后一列的宽度使它和表格的右边界对齐 */</span></span><br><span class="line">table-&gt;horizontalHeader()-&gt;setStretchLastSection ( <span class="literal">true</span> );</span><br><span class="line"><span class="comment">/* 设置表格的选择方式 */</span></span><br><span class="line">table-&gt;setSelectionBehavior ( QAbstractItemView::SelectItems );</span><br><span class="line"><span class="comment">/* 设置编辑方式 */</span></span><br><span class="line">table-&gt;setEditTriggers ( QAbstractItemView::DoubleClicked );</span><br><span class="line">​</span><br><span class="line"><span class="keyword">for</span> ( <span class="keyword">int</span> row = <span class="number">0</span>; row &lt; <span class="number">4</span>; ++row ) &#123; <span class="comment">/* 设置表格的内容 */</span></span><br><span class="line">    QTableWidgetItem *item0, *item1;</span><br><span class="line">    item0 = <span class="keyword">new</span> QTableWidgetItem;</span><br><span class="line">    item1 = <span class="keyword">new</span> QTableWidgetItem;</span><br><span class="line">    QString txt = QString ( <span class="string">"%1"</span> ).arg ( row + <span class="number">1</span> );</span><br><span class="line">    item0-&gt;setText ( txt );</span><br><span class="line">    table-&gt;setItem ( row, <span class="number">0</span>, item0 );</span><br><span class="line">    txt = QString ( <span class="string">"%1"</span> ).arg ( ( row + <span class="number">1</span> ) * <span class="number">2</span> );</span><br><span class="line">    item1-&gt;setText ( txt );</span><br><span class="line">    table-&gt;setItem ( row, <span class="number">1</span>, item1 );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 增加一行 */</span></span><br><span class="line">table-&gt;setRowCount ( <span class="number">5</span> );</span><br><span class="line">QTableWidgetItem *vHeader5 = <span class="keyword">new</span> QTableWidgetItem ( <span class="string">"Line5"</span> );</span><br><span class="line">table-&gt;setVerticalHeaderItem ( <span class="number">4</span>, vHeader5 );</span><br><span class="line">QTableWidgetItem *item5_0, *item5_1;</span><br><span class="line">item5_0 = <span class="keyword">new</span> QTableWidgetItem;</span><br><span class="line">item5_1 = <span class="keyword">new</span> QTableWidgetItem;</span><br><span class="line">item5_0-&gt;setText ( QString ( <span class="string">"%1"</span> ).arg ( <span class="number">5</span> ) );</span><br><span class="line">item5_1-&gt;setText ( QString ( <span class="string">"%1"</span> ).arg ( <span class="number">5</span> * <span class="number">2</span> ) );</span><br><span class="line">table-&gt;setItem ( <span class="number">4</span>, <span class="number">0</span>, item5_0 );</span><br><span class="line">table-&gt;setItem ( <span class="number">4</span>, <span class="number">1</span>, item5_1 );</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/03/17/Qt语法详解/Qt之QTableWidget/2.png"></p>
-<hr>
-<p>&emsp;&emsp;The <code>QTableWidget</code> class provides an <code>item-based</code> table view with a default model.</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Header</th>
-<th>Inherits</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>QTableWidget</code></td>
-<td><code>QTableView</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Public-Functions"><a href="#Public-Functions" class="headerlink" title="Public Functions"></a>Public Functions</h3><div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Return</th>
-<th>Function</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td></td>
-<td><code>QTableWidget(QWidget * parent = 0)</code></td>
-</tr>
-<tr>
-<td></td>
-<td><code>QTableWidget(int rows, int columns, QWidget * parent = 0)</code></td>
-</tr>
-<tr>
-<td></td>
-<td><code>~QTableWidget()</code></td>
-</tr>
-<tr>
-<td><code>QWidget *</code></td>
-<td><code>cellWidget(int row, int column) const</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>closePersistentEditor(QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>column(const QTableWidgetItem * item) const</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>columnCount() const</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>currentColumn() const</code></td>
-</tr>
-<tr>
-<td><code>QTableWidgetItem *</code></td>
-<td><code>currentItem() const</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>currentRow() const</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>editItem(QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>QList&lt;QTableWidgetItem *&gt;</code></td>
-<td><code>findItems(const QString &amp; text, Qt::MatchFlags flags) const</code></td>
-</tr>
-<tr>
-<td><code>QTableWidgetItem *</code></td>
-<td><code>horizontalHeaderItem(int column) const</code></td>
-</tr>
-<tr>
-<td><code>QTableWidgetItem *</code></td>
-<td><code>item(int row, int column) const</code></td>
-</tr>
-<tr>
-<td><code>QTableWidgetItem *</code></td>
-<td><code>itemAt(const QPoint &amp; point) const</code></td>
-</tr>
-<tr>
-<td><code>QTableWidgetItem *</code></td>
-<td><code>itemAt(int ax, int ay) const</code></td>
-</tr>
-<tr>
-<td><code>const QTableWidgetItem *</code></td>
-<td><code>itemPrototype() const</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>openPersistentEditor(QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>removeCellWidget(int row, int column)</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>row(const QTableWidgetItem * item) const</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>rowCount() const</code></td>
-</tr>
-<tr>
-<td><code>QList&lt;QTableWidgetItem *&gt;</code></td>
-<td><code>selectedItems()</code></td>
-</tr>
-<tr>
-<td><code>QList&lt;QTableWidgetSelectionRange&gt;</code></td>
-<td><code>selectedRanges() const</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setCellWidget(int row, int column, QWidget * widget)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setColumnCount(int columns)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setCurrentCell(int row, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setCurrentCell(int row, int column, QItemSelectionModel::SelectionFlags command)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setCurrentItem(QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setCurrentItem(QTableWidgetItem * item, QItemSelectionModel::SelectionFlags command)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setHorizontalHeaderItem(int column, QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setHorizontalHeaderLabels(const QStringList &amp; labels)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setItem(int row, int column, QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setItemPrototype(const QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setRangeSelected(const QTableWidgetSelectionRange &amp; range, bool select)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setRowCount(int rows)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setVerticalHeaderItem(int row, QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>setVerticalHeaderLabels(const QStringList &amp; labels)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>sortItems(int column, Qt::SortOrder order = Qt::AscendingOrder)</code></td>
-</tr>
-<tr>
-<td><code>QTableWidgetItem *</code></td>
-<td><code>takeHorizontalHeaderItem(int column)</code></td>
-</tr>
-<tr>
-<td><code>QTableWidgetItem *</code></td>
-<td><code>takeItem(int row, int column)</code></td>
-</tr>
-<tr>
-<td><code>QTableWidgetItem *</code></td>
-<td><code>stakeVerticalHeaderItem(int row)</code></td>
-</tr>
-<tr>
-<td><code>QTableWidgetItem *</code></td>
-<td><code>verticalHeaderItem(int row) const</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>visualColumn(int logicalColumn) const</code></td>
-</tr>
-<tr>
-<td><code>QRect</code></td>
-<td><code>visualItemRect(const QTableWidgetItem * item) const</code></td>
-</tr>
-<tr>
-<td><code>int</code></td>
-<td><code>visualRow(int logicalRow) const</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Public-Slots"><a href="#Public-Slots" class="headerlink" title="Public Slots"></a>Public Slots</h3><div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Return</th>
-<th>Function</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>void</code></td>
-<td><code>clear()</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>clearContents()</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>insertColumn(int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>insertRow(int row)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>removeColumn(int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>removeRow(int row)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>scrollToItem(const QTableWidgetItem * item, QAbstractItemView::ScrollHint hint = EnsureVisible)</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Signals"><a href="#Signals" class="headerlink" title="Signals"></a>Signals</h3><div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Return</th>
-<th>Function</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>void</code></td>
-<td><code>cellActivated(int row, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>cellChanged(int row, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>cellClicked(int row, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>cellDoubleClicked(int row, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>cellEntered(int row, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>cellPressed(int row, int column)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>currentCellChanged(int currentRow, int currentColumn, int previousRow, int previousColumn)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>currentItemChanged(QTableWidgetItem * current, QTableWidgetItem * previous)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemActivated(QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemChanged(QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemClicked(QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemDoubleClicked(QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemEntered(QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemPressed(QTableWidgetItem * item)</code></td>
-</tr>
-<tr>
-<td><code>void</code></td>
-<td><code>itemSelectionChanged()</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Protected-Functions"><a href="#Protected-Functions" class="headerlink" title="Protected Functions"></a>Protected Functions</h3><div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Return</th>
-<th>Function</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>virtual bool</code></td>
-<td><code>dropMimeData(int row, int column, const QMimeData * data, Qt::DropAction action)</code></td>
-</tr>
-<tr>
-<td><code>QModelIndex</code></td>
-<td><code>indexFromItem(QTableWidgetItem * item) const</code></td>
-</tr>
-<tr>
-<td><code>QTableWidgetItem *</code></td>
-<td><code>itemFromIndex(const QModelIndex &amp; index) const</code></td>
-</tr>
-<tr>
-<td><code>QList&lt;QTableWidgetItem *&gt;</code></td>
-<td><code>items(const QMimeData * data) const</code></td>
-</tr>
-<tr>
-<td><code>virtual QMimeData *</code></td>
-<td><code>mimeData(const QList&lt;QTableWidgetItem *&gt; items) const</code></td>
-</tr>
-<tr>
-<td><code>virtual QStringList</code></td>
-<td><code>mimeTypes() const</code></td>
-</tr>
-<tr>
-<td><code>virtual Qt::DropActions</code></td>
-<td><code>supportedDropActions() const</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Reimplemented-Protected-Functions"><a href="#Reimplemented-Protected-Functions" class="headerlink" title="Reimplemented Protected Functions"></a>Reimplemented Protected Functions</h3><div class="table-container">
-<table>
-<thead>
-<tr>
-<th>Return</th>
-<th>Function</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>virtual void</code></td>
-<td><code>dropEvent(QDropEvent * event)</code></td>
-</tr>
-<tr>
-<td><code>virtual bool</code></td>
-<td><code>event(QEvent * e)</code></td>
-</tr>
-</tbody>
-</table>
-</div>
-<h3 id="Detailed-Description"><a href="#Detailed-Description" class="headerlink" title="Detailed Description"></a>Detailed Description</h3><p>&emsp;&emsp;The <code>QTableWidget</code> class provides an <code>item-based</code> table view with a default model.<br>&emsp;&emsp;Table widgets provide standard table display facilities for applications. The items in a <code>QTableWidget</code> are provided by <code>QTableWidgetItem</code>.<br>&emsp;&emsp;If you want a table that uses your own data model you should use <code>QTableView</code> rather than this class.<br>&emsp;&emsp;Table widgets can be constructed with the required numbers of rows and columns:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tableWidget = <span class="keyword">new</span> QTableWidget ( <span class="number">12</span>, <span class="number">3</span>, <span class="keyword">this</span> );</span><br></pre></td></tr></table></figure>
-<p>Alternatively, tables can be constructed without a given size and resized later:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">tableWidget = <span class="keyword">new</span> QTableWidget ( <span class="keyword">this</span> );</span><br><span class="line">tableWidget-&gt;setRowCount ( <span class="number">10</span> );</span><br><span class="line">tableWidget-&gt;setColumnCount ( <span class="number">5</span> );</span><br></pre></td></tr></table></figure>
-<p>Items are created ouside the table (with no parent widget) and inserted into the table with <code>setItem()</code>:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">QTableWidgetItem *newItem = <span class="keyword">new</span> QTableWidgetItem ( tr ( <span class="string">"%1"</span> ).arg ( ( row + <span class="number">1</span> ) * ( column + <span class="number">1</span> ) ) );</span><br><span class="line">tableWidget-&gt;setItem ( row, column, newItem );</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;If you want to enable sorting in your table widget, do so after you have populated it with items, otherwise sorting may interfere with the insertion order.<br>&emsp;&emsp;Tables can be given both horizontal and vertical headers. The simplest way to create the headers is to supply a list of strings to the <code>setHorizontalHeaderLabels()</code> and <code>setVerticalHeaderLabels()</code> functions. These will provide simple textual headers for the table’s columns and rows. More sophisticated headers can be created from existing table items that are usually constructed outside the table. For example, we can construct a table item with an icon and aligned text, and use it as the header for a particular column:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">QTableWidgetItem *cubesHeaderItem = <span class="keyword">new</span> QTableWidgetItem ( tr ( <span class="string">"Cubes"</span> ) );</span><br><span class="line">cubesHeaderItem-&gt;setIcon ( QIcon ( QPixmap ( <span class="string">":/Images/cubed.png"</span> ) ) );</span><br><span class="line">cubesHeaderItem-&gt;setTextAlignment ( Qt::AlignVCenter );</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;The number of rows in the table can be found with <code>rowCount()</code>, and the number of columns with <code>columnCount()</code>. The table can be cleared with the <code>clear()</code> function.</p>
-<p><img src="/2019/03/17/Qt语法详解/Qt之QTableWidget/3.png"></p>
-<h3 id="Property-Documentation"><a href="#Property-Documentation" class="headerlink" title="Property Documentation"></a>Property Documentation</h3><ul>
-<li><code>columnCount : int</code>: This property holds the number of columns in the table. By default, for a table constructed without row and column counts, this property contains a value of <code>0</code>. Access functions:</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">columnCount</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setColumnCount</span> <span class="params">( <span class="keyword">int</span> columns )</span></span></span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>rowCount : int</code>: This property holds the number of rows in the table. By default, for a table constructed without row and column counts, this property contains a value of <code>0</code>. Access functions:</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rowCount</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setRowCount</span> <span class="params">( <span class="keyword">int</span> rows )</span></span></span><br></pre></td></tr></table></figure>
-<h3 id="Member-Function-Documentation"><a href="#Member-Function-Documentation" class="headerlink" title="Member Function Documentation"></a>Member Function Documentation</h3><ul>
-<li><code>QTableWidget::QTableWidget(QWidget * parent = 0)</code>: Creates a new table view with the given <code>parent</code>.</li>
-<li><code>QTableWidget::QTableWidget(int rows, int columns, QWidget * parent = 0)</code>: Creates a new table view with the given <code>rows</code> and <code>columns</code>, and with the given <code>parent</code>.</li>
-<li><code>QTableWidget::~QTableWidget()</code>: Destroys this QTableWidget.</li>
-<li><code>void QTableWidget::cellActivated(int row, int column) [signal]</code>: This signal is emitted when the cell specified by <code>row</code> and <code>column</code> has been activated.</li>
-<li><code>void QTableWidget::cellChanged(int row, int column) [signal]</code>: This signal is emitted whenever the data of the item in the cell specified by <code>row</code> and <code>column</code> has changed.</li>
-<li><code>void QTableWidget::cellClicked(int row, int column) [signal]</code>: This signal is emitted whenever a cell in the table is clicked. The <code>row</code> and <code>column</code> specified is the cell that was clicked.</li>
-<li><code>void QTableWidget::cellDoubleClicked(int row, int column) [signal]</code>: This signal is emitted whenever a cell in the table is double clicked. The <code>row</code> and <code>column</code> specified is the cell that was double clicked.</li>
-<li><code>void QTableWidget::cellEntered(int row, int column) [signal]</code>: This signal is emitted when the mouse cursor enters a cell. The cell is specified by <code>row</code> and <code>column</code>. This signal is only emitted when mouseTracking is turned on, or when a mouse button is pressed while moving into an item.</li>
-<li><code>void QTableWidget::cellPressed(int row, int column) [signal]</code>: This signal is emitted whenever a cell in the table is pressed. The <code>row</code> and <code>column</code> specified is the cell that was pressed.</li>
-<li><code>QWidget * QTableWidget::cellWidget(int row, int column) const</code>: Returns the widget displayed in the cell in the given <code>row</code> and <code>column</code>. <strong>Note</strong>: The table takes ownership of the widget.</li>
-<li><code>void QTableWidget::clear() [slot]</code>: Removes all items in the view. This will also remove all selections. The table dimensions stay the same.</li>
-<li><code>void QTableWidget::clearContents() [slot]</code>: Removes all items not in the headers from the view. This will also remove all selections. The table dimensions stay the same.</li>
-<li><code>void QTableWidget::closePersistentEditor(QTableWidgetItem * item)</code>: Closes the persistent editor for <code>item</code>.</li>
-<li><code>int QTableWidget::column(const QTableWidgetItem * item) const</code>: Returns the column for the <code>item</code>.</li>
-<li><code>void QTableWidget::currentCellChanged(int currentRow, int currentColumn, int previousRow, int previousColumn) [signal]</code>: This signal is emitted whenever the current cell changes. The cell specified by <code>previousRow</code> and <code>previousColumn</code> is the cell that previously had the focus, the cell specified by <code>currentRow</code> and <code>currentColumn</code> is the new current cell.</li>
-<li><code>int QTableWidget::currentColumn() const</code>: Returns the column of the current item.</li>
-<li><code>QTableWidgetItem * QTableWidget::currentItem() const</code>: Returns the current item.</li>
-<li><code>void QTableWidget::currentItemChanged(QTableWidgetItem * current, QTableWidgetItem * previous) [signal]</code>: This signal is emitted whenever the <code>current</code> item changes. The <code>previous</code> item is the item that previously had the focus, <code>current</code> is the new current item.</li>
-<li><code>int QTableWidget::currentRow() const</code>: Returns the row of the current item.</li>
-<li><code>void QTableWidget::dropEvent(QDropEvent * event) [virtual protected]</code>: Reimplemented from <code>QWidget::dropEvent()</code>.</li>
-<li><code>bool QTableWidget::dropMimeData(int row, int column, const QMimeData * data, Qt::DropAction action) [virtual protected]</code>: Handles the <code>data</code> supplied by a drag and drop operation that ended with the given <code>action</code> in the given <code>row</code> and <code>column</code>. Returns <code>true</code> if the <code>data</code> and <code>action</code> can be handled by the model; otherwise returns <code>false</code>.</li>
-<li><code>void QTableWidget::editItem(QTableWidgetItem * item)</code>: Starts editing the <code>item</code> if it is editable.</li>
-<li><code>bool QTableWidget::event(QEvent * e) [virtual protected]</code>: Reimplemented from <code>QObject::event()</code>.</li>
-<li><code>QList&lt;QTableWidgetItem *&gt; QTableWidget::findItems(const QString &amp; text, Qt::MatchFlags flags) const</code>: Finds items that matches the <code>text</code> using the given <code>flags</code>.</li>
-<li><code>QTableWidgetItem * QTableWidget::horizontalHeaderItem(int column) const</code>: Returns the horizontal header item for <code>column</code>, if one has been set; otherwise returns <code>0</code>.</li>
-<li><code>QModelIndex QTableWidget::indexFromItem(QTableWidgetItem * item) const [protected]</code>: Returns the <code>QModelIndex</code> assocated with the given <code>item</code>.</li>
-<li><code>void QTableWidget::insertColumn(int column) [slot]</code>: Inserts an empty column into the table at <code>column</code>.</li>
-<li><code>void QTableWidget::insertRow(int row) [slot]</code>: Inserts an empty row into the table at <code>row</code>.</li>
-<li><code>QTableWidgetItem * QTableWidget::item(int row, int column) const</code>: Returns the item for the given <code>row</code> and <code>column</code> if one has been set; otherwise returns <code>0</code>.</li>
-<li><code>void QTableWidget::itemActivated(QTableWidgetItem * item) [signal]</code>: This signal is emitted when the specified <code>item</code> has been activated.</li>
-<li><code>QTableWidgetItem * QTableWidget::itemAt(const QPoint &amp; point) const</code>: Returns a pointer to the item at the given <code>point</code>, or returns <code>0</code> if <code>point</code> is not covered by an item in the table widget.</li>
-<li><code>QTableWidgetItem * QTableWidget::itemAt(int ax, int ay) const</code>: Returns the item at the position equivalent to <code>QPoint(ax, ay)</code> in the table widget’s coordinate system, or returns <code>0</code> if the specified point is not covered by an item in the table widget.</li>
-<li><code>void QTableWidget::itemChanged(QTableWidgetItem * item) [signal]</code>: This signal is emitted whenever the data of <code>item</code> has changed.</li>
-<li><code>void QTableWidget::itemClicked(QTableWidgetItem * item) [signal]</code>: This signal is emitted whenever an item in the table is clicked. The <code>item</code> specified is the item that was clicked.</li>
-<li><code>void QTableWidget::itemDoubleClicked(QTableWidgetItem * item) [signal]</code>: This signal is emitted whenever an item in the table is double clicked. The <code>item</code> specified is the item that was double clicked.</li>
-<li><code>void QTableWidget::itemEntered(QTableWidgetItem * item) [signal]</code>: This signal is emitted when the mouse cursor enters an item. The <code>item</code> is the item entered. This signal is only emitted when <code>mouseTracking</code> is turned on, or when a mouse button is pressed while moving into an item.</li>
-<li><code>QTableWidgetItem * QTableWidget::itemFromIndex(const QModelIndex &amp; index) const [protected]</code>: Returns a pointer to the QTableWidgetItem assocated with the given <code>index</code>.</li>
-<li><code>void QTableWidget::itemPressed(QTableWidgetItem * item) [signal]</code>: This signal is emitted whenever an item in the table is pressed. The <code>item</code> specified is the item that was pressed.</li>
-<li><code>const QTableWidgetItem * QTableWidget::itemPrototype() const</code>: Returns the item prototype used by the table.</li>
-<li><code>void QTableWidget::itemSelectionChanged() [signal]</code>: This signal is emitted whenever the selection changes.</li>
-<li><code>QList&lt;QTableWidgetItem *&gt; QTableWidget::items(const QMimeData * data) const [protected]</code>: Returns a list of pointers to the items contained in the <code>data</code> object. If the object was not created by a <code>QTreeWidget</code> in the same process, the list is empty.</li>
-<li><code>QMimeData * QTableWidget::mimeData(const QList&lt;QTableWidgetItem *&gt; items) const [virtual protected]</code>: Returns an object that contains a serialized description of the specified <code>items</code>. The format used to describe the <code>items</code> is obtained from the <code>mimeTypes()</code> function. If the list of <code>items</code> is empty, <code>0</code> is returned rather than a serialized empty list.</li>
-<li><code>QStringList QTableWidget::mimeTypes() const [virtual protected]</code>: Returns a list of <code>MIME</code> types that can be used to describe a list of tablewidget items.</li>
-<li><code>void QTableWidget::openPersistentEditor(QTableWidgetItem * item)</code>: Opens an editor for the give <code>item</code>. The editor remains open after editing.</li>
-<li><code>void QTableWidget::removeCellWidget(int row, int column)</code>: Removes the widget set on the cell indicated by <code>row</code> and <code>column</code>.</li>
-<li><code>void QTableWidget::removeColumn(int column) [slot]</code>: Removes the <code>column</code> and all its items from the table.</li>
-<li><code>void QTableWidget::removeRow(int row) [slot]</code>: Removes the <code>row</code> and all its items from the table.</li>
-<li><code>int QTableWidget::row(const QTableWidgetItem * item) const</code>: Returns the row for the <code>item</code>.</li>
-<li><code>void QTableWidget::scrollToItem(const QTableWidgetItem * item, QAbstractItemView::ScrollHint hint = EnsureVisible) [slot]</code>: Scrolls the view if necessary to ensure that the <code>item</code> is visible. The <code>hint</code> parameter specifies more precisely where the <code>item</code> should be located after the operation.</li>
-<li><code>QList&lt;QTableWidgetItem *&gt; QTableWidget::selectedItems()</code>: Returns a list of all selected items. This function returns a list of pointers to the contents of the selected cells. Use the <code>selectedIndexes()</code> function to retrieve the complete selection including empty cells.</li>
-<li><code>QList&lt;QTableWidgetSelectionRange&gt; QTableWidget::selectedRanges() const</code>: Returns a list of all selected ranges.</li>
-<li><code>void QTableWidget::setCellWidget(int row, int column, QWidget * widget)</code>: Sets the given <code>widget</code> to be displayed in the cell in the given <code>row</code> and <code>column</code>, passing the ownership of the widget to the table. If <code>cell widget A</code> is replaced with <code>cell widget B</code>, <code>cell widget A</code> will be deleted. For example, in the code snippet below, the <code>QLineEdit</code> object will be deleted.</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">setCellWidget ( index, <span class="keyword">new</span> QLineEdit );</span><br><span class="line">...</span><br><span class="line">setCellWidget ( index, <span class="keyword">new</span> QTextEdit );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>void QTableWidget::setCurrentCell(int row, int column)</code>: Sets the current cell to be the cell at position <code>(row, column)</code>. Depending on the current selection mode, the cell may also be selected.</li>
-<li><code>void QTableWidget::setCurrentCell(int row, int column, QItemSelectionModel::SelectionFlags command)</code>: Sets the current cell to be the cell at position <code>(row, column)</code>, using the given <code>command</code>.</li>
-<li><code>void QTableWidget::setCurrentItem(QTableWidgetItem * item)</code>: Sets the current item to <code>item</code>. Unless the selection mode is <code>NoSelection</code>, the <code>item</code> is also be selected.</li>
-<li><code>void QTableWidget::setCurrentItem(QTableWidgetItem * item, QItemSelectionModel::SelectionFlags command)</code>: Sets the current item to be <code>item</code>, using the given <code>command</code>.</li>
-<li><code>void QTableWidget::setHorizontalHeaderItem(int column, QTableWidgetItem * item)</code>: Sets the horizontal header item for <code>column</code> to <code>item</code>.</li>
-<li><code>void QTableWidget::setHorizontalHeaderLabels(const QStringList &amp; labels)</code>: Sets the horizontal header labels using <code>labels</code>.</li>
-<li><code>void QTableWidget::setItem(int row, int column, QTableWidgetItem * item)</code>: Sets the item for the given <code>row</code> and <code>column</code> to <code>item</code>. The table takes ownership of the item. Note that if sorting is enabled and <code>column</code> is the current sort column, the <code>row</code> will be moved to the sorted position determined by <code>item</code>. If you want to set several items of a particular <code>row</code> (say, by calling <code>setItem()</code> in a loop), you may want to turn off sorting before doing so, and turn it back on afterwards; this will allow you to use the same <code>row</code> argument for all items in the same <code>row</code> (i.e. <code>setItem()</code> will not move the <code>row</code>).</li>
-<li><code>void QTableWidget::setItemPrototype(const QTableWidgetItem * item)</code>: Sets the item prototype for the table to the specified <code>item</code>. The table widget will use the item prototype clone function when it needs to create a new table item. For example when the user is editing in an empty cell. This is useful when you have a <code>QTableWidgetItem</code> subclass and want to make sure that <code>QTableWidget</code> creates instances of your subclass. The table takes ownership of the prototype.</li>
-<li><code>void QTableWidget::setRangeSelected(const QTableWidgetSelectionRange &amp; range, bool select)</code>: Selects or deselects the <code>range</code> depending on <code>select</code>.</li>
-<li><code>void QTableWidget::setVerticalHeaderItem(int row, QTableWidgetItem * item)</code>: Sets the vertical header item for <code>row</code> to <code>item</code>.</li>
-<li><code>void QTableWidget::setVerticalHeaderLabels(const QStringList &amp; labels)</code>: Sets the vertical header labels using <code>labels</code>.</li>
-<li><code>void QTableWidget::sortItems(int column, Qt::SortOrder order = Qt::AscendingOrder)</code>: Sorts all the rows in the table widget based on <code>column</code> and <code>order</code>.</li>
-<li><code>Qt::DropActions QTableWidget::supportedDropActions() const [virtual protected]</code>: Returns the drop actions supported by this view.</li>
-<li><code>QTableWidgetItem * QTableWidget::takeHorizontalHeaderItem(int column)</code>: Removes the horizontal header item at <code>column</code> from the header without deleting it.</li>
-<li><code>QTableWidgetItem * QTableWidget::takeItem(int row, int column)</code>: Removes the item at <code>row</code> and <code>column</code> from the table without deleting it.</li>
-<li><code>QTableWidgetItem * QTableWidget::takeVerticalHeaderItem(int row)</code>: Removes the vertical header item at <code>row</code> from the header without deleting it.</li>
-<li><code>QTableWidgetItem * QTableWidget::verticalHeaderItem(int row) const</code>: Returns the vertical header item for <code>row</code>.</li>
-<li><code>int QTableWidget::visualColumn(int logicalColumn) const</code>: Returns the visual column of the given <code>logicalColumn</code>.</li>
-<li><code>QRect QTableWidget::visualItemRect(const QTableWidgetItem * item) const</code>: Returns the rectangle on the viewport occupied by the item at <code>item</code>.</li>
-<li><code>int QTableWidget::visualRow(int logicalRow) const</code>: Returns the visual row of the given <code>logicalRow</code>.</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/03/17/Qt语法详解/Qt之QFile/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/17/Qt语法详解/Qt之QFile/" itemprop="url">Qt之QFile</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-17T18:04:17+08:00">
-                2019-03-17
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
-                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
-                    <span itemprop="name">Qt语法详解</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;基础代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QtCore/QCoreApplication&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QFileInfo&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QTextCodec&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QStringList&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QDateTime&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QDebug&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span> </span>&#123;</span><br><span class="line">    <span class="function">QCoreApplication <span class="title">a</span> <span class="params">( argc, argv )</span></span>;</span><br><span class="line">    QTextCodec::setCodecForTr ( QTextCodec::codecForLocale() );</span><br><span class="line">    <span class="function">QFile <span class="title">file</span> <span class="params">( <span class="string">"myfile.txt"</span> )</span></span>; <span class="comment">/* 以只写方式打开，如果文件不存在，那么会创建该文件 */</span></span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !file.open ( QIODevice::WriteOnly  | QIODevice::Text ) ) &#123;</span><br><span class="line">        qDebug() &lt;&lt; file.errorString();</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    file.write ( <span class="string">"helloQt!\nyafeilinux"</span> );</span><br><span class="line">    file.close();</span><br><span class="line">    <span class="function">QFileInfo <span class="title">info</span> <span class="params">( file )</span></span>; <span class="comment">/* 获取文件信息 */</span></span><br><span class="line">    qDebug() &lt;&lt; QObject::tr ( <span class="string">"绝对路径："</span> ) &lt;&lt; info.absoluteFilePath() &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">             &lt;&lt; QObject::tr ( <span class="string">"文件名："</span> ) &lt;&lt; info.fileName() &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">             &lt;&lt; QObject::tr ( <span class="string">"基本名称："</span> ) &lt;&lt; info.baseName() &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">             &lt;&lt; QObject::tr ( <span class="string">"后缀："</span> ) &lt;&lt; info.suffix() &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">             &lt;&lt; QObject::tr ( <span class="string">"创建时间："</span> ) &lt;&lt; info.created() &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">             &lt;&lt; QObject::tr ( <span class="string">"大小："</span> ) &lt;&lt; info.size();</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !file.open ( QIODevice::ReadOnly | QIODevice::Text ) ) &#123; <span class="comment">/* 以只读方式打开 */</span></span><br><span class="line">        qDebug() &lt;&lt; file.errorString();</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    qDebug() &lt;&lt; QObject::tr ( <span class="string">"文件内容："</span> ) &lt;&lt; <span class="built_in">endl</span> &lt;&lt; file.readAll();</span><br><span class="line">    qDebug() &lt;&lt; QObject::tr ( <span class="string">"当前位置："</span> ) &lt;&lt; file.pos();</span><br><span class="line">    file.seek ( <span class="number">0</span> );</span><br><span class="line">    QByteArray <span class="built_in">array</span>;</span><br><span class="line">    <span class="built_in">array</span> = file.read ( <span class="number">5</span> );</span><br><span class="line">    qDebug() &lt;&lt; QObject::tr ( <span class="string">"前5个字符："</span> ) &lt;&lt; <span class="built_in">array</span></span><br><span class="line">             &lt;&lt; QObject::tr ( <span class="string">"当前位置："</span> ) &lt;&lt; file.pos();</span><br><span class="line">    file.seek ( <span class="number">15</span> );</span><br><span class="line">    <span class="built_in">array</span> = file.read ( <span class="number">5</span> );</span><br><span class="line">    qDebug() &lt;&lt; QObject::tr ( <span class="string">"第16-20个字符："</span> ) &lt;&lt; <span class="built_in">array</span>;</span><br><span class="line">    file.close();</span><br><span class="line">    <span class="keyword">return</span> a.exec();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<hr>
-<p>&emsp;&emsp;<code>Qt</code>作为一个通用开发库，提供了跨平台的文件操作能力。<code>Qt</code>通过<code>QIODevice</code>提供了对<code>I/O</code>设备的抽象，这些设备具有读写字节块的能力。下面是<code>I/O</code>设备的类图(左图为<code>Qt4</code>的，右图为<code>Qt5</code>的)：</p>
-<p><img src="/2019/03/17/Qt语法详解/Qt之QFile/1.png"></p>
-<p>&emsp;&emsp;从上面的类图可以看出，<code>Qt4</code>和<code>Qt5</code>在<code>I/O</code>设备部分大同小异，只不过<code>Qt5</code>新增加了一个<code>QFileDevice</code>类。图中所涉及的类及其用途如下：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>类名</th>
-<th>作用</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>QIODevice</code></td>
-<td>所有<code>I/O</code>设备类的父类，提供了字节块读写的通用操作以及基本接口</td>
-</tr>
-<tr>
-<td><code>QFlie</code></td>
-<td>访问本地文件或者嵌入资源</td>
-</tr>
-<tr>
-<td><code>QTemporaryFile</code></td>
-<td>创建和访问本地文件系统的临时文件</td>
-</tr>
-<tr>
-<td><code>QBuffer</code></td>
-<td>读写<code>QByteArray</code></td>
-</tr>
-<tr>
-<td><code>QProcess</code></td>
-<td>运行外部程序，处理进程间通讯</td>
-</tr>
-<tr>
-<td><code>QAbstractSocket</code></td>
-<td>所有套接字类的父类</td>
-</tr>
-<tr>
-<td><code>QTcpSocket</code></td>
-<td><code>TCP</code>协议网络数据传输</td>
-</tr>
-<tr>
-<td><code>QUdpSocket</code></td>
-<td>传输<code>UDP</code>报文</td>
-</tr>
-<tr>
-<td><code>QSslSocket</code></td>
-<td>使用<code>SSL/TLS</code>传输数据</td>
-</tr>
-<tr>
-<td><code>QFileDevice</code></td>
-<td><code>Qt5</code>新增加的类，提供了有关文件操作的通用实现</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p><code>QProcess</code>、<code>QTcpSocket</code>、<code>QUdpSoctet</code>和<code>QSslSocket</code>是顺序访问设备。所谓<code>顺序访问</code>，是指它们的数据只能访问一遍：从头走到尾，从第一个字节开始访问，直到最后一个字节，中途不能返回去读取上一个字节；<code>QFile</code>、<code>QTemporaryFile</code>和<code>QBuffer</code>是随机访问设备，可以访问任意位置任意次数，还可以使用<code>QIODevice::seek</code>函数来重新定位文件访问位置指针。<br>&emsp;&emsp;在所有的<code>I/O</code>设备中，文件<code>I/O</code>是最重要的部分之一，因为大多数的程序依旧需要首先访问本地文件。<code>QFile</code>提供了从文件中读取和写入数据的能力，<code>Qt5</code>新加入的<code>QFileDevice</code>类，则将这部分公共操作放到了这个单独的类中。显然这部分代码在<code>Qt4</code>中位于<code>QFile</code>类。这样看来，<code>Qt5</code>的代码结构更为清晰，层次更好。<br>&emsp;&emsp;通常会将文件路径作为参数传给<code>QFile</code>的构造函数，不过也可以在创建好对象之后，使用<code>setFileName</code>来修改。<code>QFile</code>需要使用<code>/</code>作为文件分隔符，不过它会自动将其转换成操作系统所需要的形式。例如<code>C:/windows</code>这样的路径在<code>Windows</code>平台下同样是可以的。<br>&emsp;&emsp;<code>QFile</code>主要提供了有关文件的各种操作，比如打开文件、关闭文件、刷新文件等。可以使用<code>QDataStream</code>或<code>QTextStream</code>类来读写文件，也可以使用<code>QIODevice</code>类提供的<code>read</code>、<code>readLine</code>、<code>readAll</code>以及<code>write</code>这样的函数。值得注意的是，有关文件本身的信息，比如文件名、文件所在目录的名字等，则是通过<code>QFileInfo</code>获取。下面使用一段代码来看看<code>QFile</code>的有关操作：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[] )</span> </span>&#123;</span><br><span class="line">    <span class="function">QApplication <span class="title">app</span> <span class="params">( argc, argv )</span></span>;</span><br><span class="line">    <span class="function">QFile <span class="title">file</span> <span class="params">( <span class="string">"in.txt"</span> )</span></span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !file.open ( QIODevice::ReadOnly | QIODevice::Text ) ) &#123;</span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"Open file failed."</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">while</span> ( !file.atEnd() ) &#123;</span><br><span class="line">            qDebug() &lt;&lt; file.readLine();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="function">QFileInfo <span class="title">info</span> <span class="params">( file )</span></span>;</span><br><span class="line">    qDebug() &lt;&lt; info.isDir();</span><br><span class="line">    qDebug() &lt;&lt; info.isExecutable();</span><br><span class="line">    qDebug() &lt;&lt; info.baseName();</span><br><span class="line">    qDebug() &lt;&lt; info.completeBaseName();</span><br><span class="line">    qDebug() &lt;&lt; info.suffix();</span><br><span class="line">    qDebug() &lt;&lt; info.completeSuffix();</span><br><span class="line">    <span class="keyword">return</span> app.exec();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="Qt学习之二进制文件读写"><a href="#Qt学习之二进制文件读写" class="headerlink" title="Qt学习之二进制文件读写"></a>Qt学习之二进制文件读写</h3><p>&emsp;&emsp;<code>Qt</code>还提供了更高一级的操作：用于二进制的流<code>QDataStream</code>和用于文本流的<code>QTextStream</code>。<br>&emsp;&emsp;<code>QDataStream</code>提供了基于<code>QIODevice</code>的二进制数据的序列化。数据流是一种二进制流，这种流完全不依赖于底层操作系统、<code>CPU</code>或者字节顺序(大端或小端)。例如，在安装了<code>Windows</code>平台的<code>PC</code>上面写入的一个数据流，可以不经过任何处理，直接拿到运行了<code>Solaris</code>的<code>SPARC</code>机器上读取。由于数据流就是二进制流，因此也可以直接读写没有编码的二进制数据，例如图像、视频、音频等。<code>QDataStream</code>既能够存取<code>C++</code>基本类型，如<code>int</code>、<code>char</code>、<code>short</code>等，也可以存取复杂的数据类型，例如自定义的类。实际上，<code>QDataStream</code>对于类的存储，是将复杂的类分割为很多基本单元实现的。<br>&emsp;&emsp;结合<code>QIODevice</code>，<code>QDataStream</code>可以很方便地对文件、网络套接字等进行读写操作。我们从代码开始看起：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QFile <span class="title">file</span> <span class="params">( <span class="string">"file.dat"</span> )</span></span>;</span><br><span class="line">file.open ( QIODevice::WriteOnly );</span><br><span class="line"><span class="function">QDataStream <span class="title">out</span> <span class="params">( &amp;file )</span></span>;</span><br><span class="line">out &lt;&lt; QString ( <span class="string">"the answer is"</span> );</span><br><span class="line">out &lt;&lt; ( qint32 ) <span class="number">42</span>;</span><br></pre></td></tr></table></figure>
-<p>在这段代码中，我们首先打开一个名为<code>file.dat</code>的文件(注意，我们为简单起见，并没有检查文件打开是否成功，这在正式程序中是不允许的)。然后，我们将刚刚创建的<code>file</code>对象的指针传递给一个<code>QDataStream</code>实例<code>out</code>。类似于<code>std::cout</code>标准输出流，<code>QDataStream</code>也重载了输出重定向<code>&lt;&lt;</code>运算符。后面的代码就很简单了：将<code>the answer is</code>和数字<code>42</code>输出到数据流。由于我们的<code>out</code>对象建立在<code>file</code>之上，因此相当于将答案写入<code>file</code>。<br>&emsp;&emsp;需要指出一点，最好使用<code>Qt</code>整型来进行读写，比如程序中的<code>qint32</code>，这保证了在任意平台和任意编译器都能够有相同的行为。<br>&emsp;&emsp;我们通过一个例子来看看<code>Qt</code>是如何存储数据的。例如<code>char *</code>字符串在存储时，会首先存储该字符串包括<code>\0</code>结束符的长度(<code>32</code>位整型)，然后是字符串的内容以及结束符<code>\0</code>。在读取时，先以<code>32</code>位整型读出整个的长度，然后按照这个长度取出整个字符串的内容。但是，如果你直接运行这段代码，你会得到一个空白的<code>file.dat</code>，并没有写入任何数据，这是因为我们的<code>file</code>没有正常关闭。为性能起见，数据只有在文件关闭时才会真正写入。因此，我们必须在最后添加一行代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">file.close(); <span class="comment">/* 如果不想关闭文件，可以使用file.flush */</span></span><br></pre></td></tr></table></figure>
-<p>重新运行一下程序，就可以了。下面要将这个答案读取出来：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QFile <span class="title">file</span> <span class="params">( <span class="string">"file.dat"</span> )</span></span>;</span><br><span class="line">file.open ( QIODevice::ReadOnly );</span><br><span class="line"><span class="function">QDataStream <span class="title">in</span> <span class="params">( &amp;file )</span></span>;</span><br><span class="line">QString str;</span><br><span class="line">qint32 a;</span><br><span class="line">in &gt;&gt; str &gt;&gt; a;</span><br></pre></td></tr></table></figure>
-<p>这段代码没什么好说的。唯一需要注意的是，你必须按照写入的顺序将数据读取出来。也就是说，程序数据写入的顺序必须预先定义好。在这个例子中，我们首先写入字符串，然后写入数字，那么就首先读出来的就是字符串，然后才是数字。顺序颠倒的话，程序行为是不确定的，严重时会直接造成程序崩溃。<br>&emsp;&emsp;由于二进制流是纯粹的字节数据，带来的问题是，如果程序不同版本之间按照不同的方式读取(前面说过，<code>Qt</code>保证读写内容的一致，但是并不能保证不同<code>Qt</code>版本之间的一致)，数据就会出现错误。因此，我们必须提供一种机制来确保不同版本之间的一致性。通常，我们会使用如下的代码写入：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QFile <span class="title">file</span> <span class="params">( <span class="string">"file.dat"</span> )</span></span>;</span><br><span class="line">file.open ( QIODevice::WriteOnly );</span><br><span class="line"><span class="function">QDataStream <span class="title">out</span> <span class="params">( &amp;file )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 写入魔术数字和版本 */</span></span><br><span class="line">out &lt;&lt; ( quint32 ) <span class="number">0xA0B0C0D0</span>;</span><br><span class="line">out &lt;&lt; ( qint32 ) <span class="number">123</span>;</span><br><span class="line">​</span><br><span class="line">out.setVersion ( QDataStream::Qt_4_0 );</span><br><span class="line">out &lt;&lt; lots_of_interesting_data; <span class="comment">/* 写入数据 */</span></span><br></pre></td></tr></table></figure>
-<p>这里增加了如下代码：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">out &lt;&lt; ( quint32 ) <span class="number">0xA0B0C0D0</span>;</span><br></pre></td></tr></table></figure>
-<p>用于写入魔术数字。所谓魔术数字，是二进制输出中经常使用的一种技术。二进制格式是人不可读的，并且通常具有相同的后缀名(比如<code>dat</code>之类)，因此我们没有办法区分两个二进制文件哪个是合法的。所以，我们定义的二进制格式通常具有一个魔术数字，用于标识文件的合法性。在本例中，我们在文件最开始写入<code>0xA0B0C0D0</code>，在读取的时候首先检查这个数字是不是<code>0xA0B0C0D0</code>。如果不是的话，说明这个文件不是可识别格式，因此根本不需要去继续读取。一般二进制文件都会有这么一个魔术数字，例如<code>Java</code>的<code>class</code>文件的魔术数字就是<code>0xCAFEBABE</code>，使用二进制查看器就可以查看。魔术数字是一个<code>32</code>位的无符号整型，因此我们使用<code>quint32</code>来得到一个平台无关的<code>32</code>位无符号整型。接下来的一行：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">out &lt;&lt; ( qint32 ) <span class="number">123</span>;</span><br></pre></td></tr></table></figure>
-<p>是标识文件的版本。我们用魔术数字标识文件的类型，从而判断文件是不是合法的。但是，文件的不同版本之间也可能存在差异：我们可能在第一版保存整型，第二版可能保存字符串。为了标识不同的版本，我们只能将版本写入文件。比如，现在我们的版本是<code>123</code>。下面一行还是有关版本的：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">out.setVersion ( QDataStream::Qt_4_8 );</span><br></pre></td></tr></table></figure>
-<p>上面一句是文件的版本号，但是<code>Qt</code>不同版本之间的读取方式可能也不一样。这样，我们就需要指定<code>Qt</code>按照哪个版本去读。在这里我们指定以<code>Qt 4.8</code>格式去读取内容。<br>&emsp;&emsp;当我们这样写入文件之后，我们在读取的时候就需要增加一系列的判断：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QFile <span class="title">file</span> <span class="params">( <span class="string">"file.dat"</span> )</span></span>;</span><br><span class="line">file.open ( QIODevice::ReadOnly );</span><br><span class="line"><span class="function">QDataStream <span class="title">in</span> <span class="params">( &amp;file )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 检查魔术数字 */</span></span><br><span class="line">quint32 magic;</span><br><span class="line">in &gt;&gt; magic;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( magic != <span class="number">0xA0B0C0D0</span> ) &#123;</span><br><span class="line">    <span class="keyword">return</span> BAD_FILE_FORMAT;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 检查版本 */</span></span><br><span class="line">qint32 version;</span><br><span class="line">in &gt;&gt; version;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( version &lt; <span class="number">100</span> ) &#123;</span><br><span class="line">    <span class="keyword">return</span> BAD_FILE_TOO_OLD;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( version &gt; <span class="number">123</span> ) &#123;</span><br><span class="line">    <span class="keyword">return</span> BAD_FILE_TOO_NEW;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( version &lt;= <span class="number">110</span> ) &#123;</span><br><span class="line">    in.setVersion ( QDataStream::Qt_3_2 );</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">    in.setVersion ( QDataStream::Qt_4_0 );</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 读取数据 */</span></span><br><span class="line">in &gt;&gt; lots_of_interesting_data;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( version &gt;= <span class="number">120</span> ) &#123;</span><br><span class="line">    in &gt;&gt; data_new_in_version_1_2;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">in &gt;&gt; other_interesting_data;</span><br></pre></td></tr></table></figure>
-<p>这段代码就是按照前面的解释进行的。首先读取魔术数字，检查文件是否合法。如果合法，读取文件版本：小于<code>100</code>或者大于<code>123</code>都是不支持的。如果在支持的版本范围内(<code>100 &lt;= version &lt;= 123</code>)，则当小于等于<code>110</code>的时候，按照<code>Qt_3_2</code>的格式读取，否则按照<code>Qt_4_0</code>的格式读取。当设置完这些参数之后，开始读取数据。<br>&emsp;&emsp;至此，我们介绍了有关<code>QDataStream</code>的相关内容。那么，既然<code>QIODevice</code>提供了<code>read</code>、<code>readLine</code>之类的函数，为什么还要有<code>QDataStream</code>呢？<code>QDataStream</code>同<code>QIODevice</code>有什么区别？区别在于，<code>QDataStream</code>提供流的形式，性能上一般比直接调用原始<code>API</code>更好一些。我们通过下面一段代码看看什么是流的形式：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QFile <span class="title">file</span> <span class="params">( <span class="string">"file.dat"</span> )</span></span>;</span><br><span class="line">file.open ( QIODevice::ReadWrite );</span><br><span class="line">​</span><br><span class="line"><span class="function">QDataStream <span class="title">stream</span> <span class="params">( &amp;file )</span></span>;</span><br><span class="line">QString str = <span class="string">"the answer is 42"</span>;</span><br><span class="line">QString strout;</span><br><span class="line">​</span><br><span class="line">stream &lt;&lt; str;</span><br><span class="line">file.flush();</span><br><span class="line">stream &gt;&gt; strout;</span><br></pre></td></tr></table></figure>
-<p>在这段代码中，我们首先向文件中写入数据，紧接着把数据读出来。有什么问题吗？运行之后你会发现，<code>strout</code>实际是空的。为什么没有读取出来？我们不是已经添加了<code>file.flush();</code>语句吗？原因并不在于文件有没有写入，而是在于我们使用的是<code>流</code>。所谓流，就像水流一样，它的游标会随着输出向后移动。当使用<code>&lt;&lt;</code>操作符输出之后，流的游标已经到了最后，此时你再去读，当然什么也读不到了。所以你需要在输出之后重新把游标设置为<code>0</code>的位置才能够继续读取。具体代码片段如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">stream &lt;&lt; str;</span><br><span class="line">stream.device()-&gt;seek ( <span class="number">0</span> );</span><br><span class="line">stream &gt;&gt; strout;</span><br></pre></td></tr></table></figure>
-<h3 id="QT学习之文本文件读写"><a href="#QT学习之文本文件读写" class="headerlink" title="QT学习之文本文件读写"></a>QT学习之文本文件读写</h3><p>&emsp;&emsp;二进制文件比较小巧，却不是人可读的格式。而文本文件是一种人可读的文件。为了操作这种文件，我们需要使用<code>QTextStream</code>类。<code>QTextStream</code>和<code>QDataStream</code>的使用类似，只不过它是操作纯文本文件的。另外，像<code>XML</code>、<code>HTML</code>这种，虽然也是文本文件，可以由<code>QTextStream</code>生成，但<code>Qt</code>提供了更方便的<code>XML</code>操作类，这里就不包括这部分内容了。<br>&emsp;&emsp;<code>QTextStream</code>会自动将<code>Unicode</code>编码同操作系统的编码进行转换，这一操作对开发人员是透明的。它也会将换行符进行转换，同样不需要自己处理。<code>QTextStream</code>使用<code>16</code>位的<code>QChar</code>作为基础的数据存储单位，同样，它也支持<code>C++</code>标准类型，如<code>int</code>等。实际上，这是将这种标准类型与字符串进行了相互转换。<br>&emsp;&emsp;<code>QTextStream</code>同<code>QDataStream</code>的使用基本一致，例如下面的代码将把<code>The answer is 42</code>写入到<code>file.txt</code>文件中：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QFile <span class="title">data</span> <span class="params">( <span class="string">"file.txt"</span> )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( data.open ( QFile::WriteOnly | QIODevice::Truncate ) ) &#123;</span><br><span class="line">    <span class="function">QTextStream <span class="title">out</span> <span class="params">( &amp;data )</span></span>;</span><br><span class="line">    out &lt;&lt; <span class="string">"The answer is "</span> &lt;&lt; <span class="number">42</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>上述代码在<code>open</code>函数中增加了<code>QIODevice::Truncate</code>打开方式，可以从下表看到这些打开方式的区别：</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>枚举值</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>QIODevice::NotOpen</code></td>
-<td>未打开</td>
-</tr>
-<tr>
-<td><code>QIODevice::ReadOnly</code></td>
-<td>以只读方式打开</td>
-</tr>
-<tr>
-<td><code>QIODevice::WriteOnly</code></td>
-<td>以只写方式打开</td>
-</tr>
-<tr>
-<td><code>QIODevice::ReadWrite</code></td>
-<td>以读写方式打开</td>
-</tr>
-<tr>
-<td><code>QIODevice::Append</code></td>
-<td>以追加的方式打开，新增加的内容将被追加到文件末尾</td>
-</tr>
-<tr>
-<td><code>QIODevice::Truncate</code></td>
-<td>以重写的方式打开，在写入新的数</td>
-</tr>
-<tr>
-<td><code>QIODevice::Text</code></td>
-<td>在读取时，将行结束符转换成<code>\n</code>；在写入时，将行结束符转换成本地格式，例如<code>Win32</code>平台上是<code>\r\n</code></td>
-</tr>
-<tr>
-<td><code>QIODevice::Unbuffered</code></td>
-<td>忽略缓存</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>在这里使用了<code>QFile::WriteOnly | QIODevice::Truncate</code>，也就是以只写并且覆盖已有内容的形式操作文件。注意，<code>QIODevice::Truncate</code>会直接将文件内容清空。</p>
-<hr>
-<h3 id="QTextStream读取文件内容"><a href="#QTextStream读取文件内容" class="headerlink" title="QTextStream读取文件内容"></a>QTextStream读取文件内容</h3><p>&emsp;&emsp;基础代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QFile <span class="title">file</span> <span class="params">( <span class="string">"file.txt"</span> )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> ( !file.open ( QIODevice::ReadOnly | QIODevice::Text ) ) &#123;</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function">QTextStream <span class="title">in</span> <span class="params">( &amp;file )</span></span>;</span><br><span class="line">QString QTextStream::read ( qint64 maxlen ) -- 读取txt文件maxlen个字符：</span><br><span class="line">QString line1 = in.read ( <span class="number">1</span> ); <span class="comment">/* 读取一个字符 */</span></span><br><span class="line">QString line2 = in.read ( <span class="number">1</span> ); <span class="comment">/* 自动读取下一个字符 */</span></span><br><span class="line">QString line1 = in.read ( <span class="number">20</span> ); <span class="comment">/* 读取20个字符，归为一个字符串 */</span></span><br><span class="line">QString QTextStream::readLine ( qint64 maxlen = <span class="number">0</span> )：</span><br><span class="line">QString line1 = in.readLine ( <span class="number">0</span> ); <span class="comment">/* 读取第0行文档 */</span></span><br><span class="line">QString line2 = in.readLine ( <span class="number">5</span> ); <span class="comment">/* 读取第0行5个文档 */</span></span><br><span class="line">QString line1 = in.readLine(); <span class="comment">/* 读取第0行文档 */</span></span><br><span class="line">QString line2 = in.readLine(); <span class="comment">/* 自动读取第1行文档 */</span></span><br><span class="line">QString QTextStream::readAll ()：</span><br><span class="line">QString line1 = in.readAll(); <span class="comment">/* 读取全部txt文档，并归为一个字符串 */</span></span><br><span class="line"><span class="keyword">bool</span> QTextStream::seek ( qint64 pos )：</span><br><span class="line"><span class="keyword">bool</span> a = in.seek ( <span class="number">6</span> ); <span class="comment">/* 定位文本中的第6个位置 */</span></span><br><span class="line">QString line2 = in.read ( <span class="number">1</span> ) ; <span class="comment">/* 读取该位的1字符 */</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;读取<code>txt</code>文本全部内容的方法：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 两种方法读取txt文档 */</span></span><br><span class="line"><span class="keyword">while</span> ( !in.atEnd() ) &#123;</span><br><span class="line">    QString line = in.readLine();</span><br><span class="line">    qDebug() &lt;&lt; line;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*-------------------------------*/</span></span><br><span class="line">QString line3 = in.readLine();</span><br><span class="line">​</span><br><span class="line"><span class="keyword">while</span> ( !line3.isNull() ) &#123;</span><br><span class="line">    qDebug() &lt;&lt; line3;</span><br><span class="line">    line3 = in.readLine();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="QFileInfo的简单用法"><a href="#QFileInfo的简单用法" class="headerlink" title="QFileInfo的简单用法"></a>QFileInfo的简单用法</h3><p>&emsp;&emsp;<code>QFileInfo</code>的几个构造函数：</p>
-<ul>
-<li><code>QFileInfo();</code></li>
-<li><code>QFileInfo( const QString &amp; file );</code></li>
-<li><code>QFileInfo( const QFile &amp; file );</code></li>
-<li><code>QFileInfo( const QDir &amp; dir, const QString &amp; file );</code></li>
-<li><code>QFileInfo( const QFileInfo &amp; fileinfo );</code></li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QFileInfo <span class="title">fileInfo</span> <span class="params">( path )</span></span>;</span><br><span class="line"><span class="comment">/* or */</span></span><br><span class="line">QFileInfo fileInfo;</span><br><span class="line">fileInfo.setFile ( path );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>bool exists();</code>：判断文件是否存在，若存在返回<code>true</code>。</li>
-<li><code>qint64 size();</code>：获取文件大小，返回<code>bytes</code>。</li>
-</ul>
-<p>&emsp;&emsp;路径和文件名相关：</p>
-<ul>
-<li><code>QString path();</code>：返回文件路径，不包含文件名。</li>
-<li><code>QString filePath();</code>：返回文件路径，包含文件名。</li>
-<li><code>QString fileName();</code>：返回文件名称。</li>
-</ul>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">QFileInfo <span class="title">fileInfo</span> <span class="params">( <span class="string">"/home/dipper/xyz.tar.gz"</span> )</span></span>;</span><br><span class="line">fileInfo.path();             <span class="comment">/* returns "/home/dipper" */</span></span><br><span class="line">fileInfo.fileName();         <span class="comment">/* returns "xyz.tar.gz" */</span></span><br><span class="line">fileInfo.baseName();         <span class="comment">/* returns "xyz" */</span></span><br><span class="line">fileInfo.completeBaseName(); <span class="comment">/* returns "xyz.tar" */</span></span><br><span class="line">fileInfo.suffix();           <span class="comment">/* returns "gz" */</span></span><br><span class="line">fileInfo.completeSuffix();   <span class="comment">/* returns "tar.gz" */</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;类型：</p>
-<ul>
-<li><code>bool isFile();</code>：判断是否为文件。</li>
-<li><code>bool isDir();</code>：判断是否为路径。</li>
-<li><code>bool isSymLink();</code>：判断是否为符号链接。<code>symLinkTarget</code>返回符号链接的文件。</li>
-</ul>
-<p>&emsp;&emsp;日期相关：</p>
-<ul>
-<li><code>QDateTime created();</code>：创建时间。</li>
-<li><code>QDateTime lastModified();</code>：最近修改时间。</li>
-<li><code>QDateTime lastRead();</code>：最近读时间。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -3604,7 +2999,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">955</span>
+                  <span class="site-state-item-count">958</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

@@ -271,6 +271,425 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/24/opencv和图像处理/inpaint函数/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/24/opencv和图像处理/inpaint函数/" itemprop="url">inpaint函数</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-24T17:09:01+08:00">
+                2019-02-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;图像修复技术的原理是什么呢？简而言之，就是利用那些已经被破坏的区域的边缘，即边缘的颜色和结构，根据这些图像留下的信息去推断被破坏的信息区的信息内容，然后对破坏区进行填补，以达到图像修补的目的。<br>&emsp;&emsp;<code>OpenCV</code>中就是利用<code>inpaint</code>这个函数来实现修复功能：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">inpaint</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    InputArray src, InputArray inpaintMask,</span></span></span><br><span class="line"><span class="function"><span class="params">    OutputArray dst, <span class="keyword">double</span> inpaintRadius, <span class="keyword">int</span> flags</span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>src</code>：输入的单通道或三通道图像。</li>
+<li><code>inpaintMask</code>：修复模板。对于单通道图像，大小跟原图像一致。<code>inpaintMask</code>图像上除了需要修复的部分之外，其他部分的像素值全部为<code>0</code>。</li>
+<li><code>dst</code>：输出的经过修复的图像。</li>
+<li><code>inpaintRadius</code>：修复算法取的邻域半径，用于计算当前像素点的差值。</li>
+<li><code>flags</code>：修复算法，共有两种，即<code>INPAINT_NS</code>和<code>INPAINT_TELEA</code>。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/highgui/highgui.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/imgproc/imgproc.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/photo/photo.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">help</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"\nCool inpainging demo. Inpainting repairs damage to images by floodfilling the damage \n"</span></span><br><span class="line">         &lt;&lt; <span class="string">"with surrounding image areas.\n"</span></span><br><span class="line">         <span class="string">"Using OpenCV version %s\n"</span> &lt;&lt; CV_VERSION &lt;&lt; <span class="string">"\n"</span></span><br><span class="line">         <span class="string">"Usage:\n"</span></span><br><span class="line">         <span class="string">"./inpaint [image_name -- Default fruits.jpg]\n"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"Hot keys: \n"</span></span><br><span class="line">         <span class="string">"\tESC - quit the program\n"</span></span><br><span class="line">         <span class="string">"\tr - restore the original image\n"</span></span><br><span class="line">         <span class="string">"\ti or SPACE - run inpainting algorithm\n"</span></span><br><span class="line">         <span class="string">"\t\t(before running it, paint something on the image)\n"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line">Mat img, inpaintMask;</span><br><span class="line"><span class="function">Point <span class="title">prevPt</span> <span class="params">( <span class="number">-1</span>, <span class="number">-1</span> )</span></span>;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">onMouse</span> <span class="params">( <span class="keyword">int</span> event, <span class="keyword">int</span> x, <span class="keyword">int</span> y, <span class="keyword">int</span> flags, <span class="keyword">void</span> * )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ( event == CV_EVENT_LBUTTONUP || ! ( flags &amp; CV_EVENT_FLAG_LBUTTON ) ) &#123;</span><br><span class="line">        prevPt = Point ( <span class="number">-1</span>, <span class="number">-1</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( event == CV_EVENT_LBUTTONDOWN ) &#123;</span><br><span class="line">        prevPt = Point ( x, y );</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( event == CV_EVENT_MOUSEMOVE &amp;&amp; ( flags &amp; CV_EVENT_FLAG_LBUTTON ) ) &#123;</span><br><span class="line">        Point pt ( x, y );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( prevPt.x &lt; <span class="number">0</span> ) &#123;</span><br><span class="line">            prevPt = pt;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        line ( inpaintMask, prevPt, pt, Scalar::all ( <span class="number">255</span> ), <span class="number">5</span>, <span class="number">8</span>, <span class="number">0</span> ); <span class="comment">//mask</span></span><br><span class="line">        line ( img, prevPt, pt, Scalar::all ( <span class="number">255</span> ), <span class="number">5</span>, <span class="number">8</span>, <span class="number">0</span> );</span><br><span class="line">        prevPt = pt;</span><br><span class="line">        imshow ( <span class="string">"image"</span>, img );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *filename = argc &gt;= <span class="number">2</span> ? argv[<span class="number">1</span>] : ( <span class="keyword">char</span> * ) <span class="string">"fruits.jpg"</span>;</span><br><span class="line">    Mat img0 = imread ( filename, <span class="number">-1</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( img0.empty() ) &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"Couldn't open the image "</span> &lt;&lt; filename &lt;&lt; <span class="string">". Usage: inpaint &lt;image_name&gt;\n"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    help();</span><br><span class="line">    namedWindow ( <span class="string">"image"</span>, <span class="number">1</span> );</span><br><span class="line">    img = img0.clone();</span><br><span class="line">    inpaintMask = Mat::zeros ( img.size(), CV_8U ); <span class="comment">//mask</span></span><br><span class="line">    imshow ( <span class="string">"image"</span>, img );</span><br><span class="line">    setMouseCallback ( <span class="string">"image"</span>, onMouse, <span class="number">0</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">        <span class="keyword">char</span> c = ( <span class="keyword">char</span> ) waitKey();</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( c == <span class="number">27</span> ) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( c == <span class="string">'r'</span> ) &#123;</span><br><span class="line">            inpaintMask = Scalar::all ( <span class="number">0</span> );</span><br><span class="line">            img0.copyTo ( img );</span><br><span class="line">            imshow ( <span class="string">"image"</span>, img );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">if</span> ( c == <span class="string">'i'</span> || c == <span class="string">' '</span> ) &#123;</span><br><span class="line">            Mat inpainted;</span><br><span class="line">            inpaint ( img, inpaintMask, inpainted, <span class="number">3</span>, CV_INPAINT_TELEA );</span><br><span class="line">            imshow ( <span class="string">"inpainted image"</span>, inpainted );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/02/24/opencv和图像处理/inpaint函数/1.png" height="253" width="688"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/24/机器学习/线性判别分析LDA/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/24/机器学习/线性判别分析LDA/" itemprop="url">线性判别分析LDA</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-24T16:48:43+08:00">
+                2019-02-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;线性判别分析(<code>Linear Discriminant Analysis</code>，<code>LDA</code>)是一种经典的降维方法，它在模式识别领域(比如人脸识别、舰艇识别等图形图像识别领域)中有非常广泛的应用。<br>&emsp;&emsp;<code>LDA</code>是一种监督学习的降维技术，也就是说数据集的每个样本是有类别的，而<code>PCA</code>是不考虑样本类别输出的无监督降维技术。<code>LDA</code>的思想可以用一句话概括，就是<code>投影后类内方差最小，类间方差最大</code>。我们要将数据在低维度上进行投影，希望同一种类别数据的投影点尽可能得接近，而不同类别数据的类别中心之间的距离尽可能得大。<br>&emsp;&emsp;假设我们有两类数据，分别为红色和蓝色，如下图所示，这些数据特征是二维的。我们希望将这些数据投影到一维的一条直线，让每一种类别数据的投影点尽可能得接近，而红色和蓝色数据中心之间的距离尽可能得大：</p>
+<p><img src="/2019/02/24/机器学习/线性判别分析LDA/1.png" height="198" width="534"></p>
+<p>&emsp;&emsp;上图提供了两种投影方式，哪一种能更好地满足我们的标准呢？从直观上可以看出，右图要比左图的投影效果好，因为右图的红色数据和蓝色数据投影点较为集中，且类别之间的距离明显，而左图则在边界处数据混杂。以上就是<code>LDA</code>的主要思想，当然在实际应用中，我们的数据是多个类别的，原始数据一般也是超过二维的，投影后的也一般不是直线，而是一个低维的超平面。<br>&emsp;&emsp;首先生成一些三维的数据：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"><span class="keyword">from</span> mpl_toolkits.mplot3d <span class="keyword">import</span> Axes3D</span><br><span class="line"><span class="keyword">from</span> sklearn.datasets.samples_generator <span class="keyword">import</span> make_classification</span><br><span class="line">​</span><br><span class="line">X, y = make_classification(</span><br><span class="line">           n_samples=<span class="number">1000</span>, n_features=<span class="number">3</span>, n_redundant=<span class="number">0</span>, n_classes=<span class="number">3</span>,</span><br><span class="line">           n_informative=<span class="number">2</span>, n_clusters_per_class=<span class="number">1</span>, class_sep=<span class="number">0.5</span>, random_state=<span class="number">10</span>)</span><br><span class="line">fig = plt.figure()</span><br><span class="line">ax = Axes3D(fig, rect=[<span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">1</span>], elev=<span class="number">30</span>, azim=<span class="number">20</span>)</span><br><span class="line">plt.scatter(X[:, <span class="number">0</span>], X[:, <span class="number">1</span>], X[:, <span class="number">2</span>], marker=<span class="string">'o'</span>, c=y)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/02/24/机器学习/线性判别分析LDA/2.png" height="296" width="374"></p>
+<p>使用<code>LDA</code>的效果如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"><span class="keyword">from</span> mpl_toolkits.mplot3d <span class="keyword">import</span> Axes3D</span><br><span class="line"><span class="keyword">from</span> sklearn.datasets.samples_generator <span class="keyword">import</span> make_classification</span><br><span class="line"><span class="keyword">from</span> sklearn.discriminant_analysis <span class="keyword">import</span> LinearDiscriminantAnalysis</span><br><span class="line">​</span><br><span class="line">X, y = make_classification(</span><br><span class="line">           n_samples=<span class="number">1000</span>, n_features=<span class="number">3</span>, n_redundant=<span class="number">0</span>, n_classes=<span class="number">3</span>,</span><br><span class="line">           n_informative=<span class="number">2</span>, n_clusters_per_class=<span class="number">1</span>, class_sep=<span class="number">0.5</span>, random_state=<span class="number">10</span>)</span><br><span class="line">lda = LinearDiscriminantAnalysis(n_components=<span class="number">2</span>)</span><br><span class="line">lda.fit(X, y)</span><br><span class="line">X_new = lda.transform(X)</span><br><span class="line">plt.scatter(X_new[:, <span class="number">0</span>], X_new[:, <span class="number">1</span>], marker=<span class="string">'o'</span>, c=y)</span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+<p><img src="/2019/02/24/机器学习/线性判别分析LDA/3.png" height="266" width="354"></p>
+<p>可以看出降维后，样本特征和类别信息之间的关系得以保留。一般来说，如果我们的数据是有类别标签的，那么优先选择<code>LDA</code>去尝试降维；当然也可以使用<code>PCA</code>做很小幅度的降维去消去噪声，然后再使用<code>LDA</code>降维。如果没有类别标签，那么肯定<code>PCA</code>是最先考虑的一个选择了。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/24/机器学习/TF-IDF原理/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/02/24/机器学习/TF-IDF原理/" itemprop="url">TF-IDF原理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-24T16:00:50+08:00">
+                2019-02-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;有一篇很长的文章，我要用计算机提取它的关键词(<code>Automatic Keyphrase extraction</code>)，完全不加以人工干预，请问怎样才能正确做到？<br>&emsp;&emsp;这个问题涉及到数据挖掘、文本处理、信息检索等很多计算机前沿领域，但是出乎意料的是，有一个非常简单的经典算法，可以给出令人相当满意的结果。这就是今天介绍的<code>TF-IDF</code>算法。<br>&emsp;&emsp;让我们从一个实例开始讲起，假定现在有一篇长文<code>中国的蜜蜂养殖</code>，我们准备用计算机提取它的关键词。一个容易想到的思路，就是找到出现次数最多的词。如果某个词很重要，它应该在这篇文章中多次出现。于是，我们进行<code>词频</code>(<code>Term Frequency</code>，<code>TF</code>)统计。结果你肯定猜到了，出现次数最多的词是<code>的</code>、<code>是</code>、<code>在</code>等这一类最常用的词。它们叫做<code>停用词</code>(<code>stop words</code>)，表示对找到结果毫无帮助、必须过滤掉的词。<br>&emsp;&emsp;假设我们把它们都过滤掉了，只考虑剩下的有实际意义的词。这样又会遇到了另一个问题，我们可能发现<code>中国</code>、<code>蜜蜂</code>、<code>养殖</code>这三个词的出现次数一样多。这是不是意味着作为关键词，它们的重要性是一样的？<br>&emsp;&emsp;显然不是这样，因为<code>中国</code>是很常见的词，相对而言，<code>蜜蜂</code>和<code>养殖</code>不那么常见。如果这三个词在一篇文章的出现次数一样多，有理由认为，<code>蜜蜂</code>和<code>养殖</code>的重要程度要大于<code>中国</code>，也就是说，在关键词排序上面，<code>蜜蜂</code>和<code>养殖</code>应该排在<code>中国</code>的前面。所以我们需要一个重要性调整系数，衡量一个词是不是常见词。如果某个词比较少见，但是它在这篇文章中多次出现，那么它很可能就反映了这篇文章的特性，正是我们所需要的关键词。<br>&emsp;&emsp;用统计学语言表达，就是在词频的基础上，要对每个词分配一个<code>重要性</code>权重。最常见的词(<code>的</code>、<code>是</code>和<code>在</code>)给予最小的权重，较常见的词(<code>中国</code>)给予较小的权重，较少见的词(<code>蜜蜂</code>、<code>养殖</code>)给予较大的权重。这个权重叫做<code>逆文档频率</code>(<code>Inverse Document Frequency</code>，<code>IDF</code>)，它的大小与一个词的常见程度成反比。<br>&emsp;&emsp;知道了<code>TF</code>和<code>IDF</code>以后，将这两个值相乘，就得到了一个词的<code>TF-IDF</code>值。某个词对文章的重要性越高，它的<code>TF-IDF</code>值就越大。所以排在最前面的几个词，就是这篇文章的关键词。下面就是这个算法的细节。<br>&emsp;&emsp;第一步是计算词频：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">词频(TF) = 某个词在文章中的出现次数</span><br></pre></td></tr></table></figure>
+<p>考虑到文章有长短之分，为了便于不同文章的比较，进行<code>词频</code>标准化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">词频(TF) = 某个词在文章中的出现次数 / 文章的总词数(或者该文出现次数最多的词的出现次数)</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;第二步是计算逆文档频率。这时需要一个语料库(<code>corpus</code>)，用来模拟语言的使用环境：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">逆文档评率(IDF) = log(语料库的文档总数 / (包含该词的文档数 + <span class="number">1</span>))</span><br></pre></td></tr></table></figure>
+<p>如果一个词越常见，那么分母就越大，逆文档频率就越小越接近<code>0</code>。分母之所以要加<code>1</code>，是为了避免分母为<code>0</code>(即所有文档都不包含该词)。<br>&emsp;&emsp;第三步是计算<code>TF-IDF</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TF-IDF = TF * IDF</span><br></pre></td></tr></table></figure>
+<p>可以看到，<code>TF-IDF</code>与一个词在文档中的出现次数成正比，与该词在整个语言中的出现次数成反比。所以，自动提取关键词的算法就很清楚了，就是计算出文档的每个词的<code>TF-IDF</code>值，然后按降序排列，取排在最前面的几个词。<br>&emsp;&emsp;还是以<code>中国的蜜蜂养殖</code>为例，假定该文长度为<code>1000</code>个词，<code>中国</code>、<code>蜜蜂</code>、<code>养殖</code>各出现<code>20</code>次，则这三个词的<code>词频</code>(<code>TF</code>)都为<code>0.02</code>。然后搜索<code>Google</code>发现，包含<code>的</code>字的网页共有<code>250</code>亿张，假定这就是中文网页总数，包含<code>中国</code>的网页共有<code>62.3</code>亿张，包含<code>蜜蜂</code>的网页为<code>0.484</code>亿张，包含<code>养殖</code>的网页为<code>0.973</code>亿张，则它们的逆文档频率(<code>IDF</code>)和<code>TF-IDF</code>如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>包含该词的文档数(亿)</th>
+<th>IDF</th>
+<th>TF-IDF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>中国</td>
+<td>62.3</td>
+<td>0.603</td>
+<td>0.0121</td>
+</tr>
+<tr>
+<td>蜜蜂</td>
+<td>0.484</td>
+<td>2.713</td>
+<td>0.0543</td>
+</tr>
+<tr>
+<td>养殖</td>
+<td>0.973</td>
+<td>2.410</td>
+<td>0.0482</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>从上表可见，<code>蜜蜂</code>的<code>TF-IDF</code>值最高，<code>养殖</code>其次，<code>中国</code>最低(如果还计算<code>的</code>字的<code>TF-IDF</code>，那将是一个极其接近<code>0</code>的值)。所以如果只选择一个词，<code>蜜蜂</code>就是这篇文章的关键词。<br>&emsp;&emsp;除了自动提取关键词，<code>TF-IDF</code>算法还可以用于许多别的地方。例如信息检索时，对于每个文档，都可以分别计算一组搜索词(<code>中国</code>、<code>蜜蜂</code>、<code>养殖</code>)的<code>TF-IDF</code>，将它们相加，就可以得到整个文档的<code>TF-IDF</code>，这个值最高的文档就是与搜索词最相关的文档。<br>&emsp;&emsp;<code>TF-IDF</code>算法的优点是简单快速，结果比较符合实际情况。缺点是，单纯以<code>词频</code>衡量一个词的重要性，不够全面，有时重要的词可能出现次数并不多。而且，这种算法无法体现词的位置信息，出现位置靠前的词与出现位置靠后的词，都被视为重要性相同，这是不正确的(一种解决方法是，对全文的第一段和每一段的第一句话，给予较大的权重)。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/24/机器学习/热图heatmap/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -1579,630 +1998,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/运动模板/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/23/opencv和图像处理/运动模板/" itemprop="url">运动模板</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-23T20:26:52+08:00">
-                2019-02-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;运动模板是一种有效的跟踪普通运动的方法，尤其应用在姿态识别中。运动模板方法首先需要的是知道物体的轮廓，而轮廓的获取可以有很多的方法，关于轮廓的获取方法在此不做多余的叙述。<br>&emsp;&emsp;运动模板程序的大致编程思路应该是是这样的：获得当前帧与上一帧的差，然后对差图像进行二值化；更新运动历史图像；然后计算运动历史图像的梯度方向，并将整个运动分割为独立的运动部分，在用一个结构序列标记每一个运动分割，最后计算出选择区域的全局运动方向，从而获得运动目标的质心位置与运动方向。<br>&emsp;&emsp;<code>opencv</code>中完成运动模板构建的函数是<code>cvUpdateMotionHistory</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvUpdateMotionHistory</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *silhouette, <span class="comment">/* 非0像素代表前景物体的最新的分割轮廓 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    CvArr *mhi, <span class="comment">/* 运动模板，也即运动历史图像 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> timestamp, <span class="comment">/* 当前系统时间 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> duration <span class="comment">/* 运动跟踪的最大持续时间 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>在<code>cvUpdateMotionHistory</code>中，所有图像都是单通道图像，图像<code>silhouette</code>是一幅单字节图像，其中非零像素代表前景物体的分割轮廓。图像<code>mhi</code>是一幅浮点值图像，代表运动模板(也就是运动历史图像)。<code>timestamp</code>是当前系统时间，以毫秒为单位。<code>mhi</code>中任何比<code>timestamp</code>减去<code>duration</code>的值早(少)的像素将被设置为<code>0</code>。<br>&emsp;&emsp;一旦运动模板记录了不同时间的物体轮廓，就可以用计算<code>mhi</code>图像的梯度来获取全局运动信息。使用如下函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cvCalcMotionGradient</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArrs *mhi, <span class="comment">/* 运动历史图像 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    CvArr *mask, <span class="comment">/* 非0值代表此点处的梯度有效 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    CvArr *orientation, <span class="comment">/* 每一点梯度方向的角度 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> delta1,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> delta2, <span class="comment">/* delta1、delta2分别是允许的最小和最大梯度值 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">int</span> aperture_size = <span class="number">3</span> <span class="comment">/* 设置梯度算子的宽和高 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>梯度方向求出后，即可以计算全局运动方向，给出如下函数：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">double</span> <span class="title">cvCalcGlobalOrientation</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="comment">/* 前三个参数都是根据上面两个函数得出来的 */</span></span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *orientation,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *mask,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *mhi,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> timestamp,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> duration</span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;分割和计算局部运动的函数是<code>cvSegmentMotion</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">CvSeq *<span class="title">cvSegmentMotion</span> <span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">const</span> CvArr *mhi, CvArr *seg_mask, CvMemStorage *storage,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">double</span> timestamp, <span class="keyword">double</span> seg_thresh)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>示例代码如下：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/video/tracking.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/highgui/highgui.hpp"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"opencv2/imgproc/imgproc_c.h"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctype.h&gt;</span></span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 不同的跟踪参数 */</span></span><br><span class="line"><span class="keyword">const</span> <span class="keyword">double</span> MHI_DURATION = <span class="number">0.5</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">double</span> MAX_TIME_DELTA = <span class="number">0.5</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">double</span> MIN_TIME_DELTA = <span class="number">0.05</span>;</span><br><span class="line">​</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> N = <span class="number">2</span>; <span class="comment">/* 用于运动检测的循环帧数，与机器速度及FPS设置有关 */</span></span><br><span class="line">IplImage **buf = <span class="literal">NULL</span>;</span><br><span class="line"><span class="keyword">int</span> last = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line"><span class="comment">/* 临时图像 */</span></span><br><span class="line">IplImage *mhi = <span class="number">0</span>; <span class="comment">/* MHI：运动历史图像 */</span></span><br><span class="line">IplImage *orient = <span class="number">0</span>; <span class="comment">/* 方向 */</span></span><br><span class="line">IplImage *mask = <span class="number">0</span>; <span class="comment">/* 有效的运动掩码 */</span></span><br><span class="line">IplImage *segmask = <span class="number">0</span>; <span class="comment">/* 运动分割映射 */</span></span><br><span class="line">CvMemStorage *storage = <span class="number">0</span>; <span class="comment">/* 临时存储区 */</span></span><br><span class="line">​</span><br><span class="line"><span class="comment">/* parameters:</span></span><br><span class="line"><span class="comment">  img - input video frame</span></span><br><span class="line"><span class="comment">  dst - resultant motion picture</span></span><br><span class="line"><span class="comment">  args - optional parameters */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">update_mhi</span> <span class="params">( IplImage *img, IplImage *dst, <span class="keyword">int</span> diff_threshold )</span> </span>&#123;</span><br><span class="line">    <span class="keyword">double</span> timestamp = ( <span class="keyword">double</span> ) clock() / CLOCKS_PER_SEC; <span class="comment">/* 获取当前时间，以秒为单位 */</span></span><br><span class="line">    CvSize size = cvSize ( img-&gt;width, img-&gt;height ); <span class="comment">/* 获取当前帧尺寸 */</span></span><br><span class="line">    <span class="keyword">int</span> i, idx1 = last, idx2;</span><br><span class="line">    IplImage *silh;</span><br><span class="line">    CvSeq *seq;</span><br><span class="line">    CvRect comp_rect;</span><br><span class="line">    <span class="keyword">double</span> count;</span><br><span class="line">    <span class="keyword">double</span> angle;</span><br><span class="line">    CvPoint center;</span><br><span class="line">    <span class="keyword">double</span> magnitude;</span><br><span class="line">    CvScalar color;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 开始时为图像分配内存 or 帧尺寸改变时重新分配内存 */</span></span><br><span class="line">    <span class="keyword">if</span> ( !mhi || mhi-&gt;width != size.width || mhi-&gt;height != size.height ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( buf == <span class="number">0</span> ) &#123;</span><br><span class="line">            buf = ( IplImage ** ) <span class="built_in">malloc</span> ( N * <span class="keyword">sizeof</span> ( buf[<span class="number">0</span>] ) );</span><br><span class="line">            <span class="built_in">memset</span> ( buf, <span class="number">0</span>, N * <span class="keyword">sizeof</span> ( buf[<span class="number">0</span>] ) );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; N; i++ ) &#123;</span><br><span class="line">            cvReleaseImage ( &amp;buf[i] );</span><br><span class="line">            buf[i] = cvCreateImage ( size, IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">            cvZero ( buf[i] );</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        cvReleaseImage ( &amp;mhi );</span><br><span class="line">        cvReleaseImage ( &amp;orient );</span><br><span class="line">        cvReleaseImage ( &amp;segmask );</span><br><span class="line">        cvReleaseImage ( &amp;mask );</span><br><span class="line">        mhi = cvCreateImage ( size, IPL_DEPTH_32F, <span class="number">1</span> );</span><br><span class="line">        cvZero ( mhi ); <span class="comment">/* clear MHI at the beginning */</span></span><br><span class="line">        orient = cvCreateImage ( size, IPL_DEPTH_32F, <span class="number">1</span> );</span><br><span class="line">        segmask = cvCreateImage ( size, IPL_DEPTH_32F, <span class="number">1</span> );</span><br><span class="line">        mask = cvCreateImage ( size, IPL_DEPTH_8U, <span class="number">1</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    cvCvtColor ( img, buf[last], CV_BGR2GRAY ); <span class="comment">/* RGB帧图像格式转换为gray */</span></span><br><span class="line">    idx2 = ( last + <span class="number">1</span> ) % N; <span class="comment">/* index of (last - (N-1))th frame */</span></span><br><span class="line">    last = idx2;</span><br><span class="line">    silh = buf[idx2];</span><br><span class="line">    <span class="comment">/* 相邻两帧的差 */</span></span><br><span class="line">    cvAbsDiff ( buf[idx1], buf[idx2], silh );</span><br><span class="line">    cvThreshold ( silh, silh, diff_threshold, <span class="number">1</span>, CV_THRESH_BINARY ); <span class="comment">/* 对差图像做二值化 */</span></span><br><span class="line">    cvUpdateMotionHistory ( silh, mhi, timestamp, MHI_DURATION ); <span class="comment">/* 更新运动历史 */</span></span><br><span class="line">    <span class="comment">/* convert MHI to blue 8u image</span></span><br><span class="line"><span class="comment">       cvCvtScale的第四个参数 shift = (MHI_DURATION - timestamp) * 255. / MHI_DURATION</span></span><br><span class="line"><span class="comment">       控制帧差的消失速率 */</span></span><br><span class="line">    cvCvtScale ( mhi, mask, <span class="number">255.</span> / MHI_DURATION, ( MHI_DURATION - timestamp ) * <span class="number">255.</span> / MHI_DURATION );</span><br><span class="line">    cvZero ( dst );</span><br><span class="line">    cvMerge ( mask, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, dst );</span><br><span class="line">    <span class="comment">/* B, G, R, 0 convert to BLUE image</span></span><br><span class="line"><span class="comment">       计算运动的梯度方向以及正确的方向掩码</span></span><br><span class="line"><span class="comment">       Filter size = 3 */</span></span><br><span class="line">    cvCalcMotionGradient ( mhi, mask, orient, MAX_TIME_DELTA, MIN_TIME_DELTA, <span class="number">3</span> );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( !storage ) &#123;</span><br><span class="line">        storage = cvCreateMemStorage ( <span class="number">0</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        cvClearMemStorage ( storage );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 运动分割：获得运动部件的连续序列 */</span></span><br><span class="line">    seq = cvSegmentMotion ( mhi, segmask, storage, timestamp, MAX_TIME_DELTA );</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">-1</span>; i &lt; seq-&gt;total; i++ ) &#123;</span><br><span class="line">        <span class="keyword">if</span> ( i &lt; <span class="number">0</span> ) &#123; <span class="comment">/* 对整幅图像操作 */</span></span><br><span class="line">            comp_rect = cvRect ( <span class="number">0</span>, <span class="number">0</span>, size.width, size.height );</span><br><span class="line">            color = CV_RGB ( <span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span> );</span><br><span class="line">            magnitude = <span class="number">100</span>; <span class="comment">/* 画线长度以及圆半径的大小控制 */</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123; <span class="comment">/* 第i个运动组件 */</span></span><br><span class="line">            comp_rect = ( ( CvConnectedComp * ) cvGetSeqElem ( seq, i ) )-&gt;rect;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( comp_rect.width + comp_rect.height &lt; <span class="number">100</span> ) &#123; <span class="comment">/* 去掉小的部分 */</span></span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            color = CV_RGB ( <span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span> );</span><br><span class="line">            magnitude = <span class="number">30</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 选择组件ROI */</span></span><br><span class="line">        cvSetImageROI ( silh, comp_rect );</span><br><span class="line">        cvSetImageROI ( mhi, comp_rect );</span><br><span class="line">        cvSetImageROI ( orient, comp_rect );</span><br><span class="line">        cvSetImageROI ( mask, comp_rect );</span><br><span class="line">        <span class="comment">/* 在选择的区域内，计算运动方向 */</span></span><br><span class="line">        angle = cvCalcGlobalOrientation ( orient, mask, mhi, timestamp,  MHI_DURATION );</span><br><span class="line">        angle = <span class="number">360.0</span> - angle; <span class="comment">/* adjust for images with top-left origin */</span></span><br><span class="line">        <span class="comment">/* 在轮廓内计算点数；Norm(L1) = 所有像素值的和 */</span></span><br><span class="line">        count = cvNorm ( silh, <span class="number">0</span>, CV_L1, <span class="number">0</span> );</span><br><span class="line">        cvResetImageROI ( mhi );</span><br><span class="line">        cvResetImageROI ( orient );</span><br><span class="line">        cvResetImageROI ( mask );</span><br><span class="line">        cvResetImageROI ( silh );</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 检查小运动的情形 */</span></span><br><span class="line">        <span class="keyword">if</span> ( count &lt; comp_rect.width * comp_rect.height * <span class="number">0.05</span> ) &#123; <span class="comment">/* 像素的5% */</span></span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        <span class="comment">/* 画一个带箭头的记录以表示方向 */</span></span><br><span class="line">        center = cvPoint ( ( comp_rect.x + comp_rect.width / <span class="number">2</span> ), ( comp_rect.y + comp_rect.height / <span class="number">2</span> ) );</span><br><span class="line">        cvCircle ( dst, center, cvRound ( magnitude * <span class="number">1.2</span> ), color, <span class="number">3</span>, CV_AA, <span class="number">0</span> );</span><br><span class="line">        cvLine (</span><br><span class="line">            dst, center,</span><br><span class="line">            cvPoint (</span><br><span class="line">                cvRound ( center.x + magnitude * <span class="built_in">cos</span> ( angle * CV_PI / <span class="number">180</span> ) ),</span><br><span class="line">                cvRound ( center.y - magnitude * <span class="built_in">sin</span> ( angle * CV_PI / <span class="number">180</span> ) )</span><br><span class="line">            ),</span><br><span class="line">            color, <span class="number">3</span>, CV_AA, <span class="number">0</span></span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">​</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    IplImage *motion = <span class="number">0</span>;</span><br><span class="line">    CvCapture *capture = <span class="number">0</span>;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( argc == <span class="number">1</span> || ( argc == <span class="number">2</span> &amp;&amp; <span class="built_in">strlen</span> ( argv[<span class="number">1</span>] ) == <span class="number">1</span> &amp;&amp; <span class="built_in">isdigit</span> ( argv[<span class="number">1</span>][<span class="number">0</span>] ) ) ) &#123;</span><br><span class="line">        capture = cvCaptureFromCAM ( argc == <span class="number">2</span> ? argv[<span class="number">1</span>][<span class="number">0</span>] - <span class="string">'0'</span> : <span class="number">0</span> );</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> ( argc == <span class="number">2</span> ) &#123;</span><br><span class="line">        capture = cvCaptureFromAVI ( argv[<span class="number">1</span>] );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">if</span> ( capture ) &#123;</span><br><span class="line">        cvNamedWindow ( <span class="string">"Motion"</span>, <span class="number">1</span> );</span><br><span class="line">​</span><br><span class="line">        <span class="keyword">for</span> ( ;; ) &#123;</span><br><span class="line">            IplImage *image = cvQueryFrame ( capture );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( !image ) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( !motion ) &#123;</span><br><span class="line">                motion = cvCreateImage ( cvSize ( image-&gt;width, image-&gt;height ), <span class="number">8</span>, <span class="number">3</span> );</span><br><span class="line">                cvZero ( motion );</span><br><span class="line">                motion-&gt;origin = image-&gt;origin;</span><br><span class="line">            &#125;</span><br><span class="line">​</span><br><span class="line">            update_mhi ( image, motion, <span class="number">30</span> );</span><br><span class="line">            cvShowImage ( <span class="string">"Motion"</span>, motion );</span><br><span class="line">​</span><br><span class="line">            <span class="keyword">if</span> ( cvWaitKey ( <span class="number">1</span> ) &gt;= <span class="number">0</span> ) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">​</span><br><span class="line">        cvReleaseCapture ( &amp;capture );</span><br><span class="line">        cvDestroyWindow ( <span class="string">"Motion"</span> );</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/02/23/opencv和图像处理/运动模板/1.png" height="249" width="316"></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/imdecode和imencode/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/23/opencv和图像处理/imdecode和imencode/" itemprop="url">imdecode和imencode</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-23T20:01:13+08:00">
-                2019-02-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>cv2.imdecode</code>函数从指定的内存缓存中读取数据，并把数据转换(解码)成图像格式，主要用于从网络传输数据中恢复出图像。<br>&emsp;&emsp;<code>cv2.imencode</code>函数是将图片格式转换(编码)成流数据，赋值到内存缓存中，主要用于图像数据格式的压缩，方便网络传输。</p>
-<h3 id="imdecode的使用"><a href="#imdecode的使用" class="headerlink" title="imdecode的使用"></a>imdecode的使用</h3><p>&emsp;&emsp;从网络读取图像数据，并转换成图片格式：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> urllib.request</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line">​</span><br><span class="line">url = <span class="string">'http://www.pyimagesearch.com/wp-content/uploads/2015/01/google_logo.png'</span></span><br><span class="line">resp = urllib.request.urlopen(url)</span><br><span class="line">image = np.asarray(bytearray(resp.read()), dtype=<span class="string">"uint8"</span>)</span><br><span class="line">image = cv2.imdecode(image, cv2.IMREAD_COLOR)</span><br><span class="line">cv2.imshow(<span class="string">'URL2Image'</span>, image)</span><br><span class="line">cv2.waitKey(<span class="number">0</span>)</span><br><span class="line">cv2.destroyAllWindows()</span><br></pre></td></tr></table></figure>
-<p><img src="/2019/02/23/opencv和图像处理/imdecode和imencode/1.png" height="144" width="358"></p>
-<h3 id="imencode的使用"><a href="#imencode的使用" class="headerlink" title="imencode的使用"></a>imencode的使用</h3><p>&emsp;&emsp;将图片编码到缓存，并保存到本地：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line">​</span><br><span class="line">img = cv2.imread(<span class="string">'left.jpg'</span>)</span><br><span class="line"><span class="comment"># “.jpg”表示把当前图片img按照jpg格式编码，不同格式编码的结果不一样</span></span><br><span class="line">img_encode = cv2.imencode(<span class="string">'.jpg'</span>, img)[<span class="number">1</span>]</span><br><span class="line">​</span><br><span class="line">data_encode = np.array(img_encode)</span><br><span class="line">str_encode = data_encode.tostring()</span><br><span class="line">​</span><br><span class="line"><span class="comment"># 缓存数据保存到本地</span></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">'img_encode.txt'</span>, <span class="string">'wb'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    f.write(str_encode)</span><br><span class="line">    f.flush</span><br></pre></td></tr></table></figure>
-<h3 id="imencode和imdecode的使用"><a href="#imencode和imdecode的使用" class="headerlink" title="imencode和imdecode的使用"></a>imencode和imdecode的使用</h3><p>&emsp;&emsp;将图片编码保存到本地，读取本地文件解码恢复成图片格式：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line">​</span><br><span class="line">img = cv2.imread(<span class="string">'left.jpg'</span>)</span><br><span class="line">img_encode = cv2.imencode(<span class="string">'.jpg'</span>, img)[<span class="number">1</span>]</span><br><span class="line">data_encode = np.array(img_encode)</span><br><span class="line">str_encode = data_encode.tostring()</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> open(<span class="string">'img_encode.txt'</span>, <span class="string">'wb'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    f.write(str_encode)</span><br><span class="line">    f.flush</span><br><span class="line">​</span><br><span class="line"><span class="keyword">with</span> open(<span class="string">'img_encode.txt'</span>, <span class="string">'rb'</span>) <span class="keyword">as</span> f:</span><br><span class="line">    str_encode = f.read()</span><br><span class="line">​</span><br><span class="line">nparr = np.fromstring(str_encode, np.uint8)</span><br><span class="line">img_decode = cv2.imdecode(nparr, cv2.IMREAD_COLOR)</span><br><span class="line">cv2.imshow(<span class="string">"img_decode"</span>, img_decode)</span><br><span class="line">cv2.waitKey()</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/02/23/opencv和图像处理/读写xml和yml文件/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/02/23/opencv和图像处理/读写xml和yml文件/" itemprop="url">读写xml和yml文件</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-02-23T17:27:09+08:00">
-                2019-02-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;有时我们在处理完图像后，需要保存数据到文件上，以供下一步的处理。一个比较广泛的需求场景是：我们对一幅图像进行特征提取之后，需要把特征点信息保存到文件上，以供后面的机器学习分类操作。那么如果遇到这样的场景，我们有什么好方法？我想到的是把这些数据全写到文件上，如果下次需要这些数据时，就把它们从文件里读出来就好了。<br>&emsp;&emsp;其实更好的办法是使用<code>xml</code>和<code>yml</code>，因为它们更具有可读性，简直就是为保存数据结构而生。<code>OpenCV</code>提供了很好用的读写<code>xml</code>和<code>yml</code>的类，只要掌握其读写要领，很容易就可以实现这个小型数据库。<br>&emsp;&emsp;简单的数据写入示例：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> x;</span><br><span class="line">    <span class="keyword">int</span> y;</span><br><span class="line">    <span class="built_in">string</span> s;</span><br><span class="line">&#125; <span class="keyword">test_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span> argc, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="function">FileStorage <span class="title">fs</span> <span class="params">( <span class="string">"test.xml"</span>, FileStorage::WRITE )</span></span>;</span><br><span class="line">    <span class="keyword">int</span> a1 = <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">char</span> a2 = <span class="number">-1</span>;</span><br><span class="line">    <span class="built_in">string</span> str = <span class="string">"hello sysu!"</span>;</span><br><span class="line">    <span class="keyword">int</span> arr[<span class="number">10</span>] = &#123; <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>, <span class="number">10</span> &#125;;</span><br><span class="line">    <span class="keyword">test_t</span> t = &#123; <span class="number">3</span>, <span class="number">4</span>, <span class="string">"hi sysu"</span> &#125;;</span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="built_in">string</span>, <span class="keyword">int</span>&gt; m;</span><br><span class="line">    m[<span class="string">"kobe"</span>] = <span class="number">100</span>;</span><br><span class="line">    m[<span class="string">"james"</span>] = <span class="number">99</span>;</span><br><span class="line">    m[<span class="string">"curry"</span>] = <span class="number">98</span>;</span><br><span class="line">    <span class="comment">/* 写入文件操作，先写标注，再写数据 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"int_data"</span> &lt;&lt; a1;</span><br><span class="line">    fs &lt;&lt; <span class="string">"char_data"</span> &lt;&lt; a2;</span><br><span class="line">    fs &lt;&lt; <span class="string">"string_data"</span> &lt;&lt; str;</span><br><span class="line">    <span class="comment">/* 写入数组 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"array_data"</span> &lt;&lt; <span class="string">"["</span>; <span class="comment">/* 数组开始 */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ ) &#123;</span><br><span class="line">        fs &lt;&lt; arr[i];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs &lt;&lt; <span class="string">"]"</span>; <span class="comment">/* 数组结束 */</span></span><br><span class="line">    <span class="comment">/* 写入结构体 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"struct_data"</span> &lt;&lt; <span class="string">"&#123;"</span>; <span class="comment">/* 结构体开始 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"x"</span> &lt;&lt; t.x;</span><br><span class="line">    fs &lt;&lt; <span class="string">"y"</span> &lt;&lt; t.y;</span><br><span class="line">    fs &lt;&lt; <span class="string">"s"</span> &lt;&lt; t.s;</span><br><span class="line">    fs &lt;&lt; <span class="string">"&#125;"</span>; <span class="comment">/* 结构结束 */</span></span><br><span class="line">    <span class="comment">/* map的写入 */</span></span><br><span class="line">    fs &lt;&lt; <span class="string">"map_data"</span> &lt;&lt; <span class="string">"&#123;"</span>; <span class="comment">/* map的开始写入 */</span></span><br><span class="line">    <span class="built_in">map</span>&lt;<span class="built_in">string</span>, <span class="keyword">int</span>&gt;::iterator it = m.begin();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( ; it != m.end(); it++ ) &#123;</span><br><span class="line">        fs &lt;&lt; it-&gt;first &lt;&lt; it-&gt;second;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs &lt;&lt; <span class="string">"&#125;"</span>; <span class="comment">/* map写入结束 */</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>打开<code>test.xml</code>文件，内容如下：</p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version="1.0"?&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">opencv_storage</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">int_data</span>&gt;</span>2<span class="tag">&lt;/<span class="name">int_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">char_data</span>&gt;</span>-1<span class="tag">&lt;/<span class="name">char_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">string_data</span>&gt;</span>"hello sysu!"<span class="tag">&lt;/<span class="name">string_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">array_data</span>&gt;</span></span><br><span class="line">  1 2 3 4 5 6 7 8 9 10<span class="tag">&lt;/<span class="name">array_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">struct_data</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">x</span>&gt;</span>3<span class="tag">&lt;/<span class="name">x</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">y</span>&gt;</span>4<span class="tag">&lt;/<span class="name">y</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">s</span>&gt;</span>"hi sysu"<span class="tag">&lt;/<span class="name">s</span>&gt;</span><span class="tag">&lt;/<span class="name">struct_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">map_data</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">curry</span>&gt;</span>98<span class="tag">&lt;/<span class="name">curry</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">james</span>&gt;</span>99<span class="tag">&lt;/<span class="name">james</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">kobe</span>&gt;</span>100<span class="tag">&lt;/<span class="name">kobe</span>&gt;</span><span class="tag">&lt;/<span class="name">map_data</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">opencv_storage</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;如果将文件存为<code>test.yml</code>：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">FileStorage <span class="title">fs</span> <span class="params">( <span class="string">"test.yml"</span>, FileStorage::WRITE )</span></span>;</span><br></pre></td></tr></table></figure>
-<p>其内容如下：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">%YAML:1.0</span></span><br><span class="line"><span class="attr">int_data:</span> <span class="number">2</span></span><br><span class="line"><span class="attr">char_data:</span> <span class="bullet">-1</span></span><br><span class="line"><span class="attr">string_data:</span> <span class="string">"hello sysu!"</span></span><br><span class="line"><span class="attr">array_data:</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">1</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">2</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">3</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">4</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">5</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">6</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">7</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">8</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">9</span></span><br><span class="line"><span class="bullet">   -</span> <span class="number">10</span></span><br><span class="line"><span class="attr">struct_data:</span></span><br><span class="line"><span class="attr">   x:</span> <span class="number">3</span></span><br><span class="line"><span class="attr">   y:</span> <span class="number">4</span></span><br><span class="line"><span class="attr">   s:</span> <span class="string">hi</span> <span class="string">sysu</span></span><br><span class="line"><span class="attr">map_data:</span></span><br><span class="line"><span class="attr">   curry:</span> <span class="number">98</span></span><br><span class="line"><span class="attr">   james:</span> <span class="number">99</span></span><br><span class="line"><span class="attr">   kobe:</span> <span class="number">100</span></span><br></pre></td></tr></table></figure>
-<p>其实还可以保存为<code>txt</code>或<code>doc</code>格式。显然<code>yml</code>文件的排版更加简洁明了，<code>xml</code>文件却有点冗余和杂乱了。</p>
-<hr>
-<h3 id="XML-YAML-file-storages"><a href="#XML-YAML-file-storages" class="headerlink" title="XML/YAML file storages"></a>XML/YAML file storages</h3><p>&emsp;&emsp;You can store and then restore various <code>OpenCV</code> data structures to/from <code>XML</code> or <code>YAML</code> formats. Also, it is possible store and load arbitrarily complex data structures, which include <code>OpenCV</code> data structures, as well as primitive data types (integer and <code>floating-point</code> numbers and text strings) as their elements.<br>&emsp;&emsp;Use the following procedure to write something to <code>XML</code> or <code>YAML</code>:</p>
-<ol>
-<li>Create new <code>FileStorage</code> and open it for writing. It can be done with a single call to <code>FileStorage::FileStorage()</code> constructor that takes a filename, or you can use the default constructor and then call <code>FileStorage::open()</code>. Format of the file (<code>XML</code> or <code>YAML</code>) is determined from the filename extension (<code>.xml</code> and <code>.yml</code>/<code>.yaml</code>, respectively)</li>
-<li>Write all the data you want using the streaming operator <code>&lt;&lt;</code>, just like in the case of <code>STL</code> streams.</li>
-<li>Close the file using <code>FileStorage::release()</code>. <code>FileStorage</code> destructor also closes the file.</li>
-</ol>
-<p>&emsp;&emsp;Here is an example:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span>, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="function">FileStorage <span class="title">fs</span> <span class="params">( <span class="string">"test.yml"</span>, FileStorage::WRITE )</span></span>;</span><br><span class="line">    fs &lt;&lt; <span class="string">"frameCount"</span> &lt;&lt; <span class="number">5</span>;</span><br><span class="line">    <span class="keyword">time_t</span> rawtime;</span><br><span class="line">    time ( &amp;rawtime );</span><br><span class="line">    fs &lt;&lt; <span class="string">"calibrationDate"</span> &lt;&lt; asctime ( localtime ( &amp;rawtime ) );</span><br><span class="line">    Mat cameraMatrix = ( Mat_&lt;<span class="keyword">double</span>&gt; ( <span class="number">3</span>, <span class="number">3</span> ) &lt;&lt; <span class="number">1000</span>, <span class="number">0</span>, <span class="number">320</span>, <span class="number">0</span>, <span class="number">1000</span>, <span class="number">240</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span> );</span><br><span class="line">    Mat distCoeffs = ( Mat_&lt;<span class="keyword">double</span>&gt; ( <span class="number">5</span>, <span class="number">1</span> ) &lt;&lt; <span class="number">0.1</span>, <span class="number">0.01</span>, <span class="number">-0.001</span>, <span class="number">0</span>, <span class="number">0</span> );</span><br><span class="line">    fs &lt;&lt; <span class="string">"cameraMatrix"</span> &lt;&lt; cameraMatrix &lt;&lt; <span class="string">"distCoeffs"</span> &lt;&lt; distCoeffs;</span><br><span class="line">    fs &lt;&lt; <span class="string">"features"</span> &lt;&lt; <span class="string">"["</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++ ) &#123;</span><br><span class="line">        <span class="keyword">int</span> x = rand() % <span class="number">640</span>;</span><br><span class="line">        <span class="keyword">int</span> y = rand() % <span class="number">480</span>;</span><br><span class="line">        uchar lbp = rand() % <span class="number">256</span>;</span><br><span class="line">        fs &lt;&lt; <span class="string">"&#123;:"</span> &lt;&lt; <span class="string">"x"</span> &lt;&lt; x &lt;&lt; <span class="string">"y"</span> &lt;&lt; y &lt;&lt; <span class="string">"lbp"</span> &lt;&lt; <span class="string">"[:"</span>;</span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">8</span>; j++ ) &#123;</span><br><span class="line">            fs &lt;&lt; ( ( lbp &gt;&gt; j ) &amp; <span class="number">1</span> );</span><br><span class="line">        &#125;</span><br><span class="line">        fs &lt;&lt; <span class="string">"]"</span> &lt;&lt; <span class="string">"&#125;"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs &lt;&lt; <span class="string">"]"</span>;</span><br><span class="line">    fs.release();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>The sample above stores to <code>XML</code> and integer, text string (calibration date), <code>2</code> matrices, and a custom structure <code>feature</code>, which includes feature coordinates and <code>LBP</code> (<code>local binary pattern</code>) value. Here is output of the sample:</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">%YAML:1.0</span></span><br><span class="line"><span class="attr">frameCount:</span> <span class="number">5</span></span><br><span class="line"><span class="attr">calibrationDate:</span> <span class="string">"Sun Dec  3 14:59:13 2017\n"</span></span><br><span class="line"><span class="attr">cameraMatrix:</span> <span class="type">!!opencv</span><span class="bullet">-matrix</span></span><br><span class="line"><span class="attr">   rows:</span> <span class="number">3</span></span><br><span class="line"><span class="attr">   cols:</span> <span class="number">3</span></span><br><span class="line"><span class="attr">   dt:</span> <span class="string">d</span></span><br><span class="line"><span class="attr">   data:</span> <span class="string">[</span> <span class="number">1000.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">320.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">1000.</span><span class="string">,</span> <span class="number">240.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">1.</span> <span class="string">]</span></span><br><span class="line"><span class="attr">distCoeffs:</span> <span class="type">!!opencv</span><span class="bullet">-matrix</span></span><br><span class="line"><span class="attr">   rows:</span> <span class="number">5</span></span><br><span class="line"><span class="attr">   cols:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">   dt:</span> <span class="string">d</span></span><br><span class="line"><span class="attr">   data:</span> <span class="string">[</span> <span class="number">1.0000000000000001e-01</span><span class="string">,</span> <span class="number">1.0000000000000000e-02</span><span class="string">,</span></span><br><span class="line"><span class="bullet">       -</span><span class="number">1.0000000000000000e-03</span><span class="string">,</span> <span class="number">0.</span><span class="string">,</span> <span class="number">0.</span> <span class="string">]</span></span><br><span class="line"><span class="attr">features:</span></span><br><span class="line"><span class="bullet">   -</span> <span class="string">&#123;</span> <span class="attr">x:103,</span> <span class="attr">y:166,</span> <span class="attr">lbp:[</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span> <span class="string">]</span> <span class="string">&#125;</span></span><br><span class="line"><span class="bullet">   -</span> <span class="string">&#123;</span> <span class="attr">x:115,</span> <span class="attr">y:113,</span> <span class="attr">lbp:[</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">1</span> <span class="string">]</span> <span class="string">&#125;</span></span><br><span class="line"><span class="bullet">   -</span> <span class="string">&#123;</span> <span class="attr">x:586,</span> <span class="attr">y:12,</span> <span class="attr">lbp:[</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">0</span> <span class="string">]</span> <span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;To read the previously written <code>XML</code> or <code>YAML</code> file, do the following:</p>
-<ol>
-<li>Open the file storage using <code>FileStorage::FileStorage()</code> constructor or <code>FileStorage::open()</code> method. In the current implementation the whole file is parsed and the whole representation of file storage is built in memory as a hierarchy of file nodes.</li>
-<li>Read the data you are interested in. Use <code>FileStorage::operator []()</code>, <code>FileNode::operator []()</code> and/or <code>FileNodeIterator</code>.</li>
-<li>Close the storage using <code>FileStorage::release()</code>.</li>
-</ol>
-<p>&emsp;&emsp;Here is how to read the file created by the code sample above:</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;opencv2/highgui/highgui.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"iostream"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">( <span class="keyword">int</span>, <span class="keyword">char</span> **argv )</span> </span>&#123;</span><br><span class="line">    <span class="function">FileStorage <span class="title">fs2</span> <span class="params">( <span class="string">"test.yml"</span>, FileStorage::READ )</span></span>;</span><br><span class="line">    <span class="comment">/* first method: use (type) operator on FileNode. */</span></span><br><span class="line">    <span class="keyword">int</span> frameCount = ( <span class="keyword">int</span> ) fs2[<span class="string">"frameCount"</span>];</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">string</span> date;</span><br><span class="line">    <span class="comment">/* second method: use FileNode::operator &gt;&gt; */</span></span><br><span class="line">    fs2[<span class="string">"calibrationDate"</span>] &gt;&gt; date;</span><br><span class="line">    Mat cameraMatrix2, distCoeffs2;</span><br><span class="line">    fs2[<span class="string">"cameraMatrix"</span>] &gt;&gt; cameraMatrix2;</span><br><span class="line">    fs2[<span class="string">"distCoeffs"</span>] &gt;&gt; distCoeffs2;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"frameCount: "</span> &lt;&lt; frameCount &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">         &lt;&lt; <span class="string">"calibration date: "</span> &lt;&lt; date &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">         &lt;&lt; <span class="string">"camera matrix: "</span> &lt;&lt; cameraMatrix2 &lt;&lt; <span class="built_in">endl</span></span><br><span class="line">         &lt;&lt; <span class="string">"distortion coeffs: "</span> &lt;&lt; distCoeffs2 &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    FileNode features = fs2[<span class="string">"features"</span>];</span><br><span class="line">    FileNodeIterator it = features.begin(), it_end = features.end();</span><br><span class="line">    <span class="keyword">int</span> idx = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;uchar&gt; lbpval;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* iterate through a sequence using FileNodeIterator */</span></span><br><span class="line">    <span class="keyword">for</span> ( ; it != it_end; ++it, idx++ ) &#123;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"feature #"</span> &lt;&lt; idx &lt;&lt; <span class="string">": "</span>;</span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"x="</span> &lt;&lt; ( <span class="keyword">int</span> ) ( *it ) [<span class="string">"x"</span>] &lt;&lt; <span class="string">", y="</span> &lt;&lt; ( <span class="keyword">int</span> ) ( *it ) [<span class="string">"y"</span>] &lt;&lt; <span class="string">", lbp: ("</span>;</span><br><span class="line">        <span class="comment">/* you can also easily read numerical arrays using FileNode &gt;&gt; std::vector operator. */</span></span><br><span class="line">        ( *it ) [<span class="string">"lbp"</span>] &gt;&gt; lbpval;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> ( <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ( <span class="keyword">int</span> ) lbpval.size(); i++ ) &#123;</span><br><span class="line">            <span class="built_in">cout</span> &lt;&lt; <span class="string">" "</span> &lt;&lt; ( <span class="keyword">int</span> ) lbpval[i];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">")"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    fs2.release();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>The result is:</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">frameCount:</span> <span class="number">5</span></span><br><span class="line"><span class="string">calibration</span> <span class="attr">date:</span> <span class="string">Sun</span> <span class="string">Dec</span>  <span class="number">3</span> <span class="number">14</span><span class="string">:59:13</span> <span class="number">2017</span></span><br><span class="line"><span class="string">camera</span> <span class="attr">matrix:</span> <span class="string">[1000,</span> <span class="number">0</span><span class="string">,</span> <span class="number">320</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">,</span> <span class="number">1000</span><span class="string">,</span> <span class="number">240</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">,</span> <span class="number">0</span><span class="string">,</span> <span class="number">1</span><span class="string">]</span></span><br><span class="line"><span class="string">distortion</span> <span class="attr">coeffs:</span> <span class="string">[0.1;</span></span><br><span class="line">  <span class="number">0.01</span><span class="string">;</span></span><br><span class="line"><span class="bullet">  -</span><span class="number">0.001</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">;</span></span><br><span class="line">  <span class="number">0</span><span class="string">]</span></span><br><span class="line"><span class="string">feature</span> <span class="comment">#0: x=103, y=166, lbp: ( 1 0 0 1 0 1 1 0)</span></span><br><span class="line"><span class="string">feature</span> <span class="comment">#1: x=115, y=113, lbp: ( 1 1 1 1 1 1 1 1)</span></span><br><span class="line"><span class="string">feature</span> <span class="comment">#2: x=586, y=12, lbp: ( 1 0 0 1 0 1 0 0)</span></span><br></pre></td></tr></table></figure>
-<h3 id="class-FileStorage"><a href="#class-FileStorage" class="headerlink" title="class FileStorage"></a>class FileStorage</h3><p>&emsp;&emsp;<code>XML/YAML</code> file storage class that encapsulates all the information necessary for writing or reading data to/from a file.</p>
-<h4 id="FileStorage-FileStorage"><a href="#FileStorage-FileStorage" class="headerlink" title="FileStorage::FileStorage"></a>FileStorage::FileStorage</h4><p>&emsp;&emsp;The constructors.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileStorage::FileStorage();</span><br><span class="line">FileStorage::FileStorage ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;source, <span class="keyword">int</span> flags, <span class="keyword">const</span> <span class="built_in">string</span> &amp;encoding = <span class="built_in">string</span>() );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>source</code>: Name of the file to open or the text string to read the data from. Extension of the file (<code>.xml</code> or <code>.yml</code>/<code>.yaml</code>) determines its format (<code>XML</code> or <code>YAML</code> respectively). Also you can append <code>.gz</code> to work with compressed files, for example <code>myHugeMatrix.xml.gz</code>. If both <code>FileStorage::WRITE</code> and <code>FileStorage::MEMORY</code> flags are specified, source is used just to specify the output file format (e.g. <code>mydata.xml</code>, <code>.yml</code> etc.).</li>
-<li><code>flags</code>: Mode of operation. Possible values are:</li>
-</ul>
-<ol>
-<li><code>FileStorage::READ</code> Open the file for reading.</li>
-<li><code>FileStorage::WRITE</code> Open the file for writing.</li>
-<li><code>FileStorage::APPEND</code> Open the file for appending.</li>
-<li><code>FileStorage::MEMORY</code> Read data from source or write data to the internal buffer (which is returned by <code>FileStorage::release</code>).</li>
-</ol>
-<ul>
-<li><code>encoding</code>: Encoding of the file. Note that <code>UTF-16</code> <code>XML</code> encoding is not supported currently and you should use <code>8-bit</code> encoding instead of it.</li>
-</ul>
-<p>&emsp;&emsp;The full constructor opens the file. Alternatively you can use the default constructor and then call <code>FileStorage::open()</code>.</p>
-<h4 id="FileStorage-open"><a href="#FileStorage-open" class="headerlink" title="FileStorage::open"></a>FileStorage::open</h4><p>&emsp;&emsp;Opens a file.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileStorage::open ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;filename, <span class="keyword">int</span> flags, <span class="keyword">const</span> <span class="built_in">string</span> &amp;encoding = <span class="built_in">string</span>() );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>filename</code>: Name of the file to open or the text string to read the data from. Extension of the file (<code>.xml</code> or <code>.yml</code>/<code>.yaml</code>) determines its format (<code>XML</code> or <code>YAML</code> respectively). Also you can append <code>.gz</code> to work with compressed files, for example <code>myHugeMatrix.xml.gz</code>. If both <code>FileStorage::WRITE</code> and <code>FileStorage::MEMORY</code> flags are specified, source is used just to specify the output file format (e.g. <code>mydata.xml</code>, <code>.yml</code> etc.).</li>
-<li><code>flags</code>: Mode of operation.</li>
-<li><code>encoding</code>: Encoding of the file. Note that <code>UTF-16</code> <code>XML</code> encoding is not supported currently and you should use <code>8-bit</code> encoding instead of it.</li>
-</ul>
-<h4 id="FileStorage-isOpened"><a href="#FileStorage-isOpened" class="headerlink" title="FileStorage::isOpened"></a>FileStorage::isOpened</h4><p>&emsp;&emsp;Checks whether the file is opened.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileStorage::isOpened() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return <code>true</code> if the object is associated with the current file and <code>false</code> otherwise.<br>&emsp;&emsp;It is a good practice to call this method after you tried to open a file.</p>
-<h4 id="FileStorage-release"><a href="#FileStorage-release" class="headerlink" title="FileStorage::release"></a>FileStorage::release</h4><p>&emsp;&emsp;Closes the file and releases all the memory buffers.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileStorage::release();</span><br></pre></td></tr></table></figure>
-<p>Call this method after all <code>I/O</code> operations with the storage are finished.</p>
-<h4 id="FileStorage-releaseAndGetString"><a href="#FileStorage-releaseAndGetString" class="headerlink" title="FileStorage::releaseAndGetString"></a>FileStorage::releaseAndGetString</h4><p>&emsp;&emsp;Closes the file and releases all the memory buffers.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">string</span> FileStorage::releaseAndGetString();</span><br></pre></td></tr></table></figure>
-<p>Call this method after all <code>I/O</code> operations with the storage are finished. If the storage was opened for writing data and <code>FileStorage::WRITE</code> was specified</p>
-<h4 id="FileStorage-getFirstTopLevelNode"><a href="#FileStorage-getFirstTopLevelNode" class="headerlink" title="FileStorage::getFirstTopLevelNode"></a>FileStorage::getFirstTopLevelNode</h4><p>&emsp;&emsp;Returns the first element of the <code>top-level</code> mapping.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileStorage::getFirstTopLevelNode() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return The first element of the <code>top-level</code> mapping.</p>
-<h4 id="FileStorage-root"><a href="#FileStorage-root" class="headerlink" title="FileStorage::root"></a>FileStorage::root</h4><p>&emsp;&emsp;Return the <code>top-level</code> mapping.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileStorage::root ( <span class="keyword">int</span> streamidx = <span class="number">0</span> ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>streamidx</code>: Zero-based index of the stream. In most cases there is only one stream in the file. However, YAML supports multiple streams and so there can be several.</li>
-</ul>
-<h4 id="FileStorage-operator"><a href="#FileStorage-operator" class="headerlink" title="FileStorage::operator[]"></a>FileStorage::operator[]</h4><p>&emsp;&emsp;Returns the specified element of the <code>top-level</code> mapping.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileStorage::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;nodename ) <span class="keyword">const</span>;</span><br><span class="line">FileNode FileStorage::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="keyword">char</span> *nodename ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>nodename</code>: Name of the file node.</li>
-</ul>
-<h4 id="FileStorage-operator-1"><a href="#FileStorage-operator-1" class="headerlink" title="FileStorage::operator*"></a>FileStorage::operator*</h4><p>&emsp;&emsp;Returns the obsolete <code>C</code> <code>FileStorage</code> structure.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CvFileStorage *FileStorage::<span class="keyword">operator</span>*();</span><br><span class="line"><span class="keyword">const</span> CvFileStorage *FileStorage::<span class="keyword">operator</span>*() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<h4 id="FileStorage-writeRaw"><a href="#FileStorage-writeRaw" class="headerlink" title="FileStorage::writeRaw"></a>FileStorage::writeRaw</h4><p>&emsp;&emsp;Writes multiple numbers.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileStorage::writeRaw ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;fmt, <span class="keyword">const</span> uchar *vec, <span class="keyword">size_t</span> len );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>fmt</code>: Specification of each array element that has the following format (<code>[count]{&#39;u&#39;|&#39;c&#39;|&#39;w&#39;|&#39;s&#39;|&#39;i&#39;|&#39;f&#39;|&#39;d&#39;}</code>) where the characters correspond to fundamental <code>C++</code> types:</li>
-</ul>
-<ol>
-<li><code>u</code>: <code>8-bit</code> unsigned number.</li>
-<li><code>c</code>: <code>8-bit</code> signed number.</li>
-<li><code>w</code>: <code>16-bit</code> unsigned number.</li>
-<li><code>s</code>: <code>16-bit</code> signed number.</li>
-<li><code>i</code>: <code>32-bit</code> signed number.</li>
-<li><code>f</code>: single precision <code>floating-point</code> number.</li>
-<li><code>d</code>: double precision <code>floating-point</code> number.</li>
-</ol>
-<p>&emsp;&emsp;<code>count</code> is the optional counter of values of a given type. For example, <code>2if</code> means that each array element is a structure of <code>2</code> integers, followed by a <code>single-precision</code> <code>floating-point</code> number. The equivalent notations of the above specification are <code>(space)iif(space)</code>, <code>(space)2i1f(space)</code> and so forth. Other examples: <code>u</code> means that the array consists of bytes, and <code>2d</code> means the array consists of pairs of doubles.</p>
-<ul>
-<li><code>vec</code>: Pointer to the written array.</li>
-<li><code>len</code>: Number of the uchar elements to write.</li>
-</ul>
-<p>&emsp;&emsp;Writes one or more numbers of the specified format to the currently written structure. Usually it is more convenient to use <code>operator &lt;&lt;()</code> instead of this method.</p>
-<h4 id="FileStorage-writeObj"><a href="#FileStorage-writeObj" class="headerlink" title="FileStorage::writeObj"></a>FileStorage::writeObj</h4><p>&emsp;&emsp;Writes the registered <code>C</code> structure (<code>CvMat</code>, <code>CvMatND</code>, <code>CvSeq</code>).</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileStorage::writeObj ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;name, <span class="keyword">const</span> <span class="keyword">void</span> *obj );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>name</code>: Name of the written object.</li>
-<li><code>obj</code>: Pointer to the object.</li>
-</ul>
-<h4 id="FileStorage-getDefaultObjectName"><a href="#FileStorage-getDefaultObjectName" class="headerlink" title="FileStorage::getDefaultObjectName"></a>FileStorage::getDefaultObjectName</h4><p>&emsp;&emsp;Returns the normalized object name for the specified name of a file.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="built_in">string</span> FileStorage::getDefaultObjectName ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;filename );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>filename</code>: Name of a file.</li>
-</ul>
-<h4 id="operator-lt-lt"><a href="#operator-lt-lt" class="headerlink" title="operator &lt;&lt;"></a>operator &lt;&lt;</h4><p>&emsp;&emsp;Writes data to a file storage.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileStorage &amp;<span class="keyword">operator</span>&lt;&lt; ( FileStorage &amp;fs, <span class="keyword">const</span> _Tp &amp;value );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileStorage &amp;<span class="keyword">operator</span>&lt;&lt; ( FileStorage &amp;fs, <span class="keyword">const</span> <span class="built_in">vector</span>&lt;_Tp&gt; &amp;vec );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>fs</code>: Opened file storage to write data.</li>
-<li><code>value</code>: Value to be written to the file storage.</li>
-<li><code>vec</code>: Vector of values to be written to the file storage.</li>
-</ul>
-<p>&emsp;&emsp;It is the main function to write data to a file storage.</p>
-<h4 id="operator-gt-gt"><a href="#operator-gt-gt" class="headerlink" title="operator &gt;&gt;"></a>operator &gt;&gt;</h4><p>&emsp;&emsp;Reads data from a file storage.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; <span class="keyword">void</span> <span class="keyword">operator</span>&gt;&gt; ( <span class="keyword">const</span> FileNode &amp;n, _Tp &amp;value );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; <span class="keyword">void</span> <span class="keyword">operator</span>&gt;&gt; ( <span class="keyword">const</span> FileNode &amp;n, <span class="built_in">vector</span>&lt;_Tp&gt; &amp;vec );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileNodeIterator &amp;<span class="keyword">operator</span>&gt;&gt; ( FileNodeIterator &amp;it, _Tp &amp;value );</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt; FileNodeIterator &amp;<span class="keyword">operator</span>&gt;&gt; ( FileNodeIterator &amp;it, <span class="built_in">vector</span>&lt;_Tp&gt; &amp;vec );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>n</code>: Node from which data will be read.</li>
-<li><code>it</code>: Iterator from which data will be read.</li>
-<li><code>value</code>: Value to be read from the file storage.</li>
-<li><code>vec</code>: Vector of values to be read from the file storage.</li>
-</ul>
-<p>&emsp;&emsp;It is the main function to read data from a file storage.</p>
-<h3 id="class-FileNode"><a href="#class-FileNode" class="headerlink" title="class FileNode"></a>class FileNode</h3><p>&emsp;&emsp;<code>File Storage Node</code> class. The node is used to store each and every element of the file storage opened for reading. When <code>XML/YAML</code> file is read, it is first parsed and stored in the memory as a hierarchical collection of nodes. Each node can be a <code>leaf</code> that is contain a single number or a string, or be a collection of other nodes. There can be named collections (<code>mappings</code>) where each element has a name and it is accessed by a name, and ordered collections (<code>sequences</code>) where elements do not have names but rather accessed by index. Type of the file node can be determined using <code>FileNode::type()</code> method.<br>&emsp;&emsp;Note that file nodes are only used for navigating file storages opened for reading. When a file storage is opened for writing, no data is stored in memory after it is written.</p>
-<h4 id="FileNode-FileNode"><a href="#FileNode-FileNode" class="headerlink" title="FileNode::FileNode"></a>FileNode::FileNode</h4><p>&emsp;&emsp;The constructors.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNode::FileNode();</span><br><span class="line">FileNode::FileNode ( <span class="keyword">const</span> CvFileStorage *fs, <span class="keyword">const</span> CvFileNode *node );</span><br><span class="line">FileNode::FileNode ( <span class="keyword">const</span> FileNode &amp;node );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>fs</code>: Pointer to the obsolete file storage structure.</li>
-<li><code>node</code>: File node to be used as initialization for the created file node.</li>
-</ul>
-<p>&emsp;&emsp;These constructors are used to create a default file node, construct it from obsolete structures or from the another file node.</p>
-<h4 id="FileNode-operator"><a href="#FileNode-operator" class="headerlink" title="FileNode::operator[]"></a>FileNode::operator[]</h4><p>&emsp;&emsp;Returns element of a mapping node or a sequence node.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileNode::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;nodename ) <span class="keyword">const</span>;</span><br><span class="line">FileNode FileNode::<span class="keyword">operator</span>[] ( <span class="keyword">const</span> <span class="keyword">char</span> *nodename ) <span class="keyword">const</span>;</span><br><span class="line">FileNode FileNode::<span class="keyword">operator</span>[] ( <span class="keyword">int</span> i ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>nodename</code>: Name of an element in the mapping node.</li>
-<li><code>i</code>: Index of an element in the sequence node.</li>
-</ul>
-<h4 id="FileNode-type"><a href="#FileNode-type" class="headerlink" title="FileNode::type"></a>FileNode::type</h4><p>&emsp;&emsp;Returns type of the node.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> FileNode::type() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Possible values are:</p>
-<ul>
-<li><code>FileNode::NONE</code>: Empty node.</li>
-<li><code>FileNode::INT</code>: Integer.</li>
-<li><code>FileNode::REAL</code>: <code>Floating-point</code> number.</li>
-<li><code>FileNode::FLOAT</code>: <code>Synonym</code> or <code>REAL</code>.</li>
-<li><code>FileNode::STR</code>: Text string in <code>UTF-8</code> encoding.</li>
-<li><code>FileNode::STRING</code>: Synonym for <code>STR</code>.</li>
-<li><code>FileNode::REF</code>: Integer of type <code>size_t</code>. Typically used for storing complex dynamic structures where some elements reference the others.</li>
-<li><code>FileNode::SEQ</code>: Sequence.</li>
-<li><code>FileNode::MAP</code>: Mapping.</li>
-<li><code>FileNode::FLOW</code>: Compact representation of a sequence or mapping. Used only by the <code>YAML</code> writer.</li>
-<li><code>FileNode::USER</code>: Registered object (e.g. a matrix).</li>
-<li><code>FileNode::EMPTY</code>: Empty structure (sequence or mapping).</li>
-<li><code>FileNode::NAMED</code>: The node has a name (i.e. it is an element of a mapping).</li>
-</ul>
-<h4 id="FileNode-empty"><a href="#FileNode-empty" class="headerlink" title="FileNode::empty"></a>FileNode::empty</h4><p>&emsp;&emsp;Checks whether the node is empty.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::empty() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return <code>true</code> if the node is empty.</p>
-<h4 id="FileNode-isNone"><a href="#FileNode-isNone" class="headerlink" title="FileNode::isNone"></a>FileNode::isNone</h4><p>&emsp;&emsp;Checks whether the node is a <code>none</code> object.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isNone() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return <code>true</code> if the node is a <code>none</code> object.</p>
-<h4 id="FileNode-isSeq"><a href="#FileNode-isSeq" class="headerlink" title="FileNode::isSeq"></a>FileNode::isSeq</h4><p>&emsp;&emsp;Checks whether the node is a sequence.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isSeq() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return <code>true</code> if the node is a sequence.</p>
-<h4 id="FileNode-isMap"><a href="#FileNode-isMap" class="headerlink" title="FileNode::isMap"></a>FileNode::isMap</h4><p>&emsp;&emsp;Checks whether the node is a mapping.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isMap() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return <code>true</code> if the node is a mapping.</p>
-<h4 id="FileNode-isInt"><a href="#FileNode-isInt" class="headerlink" title="FileNode::isInt"></a>FileNode::isInt</h4><p>&emsp;&emsp;Checks whether the node is an integer.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isInt() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return <code>true</code> if the node is an integer.</p>
-<h4 id="FileNode-isReal"><a href="#FileNode-isReal" class="headerlink" title="FileNode::isReal"></a>FileNode::isReal</h4><p>&emsp;&emsp;Checks whether the node is a <code>floating-point</code> number.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isReal() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return <code>true</code> if the node is a <code>floating-point</code> number.</p>
-<h4 id="FileNode-isString"><a href="#FileNode-isString" class="headerlink" title="FileNode::isString"></a>FileNode::isString</h4><p>&emsp;&emsp;Checks whether the node is a text string.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isString() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return <code>true</code> if the node is a text string.</p>
-<h4 id="FileNode-isNamed"><a href="#FileNode-isNamed" class="headerlink" title="FileNode::isNamed"></a>FileNode::isNamed</h4><p>&emsp;&emsp;Checks whether the node has a name.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">bool</span> FileNode::isNamed() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return <code>true</code> if the node has a name.</p>
-<h4 id="FileNode-name"><a href="#FileNode-name" class="headerlink" title="FileNode::name"></a>FileNode::name</h4><p>&emsp;&emsp;Returns the node name.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">string</span> FileNode::name() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return the node name or an empty string if the node is nameless.</p>
-<h4 id="FileNode-size"><a href="#FileNode-size" class="headerlink" title="FileNode::size"></a>FileNode::size</h4><p>&emsp;&emsp;Returns the number of elements in the node.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">size_t</span> FileNode::size() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<p>Return the number of elements in the node, if it is a sequence or mapping, or <code>1</code> otherwise.</p>
-<h4 id="FileNode-operator-int"><a href="#FileNode-operator-int" class="headerlink" title="FileNode::operator int"></a>FileNode::operator int</h4><p>&emsp;&emsp;Returns the node content as an integer.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">int</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
-<p>Return the node content as an integer. If the node stores a <code>floating-point</code> number, it is rounded.</p>
-<h4 id="FileNode-operator-float"><a href="#FileNode-operator-float" class="headerlink" title="FileNode::operator float"></a>FileNode::operator float</h4><p>&emsp;&emsp;Returns the node content as float.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">float</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
-<h4 id="FileNode-operator-double"><a href="#FileNode-operator-double" class="headerlink" title="FileNode::operator double"></a>FileNode::operator double</h4><p>&emsp;&emsp;Returns the node content as double.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">double</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
-<h4 id="FileNode-operator-string"><a href="#FileNode-operator-string" class="headerlink" title="FileNode::operator string"></a>FileNode::operator string</h4><p>&emsp;&emsp;Returns the node content as text string.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode::<span class="function"><span class="keyword">operator</span> <span class="title">string</span><span class="params">()</span> <span class="keyword">const</span></span>;</span><br></pre></td></tr></table></figure>
-<h4 id="FileNode-operator-1"><a href="#FileNode-operator-1" class="headerlink" title="FileNode::operator*"></a>FileNode::operator*</h4><p>&emsp;&emsp;Returns pointer to the underlying obsolete file node structure.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CvFileNode *FileNode::<span class="keyword">operator</span>*();</span><br></pre></td></tr></table></figure>
-<h4 id="FileNode-begin"><a href="#FileNode-begin" class="headerlink" title="FileNode::begin"></a>FileNode::begin</h4><p>&emsp;&emsp;Returns the iterator pointing to the first node element.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator FileNode::begin() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<h4 id="FileNode-end"><a href="#FileNode-end" class="headerlink" title="FileNode::end"></a>FileNode::end</h4><p>&emsp;&emsp;Returns the iterator pointing to the element following the last node element.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator FileNode::end() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<h4 id="FileNode-readRaw"><a href="#FileNode-readRaw" class="headerlink" title="FileNode::readRaw"></a>FileNode::readRaw</h4><p>&emsp;&emsp;Reads node elements to the buffer with the specified format.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> FileNode::readRaw ( <span class="keyword">const</span> <span class="built_in">string</span> &amp;fmt, uchar *vec, <span class="keyword">size_t</span> len ) <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>fmt</code>: Specification of each array element. It has the same format as in <code>FileStorage::writeRaw()</code>.</li>
-<li><code>vec</code>: Pointer to the destination array.</li>
-<li><code>len</code>: Number of elements to read. If it is greater than number of remaining elements then all of them will be read.</li>
-</ul>
-<p>Usually it is more convenient to use <code>operator &gt;&gt;()</code> instead of this method.</p>
-<h4 id="FileNode-readObj"><a href="#FileNode-readObj" class="headerlink" title="FileNode::readObj"></a>FileNode::readObj</h4><p>&emsp;&emsp;Reads the registered object.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> *FileNode::readObj() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<h3 id="class-FileNodeIterator"><a href="#class-FileNodeIterator" class="headerlink" title="class FileNodeIterator"></a>class FileNodeIterator</h3><p>&emsp;&emsp;The class <code>FileNodeIterator</code> is used to iterate through sequences and mappings. A standard <code>STL</code> notation, with <code>node.begin()</code>, <code>node.end()</code> denoting the beginning and the end of a sequence, stored in node.</p>
-<h4 id="FileNodeIterator-FileNodeIterator"><a href="#FileNodeIterator-FileNodeIterator" class="headerlink" title="FileNodeIterator::FileNodeIterator"></a>FileNodeIterator::FileNodeIterator</h4><p>&emsp;&emsp;The constructors.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator::FileNodeIterator();</span><br><span class="line">FileNodeIterator::FileNodeIterator ( <span class="keyword">const</span> CvFileStorage *fs, <span class="keyword">const</span> CvFileNode *node, <span class="keyword">size_t</span> ofs = <span class="number">0</span> );</span><br><span class="line">FileNodeIterator::FileNodeIterator ( <span class="keyword">const</span> FileNodeIterator &amp;it );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>fs</code>: File storage for the iterator.</li>
-<li><code>node</code>: File node for the iterator.</li>
-<li><code>ofs</code>: Index of the element in the node. The created iterator will point to this element.</li>
-<li><code>it</code>: Iterator to be used as initialization for the created iterator.</li>
-</ul>
-<p>These constructors are used to create a default iterator, set it to specific element in a file node or construct it from another iterator.</p>
-<h4 id="FileNodeIterator-operator"><a href="#FileNodeIterator-operator" class="headerlink" title="FileNodeIterator::operator*"></a>FileNodeIterator::operator*</h4><p>&emsp;&emsp;Returns the currently observed element.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileNodeIterator::<span class="keyword">operator</span>*() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<h4 id="FileNodeIterator-operator-gt"><a href="#FileNodeIterator-operator-gt" class="headerlink" title="FileNodeIterator::operator-&gt;"></a>FileNodeIterator::operator-&gt;</h4><p>&emsp;&emsp;Accesses methods of the currently observed element.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNode FileNodeIterator::<span class="keyword">operator</span>-&gt;() <span class="keyword">const</span>;</span><br></pre></td></tr></table></figure>
-<h4 id="FileNodeIterator-operator-1"><a href="#FileNodeIterator-operator-1" class="headerlink" title="FileNodeIterator::operator ++"></a>FileNodeIterator::operator ++</h4><p>&emsp;&emsp;Moves iterator to the next node.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>++();</span><br><span class="line">FileNodeIterator FileNodeIterator::<span class="keyword">operator</span>++ ( <span class="keyword">int</span> None );</span><br></pre></td></tr></table></figure>
-<h4 id="FileNodeIterator-operator-—"><a href="#FileNodeIterator-operator-—" class="headerlink" title="FileNodeIterator::operator —"></a>FileNodeIterator::operator —</h4><p>&emsp;&emsp;Moves iterator to the previous node.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>--();</span><br><span class="line">FileNodeIterator FileNodeIterator::<span class="keyword">operator</span>-- ( <span class="keyword">int</span> None );</span><br></pre></td></tr></table></figure>
-<h4 id="FileNodeIterator-operator-2"><a href="#FileNodeIterator-operator-2" class="headerlink" title="FileNodeIterator::operator +="></a>FileNodeIterator::operator +=</h4><p>&emsp;&emsp;Moves iterator forward by the specified offset.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>+= ( <span class="keyword">int</span> ofs );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>ofs</code>: Offset (possibly negative) to move the iterator.</li>
-</ul>
-<h4 id="FileNodeIterator-operator-3"><a href="#FileNodeIterator-operator-3" class="headerlink" title="FileNodeIterator::operator -="></a>FileNodeIterator::operator -=</h4><p>&emsp;&emsp;Moves iterator backward by the specified offset (possibly negative).</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::<span class="keyword">operator</span>-= ( <span class="keyword">int</span> ofs );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>ofs</code>: Offset (possibly negative) to move the iterator.</li>
-</ul>
-<h4 id="FileNodeIterator-readRaw"><a href="#FileNodeIterator-readRaw" class="headerlink" title="FileNodeIterator::readRaw"></a>FileNodeIterator::readRaw</h4><p>&emsp;&emsp;Reads node elements to the buffer with the specified format.</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FileNodeIterator &amp;FileNodeIterator::readRaw (</span><br><span class="line">    <span class="keyword">const</span> <span class="built_in">string</span> &amp;fmt, uchar *vec,</span><br><span class="line">    <span class="keyword">size_t</span> maxCount = ( <span class="keyword">size_t</span> ) INT_MAX );</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>fmt</code>: Specification of each array element. It has the same format as in <code>FileStorage::writeRaw()</code>.</li>
-<li><code>vec</code>: Pointer to the destination array.</li>
-<li><code>maxCount</code>: Number of elements to read. If it is greater than number of remaining elements then all of them will be read.</li>
-</ul>
-<p>Usually it is more convenient to use <code>operator &gt;&gt;()</code> instead of this method.</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2253,7 +2048,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">955</span>
+                  <span class="site-state-item-count">958</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

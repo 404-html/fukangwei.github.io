@@ -271,6 +271,831 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/23/Qt语法详解/Qt之QThread/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/23/Qt语法详解/Qt之QThread/" itemprop="url">Qt之QThread</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-23T17:16:21+08:00">
+                2019-01-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">Qt语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="简述"><a href="#简述" class="headerlink" title="简述"></a>简述</h3><p>&emsp;&emsp;<code>QThread</code>类提供了与系统无关的线程，其代表在程序中一个单独的线程控制。线程在<code>run</code>中开始执行，默认情况下，<code>run</code>通过调用<code>exec</code>启动事件循环并在线程里运行一个<code>Qt</code>的事件循环。<br>&emsp;&emsp;当线程<code>started</code>和<code>finished</code>时，<code>QThread</code>会通过一个信号通知你，可以使用<code>isFinished</code>和<code>isRunning</code>来查询线程的状态。你可以通过调用<code>exit</code>或<code>quit</code>来停止线程。在极端情况下，可能要强行<code>terminate</code>一个执行线程，但是这样做很危险。从<code>Qt 4.8</code>起，可以释放运行刚刚结束的线程对象，通过连接<code>finished</code>信号到<code>QObject::deleteLater</code>槽。使用<code>wait</code>来阻塞调用的线程，直到其它线程执行完毕(或者直到指定的时间过去)。<br>&emsp;&emsp;<code>QThread</code>还提供了静态的、平台独立的休眠函数：<code>sleep</code>、<code>msleep</code>、<code>usleep</code>，允许秒、毫秒和微秒来区分，这些函数在<code>Qt 5.0</code>中被设为<code>public</code>。一般情况下不需要<code>wait</code>和<code>sleep</code>函数，因为<code>Qt</code>是一个事件驱动型框架。考虑监听<code>finished</code>信号来取代<code>wait</code>，使用<code>QTimer</code>来取代<code>sleep</code>。<br>&emsp;&emsp;静态函数<code>currentThreadId</code>和<code>currentThread</code>返回标识当前正在执行的线程。前者返回该线程平台特定的<code>ID</code>，后者返回一个线程指针。<br>&emsp;&emsp;要设置线程的名称，可以在启动线程之前调用<code>setObjectName</code>。如果不调用<code>setObjectName</code>，线程的名称将是线程对象的运行时类型(<code>QThread</code>子类的类名)。</p>
+<h3 id="线程启动"><a href="#线程启动" class="headerlink" title="线程启动"></a>线程启动</h3><p>&emsp;&emsp;<code>start</code>函数原型如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">void start ( Priority priority = InheritPriority ) [slot]</span><br></pre></td></tr></table></figure>
+<p>调用后会执行<code>run</code>函数，但在<code>run</code>函数执行前会发射信号<code>started</code>，操作系统将根据优先级参数调度线程。如果线程已经在运行，那么这个函数什么也不做。优先级参数的效果取决于操作系统的调度策略，那些不支持线程优先级的系统优先级将会被忽略。</p>
+<h3 id="线程执行"><a href="#线程执行" class="headerlink" title="线程执行"></a>线程执行</h3><p>&emsp;&emsp;<code>exec</code>函数原型如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">int exec() [protected]</span><br></pre></td></tr></table></figure>
+<p>进入事件循环并等待直到调用<code>exit</code>，返回值是通过调用<code>exit</code>来获得，如果调用成功则返回<code>0</code>。<br>&emsp;&emsp;<code>run</code>函数原型如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">void run() [virtual protected]</span><br></pre></td></tr></table></figure>
+<p>这是线程的起点，在调用<code>start</code>之后，新创建的线程就会调用这个函数。大多数情况下需要重新实现这个函数，便于管理自己的线程。该方法返回时，该线程的执行将结束。</p>
+<h3 id="线程退出"><a href="#线程退出" class="headerlink" title="线程退出"></a>线程退出</h3><p>&emsp;&emsp;<code>quit</code>函数原型如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">void quit() [slot]</span><br></pre></td></tr></table></figure>
+<p>告诉线程事件循环退出，返回<code>0</code>表示成功，相当于调用了<code>QThread::exit(0)</code>。<br>&emsp;&emsp;<code>exit</code>函数原型如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">exit</span> <span class="params">( <span class="keyword">int</span> returnCode = <span class="number">0</span> )</span></span></span><br></pre></td></tr></table></figure>
+<p>告诉线程事件循环退出。调用这个函数后，线程离开事件循环后返回，<code>QEventLoop::exec</code>返回<code>returnCode</code>。按照惯例，<code>0</code>表示成功，任何非<code>0</code>值表示失败。<br>&emsp;&emsp;<code>terminate</code>函数原型如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">void terminate() [slot]</span><br></pre></td></tr></table></figure>
+<p>终止线程，线程可能会立即被终止也可能不会，这取决于操作系统的调度策略。使用<code>terminate</code>之后再使用<code>QThread::wait</code>，以确保万无一失。当线程被终止后，所有等待中的线程将会被唤醒。此函数比较危险，不鼓励使用。线程可以在代码执行的任何点被终止，尤其可能在更新数据时被终止，从而没有机会来清理资源或者解锁等。总之，只有在绝对必要时才使用此函数。<br>&emsp;&emsp;<code>requestInterruption</code>函数原型如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">requestInterruption</span><span class="params">()</span></span></span><br></pre></td></tr></table></figure>
+<p>请求线程的中断。此函数不停止线程上运行的任何事件循环，并且在任何情况下都不会终止它。</p>
+<h3 id="线程等待"><a href="#线程等待" class="headerlink" title="线程等待"></a>线程等待</h3><p>&emsp;&emsp;函数原型如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 强制当前线程睡眠msecs毫秒 */</span></span><br><span class="line">void msleep ( unsigned long msecs ) [static]</span><br><span class="line"><span class="comment">/* 强制当前线程睡眠secs秒 */</span></span><br><span class="line">void sleep ( unsigned long secs ) [static]</span><br><span class="line"><span class="comment">/* 强制当前线程睡眠usecs微秒 */</span></span><br><span class="line">void usleep ( unsigned long usecs ) [static]</span><br><span class="line"><span class="comment">/* 线程将会被阻塞，等待time毫秒。和sleep不同的是，如果线程退出，wait会返回 */</span></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">wait</span> <span class="params">( <span class="keyword">unsigned</span> <span class="keyword">long</span> time = ULONG_MAX )</span></span></span><br></pre></td></tr></table></figure>
+<h3 id="线程状态"><a href="#线程状态" class="headerlink" title="线程状态"></a>线程状态</h3><p>&emsp;&emsp;<code>isFinished</code>和<code>isRunning</code>函数原型如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">isFinished</span><span class="params">()</span> <span class="keyword">const</span> <span class="comment">/* 线程是否结束 */</span></span></span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">isRunning</span><span class="params">()</span> <span class="keyword">const</span> <span class="comment">/* 线程是否正在运行 */</span></span></span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;<code>isInterruptionRequested</code>函数原型如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">isInterruptionRequested</span><span class="params">()</span> <span class="keyword">const</span></span></span><br></pre></td></tr></table></figure>
+<p>如果线程上的任务运行应该停止，则返回<code>true</code>。可以使用<code>requestInterruption</code>请求中断。此函数可用于使长时间运行的任务干净地中断。注意，不要过于频繁调用，以保持较低的开销。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">long_task</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    forever &#123;</span><br><span class="line">        <span class="keyword">if</span> ( QThread::currentThread()-&gt;isInterruptionRequested() ) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="线程优先级"><a href="#线程优先级" class="headerlink" title="线程优先级"></a>线程优先级</h3><p>&emsp;&emsp;<code>setPriority</code>函数原型如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">setPriority</span><span class="params">(Priority priority)</span></span></span><br></pre></td></tr></table></figure>
+<p>设置正在运行线程的优先级。如果线程没有运行，此函数不执行任何操作并立即返回。使用的<code>start</code>来启动一个线程具有特定的优先级。优先级参数可以是<code>QThread::Priority</code>枚举除了<code>InheritPriortyd</code>的任何值。枚举量<code>QThread::Priority</code>如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>常量</th>
+<th>值</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>QThread::IdlePriority</code></td>
+<td><code>0</code></td>
+<td>没有其它线程运行时才调度</td>
+</tr>
+<tr>
+<td><code>QThread::LowestPriority</code></td>
+<td><code>1</code></td>
+<td>比<code>LowPriority</code>调度频率低</td>
+</tr>
+<tr>
+<td><code>QThread::LowPriority</code></td>
+<td><code>2</code></td>
+<td>比<code>NormalPriority</code>调度频率低</td>
+</tr>
+<tr>
+<td><code>QThread::NormalPriority</code></td>
+<td><code>3</code></td>
+<td>操作系统的默认优先级</td>
+</tr>
+<tr>
+<td><code>QThread::HighPriority</code></td>
+<td><code>4</code></td>
+<td>比<code>NormalPriority</code>调度频繁</td>
+</tr>
+<tr>
+<td><code>QThread::HighestPriority</code></td>
+<td><code>5</code></td>
+<td>比<code>HighPriority</code>调度频繁</td>
+</tr>
+<tr>
+<td><code>QThread::TimeCriticalPriority</code></td>
+<td><code>6</code></td>
+<td>尽可能频繁的调度</td>
+</tr>
+<tr>
+<td><code>QThread::InheritPriority</code></td>
+<td><code>7</code></td>
+<td>使用和创建线程同样的优先级，这是默认值</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/23/Qt语法详解/Qt之QNetworkInterface/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/23/Qt语法详解/Qt之QNetworkInterface/" itemprop="url">Qt之QNetworkInterface</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-23T16:56:20+08:00">
+                2019-01-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">Qt语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="简述"><a href="#简述" class="headerlink" title="简述"></a>简述</h3><p>&emsp;&emsp;<code>QNetworkInterface</code>类负责提供主机的<code>IP</code>地址和网络接口的列表，它表示了当前程序正在运行时与主机绑定的一个网络接口。每个网络接口可能包含<code>0</code>个或多个<code>IP</code>地址，每个<code>IP</code>地址都可选择性地与一个子网掩码<code>和/或</code>一个广播地址相关联。这样的列表可以通过<code>addressEntries</code>方法获得。当子网掩码或者广播地址不必要时，可以使用<code>allAddresses</code>函数来仅仅获得<code>IP</code>地址。<code>QNetworkInterface</code>使用<code>hardwareAddress</code>方法获取接口的硬件地址。</p>
+<h3 id="常用接口"><a href="#常用接口" class="headerlink" title="常用接口"></a>常用接口</h3><p>&emsp;&emsp;枚举值为<code>QNetworkInterface::InterfaceFlag</code>，标识为<code>QNetworkInterface::InterfaceFlags</code>。它用于指定网络接口相关的标识，可能的值为：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>常量</th>
+<th>值</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>QNetworkInterface::IsUp</code></td>
+<td><code>0x1</code></td>
+<td>网络接口处于活动状态</td>
+</tr>
+<tr>
+<td><code>QNetworkInterface::IsRunning</code></td>
+<td><code>0x2</code></td>
+<td>网络接口已分配资源</td>
+</tr>
+<tr>
+<td><code>QNetworkInterface::CanBroadcast</code></td>
+<td><code>0x4</code></td>
+<td>网络接口工作在广播模式</td>
+</tr>
+<tr>
+<td><code>QNetworkInterface::IsLoopBack</code></td>
+<td><code>0x8</code></td>
+<td>网络接口是环回接口</td>
+</tr>
+<tr>
+<td><code>QNetworkInterface::IsPointToPoint</code></td>
+<td><code>0x10</code></td>
+<td>网络接口是一个点对点接口</td>
+</tr>
+<tr>
+<td><code>QNetworkInterface::CanMulticast</code></td>
+<td><code>0x20</code></td>
+<td>网络接口支持多播</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>注意，一个网络接口不能既是<code>broadcast-based</code>又是<code>point-to-point</code>。<code>InterfaceFlags</code>类型是一个<code>QFlags</code>类型定义，它存储一个或<code>InterfaceFlag</code>的组合值。</p>
+<ul>
+<li><code>QList&lt;QHostAddress&gt; allAddresses() [static]</code>: 函数返回主机上面发现的所有<code>IP</code>地址，相当于<code>allInterfaces</code>。返回的所有对象调用<code>addressEntries</code>来获取<code>QHostAddress</code>对象列表，然后对每一个对象调用<code>QHostAddress::ip</code>方法。</li>
+<li><code>QList&lt;QNetworkInterface&gt; allInterfaces() [static]</code>: 返回主机上找到的所有的网络接口的列表。在失败情况下，它会返回一个空列表。</li>
+<li><code>QList&lt;QNetworkAddressEntry&gt; addressEntries() const</code>: 返回<code>IP</code>地址列表，这个列表具备与其<code>IP</code>地址相关的网络掩码和广播地址。如果不需要子网掩码或广播地址的信息，可以调用<code>allAddresses</code>函数来只获取<code>IP</code>地址。</li>
+<li><code>InterfaceFlags flags() const</code>: 返回与此网络接口关联的标志。</li>
+<li><code>QString hardwareAddress() const</code>: 返回此接口的底层硬件地址。在以太网接口上，这是表示<code>MAC</code>地址的字符串，用冒号分隔。</li>
+<li><code>QString humanReadableName() const</code>: 如果名称可确定，在<code>Windows</code>上返回网络接口的人类可读的名称，例如<code>本地连接</code>；如果不能，这个函数返回值与<code>name</code>相同。用户可以在<code>Windows</code>控制面板中修改人类可读的名称，因此它可以在程序的执行过程中变化。在<code>Unix</code>上，此函数目前返回值总是和<code>name</code>相同，因为<code>Unix</code>系统不存储人类可读的名称的配置。</li>
+<li><code>bool isValid() const</code>: 如果此<code>QNetworkInterface</code>对象包含一个的有效的网络接口，则返回<code>true</code>。</li>
+<li><code>QString QNetworkInterface::name() const</code>: 返回网络接口的名称。在<code>Unix</code>系统中，这是一个包含接口的类型和任选的序列号的字符串，例如<code>eth0</code>、<code>lo</code>或者<code>pcn0</code>；在<code>Windows</code>中，这是一个内部<code>ID</code>，用户不能更改。</li>
+</ul>
+<h3 id="获取所有IP地址"><a href="#获取所有IP地址" class="headerlink" title="获取所有IP地址"></a>获取所有IP地址</h3><p>&emsp;&emsp;静态函数<code>allAddresses</code>可以返回一个<code>QHostAddress</code>地址列表(只能获取<code>IP</code>地址，没有子网掩码和广播地址的信息)：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">QList&lt;QHostAddress&gt; <span class="built_in">list</span> = QNetworkInterface::allAddresses();</span><br><span class="line">​</span><br><span class="line">foreach ( QHostAddress address, <span class="built_in">list</span> ) &#123;</span><br><span class="line">    <span class="keyword">if</span> ( !address.isNull() ) &#123;</span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"Address: "</span> &lt;&lt; address.toString();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Address: <span class="string">"fe80::550c:ab19:fb48:1c9%15"</span></span><br><span class="line">Address: <span class="string">"169.254.1.201"</span></span><br><span class="line">Address: <span class="string">"fe80::d086:8566:6065:8954%11"</span></span><br><span class="line">Address: <span class="string">"172.18.4.165"</span></span><br><span class="line">Address: <span class="string">"fe80::f864:a962:7219:f98e%16"</span></span><br><span class="line">Address: <span class="string">"192.168.17.1"</span></span><br><span class="line">Address: <span class="string">"fe80::8169:691f:148e:d3cb%17"</span></span><br><span class="line">Address: <span class="string">"192.168.178.1"</span></span><br><span class="line">Address: <span class="string">"fe80::5996:27a3:83b5:2ae7%18"</span></span><br><span class="line">Address: <span class="string">"192.168.56.1"</span></span><br><span class="line">Address: <span class="string">"::1"</span></span><br><span class="line">Address: <span class="string">"127.0.0.1"</span></span><br></pre></td></tr></table></figure>
+<h3 id="获取网络接口列表"><a href="#获取网络接口列表" class="headerlink" title="获取网络接口列表"></a>获取网络接口列表</h3><p>&emsp;&emsp;静态函数<code>allInterfaces</code>可以返回一个<code>QNetworkInterface</code>网络接口列表(通过<code>QNetworkAddressEntry</code>，可以获取<code>IP</code>地址、子网掩码和广播地址等信息)。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">QList&lt;QNetworkInterface&gt; <span class="built_in">list</span> = QNetworkInterface::allInterfaces();</span><br><span class="line">​</span><br><span class="line">foreach ( QNetworkInterface netInterface, <span class="built_in">list</span> ) &#123;</span><br><span class="line">    <span class="keyword">if</span> ( !netInterface.isValid() ) &#123;</span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line">    QNetworkInterface::InterfaceFlags flags = netInterface.flags();</span><br><span class="line">​</span><br><span class="line">    <span class="comment">/* 网络接口处于活动状态 */</span></span><br><span class="line">    <span class="keyword">if</span> ( flags.testFlag ( QNetworkInterface::IsRunning ) &amp;&amp; !flags.testFlag ( QNetworkInterface::IsLoopBack ) ) &#123;</span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"Device: "</span> &lt;&lt; netInterface.name(); <span class="comment">/* 设备名 */</span></span><br><span class="line">        <span class="comment">/* 硬件地址 */</span></span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"HardwareAddress: "</span> &lt;&lt; netInterface.hardwareAddress();</span><br><span class="line">        <span class="comment">/* 人类可读的名字 */</span></span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"Human Readable Name: "</span> &lt;&lt; netInterface.humanReadableName();</span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> 0</span></span><br><span class="line">    QList&lt;QNetworkAddressEntry&gt; entryList = netInterface.addressEntries();</span><br><span class="line">​</span><br><span class="line">    foreach ( QNetworkAddressEntry entry, entryList ) &#123; <span class="comment">/* 遍历每一个IP地址 */</span></span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"IP Address: "</span> &lt;&lt; entry.ip().toString(); <span class="comment">/* IP地址 */</span></span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"Netmask: "</span> &lt;&lt; entry.netmask().toString(); <span class="comment">/* 子网掩码 */</span></span><br><span class="line">        qDebug() &lt;&lt; <span class="string">"Broadcast: "</span> &lt;&lt; entry.broadcast().toString(); <span class="comment">/* 广播地址 */</span></span><br><span class="line">    &#125;</span><br><span class="line">​</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Device: <span class="string">"&#123;BE9972CD-860E-4E15-8CE2-3F25EF0A7A24&#125;"</span></span><br><span class="line">HardwareAddress: <span class="string">"94:DE:80:21:92:17"</span></span><br><span class="line">Human Readable Name: <span class="string">"本地连接"</span></span><br><span class="line"></span><br><span class="line">Device: <span class="string">"&#123;29F85058-E757-4F60-BF7B-47F6227C8CBC&#125;"</span></span><br><span class="line">HardwareAddress: <span class="string">"00:50:56:C0:00:01"</span></span><br><span class="line">Human Readable Name: <span class="string">"VMware Network Adapter VMnet1"</span></span><br><span class="line">​</span><br><span class="line">Device: <span class="string">"&#123;A297491C-D43C-4F85-A674-88368F8D4FC1&#125;"</span></span><br><span class="line">HardwareAddress: <span class="string">"00:50:56:C0:00:08"</span></span><br><span class="line">Human Readable Name: <span class="string">"VMware Network Adapter VMnet8"</span></span><br><span class="line">​</span><br><span class="line">Device: <span class="string">"&#123;1AE5F6FC-478A-4EAB-B4D2-86201A6B2090&#125;"</span></span><br><span class="line">HardwareAddress: <span class="string">"0A:00:27:00:00:12"</span></span><br><span class="line">Human Readable Name: <span class="string">"VirtualBox Host-Only Network"</span></span><br></pre></td></tr></table></figure>
+<p>通过<code>flags</code>函数，可以获取到当前网络接口的标识；利用<code>testFlag</code>进行过滤，就可以获取我们想要的内容(设备名、硬件地址、名字)。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/23/Qt语法详解/Qt之QUrlInfo/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付康为">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="泥腿子出身">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/23/Qt语法详解/Qt之QUrlInfo/" itemprop="url">Qt之QUrlInfo</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-23T13:52:53+08:00">
+                2019-01-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/Qt语法详解/" itemprop="url" rel="index">
+                    <span itemprop="name">Qt语法详解</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>&emsp;&emsp;The <code>QUrlInfo</code> class stores information about <code>URLs</code>. The header file is <code>QUrlInfo</code>.</p>
+<h3 id="Public-Functions"><a href="#Public-Functions" class="headerlink" title="Public Functions"></a>Public Functions</h3><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Return</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><code>QUrlInfo()</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>QUrlInfo(const QUrlInfo &amp; ui)</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>QUrlInfo(const QString &amp; name, int permissions, const QString &amp; owner, const QString &amp; group, qint64 size, const QDateTime &amp; lastModified, const QDateTime &amp; lastRead, bool isDir, bool isFile, bool isSymLink, bool isWritable, bool isReadable, bool isExecutable)</code></td>
+</tr>
+<tr>
+<td></td>
+<td><code>QUrlInfo(const QUrl &amp; url, int permissions, const QString &amp; owner, const QString &amp; group, qint64 size, const QDateTime &amp; lastModified, const QDateTime &amp; lastRead, bool isDir, bool isFile, bool isSymLink, bool isWritable, bool isReadable, bool isExecutable)</code></td>
+</tr>
+<tr>
+<td><code>virtual</code></td>
+<td><code>~QUrlInfo()</code></td>
+</tr>
+<tr>
+<td><code>QString</code></td>
+<td><code>group() const</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>isDir() const</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>isExecutable() const</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>isFile() const</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>isReadable() const</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>isSymLink() const</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>isValid() const</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>isWritable() const</code></td>
+</tr>
+<tr>
+<td><code>QDateTime</code></td>
+<td><code>lastModified() const</code></td>
+</tr>
+<tr>
+<td><code>QDateTime</code></td>
+<td><code>lastRead() const</code></td>
+</tr>
+<tr>
+<td><code>QString</code></td>
+<td><code>name() const</code></td>
+</tr>
+<tr>
+<td><code>QString</code></td>
+<td><code>owner() const</code></td>
+</tr>
+<tr>
+<td><code>int</code></td>
+<td><code>permissions() const</code></td>
+</tr>
+<tr>
+<td><code>virtual void</code></td>
+<td><code>setDir(bool b)</code></td>
+</tr>
+<tr>
+<td><code>virtual void</code></td>
+<td><code>setFile(bool b)</code></td>
+</tr>
+<tr>
+<td><code>virtual void</code></td>
+<td><code>setGroup(const QString &amp; s)</code></td>
+</tr>
+<tr>
+<td><code>virtual void</code></td>
+<td><code>setLastModified(const QDateTime &amp; dt)</code></td>
+</tr>
+<tr>
+<td><code>void</code></td>
+<td><code>setLastRead(const QDateTime &amp; dt)</code></td>
+</tr>
+<tr>
+<td><code>virtual void</code></td>
+<td><code>setName(const QString &amp; name)</code></td>
+</tr>
+<tr>
+<td><code>virtual void</code></td>
+<td><code>setOwner(const QString &amp; s)</code></td>
+</tr>
+<tr>
+<td><code>virtual void</code></td>
+<td><code>setPermissions(int p)</code></td>
+</tr>
+<tr>
+<td><code>virtual void</code></td>
+<td><code>setReadable(bool b)</code></td>
+</tr>
+<tr>
+<td><code>virtual void</code></td>
+<td><code>setSize(qint64 size)</code></td>
+</tr>
+<tr>
+<td><code>virtual void</code></td>
+<td><code>setSymLink(bool b)</code></td>
+</tr>
+<tr>
+<td><code>virtual void</code></td>
+<td><code>setWritable(bool b)</code></td>
+</tr>
+<tr>
+<td><code>qint64</code></td>
+<td><code>size() const</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>operator!=(const QUrlInfo &amp; other) const</code></td>
+</tr>
+<tr>
+<td><code>QUrlInfo &amp;</code></td>
+<td><code>operator=(const QUrlInfo &amp; ui)</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>operator==(const QUrlInfo &amp; other) const</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="Static-Public-Members"><a href="#Static-Public-Members" class="headerlink" title="Static Public Members"></a>Static Public Members</h3><ul>
+<li><code>bool equal(const QUrlInfo &amp; i1, const QUrlInfo &amp; i2, int sortBy)</code></li>
+<li><code>bool greaterThan(const QUrlInfo &amp; i1, const QUrlInfo &amp; i2, int sortBy)</code></li>
+<li><code>bool lessThan(const QUrlInfo &amp; i1, const QUrlInfo &amp; i2, int sortBy)</code></li>
+</ul>
+<h3 id="Detailed-Description"><a href="#Detailed-Description" class="headerlink" title="Detailed Description"></a>Detailed Description</h3><p>&emsp;&emsp;The <code>QUrlInfo</code> class stores information about <code>URLs</code>.<br>&emsp;&emsp;The information about a URL that can be retrieved includes <code>name()</code>, <code>permissions()</code>, <code>owner()</code>, <code>group()</code>, <code>size()</code>, <code>lastModified()</code>, <code>lastRead()</code>, <code>isDir()</code>, <code>isFile()</code>, <code>isSymLink()</code>, <code>isWritable()</code>, <code>isReadable()</code> and <code>isExecutable()</code>.<br>&emsp;&emsp;You can create your own <code>QUrlInfo</code> objects passing in all the relevant information in the constructor, and you can modify a <code>QUrlInfo</code>; for each getter mentioned above there is an equivalent setter. Note that setting values does not affect the underlying resource that the <code>QUrlInfo</code> provides information about; for example if you call <code>setWritable(true)</code> on a <code>read-only</code> resource the only thing changed is the <code>QUrlInfo</code> object, not the resource.</p>
+<h3 id="Member-Type-Documentation"><a href="#Member-Type-Documentation" class="headerlink" title="Member Type Documentation"></a>Member Type Documentation</h3><ul>
+<li>enum <code>QUrlInfo::PermissionSpec</code>: This enum is used by the <code>permissions()</code> function to report the permissions of a file.</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>QUrlInfo::ReadOwner</code></td>
+<td><code>00400</code></td>
+<td>The file is readable by the owner of the file.</td>
+</tr>
+<tr>
+<td><code>QUrlInfo::WriteOwner</code></td>
+<td><code>00200</code></td>
+<td>The file is writable by the owner of the file.</td>
+</tr>
+<tr>
+<td><code>QUrlInfo::ExeOwner</code></td>
+<td><code>00100</code></td>
+<td>The file is executable by the owner of the file.</td>
+</tr>
+<tr>
+<td><code>QUrlInfo::ReadGroup</code></td>
+<td><code>00040</code></td>
+<td>The file is readable by the group.</td>
+</tr>
+<tr>
+<td><code>QUrlInfo::WriteGroup</code></td>
+<td><code>00020</code></td>
+<td>The file is writable by the group.</td>
+</tr>
+<tr>
+<td><code>QUrlInfo::ExeGroup</code></td>
+<td><code>00010</code></td>
+<td>The file is executable by the group.</td>
+</tr>
+<tr>
+<td><code>QUrlInfo::ReadOther</code></td>
+<td><code>00004</code></td>
+<td>The file is readable by anyone.</td>
+</tr>
+<tr>
+<td><code>QUrlInfo::WriteOther</code></td>
+<td><code>00002</code></td>
+<td>The file is writable by anyone.</td>
+</tr>
+<tr>
+<td><code>QUrlInfo::ExeOther</code></td>
+<td><code>00001</code></td>
+<td>The file is executable by anyone.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="Member-Function-Documentation"><a href="#Member-Function-Documentation" class="headerlink" title="Member Function Documentation"></a>Member Function Documentation</h3><ul>
+<li><code>QUrlInfo::QUrlInfo()</code>: Constructs an invalid <code>QUrlInfo</code> object with default values.</li>
+<li><code>QUrlInfo::QUrlInfo(const QUrlInfo &amp; ui)</code>: Copy constructor, copies ui to this <code>URL</code> info object.</li>
+<li><code>QUrlInfo::QUrlInfo(const QString &amp; name, int permissions, const QString &amp; owner, const QString &amp; group, qint64 size, const QDateTime &amp; lastModified, const QDateTime &amp; lastRead, bool isDir, bool isFile, bool isSymLink, bool isWritable, bool isReadable, bool isExecutable)</code>: Constructs a <code>QUrlInfo</code> object by specifying all the <code>URL&#39;s</code> information. The information that is passed is the name, file permissions, owner and group and the file’s size. Also passed is the <code>lastModified date/time</code> and the <code>lastRead date/time</code>. Flags are also passed, specifically, <code>isDir</code>, <code>isFile</code>, <code>isSymLink</code>, <code>isWritable</code>, <code>isReadable</code> and <code>isExecutable</code>.</li>
+<li><code>QUrlInfo::QUrlInfo(const QUrl &amp; url, int permissions, const QString &amp; owner, const QString &amp; group, qint64 size, const QDateTime &amp; lastModified, const QDateTime &amp; lastRead, bool isDir, bool isFile, bool isSymLink, bool isWritable, bool isReadable, bool isExecutable)</code>: Constructs a <code>QUrlInfo</code> object by specifying all the <code>URL&#39;s</code> information. The information that is passed is the url, file permissions, owner and group and the file’s size. Also passed is the <code>lastModified date/time</code> and the <code>lastRead date/time</code>. Flags are also passed, specifically, <code>isDir</code>, <code>isFile</code>, <code>isSymLink</code>, <code>isWritable</code>, <code>isReadable</code> and <code>isExecutable</code>.</li>
+<li><code>QUrlInfo::~QUrlInfo() [virtual]</code>: Destroys the <code>URL</code> info object.</li>
+<li><code>bool QUrlInfo::equal(const QUrlInfo &amp; i1, const QUrlInfo &amp; i2, int sortBy) [static]</code>: Returns <code>true</code> if <code>i1</code> equals to <code>i2</code>; otherwise returns <code>false</code>. The objects are compared by the value, which is specified by <code>sortBy</code>. This must be one of <code>QDir::Name</code>, <code>QDir::Time</code> or <code>QDir::Size</code>.</li>
+<li><code>bool QUrlInfo::greaterThan(const QUrlInfo &amp; i1, const QUrlInfo &amp; i2, int sortBy) [static]</code>: Returns <code>true</code> if <code>i1</code> is greater than <code>i2</code>; otherwise returns <code>false</code>. The objects are compared by the value, which is specified by <code>sortBy</code>. This must be one of <code>QDir::Name</code>, <code>QDir::Time</code> or <code>QDir::Size</code>.</li>
+<li><code>QString QUrlInfo::group() const</code>: Returns the group of the <code>URL</code>.</li>
+<li><code>bool QUrlInfo::isDir() const</code>: Returns <code>true</code> if the <code>URL</code> is a directory; otherwise returns <code>false</code>.</li>
+<li><code>bool QUrlInfo::isExecutable() const</code>: Returns <code>true</code> if the <code>URL</code> is executable; otherwise returns false.</li>
+<li><code>bool QUrlInfo::isFile() const</code>: Returns <code>true</code> if the <code>URL</code> is a file; otherwise returns <code>false</code>.</li>
+<li><code>bool QUrlInfo::isReadable() const</code>: Returns <code>true</code> if the <code>URL</code> is readable; otherwise returns <code>false</code>.</li>
+<li><code>bool QUrlInfo::isSymLink() const</code>: Returns <code>true</code> if the <code>URL</code> is a symbolic link; otherwise returns <code>false</code>.</li>
+<li><code>bool QUrlInfo::isValid() const</code>: Returns <code>true</code> if the <code>URL</code> info is valid; otherwise returns <code>false</code>. Valid means that the <code>QUrlInfo</code> contains real information. You should always check if the <code>URL</code> info is valid before relying on the values.</li>
+<li><code>bool QUrlInfo::isWritable() const</code>: Returns <code>true</code> if the <code>URL</code> is writable; otherwise returns <code>false</code>.</li>
+<li><code>QDateTime QUrlInfo::lastModified() const</code>: Returns the last modification date of the <code>URL</code>.</li>
+<li><code>QDateTime QUrlInfo::lastRead() const</code>: Returns the date when the URL was last read.</li>
+<li><code>bool QUrlInfo::lessThan(const QUrlInfo &amp; i1, const QUrlInfo &amp; i2, int sortBy) [static]</code>: Returns <code>true</code> if <code>i1</code> is less than <code>i2</code>; otherwise returns <code>false</code>. The objects are compared by the value, which is specified by <code>sortBy</code>. This must be one of <code>QDir::Name</code>, <code>QDir::Time</code> or <code>QDir::Size</code>.</li>
+<li><code>QString QUrlInfo::name() const</code>: Returns the file name of the <code>URL</code>.</li>
+<li><code>QString QUrlInfo::owner() const</code>: Returns the owner of the <code>URL</code>.</li>
+<li><code>int QUrlInfo::permissions() const</code>: Returns the permissions of the <code>URL</code>. You can use the <code>PermissionSpec</code> flags to test for certain permissions.</li>
+<li><code>void QUrlInfo::setDir(bool b) [virtual]</code>: If <code>b</code> is <code>true</code> then the <code>URL</code> is set to be a directory; if <code>b</code> is <code>false</code> then the <code>URL</code> is set not to be a directory (which normally means it is a file). (Note that a <code>URL</code> can refer to both a file and a directory even though most file systems do not support this.) If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>void QUrlInfo::setFile(bool b) [virtual]</code>: If <code>b</code> is <code>true</code> then the <code>URL</code> is set to be a file; if is false then the <code>URL</code> is set not to be a file (which normally means it is a directory). (Note that a <code>URL</code> can refer to both a file and a directory even though most file systems do not support this.) If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>void QUrlInfo::setGroup(const QString &amp; s) [virtual]</code>: Specifies that the owning group of the <code>URL</code> is called <code>s</code>. If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>void QUrlInfo::setLastModified(const QDateTime &amp; dt) [virtual]</code>: Specifies that the object the <code>URL</code> refers to was last modified at <code>dt</code>. If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>void QUrlInfo::setLastRead(const QDateTime &amp; dt)</code>: Specifies that the object the <code>URL</code> refers to was last read at <code>dt</code>. If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>void QUrlInfo::setName(const QString &amp; name) [virtual]</code>: Sets the name of the <code>URL</code> to name. The name is the full text, for example, <code>http://qt.nokia.com/doc/qurlinfo.html</code>. If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>void QUrlInfo::setOwner(const QString &amp; s) [virtual]</code>: Specifies that the owner of the <code>URL</code> is called <code>s</code>. If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>void QUrlInfo::setPermissions(int p) [virtual]</code>: Specifies that the <code>URL</code> has access permissions <code>p</code>. If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>void QUrlInfo::setReadable(bool b) [virtual]</code>: Specifies that the <code>URL</code> is readable if <code>b</code> is <code>true</code> and not readable if <code>b</code> is <code>false</code>. If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>void QUrlInfo::setSize(qint64 size) [virtual]</code>: Specifies the <code>size</code> of the <code>URL</code>. If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>void QUrlInfo::setSymLink(bool b) [virtual]</code>: Specifies that the <code>URL</code> refers to a symbolic link if <code>b</code> is <code>true</code> and that it does not if <code>b</code> is <code>false</code>. If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>void QUrlInfo::setWritable(bool b) [virtual]</code>: Specifies that the <code>URL</code> is writable if <code>b</code> is <code>true</code> and not writable if <code>b</code> is <code>false</code>. If you call this function for an invalid <code>URL</code> info, this function turns it into a valid one.</li>
+<li><code>qint64 QUrlInfo::size() const</code>: Returns the <code>size</code> of the <code>URL</code>.</li>
+<li><code>bool QUrlInfo::operator!=(const QUrlInfo &amp; other) const</code>: Returns <code>true</code> if this <code>QUrlInfo</code> is not equal to other; otherwise returns <code>false</code>.</li>
+<li><code>QUrlInfo &amp; QUrlInfo::operator=(const QUrlInfo &amp; ui)</code>: Assigns the values of <code>ui</code> to this <code>QUrlInfo</code> object.</li>
+<li><code>bool QUrlInfo::operator==(const QUrlInfo &amp; other) const</code>: Returns <code>true</code> if this <code>QUrlInfo</code> is equal to other; otherwise returns <code>false</code>.</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/23/Qt语法详解/Qt之QTcpServer/">
 
     <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
@@ -2122,511 +2947,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/22/Shell编程/Shell文件包含/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/22/Shell编程/Shell文件包含/" itemprop="url">Shell文件包含</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-22T08:22:03+08:00">
-                2019-01-22
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>&emsp;&emsp;<code>Shell</code>可以包含外部脚本，这样可以很方便地封装一些公用的代码。<code>Shell</code>文件包含的语法格式如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">. filename  <span class="comment"># 注意点号和文件名中间有一空格</span></span><br><span class="line"><span class="built_in">source</span> filename  <span class="comment"># 第二种写法</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;创建两个<code>shell</code>脚本文件，<code>test1.sh</code>代码如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line">url=<span class="string">"http://www.runoob.com"</span></span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;<code>test2.sh</code>代码如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line">. ./test1.sh  <span class="comment"># 第二种方法是“source ./test1.sh”</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"菜鸟教程官网地址：<span class="variable">$url</span>"</span></span><br></pre></td></tr></table></figure>
-<p>接下来为<code>test2.sh</code>添加可执行权限并执行：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ chmod +x test2.sh</span><br><span class="line">$ ./test2.sh</span><br><span class="line">菜鸟教程官网地址：http://www.runoob.com</span><br></pre></td></tr></table></figure>
-<p>注意，被包含的文件<code>test1.sh</code>不需要可执行权限。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/21/Shell编程/grep命令/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/21/Shell编程/grep命令/" itemprop="url">grep命令</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-21T19:02:28+08:00">
-                2019-01-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="基本用法"><a href="#基本用法" class="headerlink" title="基本用法"></a>基本用法</h3><p>&emsp;&emsp;<code>grep</code>是一种强大的文本搜索工具，它能使用正则表达式搜索文本，并把匹配的行打印出来。<br>&emsp;&emsp;<code>Unix</code>的<code>grep</code>家族包括<code>grep</code>、<code>egrep</code>和<code>fgrep</code>。<code>egrep</code>和<code>fgrep</code>的命令只跟<code>grep</code>有很小不同，<code>egrep</code>是<code>grep</code>的扩展，支持更多的<code>re</code>元字符，<code>fgrep</code>就是<code>fixed grep</code>或<code>fast grep</code>，它们把所有的字母都看作单词，也就是说正则表达式中的元字符表示回其自身的字面意义，不再特殊。<code>linux</code>使用<code>GNU</code>版本的<code>grep</code>。它功能更强，可以通过<code>-G</code>、<code>-E</code>、<code>-F</code>命令行选项来使用<code>egrep</code>和<code>fgrep</code>的功能。<br>&emsp;&emsp;<code>grep</code>用法如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep [-acinv] [--color=auto] <span class="string">'搜寻字符串'</span> filename</span><br></pre></td></tr></table></figure>
-<p>选项如下：</p>
-<ul>
-<li><code>-a</code>：将<code>binary</code>文件以<code>text</code>文件的方式搜寻数据。</li>
-<li><code>-c</code>：计算找到<code>搜寻字符串</code>的次数。</li>
-<li><code>-i</code>：忽略大小写的不同，所以大小写视为相同。</li>
-<li><code>-n</code>：输出行号。</li>
-<li><code>-v</code>：反向选择，亦即显示出没有<code>搜寻字符串</code>内容的那一行。</li>
-<li><code>--color=auto</code>：可以将找到的关键词部分加上颜色的显示。</li>
-</ul>
-<p>&emsp;&emsp;将<code>/etc/passwd</code>中有<code>root</code>的行取出来：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">grep root /etc/passwd</span><br><span class="line"><span class="comment"># 或者</span></span><br><span class="line">cat /etc/passwd | grep root</span><br></pre></td></tr></table></figure>
-<p>将<code>/etc/passwd</code>有<code>root</code>的行取出来，同时显示这些行在<code>/etc/passwd</code>的行号：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ grep -n root /etc/passwd</span><br><span class="line">1:root:x:0:0:root:/root:/bin/bash</span><br><span class="line">30:operator:x:11:0:operator:/root:/sbin/nologin</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;将<code>/etc/passwd</code>没有出现<code>root</code>和<code>nologin</code>的行取出来：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -v root /etc/passwd | grep -v nologin</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;用<code>dmesg</code>列出核心信息，再以<code>grep</code>找出内含<code>eth</code>那行，在关键字所在行的前两行与后三行也一起捉出来显示：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ dmesg | grep -n -A3 -B2 --color=auto <span class="string">'eth'</span></span><br><span class="line">245-PCI: setting IRQ 10 as level-triggered</span><br><span class="line">246-ACPI: PCI Interrupt 0000:00:0e.0[A] -&gt; Link [LNKB] ...</span><br><span class="line">247:eth0: RealTek RTL8139 at 0xee846000, 00:90:cc:a6:34:84, IRQ 10</span><br><span class="line">248:eth0: Identified 8139 chip <span class="built_in">type</span> <span class="string">'RTL-8139C'</span></span><br><span class="line">249-input: PC Speaker as /class/input/input2</span><br><span class="line">250-ACPI: PCI Interrupt 0000:00:01.4[B] -&gt; Link [LNKB] ...</span><br><span class="line">251-hdb: ATAPI 48X DVD-ROM DVD-R-RAM CD-R/RW drive, 2048kB Cache, UDMA(66)</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;根据文件内容递归查找目录：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在当前目录搜索带“energywise”行的文件</span></span><br><span class="line">$ grep <span class="string">'energywise'</span> *</span><br><span class="line"><span class="comment"># 在当前目录及其子目录下搜索“energywise”行的文件</span></span><br><span class="line">$ grep -r <span class="string">'energywise'</span> *  </span><br><span class="line"><span class="comment"># 在当前目录及其子目录下搜索“energywise”行的文件，但是不显示匹配的行，只显示匹配的文件</span></span><br><span class="line">$ grep -l -r <span class="string">'energywise'</span> *</span><br></pre></td></tr></table></figure>
-<h3 id="grep与正规表达式"><a href="#grep与正规表达式" class="headerlink" title="grep与正规表达式"></a>grep与正规表达式</h3><p>&emsp;&emsp;字符类的搜索：如果我想要搜寻<code>test</code>或<code>taste</code>这两个单词时，可以发现到它们有共同的<code>t?st</code>。此时可以这样来搜寻：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ grep -n <span class="string">'t[ae]st'</span> regular_express.txt</span><br><span class="line">8:I can<span class="string">'t finish the test.</span></span><br><span class="line"><span class="string">9:Oh! The soup taste good.</span></span><br></pre></td></tr></table></figure>
-<p>其实<code>[]</code>里面不论有几个字节，它都仅代表某一个字节，所以上面的例子说明了，我需要的字串是<code>tast</code>或<code>test</code>两个字串而已。<br>&emsp;&emsp;字符类的反向选择<code>[^]</code>：如果想要搜索到有<code>oo</code>的行，但不想要<code>oo</code>前面有<code>g</code>：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ grep -n <span class="string">'[^g]oo'</span> regular_express.txt</span><br><span class="line">2:apple is my favorite food.</span><br><span class="line">3:Football game is not use feet only.</span><br><span class="line">18:google is the best tools <span class="keyword">for</span> search keyword.</span><br></pre></td></tr></table></figure>
-<p>第<code>2</code>和<code>3</code>行没有疑问，因为<code>foo</code>与<code>Foo</code>均可被接受；但是第<code>18</code>行却有<code>google</code>的<code>goo</code>，因为该行后面出现了<code>tool</code>的<code>too</code>，所以该行也被列出来。也就是说，第<code>18</code>行里面虽然出现了我们所不要的项目(<code>goo</code>)，但是由于有需要的项目(<code>too</code>)，因此是符合字串搜寻。<br>&emsp;&emsp;字符类的连续：假设在<code>oo</code>前面不想要有小写字节，可以这样写<code>[^abcd....z]oo</code>，但是这样似乎不怎么方便，由于小写字节的<code>ASCII</code>上编码的顺序是连续的，因此可以将之简化为如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'[^a-z]oo'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>也就是说，当我们在一组集合字节中，如果该字节组是连续的，例如大写英文/小写英文/数字等等，就可以使用<code>[a-z]</code>、<code>[A-Z]</code>、<code>[0-9]</code>等方式来书写。那么如果我们的要求字串是数字与英文，那就将它们全部写在一起，变成<code>[a-zA-Z0-9]</code>。我们要取得有数字的那一行，如下所示：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'[0-9]'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;行首字符：如果我想要让<code>the</code>只在行首列出呢？这个时候就得要使用定位字节了！可以这样做：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'^the'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;如果我想要开头是小写字节的那一行列出呢？可以这样做：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'^[a-z]'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;如果我不想要开头是英文字母，则可以是这样：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'^[^a-zA-Z]'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p><code>^</code>在<code>[]</code>内代表<code>反向选择</code>，在<code>[]</code>之外则代表定位在行首的意义。<br>&emsp;&emsp;那如果我想要找出来行尾结束为小数点<code>.</code>的那一行：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'\.$'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>特别注意到，因为小数点具有其他意义，所以必须要使用转义字符<code>\</code>来加以解除其特殊意义。<br>&emsp;&emsp;找出空白行：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'^$'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>因为只有行首跟行尾<code>^$</code>，所以这样就可以找出空白行了。<br>&emsp;&emsp;任意一个字节<code>.</code>与重复字节<code>*</code>这两个符号在正则表达式的意义如下：</p>
-<ul>
-<li><code>.</code> (小数点)：代表<code>一定有一个任意字节</code>的意思。</li>
-<li><code>*</code> (星号)：代表<code>重复前一个字符，0到无穷多次</code>的意思，为组合形态。</li>
-</ul>
-<p>&emsp;&emsp;假设需要找出<code>g??d</code>的字串，亦即共有四个字节，起头是<code>g</code>而结束是<code>d</code>，可以这样做：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'g..d'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;如果想要列出有<code>oo</code>、<code>ooo</code>、<code>oooo</code>等等的数据，也就是说至少要有两个<code>o</code>，该怎么办？因为<code>*</code>代表的是<code>重复0个或多个前面的RE字符</code>的意义，因此<code>o*</code>代表的是<code>拥有空字节或一个“o”以上的字节</code>，因此<code>grep -n &#39;o*&#39; regular_express.txt</code>将会把所有的数据都列印出来终端上。当我们需要<code>至少两个“o”以上的字串</code>时，如下所示：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'ooo*'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;如果想要字串开头与结尾都是<code>g</code>，但是两个<code>g</code>之间能存在至少一个<code>o</code>，亦即是<code>gog</code>、<code>goog</code>、<code>gooog...</code>等等，如下所示：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'goo*g'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;如果想要找出<code>g</code>开头与<code>g</code>结尾的行，当中的字符可有可无：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'g.*g'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>这个<code>.*</code>的<code>RE</code>表示任意字符。<br>&emsp;&emsp;我们可以利用<code>.</code>与<code>RE</code>字符及<code>*</code>来配置<code>0</code>个到无限多个重复字节，那如果想要限制一个范围区间内的重复字节数呢？这时候就得要使用到限定范围的字符<code>{}</code>了。 但因为<code>{</code>与<code>}</code>的符号在<code>shell</code>是有特殊意义的，因此必须要使用字符<code>\</code>来让它失去特殊意义才行。<br>&emsp;&emsp;假设要找到两个<code>o</code>的字串，如下所示：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'o\&#123;2\&#125;'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;假设要找出<code>g</code>后面接<code>2</code>到<code>5</code>个<code>o</code>，然后再接一个<code>g</code>的字串，可以是这样：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'go\&#123;2,5\&#125;g'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-<p>&emsp;&emsp;如果想要的是<code>2</code>个<code>o</code>以上的<code>goooo....g</code>呢？除了可以是<code>gooo*g</code>，也可以是：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep -n <span class="string">'go\&#123;2,\&#125;g'</span> regular_express.txt</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://fukangwei.gitee.io/2019/01/21/Shell编程/Shell脚本的特殊符号/">
-
-    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="付康为">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="泥腿子出身">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/21/Shell编程/Shell脚本的特殊符号/" itemprop="url">Shell脚本的特殊符号</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-21T16:37:52+08:00">
-                2019-01-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="井号"><a href="#井号" class="headerlink" title="井号"></a>井号</h3><p>&emsp;&emsp;除了第一行<code>#!/bin/bash</code>，井号也常出现在一行的开头，或者位于完整指令之后，这类情况表示符号后面的是注解文字，不会被执行。如果被用在指令中，被引号、双引号括住或者在倒斜线的后面，那么它就变成一般符号，不具上述的特殊功能。</p>
-<h3 id="帐户的home目录"><a href="#帐户的home目录" class="headerlink" title="帐户的home目录"></a>帐户的home目录</h3><p>&emsp;&emsp;它算是个常见的符号，代表使用者的<code>home</code>目录，如<code>cd ~</code>；也可以直接在符号后加上某帐户的名称，如<code>cd ~user</code>；或者当成是路径的一部份，如<code>~/bin</code>。<br>&emsp;&emsp;<code>~+当前的工作目录</code>这个符号代表当前的工作目录，它和内建指令<code>pwd</code>的作用是相同的：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># echo ~+/var/log</span></span><br></pre></td></tr></table></figure>
-<p><code>~-上次的工作目录</code>这个符号代表上次的工作目录：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># echo ~-/etc/httpd/logs</span></span><br></pre></td></tr></table></figure>
-<h3 id="分号"><a href="#分号" class="headerlink" title="分号"></a>分号</h3><p>&emsp;&emsp;在<code>shell</code>中，担任连续指令功能的符号就是分号，例如<code>cd ~/backup ; mkdir startup</code>。</p>
-<h3 id="连续分号"><a href="#连续分号" class="headerlink" title="连续分号"></a>连续分号</h3><p>&emsp;&emsp;专用在<code>case</code>的选项，担任<code>Terminator</code>的角色：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> \<span class="string">"<span class="variable">$fop</span>\" inhelp)</span></span><br><span class="line"><span class="string">    echo \"Usage: Command -help -version filename\";;version)</span></span><br><span class="line"><span class="string">    echo \"version 0.1\"</span></span><br><span class="line"><span class="string">    ;;</span></span><br><span class="line"><span class="string">esac</span></span><br></pre></td></tr></table></figure>
-<h3 id="逗号"><a href="#逗号" class="headerlink" title="逗号"></a>逗号</h3><p>&emsp;&emsp;在<code>shell</code>中，一个<code>dot</code>代表当前目录，两个<code>dot</code>代表上层目录。如果档案名称以<code>dot</code>开头，该档案就属特殊档案，用<code>ls</code>指令必须加上<code>-a</code>选项才会显示。除此之外，在<code>regularexpression</code>中，一个<code>dot</code>代表匹配一个字元。</p>
-<h3 id="单引号"><a href="#单引号" class="headerlink" title="单引号"></a>单引号</h3><p>&emsp;&emsp;被单引号用括住的内容将被视为单一字串。在引号内的代表变数的<code>$</code>符号没有作用，也就是说它被视为一般符号处理，防止任何变量替换：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">heyyou=home</span><br><span class="line"><span class="built_in">echo</span> <span class="string">'$heyyou'</span>  <span class="comment"># We get $heyyou</span></span><br></pre></td></tr></table></figure>
-<h3 id="双引号"><a href="#双引号" class="headerlink" title="双引号"></a>双引号</h3><p>&emsp;&emsp;被双引号用括住的内容将被视为单一字串。它防止通配符扩展，但允许变量扩展，这点与单引数的处理方式不同：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">heyyou=home</span><br><span class="line"><span class="built_in">echo</span> \<span class="string">"<span class="variable">$heyyou</span>\"  # We get home</span></span><br></pre></td></tr></table></figure>
-<h3 id="反引号"><a href="#反引号" class="headerlink" title="反引号"></a>反引号</h3><p>&emsp;&emsp;在前面的单双引号括住的是字串，但如果该字串是一列命令会怎样？答案是不会执行。要处理这种情况，需要用反引号来做：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fdv=`date +%F`</span><br><span class="line"><span class="built_in">echo</span> \<span class="string">"Today <span class="variable">$fdv</span>\"</span></span><br></pre></td></tr></table></figure>
-<p>在反引号内的<code>date +%F</code>会被视为指令，执行的结果会带入<code>fdv</code>变数中。命令替换也可以使用语法<code>$(shell_command)</code>。</p>
-<h3 id="逗点"><a href="#逗点" class="headerlink" title="逗点"></a>逗点</h3><p>&emsp;&emsp;这个符号常运用在运算当中当做间隔用途：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="built_in">let</span> \<span class="string">"t1 = ((a = 5 + 3, b = 7 - 1, c = 15 / 3))\"</span></span><br><span class="line"><span class="string">echo \"t1= <span class="variable">$t1</span>, a = <span class="variable">$a</span>, b = <span class="variable">$b</span>\"</span></span><br></pre></td></tr></table></figure>
-<h3 id="斜线"><a href="#斜线" class="headerlink" title="斜线"></a>斜线</h3><p>&emsp;&emsp;在路径表示时，代表目录；通常单一的<code>/</code>代表<code>root</code>根目录；在四则运算中，代表除法的符号。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">let</span> \<span class="string">"num1 = ((a = 10 / 2, b = 25 / 5))\"</span></span><br></pre></td></tr></table></figure>
-<h3 id="管道"><a href="#管道" class="headerlink" title="管道"></a>管道</h3><p>&emsp;&emsp;<code>pipeline</code>连接上个指令的标准输出，做为下个指令的标准输入：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">who | wc -l</span><br></pre></td></tr></table></figure>
-<h3 id="惊叹号"><a href="#惊叹号" class="headerlink" title="惊叹号"></a>惊叹号</h3><p>&emsp;&emsp;通常代表反逻辑的作用，例如用<code>!=</code>代表不等于：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> [ \<span class="string">"$?\" != 0 ]</span></span><br><span class="line"><span class="string">then</span></span><br><span class="line"><span class="string">    echo \"Executes error\"</span></span><br><span class="line"><span class="string">    exit 1</span></span><br><span class="line"><span class="string">fi</span></span><br></pre></td></tr></table></figure>
-<p>在规则表达式中，它担任反逻辑的角色：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls a[!0-9]</span><br></pre></td></tr></table></figure>
-<p>上例代表显示除<code>a0</code>、<code>a1</code>、<code>...</code>、<code>a9</code>这几个文件的其他文件。</p>
-<h3 id="冒号"><a href="#冒号" class="headerlink" title="冒号"></a>冒号</h3><p>&emsp;&emsp;在bash中，这是一个内建指令，表示什么事都不干，但返回状态值0。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">:</span><br><span class="line"><span class="built_in">echo</span> $?  <span class="comment"># 输出为0</span></span><br></pre></td></tr></table></figure>
-<p>也有如下用法：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">: &gt; f.$$</span><br></pre></td></tr></table></figure>
-<p>上面这一行相当于<code>cat /dev/null &gt;f.$$</code>，不仅写法简短了，而且执行效率也好许多。有时也会出现以下这类的用法：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">: <span class="variable">$&#123;HOSTNAME?&#125;</span> <span class="variable">$&#123;USER?&#125;</span> <span class="variable">$&#123;MAIL?&#125;</span></span><br></pre></td></tr></table></figure>
-<p>这行的作用是检查这些环境变数是否已设置，没有设置的将会以标准错误显示错误讯息。像这种检查如果使用类似<code>test</code>或<code>if</code>这类的做法，基本上也可以处理，但都比不上上例的简洁与效率。</p>
-<h3 id="问号"><a href="#问号" class="headerlink" title="问号"></a>问号</h3><p>&emsp;&emsp;在文件名扩展上扮演的角色是匹配一个任意的字元，但不包含<code>null</code>字元。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls a?a1</span><br></pre></td></tr></table></figure>
-<p>善用这个特点，可以做比较精确的档名匹配。</p>
-<h3 id="星号"><a href="#星号" class="headerlink" title="星号"></a>星号</h3><p>&emsp;&emsp;在文件名扩展上，它用来代表任何字元，包含<code>null</code>字元。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ls a*a a1 access_log</span><br></pre></td></tr></table></figure>
-<p>在运算时，它则代表乘法。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">let</span> \<span class="string">"fmult=2*3\"</span></span><br></pre></td></tr></table></figure>
-<p>除了内建指令<code>let</code>，还有一个关于运算的指令<code>expr</code>，星号在这里也担任乘法的角色。不过在使用上需要小心，它的前面必须加上<code>escape</code>字元。</p>
-<h3 id="次方运算"><a href="#次方运算" class="headerlink" title="次方运算"></a>次方运算</h3><p>&emsp;&emsp;两个星号<code>**</code>在运算时代表次方的意思：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">let</span> \<span class="string">"sus=2**3\"</span></span><br><span class="line"><span class="string">echo \"sus = <span class="variable">$sus</span>\"  # 输出“sus = 8”</span></span><br></pre></td></tr></table></figure>
-<h3 id="钱号"><a href="#钱号" class="headerlink" title="钱号"></a>钱号</h3><p>&emsp;&emsp;变量替换的代表符号：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">vrs=123</span><br><span class="line"><span class="built_in">echo</span> \<span class="string">"vrs = <span class="variable">$vrs</span>\"  # 输出“vrs = 123”</span></span><br></pre></td></tr></table></figure>
-<p>另外，在<code>Regular Expressions</code>里被定义为<code>行</code>的最末端(<code>end-of-line</code>)。这个常用在<code>grep</code>、<code>sed</code>、<code>awk</code>以及<code>vim</code>当中。</p>
-<h3 id="36"><a href="#36" class="headerlink" title="&#36;*"></a>&#36;*</h3><p>&emsp;&emsp;<code>$*</code>引用<code>script</code>的执行引用变量，引用参数的算法与一般指令相同，指令本身为<code>0</code>，其后为<code>1</code>，然后依此类推。引用变量的代表方式如下：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$0</span>, <span class="variable">$1</span>, <span class="variable">$2</span>, <span class="variable">$3</span>, <span class="variable">$4</span>, <span class="variable">$5</span>, <span class="variable">$6</span>, <span class="variable">$7</span>, <span class="variable">$8</span>, <span class="variable">$9</span>, <span class="variable">$&#123;10&#125;</span>, <span class="variable">$&#123;11&#125;</span>...</span><br></pre></td></tr></table></figure>
-<p>个位数的，可直接使用数字；但两位数以上，则必须使用<code>{}</code>符号来括住。<br>&emsp;&emsp;<code>$*</code>则是代表所有引用变量的符号，使用时需要视情况加上双引号：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> \<span class="string">"$*\"</span></span><br></pre></td></tr></table></figure>
-<h3 id="36-1"><a href="#36-1" class="headerlink" title="&#36;@"></a>&#36;@</h3><p>&emsp;&emsp;<code>$@</code>与<code>$*</code>具有相同作用的符号，不过它们两者有一个不同点。<code>$*</code>将所有的引用变量视为一个整体，但<code>$@</code>则仍旧保留每个引用变量的区段观念。</p>
-<h3> &#36;# </h3>
-
-<p>&emsp;&emsp;这也是与引用变量相关的符号，它的作用是告诉你，引用变量的总数量是多少。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> \<span class="string">"<span class="variable">$#</span>\"</span></span><br></pre></td></tr></table></figure>
-<h3 id="36-状态值"><a href="#36-状态值" class="headerlink" title="&#36;?状态值"></a>&#36;?状态值</h3><p>&emsp;&emsp;一般来说，<code>UNIX</code>系统的进程以执行系统调用<code>exit</code>来结束的。这个函数的回传值就是<code>status</code>值，回传给父进程，用来检查子进程的执行状态。一般指令程序倘若执行成功，其回传值为<code>0</code>，失败则为<code>1</code>。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar cvfz dfbackup.tar.gz /home/user &gt; /dev/nullecho\<span class="string">"$?\"$$</span></span><br></pre></td></tr></table></figure>
-<p>由于进程的<code>ID</code>是唯一的，所以在同一个时间不可能有重复性的<code>PID</code>。有时，<code>script</code>会需要产生临时文件，用来存放必要的资料，而此<code>script</code>亦有可能在同一时间被使用者们使用。在这种情况下，固定文件名在写法上就显的不可靠，唯有产生动态文件名，才能符合需要。符号<code>$$</code>或许可以符合这种需求，它代表当前<code>shell</code>的<code>PID</code>。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> \<span class="string">"<span class="variable">$HOSTNAME</span>, <span class="variable">$USER</span>, <span class="variable">$MAIL</span>\" &gt; ftmp.$$</span></span><br></pre></td></tr></table></figure>
-<p>使用它来作为文件名的一部份，可以避免在同一时间产生相同文件名的覆盖现象。<br>&emsp;&emsp;基本上，系统会回收执行完毕的<code>PID</code>，然后再次依需要分配使用。所以<code>script</code>即使临时文件是使用动态档名的写法，如果<code>script</code>执行完毕后仍不加以清除，会产生其他问题。</p>
-<h3 id="指令群组"><a href="#指令群组" class="headerlink" title="()指令群组"></a>()指令群组</h3><p>&emsp;&emsp;用括号将一串连续指令括起来，这种用法称为指令群组：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(<span class="built_in">cd</span> ~ ; vcgh=`<span class="built_in">pwd</span>` ; <span class="built_in">echo</span> <span class="variable">$vcgh</span>)</span><br></pre></td></tr></table></figure>
-<p>指令群组有一个特性，<code>shell</code>会以产生<code>subshell</code>来执行这组指令。因此在其中所定义的变数，仅作用于指令群组本身。<br>&emsp;&emsp;除了上述的指令群组，括号也用在<code>array</code>变数的定义上；另外也应用在其他可能需要加上<code>escape</code>字元才能使用的场合，如运算式。</p>
-<h3 id=""><a href="#" class="headerlink" title="(())"></a>(())</h3><p>&emsp;&emsp;这组符号的作用与<code>let</code>指令相似，用在算数运算上，它是<code>bash</code>的内建功能。所以在执行效率上会比使用<code>let</code>指令要好许多。</p>
-<h3 id="大括号"><a href="#大括号" class="headerlink" title="大括号"></a>大括号</h3><p>&emsp;&emsp;有时<code>script</code>当中会出现大括号中会夹着一段或几段以<code>分号</code>做结尾的指令或变数设定。这种用法与上面介绍的指令群组非常相似，但有个不同点，它在当前的<code>shell</code>执行，不会产生<code>subshell</code>。<br>&emsp;&emsp;大括号也被运用在函数的功能上，广义地说，单纯只使用大括号时，作用就像是个没有指定名称的函数一般。因此，这样写<code>script</code>也是相当好的一件事。尤其对输出输入的重导向上，这个做法可精简<code>script</code>的复杂度。此外，大括号还有另一种用法：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;xx, yy, zz, ...&#125;</span><br></pre></td></tr></table></figure>
-<p>这种大括号的组合，常用在字串的组合上：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir &#123;userA, userB, userC&#125;-&#123;home, bin, data&#125;</span><br></pre></td></tr></table></figure>
-<p>我们得到<code>userA-home</code>、<code>userA-bin</code>、<code>userA-data</code>、<code>userB-home</code>、<code>userB-bin</code>、<code>userB-data</code>、<code>userC-home</code>、<code>userC-bin</code>、<code>userC-data</code>这几个目录。这组符号在适用性上相当广泛，能加以善用的话，回报是精简与效率。</p>
-<h3 id="中括号"><a href="#中括号" class="headerlink" title="中括号"></a>中括号</h3><p>&emsp;&emsp;常出现在流程控制中，扮演括住判断式的作用：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> [ \<span class="string">"$?\" != 0 ]</span></span><br><span class="line"><span class="string">then</span></span><br><span class="line"><span class="string">    echo \"Executes error\"</span></span><br><span class="line"><span class="string">    exit 1</span></span><br><span class="line"><span class="string">fi</span></span><br></pre></td></tr></table></figure>
-<p>这个符号在正则表达式中担任类似<code>范围</code>或<code>集合</code>的角色：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rm -r 200[1234]</span><br></pre></td></tr></table></figure>
-<p>上例代表删除<code>2001</code>、<code>2002</code>、<code>2003</code>、<code>2004</code>等目录的意思。</p>
-<h3 id="-1"><a href="#-1" class="headerlink" title="[[]]"></a>[[]]</h3><p>&emsp;&emsp;这组符号与先前的<code>[]</code>符号，基本上作用相同，但它允许在其中直接使用<code>||</code>与<code>&amp;&amp;</code>逻辑等符号。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="built_in">read</span> ak</span><br><span class="line">​</span><br><span class="line"><span class="keyword">if</span> [[ <span class="variable">$ak</span> &gt; 5 || <span class="variable">$ak</span>&lt; 9 ]]</span><br><span class="line"><span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="variable">$ak</span></span><br><span class="line"><span class="keyword">fi</span></span><br></pre></td></tr></table></figure>
-<h3 id="逻辑符号"><a href="#逻辑符号" class="headerlink" title="||逻辑符号"></a>||逻辑符号</h3><p>&emsp;&emsp;代表<code>or</code>逻辑的符号。</p>
-<h3 id="amp-amp-逻辑符号"><a href="#amp-amp-逻辑符号" class="headerlink" title="&amp;&amp;逻辑符号"></a>&amp;&amp;逻辑符号</h3><p>&emsp;&emsp;代表<code>and</code>逻辑的符号：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">command1 &amp;&amp; command2 [&amp;&amp; command3 ...]</span><br></pre></td></tr></table></figure>
-<p><code>&amp;&amp;</code>左边的命令(命令<code>1</code>)返回真后，其右边的命令(命令<code>2</code>)才能够被执行。</p>
-<h3 id="后台工作"><a href="#后台工作" class="headerlink" title="后台工作"></a>后台工作</h3><p>&emsp;&emsp;单一个<code>&amp;</code>符号，且放在完整指令列的最后端，即表示将该指令列放入后台中工作。</p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2677,7 +2997,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">955</span>
+                  <span class="site-state-item-count">958</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
